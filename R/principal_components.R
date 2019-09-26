@@ -1,12 +1,12 @@
 #' Principal Component Analysis (PCA)
 #'
-#' This function performs a principal component analysis (PCA) and returns the loadings (of the unrotated matrix) as dataframe.
+#' This function performs a principal component analysis (PCA) and returns the loadings as a dataframe.
 #'
-#' @param x A dataframe.
-#' @param n Number of components to extract. If \code{n = NULL}, the number of components is selected through \code{\link{n_factors}}.
+#' @param x A dataframe or a statistical model.
+#' @param n Number of components to extract. If \code{n = "all"} =, then \code{n} is set as the number of variables minus 1 (\code{ncol(x)-1}). If \code{n = "auto"} (default) or \code{n = NULL}, the number of components is selected through \code{\link{n_factors}}. In \code{\link{parameters_reduction}}, can also be \code{"max"}, in which case it will select all the components that are maximally pseudo-loaded (i.e., correlated) by at least one variable.
 #' @param rotation If not "none", the PCA will be computed using the \pkg{psych} package. Possible options include \code{"varimax"}, \code{"quartimax"}, \code{"promax"}, \code{"oblimin"}, \code{"simplimax"}, and \code{"cluster"}. See \code{\link[psych]{fa}} for details.
 #' @param sort Sort the loadings.
-#' @param threshold A value between 0 and 1 indicates which (absolute) values from the loadings should be removed. Can also be "max", in which case it will only display the maximum loading per veriable (the most simple structure).
+#' @param threshold A value between 0 and 1 indicates which (absolute) values from the loadings should be removed. An integer higher than 1 indicates the n strongest loadings to retain. Can also be "max", in which case it will only display the maximum loading per variable (the most simple structure).
 #' @param standardize A logical value indicating whether the variables should be standardized (centred and scaled) to have unit variance before the analysis takes place (in general, such scaling is advisable).
 #' @param ... Arguments passed to or from other methods.
 #'
@@ -22,13 +22,14 @@
 #'
 #' principal_components(mtcars[, 1:7], n = "all", threshold = 0.2)
 #' principal_components(mtcars[, 1:7], n = 2, rotation = "oblimin", threshold = "max", sort = TRUE)
+#' principal_components(mtcars[, 1:7], n = 2, threshold = 2, sort = TRUE)
 #'
 #' pca <- principal_components(mtcars[, 1:5], n = 2)
 #' summary(pca)
 #' predict(pca)
 #' \donttest{
 #' # Automated number of components
-#' principal_components(mtcars[, 1:4])
+#' principal_components(mtcars[, 1:4], n = "auto")
 #' }
 #'
 #' @return A data.frame of loadings.
@@ -37,22 +38,19 @@
 #' }
 #' @importFrom stats prcomp
 #' @export
-principal_components <- function(x, n = NULL, rotation = "none", sort = FALSE, threshold = NULL, standardize = TRUE, ...) {
+principal_components <- function(x, n = "auto", rotation = "none", sort = FALSE, threshold = NULL, standardize = TRUE, ...) {
   UseMethod("principal_components")
 }
 
-#' @rdname principal_components
-#' @export
-PCA <- principal_components
 
 
 #' @importFrom stats prcomp na.omit
 #' @export
-principal_components.data.frame <- function(x, n = NULL, rotation = "none", sort = FALSE, threshold = NULL, standardize = TRUE, ...) {
+principal_components.data.frame <- function(x, n = "auto", rotation = "none", sort = FALSE, threshold = NULL, standardize = TRUE, ...) {
 
   # Standardize
   if (standardize) {
-    x <- standardize(x, ...)
+    x <- standardize(x, verbose = FALSE, ...)
   }
 
   # PCA
@@ -60,14 +58,9 @@ principal_components.data.frame <- function(x, n = NULL, rotation = "none", sort
 
 
   # N factors
-  if (is.null(n)) {
-    n <- as.numeric(n_factors(x, type = "PCA", rotation = rotation, ...))
-  } else if (n == "all") {
-    n <- length(model$sdev)
-  } else if (n > length(model$sdev)) {
-    n <- length(model$sdev)
-  }
+  n <- .get_n_factors(x, n = n, type = "PCA", rotation = rotation)
 
+  # Rotation
   if (rotation != "none") {
     return(.pca_rotate(x, n, rotation = rotation, sort = sort, threshold = threshold, ...))
   }
@@ -80,12 +73,13 @@ principal_components.data.frame <- function(x, n = NULL, rotation = "none", sort
 
   # Summary (cumulative variance etc.)
   eigenvalues <- model$sdev^2
-  data_summary <- data_frame(
+  data_summary <- .data_frame(
     Component = sprintf("PC%i", seq_len(length(model$sdev))),
     Eigenvalues = eigenvalues,
     Variance = eigenvalues / sum(eigenvalues),
     Variance_Cumulative = cumsum(eigenvalues / sum(eigenvalues))
   )
+  data_summary$Variance_Proportion <- data_summary$Variance / sum(data_summary$Variance)
 
   model$sdev <- model$sdev[1:n]
   model$rotation <- model$rotation[, 1:n, drop = FALSE]
@@ -116,7 +110,7 @@ principal_components.data.frame <- function(x, n = NULL, rotation = "none", sort
   attr(loadings, "model") <- model
   attr(loadings, "rotation") <- "none"
   attr(loadings, "scores") <- model$x
-  # attr(loadings, "standardize") <- standardize
+  attr(loadings, "standardize") <- standardize
   attr(loadings, "additional_arguments") <- list(...)
   attr(loadings, "n") <- n
   attr(loadings, "type") <- "prcomp"
@@ -129,7 +123,7 @@ principal_components.data.frame <- function(x, n = NULL, rotation = "none", sort
 
   # Replace by NA all cells below threshold
   if (!is.null(threshold)) {
-    loadings <- .filer_loadings(loadings, threshold = threshold)
+    loadings <- .filter_loadings(loadings, threshold = threshold)
   }
 
   # Add some more attributes
@@ -145,6 +139,18 @@ principal_components.data.frame <- function(x, n = NULL, rotation = "none", sort
 
 
 
+#' @keywords internal
+.get_n_factors <- function(x, n = NULL, type = "PCA", rotation = "PCA", ...) {
+  # N factors
+  if (is.null(n) || n == "auto") {
+    n <- as.numeric(n_factors(x, type = type, rotation = rotation, ...))
+  } else if (n == "all") {
+    n <- ncol(x) - 1
+  } else if (n >= ncol(x)) {
+    n <- ncol(x) - 1
+  }
+  n
+}
 
 
 

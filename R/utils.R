@@ -1,6 +1,6 @@
 #' help-functions
 #' @keywords internal
-data_frame <- function(...) {
+.data_frame <- function(...) {
   x <- data.frame(..., stringsAsFactors = FALSE)
   rownames(x) <- NULL
   x
@@ -104,4 +104,56 @@ data_frame <- function(...) {
   if (is.numeric(x)) out <- as.numeric(out)
 
   out
+}
+
+
+
+# remove NULL elements from lists
+.compact_list <- function(x) x[!sapply(x, function(i) length(i) == 0 || is.null(i) || any(i == "NULL"))]
+
+
+
+# remove empty string from character
+.compact_character <- function(x) x[!sapply(x, function(i) nchar(i) == 0 || is.null(i) || any(i == "NULL"))]
+
+
+.rename_values <- function(x, old, new) {
+  x[x %in% old] <- new
+  x
+}
+
+
+# for models with zero-inflation component, return
+# required component of model-summary
+.filter_component <- function(dat, component) {
+  switch(
+    component,
+    "conditional" = dat[dat$Component == "conditional", ],
+    "zi" = ,
+    "zero_inflated" = dat[dat$Component == "zero_inflated", ],
+    dat
+  )
+}
+
+
+
+# Find log-terms inside model formula, and return "clean" term names
+#' @importFrom insight find_terms
+.log_terms <- function(model) {
+  x <- insight::find_terms(model, flatten = TRUE)
+  gsub("^log\\((.*)\\)", "\\1", x[grepl("^log\\((.*)\\)", x)])
+}
+
+
+# capitalize first character in string
+.capitalize <- function(x) {
+  capped <- grep("^[A-Z]", x, invert = TRUE)
+  substr(x[capped], 1, 1) <- toupper(substr(x[capped], 1, 1))
+  x
+}
+
+
+
+.safe_deparse <- function(string) {
+  paste0(sapply(deparse(string, width.cutoff = 500), trimws, simplify = TRUE), collapse = " ")
 }

@@ -1,13 +1,14 @@
-#' Format PCA/FA from the psych package
+#' Structural Models (PCA, EFA, ...)
 #'
-#' Format PCA/FA objects from the psych package (Revelle, 2016).
+#' Format structural models from the \pkg{psych} or \pkg{FactoMineR} packages.
 #'
-#' @param model PCA or FA created by the \code{psych::principal} or \code{psych::fa} functions.
+#' @param model PCA or FA created by the \pkg{psych} or \pkg{FactoMineR} packages (e.g. through \code{psych::principal} or \code{psych::fa}).
 #' @inheritParams principal_components
 #' @param labels A character vector containing labels to be added to the loadings data. Usually, the question related to the item.
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @details
+#'  For the structural models obtained with \pkg{psych}, the following indices are present:
 #'  \itemize{
 #'    \item \strong{Complexity} (Hoffman's, 1978; Pettersson and Turkheimer, 2010) represents the number of latent components needed to account for the observed variables. Whereas a perfect simple structure solution has a complexity of 1 in that each item would only load on one factor, a solution with evenly distributed items has a complexity greater than 1.
 #'    \item \strong{Uniqueness} represents the variance that is 'unique' to the variable and not shared with other variables. It is equal to \code{1 – communality} (variance that is shared with other variables). A uniqueness of \code{0.20} suggests that 20\% or that variable's variance is not shared with other variables in the overall factor model. The greater 'uniqueness' the lower the relevance of the variable in the factor model.
@@ -17,11 +18,9 @@
 #' library(parameters)
 #' library(psych)
 #'
-#' \donttest{
 #' # Principal Component Analysis (PCA) ---------
 #' pca <- psych::principal(attitude)
 #' model_parameters(pca)
-#' }
 #'
 #' pca <- psych::principal(attitude, nfactors = 3, rotate = "none")
 #' model_parameters(pca, sort = TRUE, threshold = 0.2)
@@ -33,6 +32,16 @@
 #' model_parameters(efa, threshold = "max", sort = TRUE, labels = as.character(1:ncol(attitude)))
 #' }
 #'
+#'
+#' # FactoMineR ---------
+#' library(FactoMineR)
+#'
+#' model <- FactoMineR::PCA(iris[, 1:4], ncp = 2)
+#' model_parameters(model)
+#' attributes(model_parameters(model))$scores
+#'
+#' model <- FactoMineR::FAMD(iris, ncp = 2)
+#' model_parameters(model)
 #' @return A data.frame of loadings.
 #' @references \itemize{
 #'   \item Pettersson, E., \& Turkheimer, E. (2010). Item selection, evaluation, and simple structure in personality data. Journal of research in personality, 44(4), 407-420.
@@ -41,12 +50,12 @@
 #' @export
 model_parameters.principal <- function(model, sort = FALSE, threshold = NULL, labels = NULL, ...) {
 
-  # PCA
+  # n
   n <- model$factors
 
   # Get summary
   variance <- as.data.frame(unclass(model$Vaccounted))
-  data_summary <- data_frame(
+  data_summary <- .data_frame(
     Component = names(variance),
     Eigenvalues = model$values[1:n],
     Variance = as.numeric(variance["Proportion Var", ])
@@ -60,6 +69,7 @@ model_parameters.principal <- function(model, sort = FALSE, threshold = NULL, la
       data_summary$Variance_Cumulative <- NA
     }
   }
+  data_summary$Variance_Proportion <- data_summary$Variance / sum(data_summary$Variance)
 
   # Get loadings
   loadings <- as.data.frame(unclass(model$loadings))
@@ -69,11 +79,11 @@ model_parameters.principal <- function(model, sort = FALSE, threshold = NULL, la
   row.names(loadings) <- NULL
 
   # Labels
-  if(!is.null(labels)){
+  if (!is.null(labels)) {
     loadings$Label <- labels
     loadings <- loadings[c("Variable", "Label", names(loadings)[!names(loadings) %in% c("Variable", "Label")])]
     loading_cols <- 3:(n + 2)
-  } else{
+  } else {
     loading_cols <- 2:(n + 1)
   }
 
@@ -98,14 +108,18 @@ model_parameters.principal <- function(model, sort = FALSE, threshold = NULL, la
 
   # Replace by NA all cells below threshold
   if (!is.null(threshold)) {
-    loadings <- .filer_loadings(loadings, threshold = threshold)
+    loadings <- .filter_loadings(loadings, threshold = threshold)
   }
 
   # Add some more attributes
-  attr(loadings, "loadings_long") <- .long_loadings(loadings, threshold = threshold)
+  attr(loadings, "loadings_long") <- .long_loadings(loadings, threshold = threshold, loadings_columns = loading_cols)
 
   # add class-attribute for printing
-  class(loadings) <- c("parameters_efa", class(loadings))
+  if (model$fn == "principal") {
+    class(loadings) <- c("parameters_pca", class(loadings))
+  } else {
+    class(loadings) <- c("parameters_efa", class(loadings))
+  }
 
   loadings
 }

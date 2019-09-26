@@ -5,14 +5,16 @@ test_that("principal_components", {
   set.seed(333)
 
   x <- principal_components(mtcars[, 1:7], n = "all", threshold = 0.2)
-  testthat::expect_equal(c(ncol(x), nrow(x)), c(9, 7))
+  testthat::expect_equal(c(ncol(x), nrow(x)), c(8, 7))
   x <- principal_components(mtcars[, 1:7], n = 2, rotation = "oblimin", threshold = "max", sort = TRUE)
   testthat::expect_equal(c(ncol(x), nrow(x)), c(5, 7))
 
   pca <- principal_components(mtcars[, 1:5], n = 2)
   testthat::expect_equal(c(ncol(pca), nrow(pca)), c(4, 5))
   x <- summary(pca)
-  testthat::expect_equal(c(ncol(x), nrow(x)), c(3, 5))
+  testthat::expect_equal(c(ncol(x), nrow(x)), c(3, 4))
+  x <- model_parameters(pca)
+  testthat::expect_equal(c(ncol(x), nrow(x)), c(5, 2))
   x <- predict(pca)
   testthat::expect_equal(c(ncol(x), nrow(x)), c(2, 32))
 })
@@ -45,6 +47,19 @@ test_that("efa-cfa", {
   params <- parameters::model_parameters(x)
   testthat::expect_equal(c(nrow(params), ncol(params)), c(2, 6))
 })
+
+
+
+test_that("FactoMineR", {
+  library(FactoMineR)
+
+  x <- model_parameters(FactoMineR::PCA(mtcars, ncp = 3), threshold = 0.2, sort = TRUE)
+  testthat::expect_equal(c(ncol(x), nrow(x)), c(5, 11))
+
+  x <- model_parameters(FactoMineR::FAMD(iris, ncp = 3), threshold = 0.2, sort = TRUE)
+  testthat::expect_equal(c(ncol(x), nrow(x)), c(5, 5))
+})
+
 
 
 test_that("BayesFM", {

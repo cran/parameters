@@ -6,24 +6,32 @@
 #' @inheritParams model_bootstrap
 #' @inheritParams bayestestR::describe_posterior
 #'
+#' @return Bootstrapped parameters.
+#'
+#' @references Davison, A. C., & Hinkley, D. V. (1997). Bootstrap methods and their application (Vol. 1). Cambridge university press.
+#'
+#' @seealso \code{\link{model_bootstrap}}, \code{\link{parameters_simulate}}, \code{\link{model_simulate}}
+#'
 #' @examples
 #' library(parameters)
 #'
 #' model <- lm(Sepal.Length ~ Species * Petal.Width, data = iris)
 #' parameters_bootstrap(model)
-#' @return Bootstrapped parameters.
-#'
-#' @references Davison, A. C., & Hinkley, D. V. (1997). Bootstrap methods and their application (Vol. 1). Cambridge university press.
-#'
 #' @importFrom tools toTitleCase
 #' @export
 parameters_bootstrap <- function(model, iterations = 1000, centrality = "median", ci = .95, ci_method = "quantile", test = "p-value", ...) {
   data <- model_bootstrap(model, iterations = iterations, ...)
+  .summary_bootstrap(data = data, test = test, centrality = centrality, ci = ci, ci_method = ci_method, ...)
+}
 
+
+
+#' @keywords internal
+.summary_bootstrap <- function(data, test, centrality, ci, ci_method, ...) {
   # Is the p-value requested?
-  if ("p-value" %in% c(test) | "p" %in% c(test) | "pval" %in% c(test)) {
+  if (any(test %in% c("p-value", "p", "pval"))) {
     p_value <- TRUE
-    test <- c(test)[!c(test) %in% c("p-value", "p", "pval")]
+    test <- setdiff(test, c("p-value", "p", "pval"))
     if (length(test) == 0) test <- NULL
   } else {
     p_value <- FALSE
@@ -43,11 +51,13 @@ parameters_bootstrap <- function(model, iterations = 1000, centrality = "median"
 
   # p-value
   if (p_value) {
-    col_order <- parameters$Parameter
+    parameters$.col_order <- 1:nrow(parameters)
     p <- p_value(data, ...)
     parameters <- merge(parameters, p, all = TRUE)
-    parameters <- parameters[match(col_order, parameters$Parameter), ]
+    parameters <- parameters[order(parameters$.col_order), ]
+    parameters$.col_order <- NULL
   }
 
+  rownames(parameters) <- NULL
   parameters
 }

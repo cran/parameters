@@ -35,6 +35,8 @@
 #' @inheritParams model_parameters.lm
 #' @inheritParams bayestestR::describe_posterior
 #'
+#' @seealso \code{\link[parameters:standardize_names]{standardize_names()}} to rename
+#'   columns into a consistent, standardized naming scheme.
 #'
 #' @examples
 #' \donttest{
@@ -56,45 +58,5 @@ model_parameters.stanreg <- .model_parameters_bayesian
 #' @export
 model_parameters.brmsfit <- model_parameters.stanreg
 
-
-
-
-
-
-
-
-
-
-
-#' @importFrom stats sd setNames
-#' @keywords internal
-.extract_parameters_bayesian <- function(model, centrality = "median", dispersion = FALSE, ci = .89, ci_method = "hdi", test = c("pd", "rope"), rope_range = "default", rope_ci = 1.0, bf_prior = NULL, diagnostic = c("ESS", "Rhat"), priors = TRUE, iterations = 1000, ...) {
-
-  # Bayesian Models
-  if (insight::model_info(model)$is_bayesian) {
-    parameters <- bayestestR::describe_posterior(model, centrality = centrality, dispersion = dispersion, ci = ci, ci_method = ci_method, test = test, rope_range = rope_range, rope_ci = rope_ci, bf_prior = bf_prior, diagnostic = diagnostic, priors = priors, ...)
-
-    # Bootstrapped Models
-  } else {
-    data <- model_bootstrap(model, iterations = iterations)
-    parameters <- bayestestR::describe_posterior(data, centrality = centrality, dispersion = dispersion, ci = ci, ci_method = ci_method, test = test, rope_range = rope_range, rope_ci = rope_ci, bf_prior = bf_prior, ...)
-  }
-
-  if (length(ci) > 1) {
-    parameters <- bayestestR::reshape_ci(parameters)
-  }
-
-  # Remove unecessary columns
-  if ("CI" %in% names(parameters) && length(unique(parameters$CI)) == 1) {
-    parameters$CI <- NULL
-  }
-  if ("ROPE_CI" %in% names(parameters) && length(unique(parameters$ROPE_CI)) == 1) {
-    parameters$ROPE_CI <- NULL
-  }
-  if ("ROPE_low" %in% names(parameters) & "ROPE_high" %in% names(parameters)) {
-    parameters$ROPE_low <- NULL
-    parameters$ROPE_high <- NULL
-  }
-
-  parameters
-}
+#' @export
+model_parameters.MCMCglmm <- model_parameters.stanreg

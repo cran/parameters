@@ -6,21 +6,21 @@
 #' @param type Can be \code{"FA"} or \code{"PCA"}, depending on what you want to do.
 #' @param rotation Only used for VSS (Very Simple Structure criterion, see \code{\link[psych]{VSS}}. The rotation to apply. Can be \code{"none"}, \code{"varimax"}, \code{"quartimax"}, \code{"bentlerT"}, \code{"equamax"}, \code{"varimin"}, \code{"geominT"} and \code{"bifactor"} for orthogonal rotations, and \code{"promax"}, \code{"oblimin"}, \code{"simplimax"}, \code{"bentlerQ"}, \code{"geominQ"}, \code{"biquartimin"} and \code{"cluster"} for oblique transformations.
 #' @param algorithm Factoring method used by VSS. Can be \code{"pa"} for Principal Axis Factor Analysis, \code{"minres"} for minimum residual (OLS) factoring, \code{"mle"} for Maximum Likelihood FA and \code{"pc"} for Principal Components. \code{"default"} will select \code{"minres"} if \code{type = "FA"} and \code{"pc"} if \code{type = "PCA"}.
-#' @param package Can be \code{"all"} or a vector containing \code{"nFactors"}, \code{"EGAnet"} and \code{"psych"}. These are the packages from which methods are used.
+#' @param package These are the packages from which methods are used. Can be \code{"all"} or a vector containing \code{"nFactors"}, \code{"psych"} and \code{"EGAnet"}. However, \code{"EGAnet"} can be very slow for bigger datasets. Thus, by default, \code{c("nFactors", "psych")} are selected.
 #' @param safe If \code{TRUE}, will run all the procedures in try blocks, and will only return those that work and silently skip the ones that may fail.
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @examples
 #' library(parameters)
 #'
-#' n_factors(mtcars, type = "PCA", package = "nFactors")
+#' n_factors(mtcars, type = "PCA")
 #'
-#' result <- n_factors(mtcars[, 1:5], type = "FA", package = "psych")
+#' result <- n_factors(mtcars[, 1:5], type = "FA")
 #' as.numeric(result)
 #' summary(result)
 #' \donttest{
-#' n_factors(mtcars, type = "PCA")
-#' n_factors(mtcars, type = "FA", algorithm = "mle")
+#' n_factors(mtcars, type = "PCA", package = "all")
+#' n_factors(mtcars, type = "FA", algorithm = "mle", package = "all")
 #' }
 #'
 #' @return A data.frame.
@@ -39,8 +39,8 @@
 #' }
 #' @importFrom stats cor
 #' @export
-n_factors <- function(x, type = "FA", rotation = "varimax", algorithm = "default", package = "all", safe = TRUE, ...) {
-  if (package == "all") {
+n_factors <- function(x, type = "FA", rotation = "varimax", algorithm = "default", package = c("nFactors", "psych"), safe = TRUE, ...) {
+  if (all(package == "all")) {
     package <- c("nFactors", "EGAnet", "psych")
   }
 
@@ -191,12 +191,12 @@ n_factors <- function(x, type = "FA", rotation = "varimax", algorithm = "default
 
   out <- out[order(out$n_Factors), ] # Arrange by n factors
   row.names(out) <- NULL # Reset row index
-  class(out) <- c("n_factors", class(out))
+  class(out) <- c("n_factors", "see_n_factors", class(out))
 
   # Add summary
-  by_factors <- data_frame(
-    n_Factors = as.factor(unique(out$n_Factors)),
-    n_Methods = as.vector(by(out, as.factor(out$n_Factors), function(out) n <- nrow(out)))
+  by_factors <- .data_frame(
+    n_Factors = as.numeric(unique(out$n_Factors)),
+    n_Methods = as.numeric(by(out, as.factor(out$n_Factors), function(out) n <- nrow(out)))
   )
 
   attr(out, "by_factors") <- by_factors
@@ -216,6 +216,7 @@ n_factors <- function(x, type = "FA", rotation = "varimax", algorithm = "default
 
 
 
+#' @importFrom insight print_color
 #' @export
 print.n_factors <- function(x, ...) {
   results <- attributes(x)$by_factors
@@ -326,7 +327,7 @@ as.double.n_factors <- as.numeric.n_factors
 }
 
 
-#' Non Graphical Cattel's Scree Test
+#' Non Graphical Cattell's Scree Test
 #' @keywords internal
 .n_factors_scree <- function(eigen_values = NULL, model = "factors") {
   nfac <- unlist(nFactors::nScree(x = eigen_values, cor = TRUE, model = model)$Components)
@@ -426,32 +427,12 @@ as.double.n_factors <- as.numeric.n_factors
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # Re-implementation of nBentler in nFactors ------------------------
 
+#' @importFrom stats lm
 #' @keywords internal
 .nBentler <-
-  function(x, N, model = model, log = TRUE, alpha = 0.05, cor = TRUE, details = TRUE,
-             minPar = c(min(lambda) - abs(min(lambda)) + .001, 0.001),
-             maxPar = c(max(lambda), lm(lambda ~ I(length(lambda):1))$coef[2]),
-             ...) {
+  function(x, N, model = model, log = TRUE, alpha = 0.05, cor = TRUE, details = TRUE, ...) {
     if (!requireNamespace("nFactors", quietly = TRUE)) {
       stop("Package 'nFactors' required for this function to work. Please install it by running `install.packages('lattice')`.")
     }
@@ -460,6 +441,10 @@ as.double.n_factors <- as.numeric.n_factors
     if (length(which(lambda < 0)) > 0) {
       stop("These indices are only valid with a principal component solution. So, only positive eigenvalues are permitted.")
     }
+
+    minPar <- c(min(lambda) - abs(min(lambda)) + .001, 0.001)
+    maxPar <- c(max(lambda), stats::lm(lambda ~ I(length(lambda):1))$coef[2])
+
 
     n <- N
     significance <- alpha

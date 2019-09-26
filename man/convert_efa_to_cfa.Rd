@@ -18,19 +18,18 @@ efa_to_cfa(model, ...)
 
 \item{...}{Arguments passed to or from other methods.}
 
-\item{threshold}{A value between 0 and 1 indicates which (absolute) values from the loadings should be removed. Can also be "max", in which case it will only display the maximum loading per veriable (the most simple structure).}
+\item{threshold}{A value between 0 and 1 indicates which (absolute) values from the loadings should be removed. An integer higher than 1 indicates the n strongest loadings to retain. Can also be "max", in which case it will only display the maximum loading per variable (the most simple structure).}
 
 \item{names}{Vector containing dimension names.}
 }
 \value{
 Converted index.
-
-Converted index.
 }
 \description{
-Enables a conversion betwen Exploratory Factor Analysis (EFA) and Confirmatory Factor Analysis (CFA) \code{lavaan}-ready structure.
+Enables a conversion between Exploratory Factor Analysis (EFA) and Confirmatory Factor Analysis (CFA) \code{lavaan}-ready structure.
 }
 \examples{
+\donttest{
 library(psych)
 library(lavaan)
 library(parameters)
@@ -44,5 +43,6 @@ anova(
   lavaan::cfa(model1, data = attitude),
   lavaan::cfa(model2, data = attitude)
 )
+}
 
 }

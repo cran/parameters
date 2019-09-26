@@ -2,9 +2,12 @@
 % Please edit documentation in R/model_parameters.R
 \name{model_parameters}
 \alias{model_parameters}
+\alias{parameters}
 \title{Model Parameters}
 \usage{
 model_parameters(model, ...)
+
+parameters(model, ...)
 }
 \arguments{
 \item{model}{Statistical Model.}
@@ -12,17 +15,24 @@ model_parameters(model, ...)
 \item{...}{Arguments passed to or from other methods.}
 }
 \value{
-A data.frame of indices related to the model's parameters.
+A data frame of indices related to the model's parameters.
 }
 \description{
 Compute and extract model parameters. See the documentation for your object's class:
 \itemize{
  \item{\link[=model_parameters.htest]{Correlations and t-tests}}
  \item{\link[=model_parameters.aov]{ANOVAs}}
- \item{\link[=model_parameters.lm]{Frequentist regressions} (\code{lm}, \code{glm})}
- \item{\link[=model_parameters.merMod]{Frequentist mixed models} (\code{lme4})}
- \item{\link[=model_parameters.stanreg]{Bayesian models} (\code{rstanarm}, \code{brms})}
- \item{\link[=model_parameters.principal]{PCA and FA} (\code{psych})}
- \item{\link[=model_parameters.lavaan]{CFA and SEM} (\code{lavaan})}
+ \item{\link[=model_parameters.lm]{Regression models} (\code{lm}, \code{glm}, \pkg{survey}, ...)}
+ \item{\link[=model_parameters.gam]{Additive models} (\code{gam}, \code{gamm}, ...)}
+ \item{\link[=model_parameters.zeroinfl]{Zero-inflated models} (\code{hurdle}, \code{zeroinfl}, \code{zerocount})}
+ \item{\link[=model_parameters.merMod]{Mixed models} (\pkg{lme4}, \pkg{nlme}, \pkg{glmmTMB}, ...)}
+ \item{\link[=model_parameters.BFBayesFactor]{Bayesian tests} (\pkg{BayesFactor})}
+ \item{\link[=model_parameters.stanreg]{Bayesian models} (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm})}
+ \item{\link[=model_parameters.principal]{PCA and FA} (\pkg{psych})}
+ \item{\link[=model_parameters.lavaan]{CFA and SEM} (\pkg{lavaan})}
  }
+}
+\seealso{
+\code{\link[=standardize_names]{standardize_names()}} to rename
+  columns into a consistent, standardized naming scheme.
 }

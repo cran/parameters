@@ -5,6 +5,10 @@
 #' @param model A statistical model.
 #' @param dof Degrees of Freedom.
 #'
+#' @details \code{dof_kenward()} and \code{se_kenward()} are small helper-functions
+#' to calculate approximated degrees of freedom and standard errors for model
+#' parameters, based on the Kenward-Roger (1997) approach.
+#'
 #' @examples
 #' \donttest{
 #' library(lme4)
@@ -30,7 +34,7 @@ p_value_kenward.lmerMod <- function(model, dof = NULL) {
   params <- as.data.frame(stats::coef(summary(model)))
 
   if ("t value" %in% names(params)) {
-    p <- 2 * stats::pt(abs(params[, "t value"]), dof, lower.tail = FALSE)
+    p <- 2 * stats::pt(abs(params[, "t value"]), df = dof, lower.tail = FALSE)
   } else {
     stop("Couldn't find any suitable statistic (t value) for Kenward-Roger approximation.")
   }
@@ -59,5 +63,30 @@ dof_kenward <- function(model) {
     stop("Package `pbkrtest` required for Kenward-Rogers approximation.", call. = FALSE)
   }
 
-  pbkrtest::get_ddf_Lb(model, insight::get_parameters(model, effects = "fixed")$estimate)
+  L <- as.data.frame(diag(rep(1, nrow(insight::get_parameters(model, effects = "fixed")))))
+  ## TODO change to "$Estimate" once fixed in insight
+  sapply(L, pbkrtest::get_ddf_Lb, object = model)
 }
+
+
+#' @rdname p_value_kenward
+#' @export
+se_kenward <- function(model) {
+  if (!requireNamespace("pbkrtest", quietly = TRUE)) {
+    stop("Package `pbkrtest` required for Kenward-Rogers approximation.", call. = FALSE)
+  }
+
+  vcov_adj <- pbkrtest::vcovAdj(model)
+
+  params <- insight::get_parameters(model, effects = "fixed")
+  le <- nrow(params)
+  Lmat <- diag(rep(1, le))
+
+  se <- sapply(1:le, function(i) sqrt(.qform(Lmat[i, ], as.matrix(vcov_adj))))
+  names(se) <- params[[1]]
+
+  se
+}
+
+
+.qform <- function(x, A) sum(x * (A %*% x))

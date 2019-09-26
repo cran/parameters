@@ -42,10 +42,22 @@
 parameters_type <- function(model, ...) {
 
   # Get info
-  params <- data.frame(
-    Parameter = insight::find_parameters(model)$conditional,
-    stringsAsFactors = FALSE
+  params <- .data_frame(
+    Parameter = c(
+      insight::find_parameters(model, effects = "fixed", flatten = TRUE)
+    )
   )
+
+  if (inherits(model, "polr")) {
+    params$Parameter <- gsub("Intercept: ", "", params$Parameter, fixed = TRUE)
+  }
+
+  ## TODO can we get rid of the count_ / zero_ prefix here?
+
+  # if (inherits(model, c("zeroinfl", "hurdle", "zerocount"))) {
+  #   params$Parameter <- gsub("^(count_|zero_)", "", params$Parameter)
+  # }
+
 
   data <- insight::get_data(model)
   reference <- .list_factors_numerics(data)
@@ -150,6 +162,13 @@ parameters_type <- function(model, ...) {
     degree <- vars[[2]]
     degree <- substr(vars[[2]], nchar(vars[[2]]), nchar(vars[[2]]))
     return(c(type, name, var, degree, NA))
+
+    # Smooth
+  } else if (grepl("^s\\(", name)) {
+    return(c("smooth", name, NA, NA, NA))
+    # Smooth
+  } else if (grepl("^smooth_", name)) {
+    return(c("smooth", gsub("^smooth_(.*)\\[(.*)\\]", "\\2", name), NA, NA, NA))
   } else {
     return(c("unknown", NA, NA, NA, NA))
   }

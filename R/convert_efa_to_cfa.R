@@ -1,13 +1,13 @@
 #' Conversion between EFA results and CFA structure
 #'
-#' Enables a conversion betwen Exploratory Factor Analysis (EFA) and Confirmatory Factor Analysis (CFA) \code{lavaan}-ready structure.
+#' Enables a conversion between Exploratory Factor Analysis (EFA) and Confirmatory Factor Analysis (CFA) \code{lavaan}-ready structure.
 #'
 #' @param model An EFA model (e.g., a \code{psych::fa} object).
 #' @inheritParams principal_components
 #' @param names Vector containing dimension names.
 #'
-#' @return Converted index.
 #' @examples
+#' \donttest{
 #' library(psych)
 #' library(lavaan)
 #' library(parameters)
@@ -21,6 +21,7 @@
 #'   lavaan::cfa(model1, data = attitude),
 #'   lavaan::cfa(model2, data = attitude)
 #' )
+#' }
 #'
 #' @return Converted index.
 #' @export
@@ -58,12 +59,12 @@ efa_to_cfa <- convert_efa_to_cfa
   loadings <- attributes(loadings)$loadings_long
 
   # Get dimension names
-  if(is.null(names)){
+  if (is.null(names)) {
     names <- unique(loadings$Component)
   }
 
   # Catch error
-  if(length(names) != length(unique(loadings$Component))){
+  if (length(names) != length(unique(loadings$Component))) {
     stop(paste("The `names` vector must be of same length as the number of dimensions, in this case", length(unique(loadings$Component))))
   }
 

@@ -23,6 +23,7 @@
 #' model <- lm(Sepal.Length ~ Species + poly(Sepal.Width, 2, raw = TRUE), data = iris)
 #' format_parameters(model)
 #' @return The formatted parameter names.
+#' @importFrom utils tail head
 #' @export
 format_parameters <- function(model) {
   UseMethod("format_parameters")
@@ -30,9 +31,17 @@ format_parameters <- function(model) {
 
 #' @export
 format_parameters.default <- function(model) {
-  types <- parameters_type(model)
+  names <- insight::find_parameters(model, flatten = TRUE)
+  info <- insight::model_info(model)
 
-  names <- types$Parameter
+  # hurdle- and zeroinfl-models
+  if (info$is_zero_inflated | info$is_hurdle) {
+    names <- gsub("count_", "", names)
+    names <- gsub("zero_", "", names)
+  }
+
+  # Type-specific changes
+  types <- parameters_type(model)
   for (i in 1:nrow(types)) {
 
     # Factors
@@ -43,6 +52,12 @@ format_parameters.default <- function(model) {
     # Polynomials
     if (types$Type[i] %in% c("poly", "poly_raw")) {
       names[i] <- .format_poly(name = names[i], variable = types$Variable[i], type = types$Type[i], degree = types$Level[i])
+    }
+
+    # Smooth
+    if (types$Type[i] == "smooth") {
+      names[i] <- gsub("^smooth_(.*)\\[(.*)\\]", "\\2", names[i])
+      names[i] <- gsub("s(", "Smooth term (", names[i], fixed = TRUE)
     }
 
     # Interactions
@@ -60,7 +75,7 @@ format_parameters.default <- function(model) {
         }
       }
       if (length(components) > 2) {
-        names[i] <- paste0("(", paste0(head(components, -1), collapse = " * "), ")", sep, tail(components, 1))
+        names[i] <- paste0("(", paste0(utils::head(components, -1), collapse = " * "), ")", sep, utils::tail(components, 1))
       } else {
         names[i] <- paste0(components, collapse = sep)
       }

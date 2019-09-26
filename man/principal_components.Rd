@@ -2,25 +2,21 @@
 % Please edit documentation in R/principal_components.R
 \name{principal_components}
 \alias{principal_components}
-\alias{PCA}
 \title{Principal Component Analysis (PCA)}
 \usage{
-principal_components(x, n = NULL, rotation = "none", sort = FALSE,
+principal_components(x, n = "auto", rotation = "none", sort = FALSE,
   threshold = NULL, standardize = TRUE, ...)
-
-PCA(x, n = NULL, rotation = "none", sort = FALSE, threshold = NULL,
-  standardize = TRUE, ...)
 }
 \arguments{
-\item{x}{A dataframe.}
+\item{x}{A dataframe or a statistical model.}
 
-\item{n}{Number of components to extract. If \code{n = NULL}, the number of components is selected through \code{\link{n_factors}}.}
+\item{n}{Number of components to extract. If \code{n = "all"} =, then \code{n} is set as the number of variables minus 1 (\code{ncol(x)-1}). If \code{n = "auto"} (default) or \code{n = NULL}, the number of components is selected through \code{\link{n_factors}}. In \code{\link{parameters_reduction}}, can also be \code{"max"}, in which case it will select all the components that are maximally pseudo-loaded (i.e., correlated) by at least one variable.}
 
 \item{rotation}{If not "none", the PCA will be computed using the \pkg{psych} package. Possible options include \code{"varimax"}, \code{"quartimax"}, \code{"promax"}, \code{"oblimin"}, \code{"simplimax"}, and \code{"cluster"}. See \code{\link[psych]{fa}} for details.}
 
 \item{sort}{Sort the loadings.}
 
-\item{threshold}{A value between 0 and 1 indicates which (absolute) values from the loadings should be removed. Can also be "max", in which case it will only display the maximum loading per veriable (the most simple structure).}
+\item{threshold}{A value between 0 and 1 indicates which (absolute) values from the loadings should be removed. An integer higher than 1 indicates the n strongest loadings to retain. Can also be "max", in which case it will only display the maximum loading per variable (the most simple structure).}
 
 \item{standardize}{A logical value indicating whether the variables should be standardized (centred and scaled) to have unit variance before the analysis takes place (in general, such scaling is advisable).}
 
@@ -30,7 +26,7 @@ PCA(x, n = NULL, rotation = "none", sort = FALSE, threshold = NULL,
 A data.frame of loadings.
 }
 \description{
-This function performs a principal component analysis (PCA) and returns the loadings (of the unrotated matrix) as dataframe.
+This function performs a principal component analysis (PCA) and returns the loadings as a dataframe.
 }
 \details{
 \itemize{
@@ -45,13 +41,14 @@ library(parameters)
 
 principal_components(mtcars[, 1:7], n = "all", threshold = 0.2)
 principal_components(mtcars[, 1:7], n = 2, rotation = "oblimin", threshold = "max", sort = TRUE)
+principal_components(mtcars[, 1:7], n = 2, threshold = 2, sort = TRUE)
 
 pca <- principal_components(mtcars[, 1:5], n = 2)
 summary(pca)
 predict(pca)
 \donttest{
 # Automated number of components
-principal_components(mtcars[, 1:4])
+principal_components(mtcars[, 1:4], n = "auto")
 }
 
 }

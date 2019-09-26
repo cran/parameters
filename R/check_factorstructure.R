@@ -45,7 +45,7 @@ check_factorstructure <- function(x, silent = FALSE, ...) {
 #'
 #' A value of 0 indicates that the sum of partial correlations is large relative to the sum correlations, indicating factor analysis is likely to be inappropriate. A KMO value close to 1 indicates that the sum of partial correlations is not large relative to the sum of correlations and so factor analysis should yield distinct and reliable factors.
 #'
-#' Kaiser (1975) suggested that KMO > .9 were marvelous, in the .80s, mertitourious, in the .70s, middling, in the .60s, medicore, in the 50s, miserable, and less than .5, unacceptable. Hair et al. (2006) suggest accepting a value > 0.5. Values between 0.5 and 0.7 are mediocre, and values between 0.7 and 0.8 are good.
+#' Kaiser (1975) suggested that KMO > .9 were marvelous, in the .80s, meritourious, in the .70s, middling, in the .60s, mediocre, in the 50s, miserable, and less than .5, unacceptable. Hair et al. (2006) suggest accepting a value > 0.5. Values between 0.5 and 0.7 are mediocre, and values between 0.7 and 0.8 are good.
 #'
 #'
 #' @inheritParams check_sphericity
@@ -64,13 +64,13 @@ check_factorstructure <- function(x, silent = FALSE, ...) {
 #'   \item Kaiser, H. F., \& Rice, J. (1974). Little jiffy, mark IV. Educational and psychological measurement, 34(1), 111-117.
 #'   \item Kaiser, H. F. (1974). An index of factorial simplicity. Psychometrika, 39(1), 31-36.
 #' }
-#' @importFrom stats cov2cor
+#' @importFrom stats cor cov2cor
 #' @export
 check_kmo <- function(x, silent = FALSE, ...) {
-  cormatrix <- cor(x, use = "pairwise.complete.obs", ...)
+  cormatrix <- stats::cor(x, use = "pairwise.complete.obs", ...)
   Q <- solve(cormatrix)
 
-  Q <- cov2cor(Q)
+  Q <- stats::cov2cor(Q)
   diag(Q) <- 0
   diag(cormatrix) <- 0
 
@@ -124,13 +124,13 @@ check_kmo <- function(x, silent = FALSE, ...) {
 #'   \item Bartlett, M. S. (1951). The effect of standardization on a Chi-square approximation in factor analysis. Biometrika, 38(3/4), 337-344.
 #' }
 #'
-#' @importFrom stats pchisq
+#' @importFrom stats pchisq cor
 #'
 #' @export
 check_sphericity <- function(x, silent = FALSE, ...) {
 
   # This could be improved using the correlation package to use different correlation methods
-  cormatrix <- cor(x, use = "pairwise.complete.obs", ...)
+  cormatrix <- stats::cor(x, use = "pairwise.complete.obs", ...)
 
   n <- nrow(x)
   p <- dim(cormatrix)[2]
@@ -138,15 +138,15 @@ check_sphericity <- function(x, silent = FALSE, ...) {
   detR <- det(cormatrix)
   statistic <- -log(detR) * (n - 1 - (2 * p + 5) / 6)
   df <- p * (p - 1) / 2
-  pval <- pchisq(statistic, df, lower.tail = FALSE)
+  pval <- stats::pchisq(statistic, df, lower.tail = FALSE)
 
   results <- list(chisq = statistic, p = pval, dof = df)
 
   if (!silent) {
     if (pval < 0.001) {
-      insight::print_color(sprintf("OK: Bartlett's test of sphericity suggests that there is sufficient significant correlation in the data for factor analaysis (Chisq(%i) = %.2f, p %s).", df, statistic, format_p(pval)), "green")
+      insight::print_color(sprintf("OK: Bartlett's test of sphericity suggests that there is sufficient significant correlation in the data for factor analaysis (Chisq(%i) = %.2f, %s).", df, statistic, format_p(pval)), "green")
     } else {
-      insight::print_color(sprintf("Warning: Bartlett's test of sphericity suggests that there is not enough significant correlation in the data for factor analaysis (Chisq(%i) = %.2f, p %s).", df, statistic, format_p(pval)), "red")
+      insight::print_color(sprintf("Warning: Bartlett's test of sphericity suggests that there is not enough significant correlation in the data for factor analaysis (Chisq(%i) = %.2f, %s).", df, statistic, format_p(pval)), "red")
     }
   }
 

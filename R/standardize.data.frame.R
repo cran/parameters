@@ -11,30 +11,36 @@ standardize.numeric <- function(x, robust = FALSE, method = "default", verbose =
 
   x <- stats::na.omit(x)
 
-  # Warning if only one value
-  if (length(unique(x)) == 1) {
-    if (is.null(names(x))) {
-      name <- deparse(substitute(x))
-    } else {
-      name <- names(x)
-    }
-    if (verbose) {
-      warning(paste0("Variable `", name, "` contains only one unique value and will not be standardized."))
-    }
+  # Sanity checks
+  check <- .check_standardize_numeric(x, name = NULL, verbose = verbose)
+  if (is.null(check)) {
     return(x)
   }
 
-  # Warning if logical vector
-  if (length(unique(x)) == 2 && !is.factor(x) && !is.character(x)) {
-    if (is.null(names(x))) {
-      name <- deparse(substitute(x))
-    } else {
-      name <- names(x)
-    }
-    if (verbose) {
-      warning(paste0("Variable `", name, "` contains only two different values. Consider converting it to a factor."))
-    }
-  }
+  # # Warning if only one value
+  # if (length(unique(x)) == 1) {
+  #   if (is.null(names(x))) {
+  #     name <- deparse(substitute(x))
+  #   } else {
+  #     name <- names(x)
+  #   }
+  #   if (verbose) {
+  #     warning(paste0("This Variable contains only one unique value and will not be standardized."))
+  #   }
+  #   return(x)
+  # }
+  #
+  # # Warning if logical vector
+  # if (length(unique(x)) == 2 && !is.factor(x) && !is.character(x)) {
+  #   if (is.null(names(x))) {
+  #     name <- deparse(substitute(x))
+  #   } else {
+  #     name <- names(x)
+  #   }
+  #   if (verbose) {
+  #     warning(paste0("Variable `", name, "` contains only two different values. Consider converting it to a factor."))
+  #   }
+  # }
 
   if (is.factor(x) || is.character(x)) {
     x <- .factor_to_numeric(x)
@@ -61,7 +67,32 @@ standardize.numeric <- function(x, robust = FALSE, method = "default", verbose =
 
 
 
+#' @keywords internal
+.check_standardize_numeric <- function(x, name = NULL, verbose = TRUE) {
+  # Warning if only one value
+  if (length(unique(x)) == 1) {
+    if (verbose) {
+      if (is.null(name)) {
+        message("The variable contains only one unique value and will not be standardized.")
+      } else {
+        message(paste0("The variable `", name, "` contains only one unique value and will not be standardized."))
+      }
+    }
+    return(NULL)
+  }
 
+  # Warning if logical vector
+  if (length(unique(x)) == 2 && !is.factor(x) && !is.character(x)) {
+    if (verbose) {
+      if (is.null(name)) {
+        message("The variable contains only two different values. Consider converting it to a factor.")
+      } else {
+        message(paste0("Variable `", name, "` contains only two different values. Consider converting it to a factor."))
+      }
+    }
+  }
+  x
+}
 
 
 
@@ -82,6 +113,20 @@ standardize.factor <- function(x, force = FALSE, ...) {
 #' @export
 standardize.character <- standardize.factor
 
+
+#' @export
+standardize.logical <- standardize.factor
+
+
+#' @export
+standardize.Surv <- function(x, ...) {
+  insight::print_color("'Surv' objects cannot be standardized.\n", "red")
+  x
+}
+
+
+#' @export
+standardize.AsIs <- standardize.numeric
 
 
 
@@ -119,23 +164,8 @@ standardize.grouped_df <- function(x, robust = FALSE, method = "default", select
 }
 
 
-#' Data Standardization (Z-scores)
-#'
-#' Standardize (centering and scaling, Z-score) the data so that the
-#'   values are expressed in terms of standard deviation (i.e., mean = 0, SD = 1)
-#'   or Median Absolute Deviance (median = 0, MAD = 1). A \code{normalization}
-#'   scales all numeric variables in the 0 - 1 range.
-#'
-#' @inheritParams standardize
-#' @param select For a data frame, character vector of column names to be
-#'   standardized. If \code{NULL} (the default), all variables will be
-#'   standardized.
-#' @param exclude For a data frame, character vector of column names to
-#'   be excluded from standardization.
-#'
-#' @examples
-#' summary(standardize(iris))
-#' @return A standardized data.frame.
+
+#' @rdname standardize
 #' @export
 standardize.data.frame <- function(x, robust = FALSE, method = "default", select = NULL, exclude = NULL, verbose = TRUE, force = FALSE, ...) {
   if (is.null(select)) {
@@ -146,7 +176,11 @@ standardize.data.frame <- function(x, robust = FALSE, method = "default", select
     select <- setdiff(select, exclude)
   }
 
-  x[select] <- lapply(x[select], standardize, robust = robust, method = method, verbose = verbose, force = force)
+  for (i in 1:length(select)) {
+    .check_standardize_numeric(x[[select[i]]], name = select[i], verbose = verbose)
+  }
+
+  x[select] <- lapply(x[select], standardize, robust = robust, method = method, verbose = FALSE, force = force)
 
   attr(x, "center") <- sapply(x[select], function(z) attributes(z)$center)
   attr(x, "scale") <- sapply(x[select], function(z) attributes(z)$scale)

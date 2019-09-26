@@ -9,7 +9,7 @@ model_bootstrap(model, iterations = 1000, verbose = FALSE, ...)
 \arguments{
 \item{model}{Statistical model.}
 
-\item{iterations}{The number of bootstrap replicates.}
+\item{iterations}{The number of draws to simulate/bootstrap.}
 
 \item{verbose}{Hide possible refit messages.}
 
@@ -24,4 +24,7 @@ Bootstrap a statistical model n times to return a data.frame of estimates.
 \examples{
 model <- lm(mpg ~ wt + cyl, data = mtcars)
 head(model_bootstrap(model))
+}
+\seealso{
+\code{\link{parameters_bootstrap}}, \code{\link{model_simulate}}, \code{\link{parameters_simulate}}
 }
