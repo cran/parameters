@@ -2,22 +2,24 @@
 % Please edit documentation in R/n_factors.R
 \name{n_factors}
 \alias{n_factors}
-\title{Number of Components/Factors to Retain}
+\title{Number of Components/Factors to Retain in Factor Analysis}
 \usage{
 n_factors(x, type = "FA", rotation = "varimax",
   algorithm = "default", package = c("nFactors", "psych"),
-  safe = TRUE, ...)
+  cor = NULL, safe = TRUE, ...)
 }
 \arguments{
 \item{x}{A dataframe.}
 
 \item{type}{Can be \code{"FA"} or \code{"PCA"}, depending on what you want to do.}
 
-\item{rotation}{Only used for VSS (Very Simple Structure criterion, see \code{\link[psych]{VSS}}. The rotation to apply. Can be \code{"none"}, \code{"varimax"}, \code{"quartimax"}, \code{"bentlerT"}, \code{"equamax"}, \code{"varimin"}, \code{"geominT"} and \code{"bifactor"} for orthogonal rotations, and \code{"promax"}, \code{"oblimin"}, \code{"simplimax"}, \code{"bentlerQ"}, \code{"geominQ"}, \code{"biquartimin"} and \code{"cluster"} for oblique transformations.}
+\item{rotation}{Only used for VSS (Very Simple Structure criterion, see \code{\link[psych]{VSS}}). The rotation to apply. Can be \code{"none"}, \code{"varimax"}, \code{"quartimax"}, \code{"bentlerT"}, \code{"equamax"}, \code{"varimin"}, \code{"geominT"} and \code{"bifactor"} for orthogonal rotations, and \code{"promax"}, \code{"oblimin"}, \code{"simplimax"}, \code{"bentlerQ"}, \code{"geominQ"}, \code{"biquartimin"} and \code{"cluster"} for oblique transformations.}
 
 \item{algorithm}{Factoring method used by VSS. Can be \code{"pa"} for Principal Axis Factor Analysis, \code{"minres"} for minimum residual (OLS) factoring, \code{"mle"} for Maximum Likelihood FA and \code{"pc"} for Principal Components. \code{"default"} will select \code{"minres"} if \code{type = "FA"} and \code{"pc"} if \code{type = "PCA"}.}
 
 \item{package}{These are the packages from which methods are used. Can be \code{"all"} or a vector containing \code{"nFactors"}, \code{"psych"} and \code{"EGAnet"}. However, \code{"EGAnet"} can be very slow for bigger datasets. Thus, by default, \code{c("nFactors", "psych")} are selected.}
+
+\item{cor}{An optional correlation matrix that can be used. If \code{NULL}, will compute it by running \code{cor()} on the passed data.}
 
 \item{safe}{If \code{TRUE}, will run all the procedures in try blocks, and will only return those that work and silently skip the ones that may fail.}
 
@@ -27,15 +29,15 @@ n_factors(x, type = "FA", rotation = "varimax",
 A data.frame.
 }
 \description{
-This function runs many existing procedures for determining how many factors to retain for your factor analysis (FA) or dimension reduction (PCA). It returns the number of factors based on the maximum consensus. In case of ties, it will select the solution with the less factors.
+This function runs many existing procedures for determining how many factors to retain for your factor analysis (FA) or dimension reduction (PCA). It returns the number of factors based on the maximum consensus between methods. In case of ties, it will keep the simplest models and select the solution with the less factors.
 }
 \examples{
 library(parameters)
 
 n_factors(mtcars, type = "PCA")
 
-result <- n_factors(mtcars[, 1:5], type = "FA")
-as.numeric(result)
+result <- n_factors(mtcars[1:5], type = "FA")
+as.data.frame(result)
 summary(result)
 \donttest{
 n_factors(mtcars, type = "PCA", package = "all")
@@ -48,6 +50,7 @@ n_factors(mtcars, type = "FA", algorithm = "mle", package = "all")
   \item Bartlett, M. S. (1950). Tests of significance in factor analysis. British Journal of statistical psychology, 3(2), 77-85.
   \item Bentler, P. M., & Yuan, K. H. (1996). Test of linear trend in eigenvalues of a covariance matrix with application to data analysis. British Journal of Mathematical and Statistical Psychology, 49(2), 299-312.
   \item Cattell, R. B. (1966). The scree test for the number of factors. Multivariate behavioral research, 1(2), 245-276.
+  \item Finch, W. H. (2019). Using Fit Statistic Differences to Determine the Optimal Number of Factors to Retain in an Exploratory Factor Analysis. Educational and Psychological Measurement.
   \item Zoski, K. W., & Jurs, S. (1996). An objective counterpart to the visual scree test for factor analysis: The standard error scree. Educational and Psychological Measurement, 56(3), 443-451.
   \item Zoski, K., & Jurs, S. (1993). Using multiple regression to determine the number of factors to retain in factor analysis. Multiple Linear Regression Viewpoints, 20(1), 5-9.
   \item Nasser, F., Benson, J., & Wisenbaker, J. (2002). The performance of regression-based variations of the visual scree for determining the number of common factors. Educational and psychological measurement, 62(3), 397-419.

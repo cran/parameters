@@ -34,7 +34,8 @@
 #' }
 #'
 #' @examples
-#' parameters_reduction(iris, method = "PCA", n = "max")
+#' out <- parameters_reduction(iris, method = "PCA", n = "max")
+#' head(out)
 #' @importFrom stats dist
 #' @export
 parameters_reduction <- function(x, method = "PCA", n = "max", ...) {
@@ -193,7 +194,7 @@ DRR <- function(x, n = "all", ...) {
     stop("Package 'DRR' required for this function to work. Please install it by running `install.packages('DRR')`.")
   }
 
-  junk <- capture.output(suppressMessages(rez <- DRR::drr(x, n)))
+  junk <- utils::capture.output(suppressMessages(rez <- DRR::drr(x, n)))
 
   features <- as.data.frame(rez$fitted.data)
   names(features) <- paste0("DRR", 1:ncol(features))

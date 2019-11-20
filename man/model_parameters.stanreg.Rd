@@ -2,13 +2,20 @@
 % Please edit documentation in R/model_parameters.bayesian.R
 \name{model_parameters.stanreg}
 \alias{model_parameters.stanreg}
+\alias{model_parameters.brmsfit}
 \title{Bayesian Models Parameters}
 \usage{
 \method{model_parameters}{stanreg}(model, centrality = "median",
   dispersion = FALSE, ci = 0.89, ci_method = "hdi", test = c("pd",
   "rope"), rope_range = "default", rope_ci = 1, bf_prior = NULL,
-  diagnostic = c("ESS", "Rhat"), priors = TRUE, standardize = FALSE,
-  standardize_robust = FALSE, iterations = 1000, ...)
+  diagnostic = c("ESS", "Rhat"), priors = TRUE, iterations = 1000,
+  effects = "fixed", ...)
+
+\method{model_parameters}{brmsfit}(model, centrality = "median",
+  dispersion = FALSE, ci = 0.89, ci_method = "hdi", test = c("pd",
+  "rope"), rope_range = "default", rope_ci = 1, bf_prior = NULL,
+  diagnostic = c("ESS", "Rhat"), priors = TRUE, iterations = 1000,
+  effects = "fixed", component = "all", ...)
 }
 \arguments{
 \item{model}{Bayesian model.}
@@ -44,13 +51,16 @@ proportion of HDI, to use for the percentage in ROPE.}
 
 \item{priors}{Add the prior used for each parameter.}
 
-\item{standardize}{Add standardized parameters. Can be \code{FALSE} or a character indicating the standardization method (see \code{\link[=parameters_standardize]{parameters_standardize()}}), such as \code{"refit"}, \code{"2sd"}, \code{"smart"} or \code{"classic"}. The two former are based on model refitting using a standardized version of data. It is the most accurate, although computationally heavy (as it must re-fit a second model). The "smart" and "classic" are post-hoc methods, fast, but inaccurate (especially if the model includes interactions).}
-
-\item{standardize_robust}{Robust standardization. See \code{\link[=parameters_standardize]{parameters_standardize}}.}
-
 \item{iterations}{The number of bootstrap replicates. This only apply in the case of bootstrapped frequentist models.}
 
-\item{...}{Arguments passed to or from other methods (e.g., to \code{\link[=standardize.lm]{standardize()}}).}
+\item{effects}{Should results for fixed effects, random effects or both be returned?
+Only applies to mixed models. May be abbreviated.}
+
+\item{...}{Arguments passed to or from other methods.}
+
+\item{component}{Should results for all parameters, parameters for the conditional model
+or the zero-inflated part of the model be returned? May be abbreviated. Only
+applies to \pkg{brms}-models.}
 }
 \value{
 A data.frame of indices related to the model's parameters.
@@ -67,7 +77,7 @@ model <- rstanarm::stan_glm(Sepal.Length ~ Petal.Length * Species,
   data = iris, iter = 500, refresh = 0
 )
 
-model_parameters(model, standardize = "smart")
+model_parameters(model)
 }
 
 }

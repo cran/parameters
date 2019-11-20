@@ -3,7 +3,8 @@
 #' Format CFA/SEM objects from the lavaan package (Rosseel, 2012).
 #'
 #' @param model CFA or SEM created by the \code{lavaan::cfa} or \code{lavaan::sem} functions.
-#' @inheritParams model_parameters.lm
+#' @param standardize Return standardized parameters (standardized coefficients). See \code{lavaan::standardizedsolution}.
+#' @inheritParams model_parameters.default
 #' @param type What type of links to return. Can be \code{"all"} or some of \code{c("regression", "correlation", "loading", "variance", "mean")}.
 #' @param ... Arguments passed to or from other methods.
 #'
@@ -88,8 +89,6 @@ n_parameters.lavaan <- function(x, ...) {
 #' @importFrom insight format_table
 #' @export
 print.parameters_sem <- function(x, ...) {
-  # formatted_table <- parameters_table(x)
-  # cat(insight::format_table(formatted_table))
   .print_model_parms_components(x, pretty_names = TRUE, split_column = "Type")
 }
 

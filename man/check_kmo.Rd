@@ -4,12 +4,10 @@
 \alias{check_kmo}
 \title{Kaiser, Meyer, Olkin (KMO) Measure of Sampling Adequacy (MSA) for Factor Analysis}
 \usage{
-check_kmo(x, silent = FALSE, ...)
+check_kmo(x, ...)
 }
 \arguments{
 \item{x}{A dataframe.}
-
-\item{silent}{Hide results printing.}
 
 \item{...}{Arguments passed to or from other methods.}
 }
@@ -28,14 +26,13 @@ This function is strongly inspired by the \code{KMO} function in the \code{psych
 }
 \examples{
 library(parameters)
-
 check_kmo(mtcars)
 }
 \references{
 \itemize{
   \item Revelle, W. (2016). How To: Use the psych package for Factor Analysis and data reduction.
   \item Kaiser, H. F. (1970). A second generation little jiffy. Psychometrika, 35(4), 401-415.
-  \item Kaiser, H. F., \& Rice, J. (1974). Little jiffy, mark IV. Educational and psychological measurement, 34(1), 111-117.
+  \item Kaiser, H. F., & Rice, J. (1974). Little jiffy, mark IV. Educational and psychological measurement, 34(1), 111-117.
   \item Kaiser, H. F. (1974). An index of factorial simplicity. Psychometrika, 39(1), 31-36.
 }
 }

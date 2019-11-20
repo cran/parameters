@@ -4,9 +4,10 @@
 #'
 #' @param x A statistical model.
 #' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%).
-#' @param method For mixed models of class \code{merMod}, can be \code{\link[=ci_wald]{"wald"}} (default), \code{"kenward"} or \code{"boot"} (see \code{\link{p_value_kenward}} and \code{lme4::confint.merMod}). For generalized linear models, can be \code{"profile"} (default) or \code{"wald"}.
-#' @param ... Arguments passed to or from other methods.
+#' @param method For mixed models of class \code{merMod}, can be \code{\link[=ci_wald]{"wald"}} (default), \code{"kenward"} or \code{"boot"} (see \code{\link{p_value_kenward}} and \code{lme4::confint.merMod}). For (generalized) linear models, can be \code{"robust"} to compute condifence intervals based on robust standard errors, and for generalized linear models, may also be \code{"profile"} (default) or \code{"wald"}.
+#' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.
 #' @inheritParams model_simulate
+#' @inheritParams standard_error
 #'
 #' @return A data frame containing the CI bounds.
 #'
@@ -23,8 +24,7 @@
 #' )
 #'
 #' ci(model)
-#' ci(model, component = "zi")
-#' }
+#' ci(model, component = "zi")}
 #' @importFrom insight find_parameters
 #' @export
 ci.merMod <- function(x, ci = 0.95, method = c("wald", "kenward", "boot"), ...) {
@@ -38,11 +38,13 @@ ci.merMod <- function(x, ci = 0.95, method = c("wald", "kenward", "boot"), ...) 
   } else if (method == "kenward") {
     out <- ci_wald(model = x, ci = ci, dof = dof_kenward(x))
 
+    # bootstrapping
   } else if (method == "boot") {
     out <- lapply(ci, function(ci, x) .ci_boot_merMod(x, ci, ...), x = x)
     out <- do.call(rbind, out)
     row.names(out) <- NULL
   }
+
   out
 }
 
@@ -55,9 +57,11 @@ bayestestR::ci
 # Default Wald CI method ------------------------------------------------------
 
 
+#' @rdname ci.merMod
 #' @export
-ci.default <- function(x, ci = .95, ...) {
-  ci_wald(model = x, ci = ci, ...)
+ci.default <- function(x, ci = .95, method = NULL, ...) {
+  robust <- !is.null(method) && method == "robust"
+  ci_wald(model = x, ci = ci, robust = robust, ...)
 }
 
 
@@ -75,14 +79,15 @@ ci.mlm <- function(x, ci = .95, ...) {
     )
   })
 
-  do.call(rbind, out)
+  .remove_backticks_from_parameter_names(do.call(rbind, out))
 }
 
 
 #' @method ci lm
 #' @export
-ci.lm <- function(x, ci = .95, ...) {
-  ci_wald(model = x, ci = ci, component = "conditional")
+ci.lm <- function(x, ci = .95, method = NULL, ...) {
+  robust <- !is.null(method) && method == "robust"
+  ci_wald(model = x, ci = ci, robust = robust, ...)
 }
 
 
@@ -136,14 +141,17 @@ ci.list <- function(x, ci = .95, ...) {
 #' @rdname ci.merMod
 #' @method ci glm
 #' @export
-ci.glm <- function(x, ci = .95, method = c("profile", "wald"), ...) {
+ci.glm <- function(x, ci = .95, method = c("profile", "wald", "robust"), ...) {
   method <- match.arg(method)
   if (method == "profile") {
     out <- lapply(ci, function(i) .ci_profiled(model = x, ci = i))
     out <- do.call(rbind, out)
+  } else if (method == "robust") {
+    out <- ci_wald(model = x, ci = ci, robust = TRUE, ...)
   } else {
-    out <- ci_wald(model = x, ci = ci, component = "conditional")
+    out <- ci_wald(model = x, ci = ci)
   }
+
   row.names(out) <- NULL
   out
 }
@@ -158,19 +166,21 @@ ci.logistf <- ci.glm
 
 
 #' @export
-ci.polr <- function(x, ci = .95, method = c("profile", "wald"), ...) {
+ci.polr <- function(x, ci = .95, method = c("profile", "wald", "robust"), ...) {
   method <- match.arg(method)
   if (method == "profile") {
     out <- lapply(ci, function(i) .ci_profiled2(model = x, ci = i))
     out <- do.call(rbind, out)
+  } else if (method == "robust") {
+    out <- ci_wald(model = x, ci = ci, robust = TRUE, ...)
   } else {
-    out <- ci_wald(model = x, ci = ci, component = "conditional")
+    out <- ci_wald(model = x, ci = ci)
   }
 
   # for polr, profiled CI do not return CI for response levels
   # thus, we also calculate Wald CI and add missing rows to result
 
-  out_missing <- ci_wald(model = x, ci = ci, component = "conditional")
+  out_missing <- ci_wald(model = x, ci = ci)
   missing_rows <- out_missing$Parameter %in% setdiff(out_missing$Parameter, out$Parameter)
   out <- rbind(out, out_missing[missing_rows, ])
 
@@ -191,8 +201,9 @@ ci.polr <- function(x, ci = .95, method = c("profile", "wald"), ...) {
 
 
 #' @export
-ci.gamlss <- function(x, ci = .95, ...) {
-  ci_wald(model = x, ci = ci, dof = Inf, ...)
+ci.gamlss <- function(x, ci = .95, method = NULL, ...) {
+  robust <- !is.null(method) && method == "robust"
+  ci_wald(model = x, ci = ci, dof = Inf, robust = robust, ...)
 }
 
 #' @export
@@ -229,6 +240,9 @@ ci.geeglm <- ci.gamlss
 ci.coxph <- ci.gamlss
 
 #' @export
+ci.aareg <- ci.gamlss
+
+#' @export
 ci.clm <- ci.gamlss
 
 #' @export
@@ -248,6 +262,9 @@ ci.censReg <- ci.gamlss
 
 #' @export
 ci.survreg <- ci.gamlss
+
+#' @export
+ci.flexsurvreg <- ci.gamlss
 
 #' @export
 ci.coxme <- ci.gamlss
@@ -283,9 +300,32 @@ ci.gamm <- function(x, ci = .95, ...) {
   ci(x, ci = ci, ...)
 }
 
-
 #' @export
 ci.gamm4 <- ci.gamm
+
+#' @export
+ci.multinom <- function(x, ci = .95, method = NULL, ...) {
+  robust <- !is.null(method) && method == "robust"
+  params <- insight::get_parameters(x)
+
+  out <- ci_wald(model = x, ci = ci, dof = Inf, robust = robust, ...)
+
+  if ("Response" %in% colnames(params)) {
+    out$Response <- params$Response
+  }
+
+  out
+}
+
+
+#' @export
+ci.brmultinom <- ci.multinom
+
+
+#' @export
+ci.bracl <- ci.multinom
+
+
 
 
 
@@ -351,30 +391,18 @@ ci.biglm <- function(x, ci = .95, ...) {
     )
   })
 
-  do.call(rbind, out)
+  .remove_backticks_from_parameter_names(do.call(rbind, out))
 }
 
 
 #' @export
-ci.gls <- function(x, ci = .95, ...) {
-  out <- lapply(ci, function(i) {
-    ci_list <- stats::confint(x, level = i, ...)
-    .data_frame(
-      Parameter = rownames(ci_list),
-      CI = i * 100,
-      CI_low = as.vector(ci_list[, 1]),
-      CI_high = as.vector(ci_list[, 2])
-    )
-  })
-
-  do.call(rbind, out)
-}
+ci.gls <- ci.biglm
 
 
 #' @export
 ci.lme <- function(x, ci = .95, ...) {
   if (!requireNamespace("nlme", quietly = TRUE)) {
-    ci_wald(model = x, ci = ci, component = "conditional")
+    ci_wald(model = x, ci = ci)
   } else {
     out <- lapply(ci, function(i) {
       ci_list <- nlme::intervals(x, level = i, ...)
@@ -385,8 +413,51 @@ ci.lme <- function(x, ci = .95, ...) {
         CI_high = as.vector(ci_list$fixed[, "upper"])
       )
     })
-    do.call(rbind, out)
+    .remove_backticks_from_parameter_names(do.call(rbind, out))
   }
+}
+
+
+#' @importFrom insight print_color
+#' @importFrom stats qnorm
+#' @export
+ci.effectsize_std_params <- function(x, ci = .95, ...) {
+  se <- attr(x, "standard_error")
+
+  if (is.null(se)) {
+    insight::print_color("\nCould not extract standard errors of standardized coefficients.\n", "red")
+    return(NULL)
+  }
+
+  out <- lapply(ci, function(i) {
+    alpha <- (1 + i) / 2
+    fac <- stats::qnorm(alpha)
+    data.frame(
+      Parameter = x$Parameter,
+      CI = i * 100,
+      CI_low = x$Std_Coefficient - se * fac,
+      CI_high = x$Std_Coefficient + se * fac,
+      stringsAsFactors = FALSE
+    )
+  })
+
+  .remove_backticks_from_parameter_names(do.call(rbind, out))
+}
+
+
+#' @export
+ci.rma <- function(x, ci = .95, ...) {
+  params <- insight::get_parameters(x)
+  out <- lapply(ci, function(i) {
+    model <- stats::update(x, level = i)
+    .data_frame(
+      Parameter = params[[1]],
+      CI = i * 100,
+      CI_low = as.vector(model$ci.lb),
+      CI_high = as.vector(model$ci.ub)
+    )
+  })
+  .remove_backticks_from_parameter_names(do.call(rbind, out))
 }
 
 
@@ -396,7 +467,7 @@ ci.lme <- function(x, ci = .95, ...) {
 
 # helper -----------------------------------------
 
-
+#' @keywords internal
 .check_component <- function(m, x) {
   if (!insight::model_info(m)$is_zero_inflated && x %in% c("zi", "zero_inflated")) {
     insight::print_color("Model has no zero-inflation component!\n", "red")

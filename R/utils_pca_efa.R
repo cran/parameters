@@ -74,6 +74,7 @@ predict.parameters_efa <- function(object, newdata = NULL, names = NULL, ...) {
   row.names(out) <- NULL
   out
 }
+
 #' @export
 predict.parameters_pca <- predict.parameters_efa
 
@@ -120,7 +121,7 @@ print.parameters_efa <- function(x, digits = 2, sort = FALSE, threshold = NULL, 
   }
 
   # Sorting
-  if (sort) {
+  if (isTRUE(sort)) {
     x <- .sort_loadings(x)
   }
 
@@ -128,7 +129,6 @@ print.parameters_efa <- function(x, digits = 2, sort = FALSE, threshold = NULL, 
   if (!is.null(threshold)) {
     x <- .filter_loadings(x, threshold = threshold)
   }
-
 
 
   rotation_name <- attr(x, "rotation", exact = TRUE)
@@ -144,12 +144,12 @@ print.parameters_efa <- function(x, digits = 2, sort = FALSE, threshold = NULL, 
   if (!is.null(attributes(x)$type)) {
     cat("\n")
     insight::print_colour(.text_components_variance(x), "yellow")
+    cat("\n")
   }
 }
 
 #' @export
 print.parameters_pca <- print.parameters_efa
-
 
 
 
@@ -162,12 +162,19 @@ print.parameters_pca <- print.parameters_efa
     type <- "principal component"
   } else if (type %in% c("fa")) {
     type <- "latent factor"
+  } else if (type %in% c("kmeans")) {
+    type <- "cluster"
   } else {
     type <- paste0(type, " component")
   }
 
-
-  summary <- attributes(x)$summary
+  if(type == "cluster"){
+    summary <- as.data.frame(x)
+    variance <- attributes(x)$variance * 100
+  } else{
+    summary <- attributes(x)$summary
+    variance <- max(summary$Variance_Cumulative) * 100
+  }
 
   if (nrow(summary) == 1) {
     text <- paste0("The unique ", type)
@@ -176,18 +183,19 @@ print.parameters_pca <- print.parameters_efa
   }
 
   # rotation
-  if (attributes(x)$rotation != "none") {
+  if (!is.null(attributes(x)$rotation) && attributes(x)$rotation != "none") {
     text <- paste0(text, " (", attributes(x)$rotation, " rotation)")
   }
+
 
   text <- paste0(
     text,
     " accounted for ",
-    sprintf("%.2f", max(summary$Variance_Cumulative) * 100),
+    sprintf("%.2f", variance),
     "% of the total variance of the original data"
   )
 
-  if (nrow(summary) == 1) {
+  if (type == "cluster" || nrow(summary) == 1) {
     text <- paste0(text, ".")
   } else {
     text <- paste0(

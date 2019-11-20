@@ -1,14 +1,20 @@
 #' @export
-model_parameters.wbm <- function(model, ci = .95, bootstrap = FALSE, ci_method = "wald", iterations = 1000, ...) {
-  # Processing
-  if (bootstrap) {
-    parameters <- parameters_bootstrap(model, iterations = iterations, ci = ci, ...)
-  } else {
-    parameters <- .extract_parameters_generic(model, ci = ci, component = "conditional", merge_by = c("Parameter", "Component"))
-  }
+model_parameters.wbm <- function(model, ci = .95, bootstrap = FALSE, iterations = 1000, exponentiate = FALSE, ...) {
+  out <- .model_parameters_generic(
+    model = model,
+    ci = ci,
+    bootstrap = bootstrap,
+    iterations = iterations,
+    merge_by = c("Parameter", "Component"),
+    standardize = NULL,
+    exponentiate = exponentiate,
+    ...
+  )
 
-  attr(parameters, "pretty_names") <- format_parameters(model)
-  attr(parameters, "ci") <- ci
-  class(parameters) <- c("parameters_model", "see_parameters_model", class(parameters))
-  parameters
+  attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  out
 }
+
+
+#' @export
+model_parameters.wbgee <- model_parameters.wbm

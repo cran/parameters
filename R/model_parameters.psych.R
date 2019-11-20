@@ -2,7 +2,7 @@
 #'
 #' Format structural models from the \pkg{psych} or \pkg{FactoMineR} packages.
 #'
-#' @param model PCA or FA created by the \pkg{psych} or \pkg{FactoMineR} packages (e.g. through \code{psych::principal} or \code{psych::fa}).
+#' @param model PCA or FA created by the \pkg{psych} or \pkg{FactoMineR} packages (e.g. through \code{psych::principal},  \code{psych::fa} or \code{psych::omega}).
 #' @inheritParams principal_components
 #' @param labels A character vector containing labels to be added to the loadings data. Usually, the question related to the item.
 #' @param ... Arguments passed to or from other methods.
@@ -29,11 +29,10 @@
 #' \donttest{
 #' # Exploratory Factor Analysis (EFA) ---------
 #' efa <- psych::fa(attitude, nfactors = 3)
-#' model_parameters(efa, threshold = "max", sort = TRUE, labels = as.character(1:ncol(attitude)))
-#' }
-#'
+#' model_parameters(efa, threshold = "max", sort = TRUE, labels = as.character(1:ncol(attitude)))}
 #'
 #' # FactoMineR ---------
+#' \dontrun{
 #' library(FactoMineR)
 #'
 #' model <- FactoMineR::PCA(iris[, 1:4], ncp = 2)
@@ -41,7 +40,7 @@
 #' attributes(model_parameters(model))$scores
 #'
 #' model <- FactoMineR::FAMD(iris, ncp = 2)
-#' model_parameters(model)
+#' model_parameters(model)}
 #' @return A data.frame of loadings.
 #' @references \itemize{
 #'   \item Pettersson, E., \& Turkheimer, E. (2010). Item selection, evaluation, and simple structure in personality data. Journal of research in personality, 44(4), 407-420.
@@ -102,7 +101,7 @@ model_parameters.principal <- function(model, sort = FALSE, threshold = NULL, la
   attr(loadings, "loadings_columns") <- loading_cols
 
   # Sorting
-  if (sort) {
+  if (isTRUE(sort)) {
     loadings <- .sort_loadings(loadings)
   }
 
@@ -116,9 +115,9 @@ model_parameters.principal <- function(model, sort = FALSE, threshold = NULL, la
 
   # add class-attribute for printing
   if (model$fn == "principal") {
-    class(loadings) <- c("parameters_pca", class(loadings))
+    class(loadings) <- unique(c("parameters_pca", "see_parameters_pca", class(loadings)))
   } else {
-    class(loadings) <- c("parameters_efa", class(loadings))
+    class(loadings) <- unique(c("parameters_efa", "see_parameters_efa", class(loadings)))
   }
 
   loadings
@@ -129,3 +128,22 @@ model_parameters.principal <- function(model, sort = FALSE, threshold = NULL, la
 
 #' @export
 model_parameters.fa <- model_parameters.principal
+
+
+
+
+#' @rdname model_parameters.principal
+#' @export
+model_parameters.omega <- function(model, sort = FALSE, threshold = NULL, labels = NULL, ...) {
+
+  # TODO: TO BE SERVERLY IMPROVED
+  # https://github.com/cran/psych/blob/master/R/print.psych.omega.R
+
+  # Get loadings
+  loadings <- as.data.frame(unclass(model$schmid$sl))
+
+  # Format
+  loadings <- cbind(data.frame(Variable = row.names(loadings)), loadings)
+  row.names(loadings) <- NULL
+  loadings
+}

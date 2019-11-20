@@ -1,26 +1,43 @@
 # generic function ------------------------------------------------------
 
 
+#' @importFrom insight get_statistic get_parameters
 #' @importFrom stats confint
 #' @keywords internal
-.extract_parameters_generic <- function(model, ci, component, merge_by = c("Parameter", "Component"), ...) {
+.extract_parameters_generic <- function(model, ci, component, merge_by = c("Parameter", "Component"), standardize = NULL, ...) {
   parameters <- insight::get_parameters(model, effects = "fixed", component = component)
-  .statistic <- .get_statistic(model, component = component)
+  statistic <- insight::get_statistic(model, component = component)
 
   # clean parameter names
 
   if (inherits(model, "polr")) {
-    ## TODO replace with "$Parameter" once insight update is on CRAN
-    parameters[[1]] <- gsub("Intercept: ", "", parameters[[1]], fixed = TRUE)
+    parameters$Parameter <- gsub("Intercept: ", "", parameters$Parameter, fixed = TRUE)
   }
 
-  ## TODO remove, once fixed in insight
-  colnames(parameters) <- .capitalize(colnames(parameters))
   original_order <- parameters$.id <- 1:nrow(parameters)
+
+  # column name for coefficients, non-standardized
+  coef_col <- "Coefficient"
+
+  # Std Coefficients
+  if (!is.null(standardize)) {
+    if (!requireNamespace("effectsize", quietly = TRUE)) {
+      insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
+    } else {
+      parameters <- merge(parameters, effectsize::standardize_parameters(model, method = standardize), by = merge_by)
+      if (standardize == "refit") {
+        model <- effectsize::standardize(model)
+        coef_col <- "Std_Coefficient"
+      } else {
+        coef_col <- c("Coefficient", "Std_Coefficient")
+      }
+    }
+  }
+
 
   # CI
   if (!is.null(ci)) {
-    ci_df <- ci(model, ci = ci, component = component)
+    ci_df <- suppressMessages(ci(model, ci = ci, component = component))
     if (length(ci) > 1) ci_df <- bayestestR::reshape_ci(ci_df)
     ci_cols <- names(ci_df)[!names(ci_df) %in% c("CI", merge_by)]
     parameters <- merge(parameters, ci_df, by = merge_by)
@@ -36,17 +53,23 @@
   parameters <- merge(parameters, standard_error(model, component = component), by = merge_by)
 
   # test statistic
-  parameters <- merge(parameters, .statistic, by = merge_by)
+  parameters <- merge(parameters, statistic, by = merge_by)
+
+  # dof
+  df_residual <- degrees_of_freedom(model, method = "any")
+  if (!is.null(df_residual) && (length(df_residual) == 1 || length(df_residual) == nrow(parameters))) {
+    parameters$df_residual <- df_residual
+  }
 
   # Rematch order after merging
   parameters <- parameters[match(original_order, parameters$.id), ]
 
   # Renaming
-  names(parameters) <- gsub("Statistic", attr(.statistic, "statistic", exact = TRUE), names(parameters))
+  names(parameters) <- gsub("Statistic", gsub("-statistic", "", attr(statistic, "statistic", exact = TRUE), fixed = TRUE), names(parameters))
   names(parameters) <- gsub("Estimate", "Coefficient", names(parameters))
 
   # Reorder
-  col_order <- c("Parameter", "Coefficient", "SE", ci_cols, "t", "z", "t / F", "z / Chisq", "F", "chisq", "df", "df_residual", "p", "Component", "Response")
+  col_order <- c("Parameter", coef_col, "SE", ci_cols, "t", "z", "t / F", "z / Chisq", "F", "chisq", "df", "df_residual", "p", "Component", "Response")
   parameters <- parameters[col_order[col_order %in% names(parameters)]]
 
   # remove Component column if not needed
@@ -59,60 +82,34 @@
 
 
 
-# glm function ------------------------------------------------------
-
-
-#' @importFrom stats confint
-#' @keywords internal
-.extract_parameters_glm <- function(model, ci = .95, linear = FALSE) {
-  parameters <- as.data.frame(summary(model)$coefficients, stringsAsFactors = FALSE)
-
-  if (linear) {
-    names(parameters) <- c("Coefficient", "SE", "t", "p")
-  } else {
-    names(parameters) <- c("Coefficient", "SE", "z", "p")
-  }
-
-
-  parameters$df_residual <- model$df.residual
-  parameters$Parameter <- row.names(parameters)
-
-  # CI
-  if (!is.null(ci)) {
-    ci_df <- ci(model, ci = ci)
-    if (length(ci) > 1) ci_df <- bayestestR::reshape_ci(ci_df)
-    ci_cols <- names(ci_df)[!names(ci_df) %in% c("CI", "Parameter")]
-
-    col_order <- parameters$Parameter
-    parameters <- merge(parameters, ci_df, by = "Parameter")
-    parameters <- parameters[match(col_order, parameters$Parameter), ]
-  } else {
-    ci_cols <- c()
-  }
-
-
-  # Reorder
-  order <- c("Parameter", "Coefficient", "SE", ci_cols, "t", "z", "df_residual", "p")
-  parameters <- parameters[order[order %in% names(parameters)]]
-
-  rownames(parameters) <- NULL
-  parameters
-}
-
-
-
-
-
-
 # mixed models function ------------------------------------------------------
 
 
 #' @importFrom stats confint
 #' @keywords internal
-.extract_parameters_mixed <- function(model, ci = .95, p_method = "wald", ci_method = "wald", ...) {
+.extract_parameters_mixed <- function(model, ci = .95, p_method = "wald", ci_method = "wald", standardize = NULL, ...) {
   parameters <- as.data.frame(summary(model)$coefficients, stringsAsFactors = FALSE)
   parameters$Parameter <- row.names(parameters)
   original_order <- parameters$Parameter
+
+  # column name for coefficients, non-standardized
+  coef_col <- "Coefficient"
+
+  # Std Coefficients
+  if (!is.null(standardize)) {
+    if (!requireNamespace("effectsize", quietly = TRUE)) {
+      insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
+    } else {
+      parameters <- merge(parameters, effectsize::standardize_parameters(model, method = standardize), by = "Parameter")
+      if (standardize == "refit") {
+        model <- effectsize::standardize(model)
+        coef_col <- "Std_Coefficient"
+      } else {
+        coef_col <- c("Coefficient", "Std_Coefficient")
+      }
+    }
+  }
+
 
   # CI
   if (!is.null(ci)) {
@@ -151,6 +148,15 @@
   }
 
 
+  # dof
+  if (p_method != "kenward" && !"df" %in% names(parameters)) {
+    df_residual <- degrees_of_freedom(model, method = "any")
+    if (!is.null(df_residual) && (length(df_residual) == 1 || length(df_residual) == nrow(parameters))) {
+      parameters$df_residual <- df_residual
+    }
+  }
+
+
   # Rematch order after merging
   parameters <- parameters[match(parameters$Parameter, original_order), ]
   row.names(parameters) <- NULL
@@ -162,7 +168,7 @@
   names(parameters) <- gsub("z value", "z", names(parameters))
 
   # Reorder
-  order <- c("Parameter", "Coefficient", "SE", ci_cols, "t", "z", "df", "df_residual", "p")
+  order <- c("Parameter", coef_col, "SE", ci_cols, "t", "z", "df", "df_residual", "p")
   parameters <- parameters[order[order %in% names(parameters)]]
 
   rownames(parameters) <- NULL
@@ -354,7 +360,7 @@
   order <- c("Group", "Parameter", "AIC", "BIC", "Log_Likelihood", "Deviance", "Chisq", "Chisq_df", "RSS", "Sum_Squares", "df", "df_residual", "Mean_Square", "F", "p")
   parameters <- parameters[order[order %in% names(parameters)]]
 
-  parameters
+  .remove_backticks_from_parameter_names(parameters)
 }
 
 

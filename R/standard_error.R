@@ -1,6 +1,6 @@
 #' Extract standard errors
 #'
-#' This function attempts to return standard errors of model parameters.
+#' \code{standard_error()} attempts to return standard errors of model parameters, while \code{standard_error_robust()} attempts to return robust standard errors.
 #'
 #' @param model A model.
 #' @param force Logical, if \code{TRUE}, factors are converted to numerical
@@ -8,23 +8,47 @@
 #'   value \code{1} (unless the factor has numeric levels, which are converted
 #'   to the corresponding numeric value). By default, \code{NA} is returned
 #'   for factors or character vectors.
-#' @param ... Arguments passed to or from other methods.
+#' @param robust Logical, if \code{TRUE}, robust standard errors are computed
+#'   by calling \code{\link[=standard_error_robust]{standard_error_robust()}}.
+#'   \code{standard_error_robust()}, in turn, calls one of the \code{vcov*()}-functions
+#'   from the \pkg{sandwich}-package for robust covariance matrix estimators.
+#' @param vcov_estimation String, indicating the suffix of the \code{vcov*()}-function
+#'   from the \pkg{sandwich}-package, e.g. \code{vcov_estimation = "CL"} (which
+#'   calls \code{\link[sandwich]{vcovCL}} to compute clustered covariance matrix
+#'   estimators), or \code{vcov_estimation = "HC"} (which calls
+#'   \code{\link[sandwich]{vcovHC}} to compute heteroskedasticity-consistent
+#'   covariance matrix estimators).
+#' @param vcov_type Character vector, specifying the estimation type for the
+#'   robust covariance matrix estimation (see \code{\link[sandwich]{vcovHC}} for
+#'   details).
+#' @param vcov_args List of named vectors, used as additional arguments that
+#'   are passed down to the \pkg{sandwich}-function specified in \code{vcov_estimation}.
+#' @param verbose Toggle off warnings.
+#' @param ... Arguments passed to or from other methods. For \code{standard_error()},
+#'   if \code{robust = TRUE}, arguments \code{vcov_estimation}, \code{vcov_type}
+#'   and \code{vcov_args} can be passed down to \code{standard_error_robust()}.
+#' @param effects Should standard errors for fixed effects or random effects
+#'    be returned? Only applies to mixed models. May be abbreviated. When
+#'    standard errors for random effects are requested, for each grouping factor
+#'    a list of standard errors (per group level) for random intercepts and slopes
+#'    is returned.
 #' @inheritParams model_simulate
-#' @inheritParams standardize
+#'
+#' @note \code{standard_error_robust()} resp. \code{standard_error(robust = TRUE)}
+#'   rely on the \pkg{sandwich}-package and will thus only work for those models
+#'   supported by that package.
 #'
 #' @examples
 #' model <- lm(Petal.Length ~ Sepal.Length * Species, data = iris)
 #' standard_error(model)
 #' @return A data frame.
-#' @importFrom stats coef vcov setNames
+#' @importFrom stats coef vcov setNames var na.omit
+#' @importFrom insight get_varcov print_color get_parameters find_parameters
+#' @importFrom utils capture.output
 #' @export
 standard_error <- function(model, ...) {
   UseMethod("standard_error")
 }
-
-#' @rdname standard_error
-#' @export
-se <- standard_error
 
 
 
@@ -50,7 +74,6 @@ standard_error.factor <- function(model, force = FALSE, verbose = TRUE, ...) {
 standard_error.character <- standard_error.factor
 
 
-#' @importFrom stats var na.omit
 #' @export
 standard_error.numeric <- function(model, ...) {
   sqrt(stats::var(model, na.rm = TRUE) / length(stats::na.omit(model)))
@@ -81,6 +104,7 @@ standard_error.table <- function(model, ...) {
   if (length(dim(model)) == 1) {
     total.n <- as.vector(sum(model))
     rel.frq <- as.vector(model) / total.n
+
     out <- .data_frame(
       Value = names(model),
       Proportion = rel.frq,
@@ -104,30 +128,49 @@ standard_error.xtabs <- standard_error.table
 # Default methods ---------------------------------------------------------
 
 
+#' @rdname standard_error
 #' @export
-standard_error.default <- function(model, ...) {
-  se <- tryCatch({
-    if (grepl("^Zelig-", class(model)[1])) {
-      if (!requireNamespace("Zelig", quietly = TRUE)) {
-        stop("Package `Zelig` required. Please install", call. = FALSE)
-      }
-      unlist(Zelig::get_se(model))
-    } else {
-      .get_se_from_summary(model)
-    }
-  },
-  error = function(e) {
-    NULL
-  }
-  )
-
-  if (is.null(se)) {
-    insight::print_color("\nCould not extract standard errors from model object.\n", "red")
+standard_error.default <- function(model, robust = FALSE, ...) {
+  if (isTRUE(robust)) {
+    standard_error_robust(model, ...)
   } else {
-    .data_frame(
-      Parameter = names(se),
-      SE = as.vector(se)
+    se <- tryCatch({
+      if (grepl("^Zelig-", class(model)[1])) {
+        if (!requireNamespace("Zelig", quietly = TRUE)) {
+          stop("Package `Zelig` required. Please install", call. = FALSE)
+        }
+        unlist(Zelig::get_se(model))
+      } else {
+        .get_se_from_summary(model)
+      }
+    },
+    error = function(e) {
+      NULL
+    }
     )
+
+    # if all fails, try to get se from varcov
+    if (is.null(se)) {
+      se <- tryCatch({
+        varcov <- insight::get_varcov(model)
+        se <- sqrt(diag(varcov))
+        names(se) <- colnames(varcov)
+      },
+      error = function(e) {
+        NULL
+      }
+      )
+    }
+
+
+    if (is.null(se)) {
+      insight::print_color("\nCould not extract standard errors from model object.\n", "red")
+    } else {
+      .data_frame(
+        Parameter = names(se),
+        SE = as.vector(se)
+      )
+    }
   }
 }
 
@@ -140,11 +183,11 @@ standard_error.mlm <- function(model, ...) {
     .data_frame(
       Parameter = rownames(params),
       SE = params[, "Std. Error"],
-      Response =  gsub("^Response (.*)", "\\1", x)
+      Response = gsub("^Response (.*)", "\\1", x)
     )
   })
 
-  do.call(rbind, se)
+  .remove_backticks_from_parameter_names(do.call(rbind, se))
 }
 
 
@@ -188,8 +231,7 @@ standard_error.gls <- standard_error.default
 standard_error.tobit <- function(model, ...) {
   params <- insight::get_parameters(model)
   std.error <- standard_error.default(model, ...)
-  ## TODO change to "$Parameter" once fixed in insight
-  std.error[std.error$Parameter %in% params[[1]], ]
+  std.error[std.error$Parameter %in% params$Parameter, ]
 }
 
 
@@ -202,20 +244,21 @@ standard_error.tobit <- function(model, ...) {
 
 
 #' @export
-standard_error.lm <- function(model, ...) {
-  .data_frame(
-    Parameter = insight::find_parameters(model, effects = "fixed", component = "conditional", flatten = TRUE),
-    SE = .get_se_from_summary(model)
-  )
+standard_error.lm <- function(model, robust = FALSE, ...) {
+  if (isTRUE(robust)) {
+    standard_error_robust(model, ...)
+  } else {
+    .data_frame(
+      Parameter = insight::find_parameters(model, effects = "fixed", component = "conditional", flatten = TRUE),
+      SE = .get_se_from_summary(model)
+    )
+  }
 }
 
 
 #' @export
 standard_error.glm <- standard_error.lm
 
-
-#' @export
-standard_error.merMod <- standard_error.lm
 
 
 
@@ -227,52 +270,142 @@ standard_error.merMod <- standard_error.lm
 
 #' @rdname standard_error
 #' @export
-standard_error.glmmTMB <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
-  component <- match.arg(component)
-  if (is.null(.check_component(model, component))) {
-    return(NULL)
+standard_error.merMod <- function(model, effects = c("fixed", "random"), robust = FALSE, ...) {
+  effects <- match.arg(effects)
+
+  if (effects == "random") {
+    if (!requireNamespace("lme4", quietly = TRUE)) {
+      stop("Package 'lme4' required to calculate standard errors for random effects. Please install it.")
+    }
+
+    rand.se <- lme4::ranef(model, condVar = TRUE)
+    n.groupings <- length(rand.se)
+
+    for (m in 1:n.groupings) {
+
+      vars.m <- attr(rand.se[[m]], "postVar")
+
+      K <- dim(vars.m)[1]
+      J <- dim(vars.m)[3]
+
+      names.full <- dimnames(rand.se[[m]])
+      rand.se[[m]] <- array(NA, c(J, K))
+
+      for (j in 1:J) {
+        rand.se[[m]][j, ] <- sqrt(diag(as.matrix(vars.m[, , j])))
+      }
+      dimnames(rand.se[[m]]) <- list(names.full[[1]], names.full[[2]])
+    }
+    rand.se
+  } else {
+    if (isTRUE(robust)) {
+      standard_error_robust(model, ...)
+    } else {
+      .data_frame(
+        Parameter = insight::find_parameters(model, effects = "fixed", component = "conditional", flatten = TRUE),
+        SE = .get_se_from_summary(model)
+      )
+    }
   }
-
-  cs <- .compact_list(stats::coef(summary(model)))
-  x <- lapply(names(cs), function(i) {
-    .data_frame(
-      Parameter = insight::find_parameters(model, effects = "fixed", component = i, flatten = TRUE),
-      SE = as.vector(cs[[i]][, 2]),
-      Component = i
-    )
-  })
-
-  se <- do.call(rbind, x)
-  se$Component <- .rename_values(se$Component, "cond", "conditional")
-  se$Component <- .rename_values(se$Component, "zi", "zero_inflated")
-
-  .filter_component(se, component)
 }
 
 
 
 #' @rdname standard_error
 #' @export
-standard_error.MixMod <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+standard_error.glmmTMB <- function(model, effects = c("fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated"), ...) {
   component <- match.arg(component)
-  if (is.null(.check_component(model, component))) {
-    return(NULL)
+  effects <- match.arg(effects)
+
+  if (effects == "random") {
+    if (requireNamespace("TMB", quietly = TRUE) && requireNamespace("glmmTMB", quietly = TRUE)) {
+      s1 <- TMB::sdreport(model$obj, getJointPrecision = TRUE)
+      s2 <- sqrt(s1$diag.cov.random)
+      rand.ef <- glmmTMB::ranef(model)[[1]]
+      rand.se <- lapply(rand.ef, function(.x) {
+        cnt <- nrow(.x) * ncol(.x)
+        s3 <- s2[1:cnt]
+        s2 <- s2[-(1:cnt)]
+        d <- as.data.frame(matrix(sqrt(s3), ncol = ncol(.x), byrow = TRUE))
+        colnames(d) <- colnames(.x)
+        d
+      })
+      rand.se
+    } else {
+      return(NULL)
+    }
+  } else {
+    if (is.null(.check_component(model, component))) {
+      return(NULL)
+    }
+
+    cs <- .compact_list(stats::coef(summary(model)))
+    x <- lapply(names(cs), function(i) {
+      .data_frame(
+        Parameter = insight::find_parameters(model, effects = "fixed", component = i, flatten = TRUE),
+        SE = as.vector(cs[[i]][, 2]),
+        Component = i
+      )
+    })
+
+    se <- do.call(rbind, x)
+    se$Component <- .rename_values(se$Component, "cond", "conditional")
+    se$Component <- .rename_values(se$Component, "zi", "zero_inflated")
+
+    .filter_component(se, component)
   }
+}
 
-  s <- summary(model)
-  cs <- list(s$coef_table, s$coef_table_zi)
-  names(cs) <- c("conditional", "zero_inflated")
-  cs <- .compact_list(cs)
-  x <- lapply(names(cs), function(i) {
-    .data_frame(
-      Parameter = insight::find_parameters(model, effects = "fixed", component = i, flatten = TRUE),
-      SE = as.vector(cs[[i]][, 2]),
-      Component = i
-    )
-  })
 
-  se <- do.call(rbind, x)
-  .filter_component(se, component)
+
+#' @rdname standard_error
+#' @importFrom insight find_random
+#' @export
+standard_error.MixMod <- function(model, effects = c("fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+  component <- match.arg(component)
+  effects <- match.arg(effects)
+
+  if (effects == "random") {
+    if (!requireNamespace("lme4", quietly = TRUE)) {
+      stop("Package 'lme4' required to calculate standard errors for random effects. Please install it.")
+    }
+    rand.se <- lme4::ranef(model, post_vars = TRUE)
+    vars.m <- attr(rand.se, "post_vars")
+    all_names <- attributes(rand.se)$dimnames
+
+    if (dim(vars.m[[1]])[1] == 1)
+      rand.se <- sqrt(unlist(vars.m))
+    else {
+      rand.se <- do.call(
+        rbind,
+        lapply(vars.m, function(.x) t(as.data.frame(sqrt(diag(.x)))))
+      )
+      rownames(rand.se) <- all_names[[1]]
+      colnames(rand.se) <- all_names[[2]]
+      rand.se <- list(rand.se)
+      names(rand.se) <- insight::find_random(model, flatten = TRUE)
+    }
+    rand.se
+  } else {
+    if (is.null(.check_component(model, component))) {
+      return(NULL)
+    }
+
+    s <- summary(model)
+    cs <- list(s$coef_table, s$coef_table_zi)
+    names(cs) <- c("conditional", "zero_inflated")
+    cs <- .compact_list(cs)
+    x <- lapply(names(cs), function(i) {
+      .data_frame(
+        Parameter = insight::find_parameters(model, effects = "fixed", component = i, flatten = TRUE),
+        SE = as.vector(cs[[i]][, 2]),
+        Component = i
+      )
+    })
+
+    se <- do.call(rbind, x)
+    .filter_component(se, component)
+  }
 }
 
 
@@ -356,7 +489,7 @@ standard_error.svyglm.nb <- function(model, ...) {
   se <- sqrt(diag(stats::vcov(model, stderr = "robust")))
 
   .data_frame(
-    Parameter = names(se),
+    Parameter = .remove_backticks_from_string(names(se)),
     SE = as.vector(se)
   )
 }
@@ -372,10 +505,172 @@ standard_error.svyglm <- function(model, ...) {
   se <- cs[, 2]
 
   .data_frame(
-    Parameter = names(se),
+    Parameter = .remove_backticks_from_string(names(se)),
     SE = as.vector(se)
   )
 }
+
+
+
+
+
+
+
+# Survival Models -------------------------------------------------------
+
+
+#' @export
+standard_error.coxme <- function(model, ...) {
+  beta <- model$coefficients
+
+  if (length(beta) > 0) {
+    .data_frame(
+      Parameter = .remove_backticks_from_string(names(beta)),
+      SE = sqrt(diag(stats::vcov(model)))
+    )
+  }
+}
+
+
+
+#' @export
+standard_error.coxph <- function(model, ...) {
+  cs <- stats::coef(summary(model))
+  se <- cs[, 3]
+
+  .data_frame(
+    Parameter = .remove_backticks_from_string(names(se)),
+    SE = as.vector(se)
+  )
+}
+
+
+
+#' @export
+standard_error.survreg <- function(model, ...) {
+  s <- summary(model)
+  se <- s$table[, 2]
+
+  .data_frame(
+    Parameter = .remove_backticks_from_string(names(se)),
+    SE = as.vector(se)
+  )
+}
+
+
+
+#' @export
+standard_error.flexsurvreg <- function(model, ...) {
+  params <- insight::find_parameters(model, flatten = TRUE)
+  se <- model$res[rownames(model$res) %in% params, "se"]
+
+  .data_frame(
+    Parameter = .remove_backticks_from_string(names(se)),
+    SE = as.vector(se)
+  )
+}
+
+
+#' @export
+standard_error.aareg <- function(model, ...) {
+  s <- summary(model)
+  se <- s$table[, "se(coef)"]
+
+  .data_frame(
+    Parameter = .remove_backticks_from_string(names(se)),
+    SE = as.vector(se)
+  )
+}
+
+
+
+
+
+
+
+
+
+# Ordinal Models ---------------------------------------------------------
+
+
+#' @export
+standard_error.multinom <- function(model, ...) {
+  se <- tryCatch({
+    stderr <- summary(model)$standard.errors
+    if (is.null(stderr)) {
+      vc <- insight::get_varcov(model)
+      stderr <- as.vector(sqrt(diag(vc)))
+    } else {
+      if (is.matrix(stderr)) {
+        tmp <- c()
+        for (i in 1:nrow(stderr)) {
+          tmp <- c(tmp, as.vector(stderr[i, ]))
+        }
+      } else {
+        tmp <- as.vector(stderr)
+      }
+      stderr <- tmp
+    }
+    stderr
+  },
+  error = function(e) {
+    vc <- insight::get_varcov(model)
+    as.vector(sqrt(diag(vc)))
+  }
+  )
+
+  params <- insight::get_parameters(model)
+
+  if ("Response" %in% colnames(params)) {
+    .data_frame(
+      Parameter = params$Parameter,
+      SE = se,
+      Response = params$Response
+    )
+  } else {
+    .data_frame(
+      Parameter = params$Parameter,
+      SE = se
+    )
+  }
+}
+
+
+#' @export
+standard_error.brmultinom <- standard_error.multinom
+
+
+#' @export
+standard_error.polr <- function(model, ...) {
+  smry <- suppressMessages(as.data.frame(stats::coef(summary(model))))
+  se <- smry[[2]]
+  names(se) <- rownames(smry)
+
+  .data_frame(
+    Parameter = .remove_backticks_from_string(names(se)),
+    SE = as.vector(se)
+  )
+}
+
+
+
+#' @export
+standard_error.bracl <- function(model, ...) {
+  smry <- suppressMessages(as.data.frame(stats::coef(summary(model))))
+  se <- smry[[2]]
+  names(se) <- rownames(smry)
+
+  params <- insight::get_parameters(model)
+
+  .data_frame(
+    Parameter = params$Parameter,
+    SE = as.vector(se),
+    Response = params$Response
+  )
+}
+
+
+
 
 
 
@@ -387,29 +682,26 @@ standard_error.svyglm <- function(model, ...) {
 
 #' @export
 standard_error.rq <- function(model, ...) {
-  se <- tryCatch(
-    {
-      cs <- suppressWarnings(stats::coef(summary(model)))
-      se_column <- intersect(c("Std Error", "Std. Error"), colnames(cs))
-      if (length(se_column)) {
-        cs[, se_column]
-      } else {
-        s <- suppressWarnings(summary(model, covariance = TRUE))
-        as.vector(sqrt(diag(s$cov)))
-      }
-    },
-    error = function(e) {
-      ## TODO replace with "insight::get_varcov()"
-      s <- suppressWarnings(summary(model, covariance = TRUE))
-      as.vector(sqrt(diag(s$cov)))
+  se <- tryCatch({
+    cs <- suppressWarnings(stats::coef(summary(model)))
+    se_column <- intersect(c("Std Error", "Std. Error"), colnames(cs))
+    if (length(se_column)) {
+      cs[, se_column]
+    } else {
+      vc <- insight::get_varcov(model)
+      as.vector(sqrt(diag(vc)))
     }
+  },
+  error = function(e) {
+    vc <- insight::get_varcov(model)
+    as.vector(sqrt(diag(vc)))
+  }
   )
 
   params <- insight::get_parameters(model)
 
   .data_frame(
-    ## TODO change to "$Parameter" once fixed in insight
-    Parameter = params[[1]],
+    Parameter = params$Parameter,
     SE = se
   )
 }
@@ -427,8 +719,7 @@ standard_error.biglm <- function(model, ...) {
   params <- insight::get_parameters(model)
 
   .data_frame(
-    ## TODO change to "$Parameter" once fixed in insight
-    Parameter = params[[1]],
+    Parameter = params$Parameter,
     SE = as.vector(cs[, 4])
   )
 }
@@ -440,8 +731,7 @@ standard_error.crch <- function(model, ...) {
   params <- insight::get_parameters(model)
 
   .data_frame(
-    ## TODO change to "$Parameter" once fixed in insight
-    Parameter = params[[1]],
+    Parameter = params$Parameter,
     SE = as.vector(cs[, 2])
   )
 }
@@ -452,7 +742,7 @@ standard_error.gee <- function(model, ...) {
   cs <- stats::coef(summary(model))
 
   .data_frame(
-    Parameter = rownames(cs),
+    Parameter = .remove_backticks_from_string(rownames(cs)),
     SE = as.vector(cs[, "Naive S.E."])
   )
 }
@@ -465,7 +755,7 @@ standard_error.logistf <- function(model, ...) {
   se <- sqrt(diag(s$var))
 
   .data_frame(
-    Parameter = names(s$coefficients),
+    Parameter = .remove_backticks_from_string(names(s$coefficients)),
     SE = as.vector(se)
   )
 }
@@ -482,14 +772,13 @@ standard_error.glimML <- function(model, ...) {
   se <- s[, 2]
 
   .data_frame(
-    Parameter = rownames(s),
+    Parameter = .remove_backticks_from_string(rownames(s)),
     SE = as.vector(se)
   )
 }
 
 
 
-#' @importFrom stats vcov
 #' @export
 standard_error.lrm <- function(model, ...) {
   se <- sqrt(diag(stats::vcov(model)))
@@ -498,7 +787,7 @@ standard_error.lrm <- function(model, ...) {
   if (is.null(names(se))) names(se) <- names(stats::coef(model))
 
   .data_frame(
-    Parameter = names(se),
+    Parameter = .remove_backticks_from_string(names(se)),
     SE = as.vector(se)
   )
 }
@@ -520,24 +809,22 @@ standard_error.betareg <- function(model, ...) {
   se <- cs[, 2]
 
   .data_frame(
-    Parameter = names(se),
+    Parameter = .remove_backticks_from_string(names(se)),
     SE = as.vector(se)
   )
 }
 
 
 
-#' @importFrom utils capture.output
 #' @export
 standard_error.gamlss <- function(model, ...) {
   parms <- insight::get_parameters(model)
   utils::capture.output(cs <- summary(model))
 
   .data_frame(
-    ## TODO change to "$Parameter" and "$Component" once fixed in insight
-    Parameter = parms[[1]],
+    Parameter = parms$Parameter,
     SE = as.vector(cs[, 2]),
-    Component = parms[[3]]
+    Component = parms$Component
   )
 }
 
@@ -548,51 +835,10 @@ standard_error.plm <- function(model, ...) {
   se <- stats::coef(summary(model))
 
   .data_frame(
-    Parameter = names(se[, 2]),
+    Parameter = .remove_backticks_from_string(names(se[, 2])),
     SE = as.vector(se[, 2])
   )
 }
-
-
-
-#' @export
-standard_error.coxme <- function(model, ...) {
-  beta <- model$coefficients
-
-  if (length(beta) > 0) {
-    .data_frame(
-      Parameter = names(beta),
-      SE = sqrt(diag(stats::vcov(model)))
-    )
-  }
-}
-
-
-
-#' @export
-standard_error.coxph <- function(model, ...) {
-  cs <- stats::coef(summary(model))
-  se <- cs[, 3]
-
-  .data_frame(
-    Parameter = names(se),
-    SE = as.vector(se)
-  )
-}
-
-
-
-#' @export
-standard_error.survreg <- function(model, ...) {
-  s <- summary(model)
-  se <- s$table[, 2]
-
-  .data_frame(
-    Parameter = names(se),
-    SE = as.vector(se)
-  )
-}
-
 
 
 #' @export
@@ -603,7 +849,7 @@ standard_error.gam <- function(model, ...) {
   n_smooth <- nrow(s.table)
 
   .data_frame(
-    Parameter = c(rownames(p.table), rownames(s.table)),
+    Parameter = .remove_backticks_from_string(c(rownames(p.table), rownames(s.table))),
     SE = c(as.vector(p.table[, 2]), rep(NA, n_smooth)),
     Component = c(rep("conditional", n_cond), rep("smooth_terms", n_smooth))
   )
@@ -628,7 +874,7 @@ standard_error.MCMCglmm <- function(model, ...) {
   parms <- as.data.frame(model$Sol[, 1:nF, drop = FALSE])
 
   .data_frame(
-    Parameter = colnames(parms),
+    Parameter = .remove_backticks_from_string(colnames(parms)),
     SE = unname(sapply(parms, stats::sd))
   )
 }
@@ -666,13 +912,16 @@ standard_error.wbm <- function(model, ...) {
   params <- insight::get_parameters(model, effects = "fixed")
 
   .data_frame(
-    ## TODO fix once insight is updated on CRAN
-    Parameter = params[[1]],
+    Parameter = params$Parameter,
     SE = as.vector(se),
-    Component = params[[3]]
+    Component = params$Component
   )
 }
 
+
+
+#' @export
+standard_error.wbgee <- standard_error.wbm
 
 
 #' @export
@@ -691,7 +940,7 @@ standard_error.vglm <- function(model, ...) {
   se <- cs[, 2]
 
   .data_frame(
-    Parameter = names(se),
+    Parameter = .remove_backticks_from_string(names(se)),
     SE = as.vector(se)
   )
 }
@@ -704,7 +953,7 @@ standard_error.gmnl <- function(model, ...) {
   se <- cs[, 2]
 
   pv <- .data_frame(
-    Parameter = names(se),
+    Parameter = .remove_backticks_from_string(names(se)),
     SE = as.vector(se)
   )
 
@@ -721,23 +970,24 @@ standard_error.gmnl <- function(model, ...) {
 
 
 #' @export
-standard_error.polr <- function(model, ...) {
-  smry <- suppressMessages(as.data.frame(stats::coef(summary(model))))
-  se <- smry[[2]]
-  names(se) <- rownames(smry)
-
+standard_error.rma <- function(model, ...) {
+  params <- insight::get_parameters(model)
   .data_frame(
-    Parameter = names(se),
-    SE = as.vector(se)
+    Parameter = .remove_backticks_from_string(params$Parameter),
+    SE = model[["se"]]
   )
 }
+
+
+
+
+
 
 
 
 # helper -----------------------------------------------------------------
 
 
-#' @importFrom stats coef
 .get_se_from_summary <- function(model, component = NULL) {
   cs <- stats::coef(summary(model))
   se <- NULL
@@ -759,6 +1009,7 @@ standard_error.polr <- function(model, ...) {
     }
   }
 
+  names(se) <- .remove_backticks_from_string(names(se))
   se
 }
 

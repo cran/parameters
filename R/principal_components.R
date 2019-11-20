@@ -11,9 +11,22 @@
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @details
+#'  \subsection{Complexity}{
+#'    Complexity represents the number of latent components needed to account
+#'    for the observed variables. Whereas a perfect simple structure solution
+#'    has a complexity of 1 in that each item would only load on one factor,
+#'    a solution with evenly distributed items has a complexity greater than 1
+#'    (\cite{Hofman, 1978; Pettersson and Turkheimer, 2010}) .
+#'  }
+#'  \subsection{PCA or FA?}{
+#'  There is a simplified rule of thumb that may help do decide whether to run
+#'  a factor analysis or a principal component analysis:
 #'  \itemize{
-#'    \item \strong{Complexity} (Hoffman's, 1978; Pettersson and Turkheimer, 2010) represents the number of latent components needed to account for the observed variables. Whereas a perfect simple structure solution has a complexity of 1 in that each item would only load on one factor, a solution with evenly distributed items has a complexity greater than 1.
-#' }
+#'    \item Run factor analysis if you assume or wish to test a theoretical model of latent factors causing observed variables.
+#'    \item Run principal component analysis If you want to simply reduce your correlated observed variables to a smaller set of important independent composite variables.
+#'  }
+#'  (Source: \href{https://stats.stackexchange.com/q/1576/54740}{CrossValidated})
+#'  }
 #'
 #' @note There is a \code{summary()}-method that prints the Eigenvalues and (explained) variance for each extracted component.
 #'
@@ -34,7 +47,8 @@
 #'
 #' @return A data.frame of loadings.
 #' @references \itemize{
-#'   \item Pettersson, E., & Turkheimer, E. (2010). Item selection, evaluation, and simple structure in personality data. Journal of research in personality, 44(4), 407-420.
+#'   \item Hofmann, R. (1978). Complexity and simplicity as objective indices descriptive of factor solutions. Multivariate Behavioral Research, 13:2, 247-250, \doi{10.1207/s15327906mbr1302_9}
+#'   \item Pettersson, E., & Turkheimer, E. (2010). Item selection, evaluation, and simple structure in personality data. Journal of research in personality, 44(4), 407-420, \doi{10.1016/j.jrp.2010.03.002}
 #' }
 #' @importFrom stats prcomp
 #' @export
@@ -50,7 +64,7 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
 
   # Standardize
   if (standardize) {
-    x <- standardize(x, verbose = FALSE, ...)
+    x <- as.data.frame(scale(x))
   }
 
   # PCA
@@ -117,7 +131,7 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
   attr(loadings, "loadings_columns") <- loading_cols
 
   # Sorting
-  if (sort) {
+  if (isTRUE(sort)) {
     loadings <- .sort_loadings(loadings)
   }
 
@@ -130,7 +144,7 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
   attr(loadings, "loadings_long") <- .long_loadings(loadings, threshold = threshold)
 
   # add class-attribute for printing
-  class(loadings) <- c("parameters_pca", class(loadings))
+  class(loadings) <- unique(c("parameters_pca", "see_parameters_pca", class(loadings)))
 
   loadings
 }
@@ -140,7 +154,7 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
 
 
 #' @keywords internal
-.get_n_factors <- function(x, n = NULL, type = "PCA", rotation = "PCA", ...) {
+.get_n_factors <- function(x, n = NULL, type = "PCA", rotation = "varimax", ...) {
   # N factors
   if (is.null(n) || n == "auto") {
     n <- as.numeric(n_factors(x, type = type, rotation = rotation, ...))

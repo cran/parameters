@@ -2,19 +2,23 @@
 #'
 #' This function attempts to return, or compute, p-values of a model's parameters. The nature of the p-values is different depending on the model:
 #' \itemize{
-#' \item Mixed models (lme4): TO BE IMPROVED.
+#' \item Mixed models (lme4): By default, p-values are based on Wald-test approximations (see \code{\link{p_value_wald}}). For \code{lmerMod} objects, if \code{method = "kenward"}, p-values are based on Kenward-Roger approximations, i.e. \code{\link{p_value_kenward}} is called.
 #' }
 #'
 #' @param model A statistical model.
-#' @param ... Arguments passed to or from other methods.
+#' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.
 #' @inheritParams model_simulate
+#' @inheritParams standard_error
 #'
 #' @examples
 #' model <- lme4::lmer(Petal.Length ~ Sepal.Length + (1 | Species), data = iris)
 #' p_value(model)
 #' @return The p-values.
 #' @importFrom bayestestR p_direction convert_pd_to_p
-#' @importFrom stats coef vcov pnorm
+#' @importFrom stats coef vcov pt pnorm na.omit
+#' @importFrom insight get_statistic get_parameters find_parameters print_color
+#' @importFrom methods slot
+#' @importFrom utils capture.output
 #' @export
 p_value <- function(model, ...) {
   UseMethod("p_value")
@@ -27,6 +31,7 @@ p_value <- function(model, ...) {
 
 #' @export
 p_value.default <- function(model, ...) {
+  # first, we need some special handling for Zelig-models
   p <- tryCatch({
     if (grepl("^Zelig-", class(model)[1])) {
       if (!requireNamespace("Zelig", quietly = T)) {
@@ -34,6 +39,7 @@ p_value.default <- function(model, ...) {
       }
       unlist(Zelig::get_pvalue(model))
     } else {
+      # try to get p-value from classical summary for default models
       .get_pval_from_summary(model)
     }
   },
@@ -41,6 +47,19 @@ p_value.default <- function(model, ...) {
     NULL
   }
   )
+
+  # if all fails, try to get p-value from test-statistic
+  if (is.null(p)) {
+    p <- tryCatch({
+      stat <- insight::get_statistic(model)
+      p <- 2 * stats::pnorm(abs(stat$Statistic), lower.tail = FALSE)
+      names(p) <- stat$Parameter
+    },
+    error = function(e) {
+      NULL
+    }
+    )
+  }
 
   if (is.null(p)) {
     insight::print_color("\nCould not extract p-values from model object.\n", "red")
@@ -65,7 +84,7 @@ p_value.mlm <- function(model, ...) {
     )
   })
 
-  do.call(rbind, p)
+  .remove_backticks_from_parameter_names(do.call(rbind, p))
 }
 
 
@@ -105,8 +124,7 @@ p_value.negbin <- p_value.default
 p_value.tobit <- function(model, ...) {
   params <- insight::get_parameters(model)
   p <- p_value.default(model, ...)
-  ## TODO change to "$Parameter" once fixed in insight
-  p[p$Parameter %in% params[[1]], ]
+  p[p$Parameter %in% params$Parameter, ]
 }
 
 
@@ -161,7 +179,7 @@ p_value.lme <- function(model, ...) {
   p <- cs[, 5]
 
   .data_frame(
-    Parameter = rownames(cs),
+    Parameter = .remove_backticks_from_string(rownames(cs)),
     p = as.vector(p)
   )
 }
@@ -265,7 +283,7 @@ p_value.brmsfit <- function(model, ...) {
   p <- bayestestR::p_direction(model)
 
   .data_frame(
-    Parameter = p$Parameter,
+    Parameter = .remove_backticks_from_string(p$Parameter),
     p = sapply(p$pd, bayestestR::convert_pd_to_p, simplify = TRUE)
   )
 }
@@ -293,7 +311,7 @@ p_value.svyglm <- function(model, ...) {
   p <- cs[, 4]
 
   .data_frame(
-    Parameter = rownames(cs),
+    Parameter = .remove_backticks_from_string(rownames(cs)),
     p = as.vector(p)
   )
 }
@@ -303,10 +321,10 @@ p_value.svyglm <- function(model, ...) {
 #' @export
 p_value.svyolr <- function(model, ...) {
   cs <- stats::coef(summary(model))
-  p <- 2 * stats::pnorm(abs(cs[, 3]), lower.tail = FALSE)
+  p <- 2 * stats::pt(abs(cs[, 3]), df = degrees_of_freedom(model, method = "any"), lower.tail = FALSE)
 
   .data_frame(
-    Parameter = rownames(cs),
+    Parameter = .remove_backticks_from_string(rownames(cs)),
     p = as.vector(p)
   )
 }
@@ -321,10 +339,10 @@ p_value.svyglm.nb <- function(model, ...) {
 
   est <- stats::coef(model)
   se <- sqrt(diag(stats::vcov(model, stderr = "robust")))
-  p <- 2 * stats::pnorm(abs(est / se), lower.tail = FALSE)
+  p <- 2 * stats::pt(abs(est / se), df = degrees_of_freedom(model, method = "any"), lower.tail = FALSE)
 
   .data_frame(
-    Parameter = names(p),
+    Parameter = .remove_backticks_from_string(names(p)),
     p = as.vector(p)
   )
 }
@@ -391,7 +409,19 @@ p_value.coxph <- function(model, ...) {
   p <- cs[, 5]
 
   .data_frame(
-    Parameter = names(p),
+    Parameter = .remove_backticks_from_string(names(p)),
+    p = as.vector(p)
+  )
+}
+
+
+#' @export
+p_value.aareg <- function(model, ...) {
+  s <- summary(model)
+  p <- s$table[, "p"]
+
+  .data_frame(
+    Parameter = .remove_backticks_from_string(names(p)),
     p = as.vector(p)
   )
 }
@@ -400,7 +430,7 @@ p_value.coxph <- function(model, ...) {
 
 #' @export
 p_value.coxme <- function(model, ...) {
-  stat <- .get_statistic.coxme(model)
+  stat <- insight::get_statistic(model)
 
   if (!is.null(stat)) {
     .data_frame(
@@ -418,11 +448,24 @@ p_value.survreg <- function(model, ...) {
   p <- s$table[, "p"]
 
   .data_frame(
-    Parameter = names(p),
+    Parameter = .remove_backticks_from_string(names(p)),
     p = as.vector(p)
   )
 }
 
+
+#' @export
+p_value.flexsurvreg <- function(model, ...) {
+  params <- insight::get_parameters(model)
+  est <- params$Estimate
+  se <- standard_error(model)$SE
+  p <- 2 * stats::pt(abs(est / se), df = degrees_of_freedom(model, method = "any"), lower.tail = FALSE)
+
+  .data_frame(
+    Parameter = params$Parameter,
+    p = as.vector(p)
+  )
+}
 
 
 
@@ -433,25 +476,22 @@ p_value.survreg <- function(model, ...) {
 
 #' @export
 p_value.rq <- function(model, ...) {
-
-  p <- tryCatch(
-    {
-      cs <- suppressWarnings(stats::coef(summary(model)))
-      cs[, "Pr(>|t|)"]
-    },
-    error = function(e) {
-      .get_pval_from_summary(
-        model,
-        cs = suppressWarnings(stats::coef(summary(model, covariance = TRUE)))
-      )
-    }
+  p <- tryCatch({
+    cs <- suppressWarnings(stats::coef(summary(model)))
+    cs[, "Pr(>|t|)"]
+  },
+  error = function(e) {
+    .get_pval_from_summary(
+      model,
+      cs = suppressWarnings(stats::coef(summary(model, covariance = TRUE)))
+    )
+  }
   )
 
   params <- insight::get_parameters(model)
 
   .data_frame(
-    ## TODO change to "$Parameter" once fixed in insight
-    Parameter = params[[1]],
+    Parameter = params$Parameter,
     p = p
   )
 }
@@ -469,8 +509,7 @@ p_value.biglm <- function(model, ...) {
   params <- insight::get_parameters(model)
 
   .data_frame(
-    ## TODO change to "$Parameter" once fixed in insight
-    Parameter = params[[1]],
+    Parameter = params$Parameter,
     p = as.vector(cs[, 5])
   )
 }
@@ -482,8 +521,7 @@ p_value.crch <- function(model, ...) {
   params <- insight::get_parameters(model)
 
   .data_frame(
-    ## TODO change to "$Parameter" once fixed in insight
-    Parameter = params[[1]],
+    Parameter = params$Parameter,
     p = as.vector(cs[, 4])
   )
 }
@@ -492,16 +530,15 @@ p_value.crch <- function(model, ...) {
 #' @export
 p_value.gee <- function(model, ...) {
   cs <- stats::coef(summary(model))
-  p <- 2 * stats::pnorm(abs(cs[, "Estimate"] / cs[, "Naive S.E."]), lower.tail = FALSE)
+  p <- 2 * stats::pt(abs(cs[, "Estimate"] / cs[, "Naive S.E."]), df = degrees_of_freedom(model, method = "any"), lower.tail = FALSE)
 
   .data_frame(
-    Parameter = rownames(cs),
+    Parameter = .remove_backticks_from_string(rownames(cs)),
     p = as.vector(p)
   )
 }
 
 
-#' @importFrom methods slot
 #' @export
 p_value.glimML <- function(model, ...) {
   if (!requireNamespace("aod", quietly = TRUE)) {
@@ -512,7 +549,7 @@ p_value.glimML <- function(model, ...) {
   p <- s[, 4]
 
   .data_frame(
-    Parameter = rownames(s),
+    Parameter = .remove_backticks_from_string(rownames(s)),
     p = as.vector(p)
   )
 }
@@ -524,7 +561,7 @@ p_value.logistf <- function(model, ...) {
   utils::capture.output(s <- summary(model))
 
   .data_frame(
-    Parameter = names(s$prob),
+    Parameter = .remove_backticks_from_string(names(s$prob)),
     p = as.vector(s$prob)
   )
 }
@@ -533,11 +570,11 @@ p_value.logistf <- function(model, ...) {
 
 #' @export
 p_value.lrm <- function(model, ...) {
-  stat <- .get_statistic(model)
-  p <- 2 * stats::pnorm(abs(stat$Statistic), lower.tail = FALSE)
+  stat <- insight::get_statistic(model)
+  p <- 2 * stats::pt(abs(stat$Statistic), df = degrees_of_freedom(model, method = "any"), lower.tail = FALSE)
 
   .data_frame(
-    Parameter = stat$Parameter,
+    Parameter = .remove_backticks_from_string(stat$Parameter),
     p = as.vector(p)
   )
 }
@@ -556,10 +593,10 @@ p_value.psm <- p_value.lrm
 #' @export
 p_value.rlm <- function(model, ...) {
   cs <- stats::coef(summary(model))
-  p <- 2 * stats::pnorm(abs(cs[, 3]), lower.tail = FALSE)
+  p <- 2 * stats::pt(abs(cs[, 3]), df = degrees_of_freedom(model, method = "any"), lower.tail = FALSE)
 
   .data_frame(
-    Parameter = names(p),
+    Parameter = .remove_backticks_from_string(names(p)),
     p = as.vector(p)
   )
 }
@@ -572,24 +609,22 @@ p_value.betareg <- function(model, ...) {
   p <- cs[, 4]
 
   .data_frame(
-    Parameter = names(p),
+    Parameter = .remove_backticks_from_string(names(p)),
     p = as.vector(p)
   )
 }
 
 
 
-#' @importFrom utils capture.output
 #' @export
 p_value.gamlss <- function(model, ...) {
   parms <- insight::get_parameters(model)
   utils::capture.output(cs <- summary(model))
 
   .data_frame(
-    ## TODO change to "$Parameter" and "$Component" once fixed in insight
-    Parameter = parms[[1]],
+    Parameter = parms$Parameter,
     p = as.vector(cs[, 4]),
-    Component = parms[[3]]
+    Component = parms$Component
   )
 }
 
@@ -626,13 +661,15 @@ p_value.wbm <- function(model, ...) {
   params <- insight::get_parameters(model, effects = "fixed")
 
   .data_frame(
-    ## TODO fix once insight is updated on CRAN
-    Parameter = params[[1]],
+    Parameter = params$Parameter,
     p = as.vector(p),
-    Component = params[[3]]
+    Component = params$Component
   )
 }
 
+
+#' @export
+p_value.wbgee <- p_value.wbm
 
 
 #' @export
@@ -652,18 +689,17 @@ p_value.gam <- function(model, ...) {
     Component = "smooth_terms"
   )
 
-  rbind(d1, d2)
+  .remove_backticks_from_parameter_names(rbind(d1, d2))
 }
 
 
 
-#' @importFrom stats na.omit
 #' @export
 p_value.Gam <- function(model, ...) {
   p.aov <- stats::na.omit(summary(model)$parametric.anova)
 
   .data_frame(
-    Parameter = rownames(p.aov),
+    Parameter = .remove_backticks_from_string(rownames(p.aov)),
     p = as.vector(p.aov[, 5])
   )
 }
@@ -689,7 +725,7 @@ p_value.gls <- function(model, ...) {
   cs <- summary(model)$tTable
   p <- cs[, 4]
   .data_frame(
-    Parameter = rownames(cs),
+    Parameter = .remove_backticks_from_string(rownames(cs)),
     p = as.vector(p)
   )
 }
@@ -701,7 +737,7 @@ p_value.pggls <- function(model, ...) {
   cs <- summary(model)$CoefTable
   p <- cs[, 4]
   .data_frame(
-    Parameter = rownames(cs),
+    Parameter = .remove_backticks_from_string(rownames(cs)),
     p = as.vector(p)
   )
 }
@@ -715,7 +751,7 @@ p_value.gmnl <- function(model, ...) {
   # se <- cs[, 2]
 
   pv <- .data_frame(
-    Parameter = rownames(cs),
+    Parameter = .remove_backticks_from_string(rownames(cs)),
     p = as.vector(p)
   )
 
@@ -740,13 +776,33 @@ p_value.htest <- function(model, ...) {
 
 #' @export
 p_value.multinom <- function(model, ...) {
-  s <- summary(model)
-  stat <- s$coefficients / s$standard.errors
-  p <- 2 * stats::pnorm(stat, lower.tail = FALSE)
+  stat <- insight::get_statistic(model)
+  p <- 2 * stats::pnorm(abs(stat$Statistic), lower.tail = FALSE)
 
   .data_frame(
-    Parameter = names(p),
-    p = as.vector(p)
+    Parameter = stat$Parameter,
+    p = as.vector(p),
+    Response = stat$Response
+  )
+}
+
+
+#' @export
+p_value.brmultinom <- p_value.multinom
+
+
+#' @export
+p_value.bracl <- function(model, ...) {
+  smry <- suppressMessages(as.data.frame(stats::coef(summary(model))))
+  p <- smry[[4]]
+  names(p) <- rownames(smry)
+
+  params <- insight::get_parameters(model)
+
+  .data_frame(
+    Parameter = params$Parameter,
+    p = as.vector(p),
+    Response = params$Response
   )
 }
 
@@ -757,7 +813,7 @@ p_value.maxLik <- function(model, ...) {
   p <- summary(model)$estimate[, 4]
 
   .data_frame(
-    Parameter = names(p),
+    Parameter = .remove_backticks_from_string(names(p)),
     p = as.vector(p)
   )
 }
@@ -769,7 +825,7 @@ p_value.pglm <- function(model, ...) {
   p <- summary(model)$estimate[, 4]
 
   .data_frame(
-    Parameter = names(p),
+    Parameter = .remove_backticks_from_string(names(p)),
     p = as.vector(p)
   )
 }
@@ -781,7 +837,7 @@ p_value.plm <- function(model, ...) {
   p <- stats::coef(summary(model))
 
   .data_frame(
-    Parameter = names(p[, 4]),
+    Parameter = .remove_backticks_from_string(names(p[, 4])),
     p = as.vector(p[, 4])
   )
 }
@@ -792,12 +848,11 @@ p_value.plm <- function(model, ...) {
 p_value.polr <- function(model, ...) {
   smry <- suppressMessages(as.data.frame(stats::coef(summary(model))))
   tstat <- smry[[3]]
-  # se <- smry[[2]]
-  p <- 2 * stats::pnorm(abs(tstat), lower.tail = FALSE)
+  p <- 2 * stats::pt(abs(tstat), df = degrees_of_freedom(model, method = "any"), lower.tail = FALSE)
   names(p) <- rownames(smry)
 
   .data_frame(
-    Parameter = names(p),
+    Parameter = .remove_backticks_from_string(names(p)),
     p = as.vector(p)
   )
 }
@@ -815,10 +870,22 @@ p_value.vglm <- function(model, ...) {
   # se <- cs[, 2]
 
   .data_frame(
-    Parameter = names(p),
+    Parameter = .remove_backticks_from_string(names(p)),
     p = as.vector(p)
   )
 }
+
+
+
+#' @export
+p_value.rma <- function(model, ...) {
+  params <- insight::get_parameters(model)
+  .data_frame(
+    Parameter = .remove_backticks_from_string(params$Parameter),
+    p = model$pval
+  )
+}
+
 
 
 
@@ -869,7 +936,6 @@ p_value.list <- function(model, ...) {
 # helper --------------------------------------------------------
 
 
-#' @importFrom stats coef
 .get_pval_from_summary <- function(model, cs = NULL) {
   if (is.null(cs)) cs <- stats::coef(summary(model))
   p <- NULL
@@ -895,5 +961,6 @@ p_value.list <- function(model, ...) {
     }
   }
 
+  names(p) <- .remove_backticks_from_string(names(p))
   p
 }

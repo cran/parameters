@@ -3,7 +3,7 @@
 #' Extract and compute indices and measures to describe parameters of generalized additive models (GAM(M)s).
 #'
 #' @param model A gam/gamm model.
-#' @inheritParams model_parameters.lm
+#' @inheritParams model_parameters.default
 #'
 #' @seealso \code{\link[=standardize_names]{standardize_names()}} to rename
 #'   columns into a consistent, standardized naming scheme.
@@ -18,17 +18,19 @@
 #' model <- gam(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 #' model_parameters(model)
 #' @export
-model_parameters.gam <- function(model, ci = .95, bootstrap = FALSE, iterations = 1000, ...) {
+model_parameters.gam <- function(model, ci = .95, bootstrap = FALSE, iterations = 1000, standardize = NULL, exponentiate = FALSE, ...) {
   # Processing
   if (bootstrap) {
     parameters <- parameters_bootstrap(model, iterations = iterations, ci = ci, ...)
   } else {
-    parameters <- .extract_parameters_generic(model, ci = ci, component = "all", merge_by = c("Parameter", "Component"))
+    parameters <- .extract_parameters_generic(model, ci = ci, component = "all", merge_by = c("Parameter", "Component"), standardize = standardize)
   }
 
-  attr(parameters, "pretty_names") <- format_parameters(model)
-  attr(parameters, "ci") <- ci
+  if (exponentiate) parameters <- .exponentiate_parameters(parameters)
+  parameters <- .add_model_parameters_attributes(parameters, model, ci, exponentiate, ...)
+  attr(parameters, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   class(parameters) <- c("parameters_model", "see_parameters_model", class(parameters))
+
   parameters
 }
 

@@ -6,21 +6,7 @@
   x
 }
 
-#' @keywords internal
-.clean_confint <- function(ci) {
-  estimate_row <- grep(pattern = "^estimate", x = rownames(ci), ignore.case = TRUE)
-  if (length(estimate_row)) {
-    ci <- ci[-estimate_row, ]
-  }
 
-  zi_col <- grep(pattern = "^zi\\.", x = colnames(ci), ignore.case = TRUE)
-  if (length(zi_col)) {
-    ci <- ci[, -zi_col, drop = FALSE]
-  }
-
-  colnames(ci) <- gsub("cond.", "", colnames(ci), fixed = TRUE)
-  ci
-}
 
 
 
@@ -95,6 +81,34 @@
 
 
 
+#' Safe transformation from factor/character to numeric
+#'
+#' @importFrom stats na.omit
+#' @keywords internal
+.factor_to_dummy <- function(x) {
+  if (is.numeric(x)) {
+    return(x)
+  }
+
+  # get unique levels / values
+  values <- if (is.factor(x)) {
+      levels(x)
+    } else {
+      stats::na.omit(unique(x))
+    }
+
+  dummy <- as.data.frame(do.call(cbind, lapply(values, function(i) {
+    out <- rep(0, length(x))
+    out[is.na(x)] <- NA
+    out[x == i] <- 1
+    out
+  })))
+
+  colnames(dummy) <- values
+  dummy
+}
+
+
 #' Find most common occurence
 #'
 #' @keywords internal
@@ -108,23 +122,27 @@
 
 
 
-# remove NULL elements from lists
+#' remove NULL elements from lists
+#' @keywords internal
 .compact_list <- function(x) x[!sapply(x, function(i) length(i) == 0 || is.null(i) || any(i == "NULL"))]
 
 
 
-# remove empty string from character
+#' remove empty string from character
+#' @keywords internal
 .compact_character <- function(x) x[!sapply(x, function(i) nchar(i) == 0 || is.null(i) || any(i == "NULL"))]
 
 
+
+#' @keywords internal
 .rename_values <- function(x, old, new) {
   x[x %in% old] <- new
   x
 }
 
 
-# for models with zero-inflation component, return
-# required component of model-summary
+#' for models with zero-inflation component, return required component of model-summary
+#' @keywords internal
 .filter_component <- function(dat, component) {
   switch(
     component,
@@ -146,6 +164,7 @@
 
 
 # capitalize first character in string
+#' @keywords internal
 .capitalize <- function(x) {
   capped <- grep("^[A-Z]", x, invert = TRUE)
   substr(x[capped], 1, 1) <- toupper(substr(x[capped], 1, 1))
@@ -153,7 +172,9 @@
 }
 
 
-
+#' @keywords internal
 .safe_deparse <- function(string) {
   paste0(sapply(deparse(string, width.cutoff = 500), trimws, simplify = TRUE), collapse = " ")
 }
+
+

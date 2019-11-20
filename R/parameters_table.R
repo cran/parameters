@@ -23,6 +23,16 @@
 #' @importFrom stats na.omit
 #' @export
 parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, ...) {
+
+  # check if user supplied digits attributes
+  digits <- attributes(x)$digits
+  ci_digits <- attributes(x)$ci_digits
+  p_digits <- attributes(x)$p_digits
+
+  if (is.null(digits)) digits <- 2
+  if (is.null(ci_digits)) ci_digits <- 2
+  if (is.null(p_digits)) p_digits <- 3
+
   x <- as.data.frame(x)
 
   # Format parameters names
@@ -39,7 +49,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, ...) {
 
   # P values
   if ("p" %in% names(x)) {
-    x$p <- format_p(x$p, stars = stars, name = NULL, missing = "")
+    x$p <- format_p(x$p, stars = stars, name = NULL, missing = "", digits = p_digits)
     x$p <- format(x$p, justify = "left")
   }
 
@@ -53,9 +63,10 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, ...) {
       ci_colname <- sprintf("%i%% CI", attributes(x)$ci * 100)
     }
     # Get characters to align the CI
-    max_len <- max(nchar(stats::na.omit(c(round(x[[ci_low]], 2), round(x[[ci_high]], 2)))))
+    max_len_low <- max(unlist(lapply(stats::na.omit(round(x[ci_low], ci_digits)), function(.i) nchar(as.character(.i)))))
+    max_len_high <- max(unlist(lapply(stats::na.omit(round(x[ci_high], ci_digits)), function(.i) nchar(as.character(.i)))))
     for (i in 1:length(ci_colname)) {
-      x[ci_colname[i]] <- format_ci(x[[ci_low[i]]], x[[ci_high[i]]], ci = NULL, width = max_len, brackets = TRUE)
+      x[ci_colname[i]] <- format_ci(x[[ci_low[i]]], x[[ci_high[i]]], ci = NULL, digits = ci_digits, width_low = max_len_low, width_high = max_len_high, brackets = TRUE)
     }
     # Replace at initial position
     ci_position <- which(names(x) == ci_low[1])
@@ -65,12 +76,15 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, ...) {
 
   # Standardized
   std_cols <- names(x)[grepl("Std_", names(x))]
-  x[std_cols] <- insight::format_value(x[std_cols])
+  x[std_cols] <- insight::format_value(x[std_cols], digits = digits)
   names(x)[grepl("Std_", names(x))] <- paste0(gsub("Std_", "", std_cols), " (std.)")
 
   # Partial
   x[names(x)[grepl("_partial", names(x))]] <- insight::format_value(x[names(x)[grepl("_partial", names(x))]])
   names(x)[grepl("_partial", names(x))] <- paste0(gsub("_partial", "", names(x)[grepl("_partial", names(x))]), " (partial)")
+
+  # metafor
+  if ("Weight" %in% names(x)) x$Weight <- insight::format_value(x$Weight, protect_integers = TRUE)
 
   # Bayesian
   if ("Prior_Location" %in% names(x)) x$Prior_Location <- insight::format_value(x$Prior_Location, protect_integers = TRUE)
@@ -101,7 +115,7 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, ...) {
 
   # Format remaining columns
   other_cols <- names(x)[sapply(x, is.numeric)]
-  x[other_cols[other_cols %in% names(x)]] <- insight::format_value(x[other_cols[other_cols %in% names(x)]])
+  x[other_cols[other_cols %in% names(x)]] <- insight::format_value(x[other_cols[other_cols %in% names(x)]], digits = digits)
 
 
   # SEM links

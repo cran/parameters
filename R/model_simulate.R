@@ -119,6 +119,10 @@ model_simulate.plm <- model_simulate.lm
 
 
 #' @export
+model_simulate.flexsurvreg <- model_simulate.lm
+
+
+#' @export
 model_simulate.LORgee <- model_simulate.lm
 
 
@@ -234,6 +238,17 @@ model_simulate.tobit <- model_simulate.lm
 model_simulate.survreg <- model_simulate.lm
 
 
+#' @export
+model_simulate.multinom <- model_simulate.lm
+
+
+#' @export
+model_simulate.brmultinom <- model_simulate.lm
+
+
+#' @export
+model_simulate.bracl <- model_simulate.lm
+
 
 
 
@@ -242,6 +257,7 @@ model_simulate.survreg <- model_simulate.lm
 # gam models  -----------------------------------------
 
 
+#' @importFrom insight get_varcov
 #' @export
 model_simulate.gam <- function(model, iterations = 1000, ...) {
   if (!requireNamespace("MASS", quietly = TRUE)) {
@@ -251,7 +267,7 @@ model_simulate.gam <- function(model, iterations = 1000, ...) {
   if (is.null(iterations)) iterations <- 1000
 
   beta <- stats::coef(model)
-  varcov <- .get_varcov(model, "all")
+  varcov <- insight::get_varcov(model, component = "all")
   as.data.frame(MASS::mvrnorm(n = iterations, mu = beta, Sigma = varcov))
 }
 
@@ -341,6 +357,7 @@ model_simulate.zerocount <- model_simulate.zeroinfl
 # helper -----------------------------------------
 
 
+#' @importFrom insight get_varcov
 .model_simulate <- function(model, iterations, component = "conditional") {
   if (!requireNamespace("MASS", quietly = TRUE)) {
     stop("Package 'MASS' needed for this function to work. Please install it.", call. = FALSE)
@@ -349,11 +366,9 @@ model_simulate.zerocount <- model_simulate.zeroinfl
   if (is.null(iterations)) iterations <- 1000
 
   params <- insight::get_parameters(model, effects = "fixed", component = component)
-  ## TODO change to "$Estimate" and "$Parameter" once fixed in insight
-  beta <- stats::setNames(params[[2]], params[[1]]) # Transform to named vector
+  beta <- stats::setNames(params$Estimate, params$Parameter) # Transform to named vector
 
-  ## TODO replace with insight::get_varcov()
-  varcov <- .get_varcov(model, component)
+  varcov <- insight::get_varcov(model, component)
   as.data.frame(MASS::mvrnorm(n = iterations, mu = beta, Sigma = varcov))
 
   ## Alternative approach, similar to arm::sim()
