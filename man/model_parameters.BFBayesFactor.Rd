@@ -4,10 +4,18 @@
 \alias{model_parameters.BFBayesFactor}
 \title{BayesFactor objects Parameters}
 \usage{
-\method{model_parameters}{BFBayesFactor}(model, centrality = "median",
-  dispersion = FALSE, ci = 0.89, ci_method = "hdi", test = c("pd",
-  "rope"), rope_range = "default", rope_ci = 0.89, priors = TRUE,
-  ...)
+\method{model_parameters}{BFBayesFactor}(
+  model,
+  centrality = "median",
+  dispersion = FALSE,
+  ci = 0.89,
+  ci_method = "hdi",
+  test = c("pd", "rope"),
+  rope_range = "default",
+  rope_ci = 0.89,
+  priors = TRUE,
+  ...
+)
 }
 \arguments{
 \item{model}{Object of class \code{BFBayesFactor}.}
@@ -43,7 +51,7 @@ proportion of HDI, to use for the percentage in ROPE.}
 \item{...}{Additional arguments to be passed to or from methods.}
 }
 \value{
-A data.frame of indices related to the model's parameters.
+A data frame of indices related to the model's parameters.
 }
 \description{
 Parameters of BayesFactor objects.

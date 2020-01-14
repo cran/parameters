@@ -5,17 +5,40 @@
 \alias{model_parameters.brmsfit}
 \title{Bayesian Models Parameters}
 \usage{
-\method{model_parameters}{stanreg}(model, centrality = "median",
-  dispersion = FALSE, ci = 0.89, ci_method = "hdi", test = c("pd",
-  "rope"), rope_range = "default", rope_ci = 1, bf_prior = NULL,
-  diagnostic = c("ESS", "Rhat"), priors = TRUE, iterations = 1000,
-  effects = "fixed", ...)
+\method{model_parameters}{stanreg}(
+  model,
+  centrality = "median",
+  dispersion = FALSE,
+  ci = 0.89,
+  ci_method = "hdi",
+  test = c("pd", "rope"),
+  rope_range = "default",
+  rope_ci = 1,
+  bf_prior = NULL,
+  diagnostic = c("ESS", "Rhat"),
+  priors = TRUE,
+  iterations = 1000,
+  effects = "fixed",
+  ...
+)
 
-\method{model_parameters}{brmsfit}(model, centrality = "median",
-  dispersion = FALSE, ci = 0.89, ci_method = "hdi", test = c("pd",
-  "rope"), rope_range = "default", rope_ci = 1, bf_prior = NULL,
-  diagnostic = c("ESS", "Rhat"), priors = TRUE, iterations = 1000,
-  effects = "fixed", component = "all", ...)
+\method{model_parameters}{brmsfit}(
+  model,
+  centrality = "median",
+  dispersion = FALSE,
+  ci = 0.89,
+  ci_method = "hdi",
+  test = c("pd", "rope"),
+  rope_range = "default",
+  rope_ci = 1,
+  bf_prior = NULL,
+  diagnostic = c("ESS", "Rhat"),
+  priors = TRUE,
+  iterations = 1000,
+  effects = "fixed",
+  component = "all",
+  ...
+)
 }
 \arguments{
 \item{model}{Bayesian model.}
@@ -58,9 +81,7 @@ Only applies to mixed models. May be abbreviated.}
 
 \item{...}{Arguments passed to or from other methods.}
 
-\item{component}{Should results for all parameters, parameters for the conditional model
-or the zero-inflated part of the model be returned? May be abbreviated. Only
-applies to \pkg{brms}-models.}
+\item{component}{Model component for which parameters should be shown. May be one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}), \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}) or \code{"all"}.}
 }
 \value{
 A data.frame of indices related to the model's parameters.
