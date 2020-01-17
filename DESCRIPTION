@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.4.0
+Version: 0.4.1
 Authors@R: 
   c(
     person("Daniel", 
@@ -48,16 +48,15 @@ Suggests: AER, aod, BayesFactor, BayesFM, betareg, boot, brms, cAIC4,
         EGAnet (>= 0.7), FactoMineR, fastICA, gamlss, gee, geepack,
         GLMMadaptive, glmmTMB, GPArotation, lavaan, lme4, lmerTest,
         logspline, MASS, Matrix, mclust, MCMCglmm, mgcv, multimode,
-        MuMIn, NbClust, nFactors, nlme, panelr, pbkrtest, plm,
-        projpred, pscl, psych, randomForest, rmarkdown, rstanarm,
-        sandwich, see, sjstats, spelling, survey, survival, testthat,
-        TMB, VGAM, Zelig
+        MuMIn, NbClust, nFactors, nlme, panelr, pbkrtest, plm, pscl,
+        psych, randomForest, rmarkdown, rstanarm, sandwich, see,
+        sjstats, spelling, survey, survival, testthat, TMB, VGAM, Zelig
 Encoding: UTF-8
 Language: en-US
 LazyData: true
 RoxygenNote: 7.0.2
 NeedsCompilation: no
-Packaged: 2020-01-14 19:38:55 UTC; Daniel
+Packaged: 2020-01-16 21:48:18 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
   Dominique Makowski [aut] (<https://orcid.org/0000-0001-5375-9967>),
   Mattan S. Ben-Shachar [aut] (<https://orcid.org/0000-0002-4287-4801>),
@@ -65,4 +64,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
   Zen J. Lau [ctb]
 Maintainer: Daniel Lüdecke <d.luedecke@uke.de>
 Repository: CRAN
-Date/Publication: 2020-01-14 21:30:02 UTC
+Date/Publication: 2020-01-17 09:40:11 UTC

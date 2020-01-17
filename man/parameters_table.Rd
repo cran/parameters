@@ -2,12 +2,12 @@
 % Please edit documentation in R/parameters_table.R
 \name{parameters_table}
 \alias{parameters_table}
-\title{Parameters Table Formatting}
+\title{Parameter table formatting}
 \usage{
 parameters_table(x, pretty_names = TRUE, stars = FALSE, ...)
 }
 \arguments{
-\item{x}{A dataframe of model's parameters.}
+\item{x}{A data frame of model's parameters.}
 
 \item{pretty_names}{Pretty parameters' names.}
 
@@ -16,10 +16,10 @@ parameters_table(x, pretty_names = TRUE, stars = FALSE, ...)
 \item{...}{Arguments passed to or from other methods.}
 }
 \value{
-A data.frame.
+A data frame.
 }
 \description{
-Parameters Table Formatting
+Parameter table formatting
 }
 \examples{
 library(parameters)
