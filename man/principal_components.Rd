@@ -2,6 +2,7 @@
 % Please edit documentation in R/principal_components.R
 \name{principal_components}
 \alias{principal_components}
+\alias{closest_component}
 \title{Principal Component Analysis (PCA)}
 \usage{
 principal_components(
@@ -13,6 +14,8 @@ principal_components(
   standardize = TRUE,
   ...
 )
+
+closest_component(x)
 }
 \arguments{
 \item{x}{A dataframe or a statistical model.}
@@ -69,7 +72,7 @@ This function performs a principal component analysis (PCA) and returns the load
  }
 }
 \note{
-There is a \code{summary()}-method that prints the Eigenvalues and (explained) variance for each extracted component.
+There is a \code{summary()}-method that prints the Eigenvalues and (explained) variance for each extracted component. \code{closest_component()} will return a numeric vector with the assigned component index for each column from the original data frame. There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 }
 \examples{
 library(parameters)
@@ -78,9 +81,13 @@ principal_components(mtcars[, 1:7], n = "all", threshold = 0.2)
 principal_components(mtcars[, 1:7], n = 2, rotation = "oblimin", threshold = "max", sort = TRUE)
 principal_components(mtcars[, 1:7], n = 2, threshold = 2, sort = TRUE)
 
-pca <- principal_components(mtcars[, 1:5], n = 2)
+pca <- principal_components(mtcars[, 1:5], n = 2, rotation = "varimax")
 summary(pca)
 predict(pca)
+
+# which variables from the original data belong to which extracted component?
+closest_component(pca)
+
 \donttest{
 # Automated number of components
 principal_components(mtcars[, 1:4], n = "auto")

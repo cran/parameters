@@ -11,11 +11,12 @@
 #' x <- model_parameters(lm(Sepal.Length ~ Species * Sepal.Width, data = iris))
 #' as.data.frame(parameters_table(x))
 #' \donttest{
-#' library(rstanarm)
-#' x <- model_parameters(stan_glm(Sepal.Length ~ Species, data = iris), ci = c(0.69, 0.89, 0.95))
-#' as.data.frame(parameters_table(x))
+#' if (require("rstanarm")) {
+#'   model <- stan_glm(Sepal.Length ~ Species, data = iris, refresh = 0, seed = 123)
+#'   x <- model_parameters(model, ci = c(0.69, 0.89, 0.95))
+#'   as.data.frame(parameters_table(x))
 #' }
-#'
+#' }
 #' @return A data frame.
 #'
 #' @importFrom tools toTitleCase
@@ -76,6 +77,9 @@ parameters_table <- function(x, pretty_names = TRUE, stars = FALSE, ...) {
     x <- x[c(names(x)[0:(ci_position - 1)][!names(x)[0:(ci_position - 1)] %in% ci_colname], ci_colname, names(x)[ci_position:(length(names(x)) - 1)][!names(x)[ci_position:(length(names(x)) - 1)] %in% ci_colname])]
     x <- x[!names(x) %in% c(ci_low, ci_high)]
   }
+
+  # Misc
+  names(x)[names(x) == "Cohens_d"] <- "Cohen's d"
 
   # Standardized
   std_cols <- names(x)[grepl("Std_", names(x))]

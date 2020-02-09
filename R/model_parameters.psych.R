@@ -125,6 +125,10 @@ model_parameters.principal <- function(model, sort = FALSE, threshold = NULL, la
 
   # Add some more attributes
   attr(loadings, "loadings_long") <- .long_loadings(loadings, threshold = threshold, loadings_columns = loading_cols)
+  # here we match the original columns in the data set with the assigned components
+  # for each variable, so we know which column in the original data set belongs
+  # to which extracted component...
+  attr(loadings, "closest_component") <- .closest_component(loadings, loadings_columns = loading_cols, variable_names = rownames(model$loadings))
 
   # add class-attribute for printing
   if (model$fn == "principal") {

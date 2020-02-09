@@ -8,7 +8,7 @@ n_clusters(
   x,
   standardize = TRUE,
   force = FALSE,
-  package = c("NbClust", "mclust", "cluster"),
+  package = c("NbClust", "mclust", "cluster", "M3C"),
   fast = TRUE,
   ...
 )
@@ -23,7 +23,7 @@ values in order to be included in the data for determining the number of
 clusters. By default, factors are removed, because most methods that determine
 the number of clusters need numeric input only.}
 
-\item{package}{These are the packages from which methods are used to determine the number of clusters. Can be \code{"all"} or a vector containing \code{"NbClust"}, \code{"mclust"} and \code{"cluster"}.}
+\item{package}{These are the packages from which methods are used to determine the number of clusters. Can be \code{"all"} or a vector containing \code{"NbClust"}, \code{"mclust"}, \code{"cluster"} and \code{"M3C"}.}
 
 \item{fast}{If \code{FALSE}, will compute 4 more indices (sets \code{index = "allong"} in \code{NbClust}). This has been deactivated by default as it is computationally heavy.}
 
@@ -32,9 +32,12 @@ the number of clusters need numeric input only.}
 \description{
 This function runs many existing procedures for determining how many clusters are present in your data. It returns the number of clusters based on the maximum consensus. In case of ties, it will select the solution with the less clusters.
 }
+\note{
+There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+}
 \examples{
 library(parameters)
 \donttest{
-n_clusters(iris[, 1:4])
+n_clusters(iris[, 1:4], package = c("NbClust", "mclust", "cluster"))
 }
 }

@@ -1,47 +1,36 @@
-context("model_parameters.lm")
-library(insight)
-library(testthat)
+if (require("testthat") && require("parameters")) {
+  data(mtcars)
+  test_that("model_parameters.lm", {
+    model <- lm(mpg ~ wt, data = mtcars)
+    params <- model_parameters(model)
+    testthat::expect_equal(c(nrow(params), ncol(params)), c(2, 8))
+    testthat::expect_equal(params$CI_high, c(41.119752761418, -4.20263490802709), tolerance = 1e-3)
 
-test_that("model_parameters.lm", {
-  model <- insight::download_model("lm_1")
+    params <- model_parameters(model, ci = c(0.8, 0.9))
+    testthat::expect_equal(c(nrow(params), ncol(params)), c(2, 10))
 
-  params <- model_parameters(model)
-  testthat::expect_equal(c(nrow(params), ncol(params)), c(2, 8))
-  testthat::expect_equal(params$CI_high, c(41.119752761418, -4.20263490802709), tolerance = 1e-3)
+    params <- model_parameters(model, dispersion = TRUE, bootstrap = TRUE, n = 500)
+    testthat::expect_equal(c(nrow(params), ncol(params)), c(2, 6))
 
-  params <- model_parameters(model, ci = c(0.8, 0.9))
-  testthat::expect_equal(c(nrow(params), ncol(params)), c(2, 10))
+    model <- lm(mpg ~ wt + cyl, data = mtcars)
+    params <- model_parameters(model)
+    testthat::expect_equal(c(nrow(params), ncol(params)), c(3, 8))
 
-  params <- model_parameters(model, dispersion = TRUE, bootstrap = TRUE, n = 500)
-  testthat::expect_equal(c(nrow(params), ncol(params)), c(2, 6))
-
-  model <- insight::download_model("lm_2")
-
-  params <- model_parameters(model)
-  testthat::expect_equal(c(nrow(params), ncol(params)), c(3, 8))
-
-  model <- insight::download_model("lm_3")
-
-  params <- model_parameters(model)
-  testthat::expect_equal(c(nrow(params), ncol(params)), c(4, 8))
-})
+    model <- lm(mpg ~ wt * cyl, data = mtcars)
+    params <- model_parameters(model)
+    testthat::expect_equal(c(nrow(params), ncol(params)), c(4, 8))
+  })
 
 
 
+  test_that("model_parameters.glm - binomial", {
+    set.seed(333)
+    model <- glm(vs ~ wt + cyl, data = mtcars, family = "binomial")
 
+    params <- model_parameters(model)
+    testthat::expect_equal(c(nrow(params), ncol(params)), c(3, 8))
 
-
-context("model_parameters.glm")
-
-test_that("model_parameters.glm - binomial", {
-  set.seed(333)
-
-  model <- glm(vs ~ wt + cyl, data = mtcars, family = "binomial")
-
-  params <- model_parameters(model)
-  testthat::expect_equal(c(nrow(params), ncol(params)), c(3, 8))
-
-
-  params <- suppressWarnings(model_parameters(model, bootstrap = TRUE, n = 500))
-  testthat::expect_equal(c(nrow(params), ncol(params)), c(3, 5))
-})
+    params <- suppressWarnings(model_parameters(model, bootstrap = TRUE, n = 500))
+    testthat::expect_equal(c(nrow(params), ncol(params)), c(3, 5))
+  })
+}

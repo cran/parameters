@@ -4,10 +4,32 @@
 #' @importFrom insight get_statistic get_parameters
 #' @importFrom stats confint
 #' @keywords internal
-.extract_parameters_generic <- function(model, ci, component, merge_by = c("Parameter", "Component"), standardize = NULL, effects = "fixed", robust = FALSE, ...) {
+.extract_parameters_generic <- function(model, ci, component, merge_by = c("Parameter", "Component"), standardize = NULL, effects = "fixed", robust = FALSE, df_method = NULL, ...) {
+  # check if standardization is required and package available
+  if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
+    insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
+    standardize <- NULL
+  }
+
+  # for refit, we completely refit the model, than extract parameters, ci etc. as usual
+  if (!is.null(standardize) && standardize == "refit") {
+    model <- effectsize::standardize(model, verbose = FALSE)
+    standardize <- NULL
+  }
+
   parameters <- insight::get_parameters(model, effects = effects, component = component)
   statistic <- insight::get_statistic(model, component = component)
-  robust <- if (isTRUE(robust)) "robust" else NULL
+
+  # check if we really have a component column
+  if (!("Component" %in% names(parameters)) && "Component" %in% merge_by) {
+    merge_by <- setdiff(merge_by, "Component")
+  }
+
+  # check Degrees of freedom
+  if (!.dof_method_ok(model, df_method)) {
+    df_method <- NULL
+  }
+
 
   # clean parameter names
 
@@ -20,29 +42,22 @@
   # column name for coefficients, non-standardized
   coef_col <- "Coefficient"
 
-  # Std Coefficients
+  # Std Coefficients for other methods than "refit"
   if (!is.null(standardize)) {
-    if (!requireNamespace("effectsize", quietly = TRUE)) {
-      insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
+    # standardize model parameters and calculate related CI and SE
+    std_coef <- effectsize::standardize_parameters(model, method = standardize)
+    parameters <- merge(parameters, std_coef, by = merge_by)
+    coef_col <- "Std_Coefficient"
+    # merge all data, including CI and SE for std. parameters
+    if (inherits(std_coef, "effectsize_std_params")) {
+      parameters <- merge(parameters, ci(std_coef, ci = ci), by = merge_by)
+      parameters <- merge(parameters, standard_error(std_coef), by = merge_by)
+    }
+    # if we have CIs, remember columns names to select later
+    if (!is.null(ci)) {
+      ci_cols <- c("CI_low", "CI_high")
     } else {
-      # standardize model parameters and calculate related CI and SE
-      std_coef <- effectsize::standardize_parameters(model, method = standardize)
-      parameters <- merge(parameters, std_coef, by = merge_by)
-      coef_col <- "Std_Coefficient"
-      # merge all data, including CI and SE for std. parameters
-      if (standardize == "refit") {
-        parameters <- merge(parameters, .ci_from_refit(std_coef, ci), by = merge_by)
-        parameters <- merge(parameters, attributes(std_coef)$standard_error, by = merge_by)
-      } else if (inherits(std_coef, "effectsize_std_params")) {
-        parameters <- merge(parameters, ci(std_coef, ci = ci), by = merge_by)
-        parameters <- merge(parameters, standard_error(std_coef), by = merge_by)
-      }
-      # if we have CIs, remember columns names to select later
-      if (!is.null(ci)) {
-        ci_cols <- c("CI_low", "CI_high")
-      } else {
-        ci_cols <- c()
-      }
+      ci_cols <- c()
     }
   }
 
@@ -50,7 +65,13 @@
   # CI - only if we don't already have CI for std. parameters
   if (is.null(standardize)) {
     if (!is.null(ci)) {
-      ci_df <- suppressMessages(ci(model, ci = ci, effects = effects, component = component, method = robust))
+      if (isTRUE(robust)) {
+        ci_df <- suppressMessages(ci_robust(model, ci = ci, ...))
+      } else if (!is.null(df_method)) {
+        ci_df <- suppressMessages(ci(model, ci = ci, effects = effects, component = component, method = df_method))
+      } else {
+        ci_df <- suppressMessages(ci(model, ci = ci, effects = effects, component = component))
+      }
       if (length(ci) > 1) ci_df <- bayestestR::reshape_ci(ci_df)
       ci_cols <- names(ci_df)[!names(ci_df) %in% c("CI", merge_by)]
       parameters <- merge(parameters, ci_df, by = merge_by)
@@ -61,20 +82,45 @@
 
 
   # p value
-  parameters <- merge(parameters, p_value(model, effects = effects, component = component, method = robust), by = merge_by)
+  if (isTRUE(robust)) {
+    parameters <- merge(parameters, p_value_robust(model, ...), by = merge_by)
+  } else if (!is.null(df_method)) {
+    parameters <- merge(parameters, p_value(model, effects = effects, component = component, method = df_method), by = merge_by)
+  } else {
+    parameters <- merge(parameters, p_value(model, effects = effects, component = component), by = merge_by)
+  }
+
 
   # standard error - only if we don't already have SE for std. parameters
-  if (is.null(standardize)) parameters <- merge(parameters, standard_error(model, effects = effects, component = component, method = robust), by = merge_by)
+  if (is.null(standardize)) {
+    if (isTRUE(robust)) {
+      parameters <- merge(parameters, standard_error_robust(model, ...), by = merge_by)
+    } else if (!is.null(df_method)) {
+      parameters <- merge(parameters, standard_error(model, effects = effects, component = component, method = df_method), by = merge_by)
+    } else {
+      parameters <- merge(parameters, standard_error(model, effects = effects, component = component), by = merge_by)
+    }
+  }
+
 
   # test statistic - fix values for robust estimation
-  if (!is.null(robust) && robust == "robust") statistic$Statistic <- parameters$Estimate / parameters$SE
-  parameters <- merge(parameters, statistic, by = merge_by)
+  if (isTRUE(robust)) {
+    parameters$Statistic <- parameters$Estimate / parameters$SE
+  } else {
+    parameters <- merge(parameters, statistic, by = merge_by)
+  }
+
 
   # dof
-  df_error <- degrees_of_freedom(model, method = "any")
+  if (!is.null(df_method)) {
+    df_error <- degrees_of_freedom(model, method = df_method)
+  } else {
+    df_error <- degrees_of_freedom(model, method = "any")
+  }
   if (!is.null(df_error) && (length(df_error) == 1 || length(df_error) == nrow(parameters))) {
     parameters$df_error <- df_error
   }
+
 
   # Rematch order after merging
   parameters <- parameters[match(original_order, parameters$.id), ]
@@ -103,10 +149,26 @@
 
 #' @importFrom stats confint
 #' @keywords internal
-.extract_parameters_mixed <- function(model, ci = .95, df_method = "wald", standardize = NULL, ...) {
-  parameters <- as.data.frame(summary(model)$coefficients, stringsAsFactors = FALSE)
-  parameters$Parameter <- row.names(parameters)
+.extract_parameters_mixed <- function(model, ci = .95, df_method = "wald", standardize = NULL, robust = FALSE, ...) {
+  # check if standardization is required and package available
+  if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
+    insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
+    standardize <- NULL
+  }
+
+  # for refit, we completely refit the model, than extract parameters, ci etc. as usual
+  if (!is.null(standardize) && standardize == "refit") {
+    model <- effectsize::standardize(model, verbose = FALSE)
+    standardize <- NULL
+  }
+
+  parameters <- insight::get_parameters(model, effects = "fixed", component = "all")
+  statistic <- insight::get_statistic(model, component = "all")
+
   original_order <- parameters$.id <- 1:nrow(parameters)
+
+  # remove SE column
+  parameters <- .remove_columns(parameters, c("SE", "Std. Error"))
 
   # column name for coefficients, non-standardized
   coef_col <- "Coefficient"
@@ -120,31 +182,22 @@
   }
 
 
-  # Std Coefficients
+  # Std Coefficients for other methods than "refit"
   if (!is.null(standardize)) {
-    if (!requireNamespace("effectsize", quietly = TRUE)) {
-      insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
+    # standardize model parameters and calculate related CI and SE
+    std_coef <- effectsize::standardize_parameters(model, method = standardize)
+    parameters <- merge(parameters, std_coef, by = "Parameter")
+    coef_col <- "Std_Coefficient"
+    # merge all data, including CI and SE for std. parameters
+    if (inherits(std_coef, "effectsize_std_params")) {
+      parameters <- merge(parameters, ci(std_coef, ci = ci), by = "Parameter")
+      parameters <- merge(parameters, standard_error(std_coef), by = "Parameter")
+    }
+    # if we have CIs, remember columns names to select later
+    if (!is.null(ci)) {
+      ci_cols <- c("CI_low", "CI_high")
     } else {
-      # remove SE column
-      parameters[["Std. Error"]] <- NULL
-      # standardize model parameters and calculate related CI and SE
-      std_coef <- effectsize::standardize_parameters(model, method = standardize)
-      parameters <- merge(parameters, std_coef, by = "Parameter")
-      coef_col <- "Std_Coefficient"
-      # merge all data, including CI and SE for std. parameters
-      if (standardize == "refit") {
-        parameters <- merge(parameters, .ci_from_refit(std_coef, ci), by = "Parameter")
-        parameters <- merge(parameters, attributes(std_coef)$standard_error, by = "Parameter")
-      } else if (inherits(std_coef, "effectsize_std_params")) {
-        parameters <- merge(parameters, ci(std_coef), by = "Parameter")
-        parameters <- merge(parameters, standard_error(std_coef), by = "Parameter")
-      }
-      # if we have CIs, remember columns names to select later
-      if (!is.null(ci)) {
-        ci_cols <- c("CI_low", "CI_high")
-      } else {
-        ci_cols <- c()
-      }
+      ci_cols <- c()
     }
   }
 
@@ -152,7 +205,11 @@
   # CI - only if we don't already have CI for std. parameters
   if (is.null(standardize)) {
     if (!is.null(ci)) {
-      ci_df <- ci_wald(model, ci = ci, dof = df)
+      if (isTRUE(robust)) {
+        ci_df <- suppressMessages(ci_robust(model, ci = ci, ...))
+      } else {
+        ci_df <- ci(model, ci = ci, method = df_method, effects = "fixed")
+      }
       if (length(ci) > 1) ci_df <- bayestestR::reshape_ci(ci_df)
       ci_cols <- names(ci_df)[!names(ci_df) %in% c("CI", "Parameter")]
       parameters <- merge(parameters, ci_df, by = "Parameter")
@@ -162,37 +219,42 @@
   }
 
 
+  # standard error - only if we don't already have SE for std. parameters
+  if (is.null(standardize) || !("SE" %in% colnames(parameters))) {
+    if (isTRUE(robust)) {
+      parameters <- merge(parameters, standard_error_robust(model, ...), by = "Parameter")
+    } else {
+      parameters <- merge(parameters, standard_error(model, method = df_method, effects = "fixed"), by = "Parameter")
+    }
+  }
+
+
   # p value
-  if ("Pr(>|z|)" %in% names(parameters)) {
-    names(parameters)[grepl("Pr(>|z|)", names(parameters), fixed = TRUE)] <- "p"
+  if (isTRUE(robust)) {
+    parameters <- merge(parameters, p_value_robust(model, ...), by = "Parameter")
   } else {
-    parameters <- merge(parameters, p_value(model, dof = df), by = "Parameter")
+    if ("Pr(>|z|)" %in% names(parameters)) {
+      names(parameters)[grepl("Pr(>|z|)", names(parameters), fixed = TRUE)] <- "p"
+    } else {
+      parameters <- merge(parameters, p_value(model, dof = df, effects = "fixed"), by = "Parameter")
+    }
   }
 
 
   # adjust standard errors and test-statistic as well
-  if (is.null(standardize) && df_method %in% c("ml1", "satterthwaite", "kenward")) {
-    parameters[["Std. Error"]] <- NULL
-
-    if (df_method == "kenward") {
-      parameters <- merge(parameters, se_kenward(model), by = "Parameter")
-    } else if (df_method == "satterthwaite") {
-      parameters <- merge(parameters, se_satterthwaite(model), by = "Parameter")
-    } else {
-      parameters <- merge(parameters, se_ml1(model), by = "Parameter")
-    }
-
-    for (test_statistic in c("t value", "z value")) {
-      if (test_statistic %in% colnames(parameters)) {
-        parameters[[test_statistic]] <- parameters[["Estimate"]] / parameters[["SE"]]
-      }
-    }
+  if (!isTRUE(robust) && is.null(standardize) && df_method %in% c("betwithin", "ml1", "kenward", "kr")) {
+    parameters$Statistic <- parameters$Estimate / parameters$SE
+  } else {
+    parameters <- merge(parameters, statistic, by = "Parameter")
   }
 
 
   # dof
-  if (!(df_method %in% c("ml1", "satterthwaite", "kenward")) && !"df" %in% names(parameters)) {
-    df_error <- degrees_of_freedom(model, method = "any")
+  if (!"df" %in% names(parameters)) {
+    if (df_method %in% c("betwithin", "ml1", "satterthwaite", "kenward", "kr"))
+      df_error <- df
+    else
+      df_error <- degrees_of_freedom(model, method = "any")
     if (!is.null(df_error) && (length(df_error) == 1 || length(df_error) == nrow(parameters))) {
       parameters$df_error <- df_error
     }
@@ -203,6 +265,7 @@
   parameters <- parameters[match(original_order, parameters$.id), ]
 
   # Renaming
+  names(parameters) <- gsub("Statistic", gsub("-statistic", "", attr(statistic, "statistic", exact = TRUE), fixed = TRUE), names(parameters))
   names(parameters) <- gsub("Std. Error", "SE", names(parameters))
   names(parameters) <- gsub("Estimate", "Coefficient", names(parameters))
   names(parameters) <- gsub("t value", "t", names(parameters))
@@ -496,7 +559,7 @@
         "Parameter2" = names[2],
         "Mean_Parameter1" = model$estimate[1],
         "Mean_Parameter2" = model$estimate[2],
-        "Difference" = model$estimate[2] - model$estimate[1],
+        "Difference" = model$estimate[1] - model$estimate[2],
         "t" = model$statistic,
         "df" = model$parameter,
         "p" = model$p.value,

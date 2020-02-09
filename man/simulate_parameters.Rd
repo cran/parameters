@@ -33,8 +33,9 @@ parameters_simulate(model, ...)
 to be estimated. Default to \code{.89} (89\%) for Bayesian models and \code{.95} (95\%) for frequentist models.}
 
 \item{ci_method}{The type of index used for Credible Interval. Can be
-\code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi}}) or \code{"ETI"}
-(see \code{\link[bayestestR:eti]{eti}}).}
+\code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi}}), \code{"ETI"}
+(see \code{\link[bayestestR:eti]{eti}}) or \code{"SI"}
+(see \code{\link[bayestestR:si]{si}}).}
 
 \item{test}{The indices of effect existence to compute. Character (vector) or
 list with one or more of these options: \code{"p_direction"} (or \code{"pd"}),
@@ -64,6 +65,9 @@ Compute simulated draws of parameters and their related indices such as Confiden
     from the conditional component (fixed effects) are simulated. This may
     include smooth terms, but not random effects.
   }
+}
+\note{
+There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 }
 \examples{
 library(parameters)

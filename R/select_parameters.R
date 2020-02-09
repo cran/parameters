@@ -1,10 +1,9 @@
 #' Automated selection of model parameters
 #'
-#' This function performs an automated selection of the 'best' parameters, updating and returning the "best" model. For frequentist simple GLMs, it performs an AIC-based stepwise selection.
+#' This function performs an automated selection of the 'best' parameters, updating and returning the "best" model. For frequentist simple GLMs, it performs an AIC-based stepwise selection. For Bayesian models, it uses the \code{projpred} package.
 #'
 #' @param model A statistical model.
 #' @param ... Arguments passed to or from other methods.
-#'
 #'
 #' @examples
 #' model <- lm(mpg ~ ., data = mtcars)
@@ -14,20 +13,24 @@
 #' select_parameters(model)
 #' \donttest{
 #' # lme4 -------------------------------------------
-#' library(lme4)
-#' model <- lmer(Sepal.Width ~ Sepal.Length * Petal.Width * Petal.Length + (1 | Species), data = iris)
-#' select_parameters(model)
+#' if (require("lme4")) {
+#'   model <- lmer(
+#'     Sepal.Width ~ Sepal.Length * Petal.Width * Petal.Length + (1 | Species),
+#'     data = iris
+#'   )
+#'   select_parameters(model)
+#' }
 #'
 #' # rstanarm -------------------------------------------
-#' library(rstanarm)
-#' model <- stan_glm(mpg ~ ., data = mtcars, iter = 500, refresh = 0)
-#' select_parameters(model, cross_validation = TRUE)
+#' if (require("rstanarm")) {
+#'   model <- stan_glm(mpg ~ ., data = mtcars, iter = 500, refresh = 0)
+#'   select_parameters(model, cross_validation = TRUE)
 #'
-#' model <- stan_glm(mpg ~ cyl * disp * hp, data = mtcars, iter = 500, refresh = 0)
-#' select_parameters(model, cross_validation = FALSE)
+#'   model <- stan_glm(mpg ~ cyl * disp * hp, data = mtcars, iter = 500, refresh = 0)
+#'   select_parameters(model, cross_validation = FALSE)
+#' }
 #' }
 #' @return The model refitted with optimal number of parameters.
-#'
 #' @export
 select_parameters <- function(model, ...) {
   UseMethod("select_parameters")

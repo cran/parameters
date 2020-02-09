@@ -54,7 +54,7 @@ the cluster analysis. For \code{method = "kmeans"} and \code{force = TRUE},
 only ordered factors are used, because \code{\link{kmeans}} fails for dummy
 variables.}
 
-\item{package}{These are the packages from which methods are used to determine the number of clusters. Can be \code{"all"} or a vector containing \code{"NbClust"}, \code{"mclust"} and \code{"cluster"}.}
+\item{package}{These are the packages from which methods are used to determine the number of clusters. Can be \code{"all"} or a vector containing \code{"NbClust"}, \code{"mclust"}, \code{"cluster"} and \code{"M3C"}.}
 
 \item{verbose}{Toggle off warnings.}
 }
@@ -73,6 +73,9 @@ The \code{print()} and \code{plot()} methods show the (standardized)
   value indicates that a certain variable characteristic is more pronounced
   within that specific cluster (as compared to other cluster groups with lower
   absolute mean values).
+}
+\note{
+There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 }
 \examples{
 # Hierarchical clustering of mtcars-dataset

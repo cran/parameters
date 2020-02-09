@@ -8,7 +8,7 @@ dof_ml1 <- function(model) {
 
   re_groups <- insight::get_random(model)
 
-  parameters <- insight::find_parameters(model)[["conditional"]]
+  parameters <- insight::find_parameters(model, effects = "fixed")[["conditional"]]
   predictors <- insight::find_predictors(model, effects = "fixed", component = "conditional", flatten = TRUE)
   predictors <- setdiff(predictors, names(re_groups))
 
@@ -31,7 +31,8 @@ dof_ml1 <- function(model) {
   ddf[] <- ltab$ddf[ii]
 
   out <- numeric(length = length(parameters))
-  out[which("(Intercept)" != parameters)] <- ddf[term_assignment]
+  ## TODO number of items to replace is not a multiple of replacement length
+  suppressWarnings(out[which("(Intercept)" != parameters)] <- ddf[term_assignment])
   if (has_intcp) out[which("(Intercept)" == parameters)] <- min(ddf)
 
   stats::setNames(out, parameters)

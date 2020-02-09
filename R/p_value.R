@@ -6,10 +6,15 @@
 #' }
 #'
 #' @param model A statistical model.
-#' @param method For mixed models, can be \code{\link[=p_value_wald]{"wald"}} (default), \code{\link[=p_value_ml1]{"ml1"}}, \code{\link[=p_value_satterthwaite]{"satterthwaite"}} or \code{\link[=p_value_kenward]{"kenward"}}. For certain models, like \pkg{gee}, may also be \code{method = "robust"} to compute p-values based ob robust standard errors.
+#' @param method For mixed models, can be \code{\link[=p_value_wald]{"wald"}} (default), \code{\link[=p_value_ml1]{"ml1"}}, \code{\link[=p_value_betwithin]{"betwithin"}}, \code{\link[=p_value_satterthwaite]{"satterthwaite"}} or \code{\link[=p_value_kenward]{"kenward"}}. For models that are supported by the \pkg{sandwich} or \pkg{clubSandwich} packages, may also be \code{method = "robust"} to compute p-values based ob robust standard errors.
 #' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.
 #' @inheritParams simulate_model
 #' @inheritParams standard_error
+#'
+#' @note \code{p_value_robust()} resp. \code{p_value(method = "robust")}
+#'   rely on the \pkg{sandwich} or \pkg{clubSandwich} package (the latter if
+#'   \code{vcov_estimation = "CR"} for cluster-robust standard errors) and will
+#'   thus only work for those models supported by those packages.
 #'
 #' @examples
 #' model <- lme4::lmer(Petal.Length ~ Sepal.Length + (1 | Species), data = iris)
@@ -30,25 +35,42 @@ p_value <- function(model, ...) {
 # p-Values from Standard Models -----------------------------------------------
 
 
+#' @rdname p_value
 #' @export
-p_value.default <- function(model, ...) {
-  # first, we need some special handling for Zelig-models
-  p <- tryCatch(
-    {
-      if (grepl("^Zelig-", class(model)[1])) {
-        if (!requireNamespace("Zelig", quietly = T)) {
-          stop("Package `Zelig` required. Please install", call. = F)
+p_value.default <- function(model, method = NULL, ...) {
+  if (!is.null(method)) {
+    method <- tolower(method)
+  } else {
+    method <- "wald"
+  }
+
+  p <- NULL
+
+  if (method == "robust") {
+    return(p_value_robust(model, ...))
+  } else if (method == "ml1") {
+    return(p_value_ml1(model))
+  } else if (method == "betwithin") {
+    return(p_value_betwithin(model))
+  } else {
+    # first, we need some special handling for Zelig-models
+    p <- tryCatch(
+      {
+        if (grepl("^Zelig-", class(model)[1])) {
+          if (!requireNamespace("Zelig", quietly = T)) {
+            stop("Package `Zelig` required. Please install", call. = F)
+          }
+          unlist(Zelig::get_pvalue(model))
+        } else {
+          # try to get p-value from classical summary for default models
+          .get_pval_from_summary(model)
         }
-        unlist(Zelig::get_pvalue(model))
-      } else {
-        # try to get p-value from classical summary for default models
-        .get_pval_from_summary(model)
+      },
+      error = function(e) {
+        NULL
       }
-    },
-    error = function(e) {
-      NULL
-    }
-  )
+    )
+  }
 
   # if all fails, try to get p-value from test-statistic
   if (is.null(p)) {
@@ -133,18 +155,31 @@ p_value.tobit <- function(model, ...) {
 
 
 #' @export
-p_value.zeroinfl <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+p_value.zeroinfl <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), method = NULL, ...) {
   component <- match.arg(component)
   if (is.null(.check_component(model, component))) {
     return(NULL)
   }
 
+  robust <- !is.null(method) && method == "robust"
+  if (isTRUE(robust)) {
+    return(p_value_robust(model, ...))
+  }
+
   cs <- .compact_list(stats::coef(summary(model)))
   x <- lapply(names(cs), function(i) {
     comp <- ifelse(i == "count", "conditional", "zi")
+    stats <- cs[[i]]
+
+    # remove log(theta)
+    theta <- grepl("Log(theta)", rownames(stats), fixed = TRUE)
+    if (any(theta)) {
+      stats <- stats[!theta, ]
+    }
+
     .data_frame(
       Parameter = insight::find_parameters(model, effects = "fixed", component = comp, flatten = TRUE),
-      p = as.vector(cs[[i]][, 4]),
+      p = as.vector(stats[, 4]),
       Component = comp
     )
   })
@@ -186,11 +221,14 @@ p_value.lme <- function(model, ...) {
 #' @rdname p_value
 #' @export
 p_value.lmerMod <- function(model, method = "wald", ...) {
-  method <- match.arg(method, c("wald", "ml1", "satterthwaite", "kr", "kenward"))
+  method <- tolower(method)
+  method <- match.arg(method, c("wald", "ml1", "betwithin", "satterthwaite", "kr", "kenward"))
   if (method == "wald") {
     p_value_wald(model, ...)
   } else if (method == "ml1") {
     p_value_ml1(model, ...)
+  } else if (method == "betwithin") {
+    p_value_betwithin(model, ...)
   } else if (method == "satterthwaite") {
     p_value_satterthwaite(model, ...)
   } else if (method %in% c("kr", "kenward")) {
@@ -203,11 +241,14 @@ p_value.lmerMod <- function(model, method = "wald", ...) {
 #' @rdname p_value
 #' @export
 p_value.merMod <- function(model, method = "wald", ...) {
-  method <- match.arg(method, c("wald", "ml1"))
+  method <- tolower(method)
+  method <- match.arg(method, c("wald", "betwithin", "ml1"))
   if (method == "wald") {
     dof <- Inf
-  } else {
+  } else if (method == "ml1") {
     dof <- dof_ml1(model)
+  } else {
+    dof <- dof_betwithin(model)
   }
   p_value_wald(model, dof, ...)
 }
@@ -219,11 +260,13 @@ p_value.cpglmm <- p_value.merMod
 #' @rdname p_value
 #' @export
 p_value.rlmerMod <- function(model, method = "wald", ...) {
-  method <- match.arg(method, c("wald", "ml1"))
+  method <- match.arg(method, c("wald", "betwithin", "ml1"))
   if (method == "wald") {
     dof <- Inf
-  } else {
+  } else if (method == "ml1") {
     dof <- dof_ml1(model)
+  } else {
+    dof <- dof_betwithin(model)
   }
   p_value_wald(model, dof, ...)
 }
@@ -443,12 +486,18 @@ p_value.aovlist <- p_value.aov
 
 
 #' @export
-p_value.coxph <- function(model, ...) {
+p_value.coxph <- function(model, method = NULL, ...) {
+  robust <- !is.null(method) && method == "robust"
+  if (isTRUE(robust)) {
+    return(p_value_robust(model, ...))
+  }
+
   cs <- stats::coef(summary(model))
   p <- cs[, 5]
+  params <- insight::get_parameters(model)
 
   .data_frame(
-    Parameter = .remove_backticks_from_string(names(p)),
+    Parameter = params$Parameter,
     p = as.vector(p)
   )
 }
@@ -482,7 +531,12 @@ p_value.coxme <- function(model, ...) {
 
 
 #' @export
-p_value.survreg <- function(model, ...) {
+p_value.survreg <- function(model, method = NULL, ...) {
+  robust <- !is.null(method) && method == "robust"
+  if (isTRUE(robust)) {
+    return(p_value_robust(model, ...))
+  }
+
   s <- summary(model)
   p <- s$table[, "p"]
 
@@ -513,6 +567,33 @@ p_value.flexsurvreg <- function(model, ...) {
 # p-Values from Special Models -----------------------------------------------
 
 
+#' @rdname p_value
+#' @export
+p_value.DirichletRegModel <- function(model, component = c("all", "conditional", "precision"), ...) {
+  component <- match.arg(component)
+  params <- insight::get_parameters(model)
+
+  out <- .data_frame(
+    Parameter = params$Parameter,
+    Response = params$Response,
+    p = as.vector(2 * stats::pnorm(-abs(params$Estimate / model$se)))
+  )
+
+  if (!is.null(params$Component)) {
+    out$Component <- params$Component
+  } else {
+    component <- "all"
+  }
+
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
+
+  out
+}
+
+
+#' @rdname p_value
 #' @export
 p_value.clm2 <- function(model, component = c("all", "conditional", "scale"), ...) {
   component <- match.arg(component)
@@ -1062,7 +1143,12 @@ p_value.plm <- function(model, ...) {
 
 
 #' @export
-p_value.polr <- function(model, ...) {
+p_value.polr <- function(model, method = NULL, ...) {
+  robust <- !is.null(method) && method == "robust"
+  if (isTRUE(robust)) {
+    return(standard_error_robust(model, ...))
+  }
+
   smry <- suppressMessages(as.data.frame(stats::coef(summary(model))))
   tstat <- smry[[3]]
   p <- 2 * stats::pt(abs(tstat), df = degrees_of_freedom(model, method = "any"), lower.tail = FALSE)

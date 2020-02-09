@@ -43,7 +43,7 @@
 #'  (Source: \href{https://stats.stackexchange.com/q/1576/54740}{CrossValidated})
 #'  }
 #'
-#' @note There is a \code{summary()}-method that prints the Eigenvalues and (explained) variance for each extracted component.
+#' @note There is a \code{summary()}-method that prints the Eigenvalues and (explained) variance for each extracted component. \code{closest_component()} will return a numeric vector with the assigned component index for each column from the original data frame. There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 #'
 #' @examples
 #' library(parameters)
@@ -52,9 +52,13 @@
 #' principal_components(mtcars[, 1:7], n = 2, rotation = "oblimin", threshold = "max", sort = TRUE)
 #' principal_components(mtcars[, 1:7], n = 2, threshold = 2, sort = TRUE)
 #'
-#' pca <- principal_components(mtcars[, 1:5], n = 2)
+#' pca <- principal_components(mtcars[, 1:5], n = 2, rotation = "varimax")
 #' summary(pca)
 #' predict(pca)
+#'
+#' # which variables from the original data belong to which extracted component?
+#' closest_component(pca)
+#'
 #' \donttest{
 #' # Automated number of components
 #' principal_components(mtcars[, 1:4], n = "auto")
@@ -73,13 +77,22 @@ principal_components <- function(x, n = "auto", rotation = "none", sort = FALSE,
   UseMethod("principal_components")
 }
 
+#' @rdname principal_components
+#' @export
+closest_component <- function(x) {
+  attributes(x)$closest_component
+}
 
 
-#' @importFrom stats prcomp na.omit
+
+#' @importFrom stats prcomp na.omit setNames
 #' @export
 principal_components.data.frame <- function(x, n = "auto", rotation = "none", sort = FALSE, threshold = NULL, standardize = TRUE, ...) {
   # save name of data set
   data_name <- deparse(substitute(x))
+
+  # original data
+  original_data <- x
 
   # remove missings
   x <- stats::na.omit(x)
@@ -93,7 +106,7 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
 
   # Rotation
   if (rotation != "none") {
-    loadings <- .pca_rotate(x, n, rotation = rotation, sort = sort, threshold = threshold, ...)
+    loadings <- .pca_rotate(x, n, rotation = rotation, sort = sort, threshold = threshold, original_data = original_data, ...)
     attr(loadings, "data") <- data_name
     return(loadings)
   }
@@ -161,7 +174,12 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
 
   # Add some more attributes
   attr(loadings, "loadings_long") <- .long_loadings(loadings, threshold = threshold)
+  # here we match the original columns in the data set with the assigned components
+  # for each variable, so we know which column in the original data set belongs
+  # to which extracted component...
+  attr(loadings, "closest_component") <- .closest_component(loadings, loadings_columns = loading_cols, variable_names = colnames(x))
   attr(loadings, "data") <- data_name
+  attr(loadings, "data_set") <- original_data
 
   # add class-attribute for printing
   class(loadings) <- unique(c("parameters_pca", "see_parameters_pca", class(loadings)))
@@ -192,7 +210,7 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
 
 
 #' @keywords internal
-.pca_rotate <- function(x, n, rotation, sort = FALSE, threshold = NULL, ...) {
+.pca_rotate <- function(x, n, rotation, sort = FALSE, threshold = NULL, original_data = NULL, ...) {
   if (!(rotation %in% c("varimax", "quartimax", "promax", "oblimin", "simplimax", "cluster", "none"))) {
     stop("`rotation` must be one of \"varimax\", \"quartimax\", \"promax\", \"oblimin\", \"simplimax\", \"cluster\" or \"none\".")
   }
@@ -214,5 +232,15 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
   msa <- psych::KMO(x)
 
   attr(pca, "MSA") <- msa$MSAi
-  model_parameters(pca, sort = sort, threshold = threshold)
+  out <- model_parameters(pca, sort = sort, threshold = threshold)
+
+  attr(out, "data_set") <- original_data
+  out
+}
+
+
+
+.closest_component <- function(loadings, loadings_columns, variable_names) {
+  component_columns <- apply(loadings[loadings_columns], 1, function(i) which.max(abs(i)))
+  stats::setNames(component_columns, variable_names)
 }

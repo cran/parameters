@@ -3,16 +3,30 @@
 #' @importFrom insight get_parameters
 #' @export
 se_satterthwaite <- function(model) {
-  if (!requireNamespace("lmerTest", quietly = TRUE)) {
-    stop("Package `lmerTest` required for Kenward-Rogers approximation.", call. = FALSE)
-  }
+  UseMethod("se_satterthwaite")
+}
 
-  params <- insight::get_parameters(model)
-  lmerTest_model <- lmerTest::as_lmerModLmerTest(model)
+#' @export
+se_satterthwaite.default <- function(model) {
+  standard_error(model)
+}
+
+#' @importFrom stats setNames
+#' @export
+se_satterthwaite.lme <- function(model) {
+  if (!requireNamespace("lavaSearch2", quietly = TRUE)) {
+    stop("Package `lavaSearch2` required for Satterthwaite approximation.", call. = FALSE)
+  }
+  params <- insight::get_parameters(model, effects = "fixed")
+  lavaSearch2::sCorrect(model) <- TRUE
+  s <- lavaSearch2::summary2(model)
 
   data.frame(
     Parameter = params$Parameter,
-    SE = as.vector(sqrt(diag(lmerTest_model@vcov_varpar))),
+    SE = as.vector(s$tTable[, "Std.Error"]),
     stringsAsFactors = FALSE
   )
 }
+
+#' @export
+se_satterthwaite.gls <- se_satterthwaite.lme

@@ -50,8 +50,9 @@
 \item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
 
 \item{ci_method}{The type of index used for Credible Interval. Can be
-\code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi}}) or \code{"ETI"}
-(see \code{\link[bayestestR:eti]{eti}}).}
+\code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi}}), \code{"ETI"}
+(see \code{\link[bayestestR:eti]{eti}}) or \code{"SI"}
+(see \code{\link[bayestestR:si]{si}}).}
 
 \item{test}{The indices of effect existence to compute. Character (vector) or
 list with one or more of these options: \code{"p_direction"} (or \code{"pd"}),
@@ -68,7 +69,7 @@ the bounds are set to \code{x +- 0.1*SD(response)}.}
 \item{rope_ci}{The Credible Interval (CI) probability, corresponding to the
 proportion of HDI, to use for the percentage in ROPE.}
 
-\item{bf_prior}{Distribution representing a prior for the computation of Bayes factors. Used if the input is a posterior, otherwise (in the case of models) ignored.}
+\item{bf_prior}{Distribution representing a prior for the computation of Bayes factors / SI. Used if the input is a posterior, otherwise (in the case of models) ignored.}
 
 \item{diagnostic}{Diagnostic metrics to compute.  Character (vector) or list with one or more of these options: \code{"ESS"}, \code{"Rhat"}, \code{"MCSE"} or \code{"all"}.}
 
@@ -79,7 +80,7 @@ proportion of HDI, to use for the percentage in ROPE.}
 \item{effects}{Should results for fixed effects, random effects or both be returned?
 Only applies to mixed models. May be abbreviated.}
 
-\item{...}{Arguments passed to or from other methods.}
+\item{...}{Arguments passed to or from other methods. For instance, when \code{bootstrap = TRUE}, arguments like \code{ci_method} are passed down to \code{\link[bayestestR]{describe_posterior}}.}
 
 \item{component}{Model component for which parameters should be shown. May be one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}), \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}) or \code{"all"}.}
 }
@@ -92,15 +93,13 @@ Parameters of Bayesian models.
 \examples{
 \donttest{
 library(parameters)
-library(rstanarm)
-
-model <- rstanarm::stan_glm(Sepal.Length ~ Petal.Length * Species,
-  data = iris, iter = 500, refresh = 0
-)
-
-model_parameters(model)
+if (require("rstanarm")) {
+  model <- rstanarm::stan_glm(Sepal.Length ~ Petal.Length * Species,
+    data = iris, iter = 500, refresh = 0
+  )
+  model_parameters(model)
 }
-
+}
 }
 \seealso{
 \code{\link[parameters:standardize_names]{standardize_names()}} to rename
