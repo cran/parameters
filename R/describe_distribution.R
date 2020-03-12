@@ -15,11 +15,12 @@
 #' describe_distribution(iris)
 #' describe_distribution(iris, include_factors = TRUE)
 #' @export
-describe_distribution <- function(x, centrality = "mean", dispersion = TRUE, range = TRUE, ...) {
+describe_distribution <- function(x, ...) {
   UseMethod("describe_distribution")
 }
 
 
+#' @rdname describe_distribution
 #' @importFrom stats na.omit
 #' @export
 describe_distribution.numeric <- function(x, centrality = "mean", dispersion = TRUE, range = TRUE, ...) {
@@ -36,6 +37,9 @@ describe_distribution.numeric <- function(x, centrality = "mean", dispersion = T
     bayestestR::point_estimate(x, centrality = centrality, dispersion = dispersion, ...)
   )
 
+  # Standard Error
+  out <- cbind(out, data.frame(SE = standard_error(x)))
+
   # Range
   if (range) {
     out <- cbind(
@@ -51,8 +55,8 @@ describe_distribution.numeric <- function(x, centrality = "mean", dispersion = T
   out <- cbind(
     out,
     data.frame(
-      Skewness = skewness(x),
-      Kurtosis = kurtosis(x)
+      Skewness = as.numeric(skewness(x)),
+      Kurtosis = as.numeric(kurtosis(x))
     )
   )
 
@@ -69,8 +73,9 @@ describe_distribution.numeric <- function(x, centrality = "mean", dispersion = T
 
 
 
+#' @rdname describe_distribution
 #' @export
-describe_distribution.factor <- function(x, centrality = "mean", dispersion = TRUE, range = TRUE, ...) {
+describe_distribution.factor <- function(x, dispersion = TRUE, range = TRUE, ...) {
   # Missing
   n_missing <- sum(is.na(x))
   x <- stats::na.omit(x)
@@ -78,10 +83,45 @@ describe_distribution.factor <- function(x, centrality = "mean", dispersion = TR
   out <- data.frame(
     Mean = NA,
     SD = NA,
+    SE = NA,
     Min = levels(x)[1],
     Max = levels(x)[nlevels(x)],
-    Skewness = NA,
-    Kurtosis = NA,
+    Skewness = as.numeric(skewness(x)),
+    Kurtosis = as.numeric(kurtosis(x)),
+    n = length(x),
+    n_Missing = n_missing,
+    stringsAsFactors = FALSE
+  )
+
+  if (!dispersion) {
+    out$SD <- NULL
+  }
+
+  if (!range) {
+    out$Min <- NULL
+    out$Max <- NULL
+  }
+
+  out
+}
+
+
+
+#' @export
+describe_distribution.character <- function(x, dispersion = TRUE, range = TRUE, ...) {
+  # Missing
+  n_missing <- sum(is.na(x))
+  x <- stats::na.omit(x)
+  values <- unique(x)
+
+  out <- data.frame(
+    Mean = NA,
+    SD = NA,
+    SE = NA,
+    Min = values[1],
+    Max = values[length(values)],
+    Skewness = as.numeric(skewness(x)),
+    Kurtosis = as.numeric(kurtosis(x)),
     n = length(x),
     n_Missing = n_missing,
     stringsAsFactors = FALSE
@@ -127,6 +167,11 @@ describe_distribution.data.frame <- function(x, centrality = "mean", dispersion 
 
 
 #' @export
-print.parameters_distribution <- function(x, ...) {
+print.parameters_distribution <- function(x, digits = 2, ...) {
+  if (all(c("Min", "Max") %in% names(x))) {
+    x$Min <- insight::format_ci(x$Min, x$Max, ci = NULL, digits = digits, width = "auto", brackets = TRUE)
+    x$Max <- NULL
+    colnames(x)[which(colnames(x) == "Min")] <- "Range"
+  }
   cat(insight::format_table(x))
 }

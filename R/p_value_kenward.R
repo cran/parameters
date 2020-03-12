@@ -22,7 +22,7 @@
 #' parameters, based on the Kenward-Roger (1997) approach.
 #' \cr \cr
 #' \code{\link[=dof_satterthwaite]{dof_satterthwaite()}} and
-#' \code{\link[=dof_ml1]{dof_ml1}} approximate degrees
+#' \code{\link[=dof_ml1]{dof_ml1()}} approximate degrees
 #' of freedom based on Satterthwaite's method or the "m-l-1" rule.
 #'
 #' @examples
@@ -46,7 +46,7 @@ p_value_kenward.lmerMod <- function(model, dof = NULL) {
   if (is.null(dof)) {
     dof <- dof_kenward(model)
   }
-  .p_value_dof(model, dof)
+  .p_value_dof(model, dof, method = "kenward")
 }
 
 
@@ -55,13 +55,58 @@ p_value_kenward.lmerMod <- function(model, dof = NULL) {
 
 # helper ------------------------------
 
-.p_value_dof <- function(model, dof) {
-  statistic <- insight::get_statistic(model)
-  p <- 2 * stats::pt(abs(statistic$Statistic), df = dof, lower.tail = FALSE)
+.p_value_dof <- function(model, dof, method, statistic = NULL) {
+  params <- insight::get_parameters(model)
+  if (is.null(statistic)) {
+    statistic <- insight::get_statistic(model)$Statistic
+  }
 
+  if (method == "kenward") {
+    se <- se_kenward(model)
+    estimate <- if ("Coefficient" %in% colnames(params)) {
+      params$Coefficient
+    } else {
+      params$Estimate
+    }
+    statistic <- estimate / se$SE
+  }
+
+  p <- 2 * stats::pt(abs(statistic), df = dof, lower.tail = FALSE)
   data.frame(
-    Parameter = statistic$Parameter,
+    Parameter = params$Parameter,
     p = unname(p),
     stringsAsFactors = FALSE
   )
+}
+
+
+
+
+.p_value_dof_kr <- function(model, params, dof) {
+  if ("SE" %in% colnames(params) && "SE" %in% colnames(dof)) {
+    params$SE <- NULL
+  }
+  params <- merge(params, dof, by = "Parameter")
+  p <- 2 * stats::pt(abs(params$Estimate / params$SE), df = params$df_error, lower.tail = FALSE)
+
+  data.frame(
+    Parameter = params$Parameter,
+    p = unname(p),
+    stringsAsFactors = FALSE
+  )
+}
+
+
+
+
+
+# helper -------------------------
+
+.check_REML_fit <- function(model) {
+  if (!requireNamespace("lme4", quietly = TRUE)) {
+    stop("Package 'lme4' required for this function to work. Please install it.")
+  }
+  if (!(lme4::getME(model, "is_REML"))) {
+    warning("Model was not fitted by REML. Re-fitting model now, but p-values, df, etc. still might be unreliable.", call. = FALSE)
+  }
 }

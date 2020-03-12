@@ -36,6 +36,7 @@
 #'     is obtained from \code{VarCorr()}. This measure is only available
 #'     for mixed models with random intercepts and slopes.
 #'   }
+#'   \strong{Note:} For the within-group and between-group variance, variance and standard deviations (which are simply the square root of the variance) are shown.
 #'
 #' @examples
 #' if (require("lme4")) {
@@ -87,7 +88,9 @@ random_parameters <- function(model) {
     # Slope-Intercept Correlation
     if (!.is_empty_object(re_variances$cor.slope_intercept) && !.is_empty_object(model_rs)) {
       cor_slope_intercept <- as.list(re_variances$cor.slope_intercept)
-      names(cor_slope_intercept) <- paste0("rho01_", model_re, ".", model_rs)
+      csi_names <- gsub("(.*)(\\.\\d)(.*)", "\\1\\3", names(re_variances$var.slope))
+      # csi_names <- names(re_variances$var.slope)
+      names(cor_slope_intercept) <- paste0("rho01_", csi_names)
       out <- c(out, cor_slope_intercept)
     }
   }

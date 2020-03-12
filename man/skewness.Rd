@@ -3,11 +3,17 @@
 \name{skewness}
 \alias{skewness}
 \alias{kurtosis}
+\alias{print.parameters_kurtosis}
+\alias{print.parameters_skewness}
 \title{Compute Skewness and Kurtosis}
 \usage{
-skewness(x, na.rm = TRUE, type = "2", ...)
+skewness(x, na.rm = TRUE, type = "2", iterations = NULL, ...)
 
-kurtosis(x, na.rm = TRUE, type = "2", ...)
+kurtosis(x, na.rm = TRUE, type = "2", iterations = NULL, ...)
+
+\method{print}{parameters_kurtosis}(x, digits = 3, test = FALSE, ...)
+
+\method{print}{parameters_skewness}(x, digits = 3, test = FALSE, ...)
 }
 \arguments{
 \item{x}{A numeric vector or data.frame.}
@@ -16,7 +22,13 @@ kurtosis(x, na.rm = TRUE, type = "2", ...)
 
 \item{type}{Type of algorithm for computing skewness. May be one of \code{1} (or \code{"1"}, \code{"I"} or \code{"classic"}), \code{2} (or \code{"2"}, \code{"II"} or \code{"SPSS"} or \code{"SAS"}) or \code{3} (or  \code{"3"}, \code{"III"} or \code{"Minitab"}). See 'Details'.}
 
+\item{iterations}{The number of bootstrap replicates for computing standard errors. If \code{NULL} (default), parametric standard errors are computed. See 'Details'.}
+
 \item{...}{Arguments passed to or from other methods.}
+
+\item{digits}{Number of decimal places.}
+
+\item{test}{Logical, if \code{TRUE}, tests if skewness or kurtosis is significantly different from zero.}
 }
 \value{
 Values of skewness or kurtosis.
@@ -61,11 +73,17 @@ tails (\cite{https://en.wikipedia.org/wiki/Kurtosis}).
 \item Type "3" first calculates the type-1 kurtosis, than adjusts the result: \code{b2 = (g2 + 3) * (1 - 1 / n)^2 - 3}. This is what Minitab usually returns.
 }
 }
+\subsection{Standard Errors}{
+It is recommended to compute empirical (bootstrapped) standard errors (via the \code{iterations} argument) than relying on analytic standard errors (\cite{Wright & Herrington, 2011}).
+}
 }
 \examples{
 skewness(rnorm(1000))
 kurtosis(rnorm(1000))
 }
 \references{
-D. N. Joanes and C. A. Gill (1998). Comparing measures of sample skewness and kurtosis. The Statistician, 47, 183–189.
+\itemize{
+  \item D. N. Joanes and C. A. Gill (1998). Comparing measures of sample skewness and kurtosis. The Statistician, 47, 183–189.
+  \item Wright, D. B., & Herrington, J. A. (2011). Problematic standard errors and confidence intervals for skewness and kurtosis. Behavior research methods, 43(1), 8-17.
+}
 }

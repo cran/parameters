@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.5.0
+Version: 0.6.0
 Authors@R: 
   c(
     person("Daniel", 
@@ -62,7 +62,7 @@ Language: en-US
 RoxygenNote: 7.0.2
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2020-02-09 17:57:33 UTC; Daniel
+Packaged: 2020-03-12 10:27:03 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
   Dominique Makowski [aut] (<https://orcid.org/0000-0001-5375-9967>),
   Mattan S. Ben-Shachar [aut] (<https://orcid.org/0000-0002-4287-4801>),
@@ -71,4 +71,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
   Zen J. Lau [ctb]
 Maintainer: Daniel Lüdecke <d.luedecke@uke.de>
 Repository: CRAN
-Date/Publication: 2020-02-09 19:40:03 UTC
+Date/Publication: 2020-03-12 12:40:07 UTC

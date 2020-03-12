@@ -1,10 +1,10 @@
-.runThisTest <- Sys.getenv("RunAllggeffectsTests") == "yes"
+.runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
 
 if (.runThisTest && Sys.getenv("USER") != "travis") {
   if (require("testthat") && require("parameters")) {
     data(iris)
-    iris$`a m` <- iris$Species
-    iris$`Sepal Width` <- iris$Sepal.Width
+    iris$`a m` <<- iris$Species
+    iris$`Sepal Width` <<- iris$Sepal.Width
     m1 <- lm(`Sepal Width` ~ Petal.Length + `a m` * log(Sepal.Length), data = iris)
     m2 <- lm(Sepal.Width ~ Petal.Length + Species * log(Sepal.Length), data = iris)
 
@@ -96,14 +96,14 @@ if (.runThisTest && Sys.getenv("USER") != "travis") {
 
     test_that("model_parameters-2, backticks", {
       expect_equal(
-        model_parameters(parameters_selection(m1))$Parameter,
+        model_parameters(select_parameters(m1))$Parameter,
         c(
           "(Intercept)", "a mversicolor", "a mvirginica", "log(Sepal.Length)",
           "a mversicolor:log(Sepal.Length)", "a mvirginica:log(Sepal.Length)"
         )
       )
       expect_equal(
-        model_parameters(parameters_selection(m2))$Parameter,
+        model_parameters(select_parameters(m2))$Parameter,
         c(
           "(Intercept)", "Speciesversicolor", "Speciesvirginica", "log(Sepal.Length)",
           "Speciesversicolor:log(Sepal.Length)", "Speciesvirginica:log(Sepal.Length)"

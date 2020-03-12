@@ -2,7 +2,7 @@
 library(knitr)
 options(knitr.kable.NA = '')
 options(digits = 2)
-knitr::opts_chunk$set(comment = ">")
+knitr::opts_chunk$set(comment = "#>")
 
 if (!requireNamespace("dplyr", quietly = TRUE) ||
     !requireNamespace("BayesFactor", quietly = TRUE) ||
@@ -69,23 +69,60 @@ library(rstanarm)
 stan_glm(mpg ~ wt * cyl, data = mtcars, iter = 500, chains = 2, refresh = 0) %>% 
   parameters()
 
-## ---- warning=FALSE, message=FALSE--------------------------------------------
-library(brms)
-data(fish)
-set.seed(123)
-model <- brm(bf(
-   count ~ persons + child + camper + (1 | persons),
-   zi ~ child + camper + (1 | persons)
- ),
- data = fish,
- family = zero_inflated_poisson(),
- iter = 500,
- chains = 1,
- refresh = 0
-)
-parameters(model, component = "conditional")
-
-parameters(model, effects = "all", component = "all")
+## ---- warning=FALSE, message=FALSE, eval=FALSE--------------------------------
+#  library(brms)
+#  data(fish)
+#  set.seed(123)
+#  model <- brm(bf(
+#     count ~ persons + child + camper + (1 | persons),
+#     zi ~ child + camper + (1 | persons)
+#   ),
+#   data = fish,
+#   family = zero_inflated_poisson()
+#  )
+#  parameters(model, component = "conditional")
+#  #> Parameter   | Median |         89% CI |     pd | % in ROPE | ESS |  Rhat
+#  #> ------------------------------------------------------------------------
+#  #> b_Intercept |  -0.87 | [-1.49, -0.08] | 96.80% |     4.80% |  78 | 1.000
+#  #> b_persons   |   0.84 | [ 0.60,  1.06] |   100% |        0% |  75 | 0.997
+#  #> b_child     |  -1.16 | [-1.32, -1.00] |   100% |        0% | 107 | 1.027
+#  #> b_camper1   |   0.74 | [ 0.52,  0.91] |   100% |        0% | 224 | 0.993
+#  
+#  parameters(model, effects = "all", component = "all")
+#  #> # Fixed Effects (Count Model)
+#  #>
+#  #> Parameter   | Median |         89% CI |     pd | % in ROPE | ESS |  Rhat
+#  #> ------------------------------------------------------------------------
+#  #> (Intercept) |  -0.87 | [-1.49, -0.08] | 96.80% |     4.80% |  78 | 1.000
+#  #> persons     |   0.84 | [ 0.60,  1.06] |   100% |        0% |  75 | 0.997
+#  #> child       |  -1.16 | [-1.32, -1.00] |   100% |        0% | 107 | 1.027
+#  #> camper1     |   0.74 | [ 0.52,  0.91] |   100% |        0% | 224 | 0.993
+#  #>
+#  #> # Fixed Effects (Zero-Inflated Model)
+#  #>
+#  #> Parameter   | Median |         89% CI |     pd | % in ROPE | ESS |  Rhat
+#  #> ------------------------------------------------------------------------
+#  #> (Intercept) |  -0.76 | [-1.66,  0.51] | 87.20% |    10.40% |  98 | 0.992
+#  #> child       |   1.87 | [ 1.37,  2.43] |   100% |        0% | 262 | 0.999
+#  #> camper1     |  -0.83 | [-1.44, -0.22] | 99.20% |     0.80% | 168 | 0.997
+#  #>
+#  #> # Random Effects (Count Model)
+#  #>
+#  #> Parameter | Median |        89% CI |     pd | % in ROPE | ESS |  Rhat
+#  #> ---------------------------------------------------------------------
+#  #> persons.1 |  -0.01 | [-0.40, 0.35] | 59.20% |    57.60% |  80 | 1.012
+#  #> persons.2 |   0.03 | [-0.15, 0.33] | 61.60% |    60.80% |  88 | 0.994
+#  #> persons.3 |  -0.02 | [-0.38, 0.11] | 63.20% |    64.80% |  66 | 1.008
+#  #> persons.4 |   0.00 | [-0.51, 0.29] | 51.20% |    62.40% |  76 | 0.992
+#  #>
+#  #> # Random Effects (Zero-Inflated Model)
+#  #>
+#  #> Parameter | Median |         89% CI |     pd | % in ROPE | ESS |  Rhat
+#  #> ----------------------------------------------------------------------
+#  #> persons.1 |   1.38 | [ 0.58,  2.66] | 97.60% |     1.60% | 108 | 0.992
+#  #> persons.2 |   0.27 | [-0.62,  1.40] | 68.80% |    13.60% | 100 | 1.002
+#  #> persons.3 |  -0.11 | [-1.36,  0.86] | 60.80% |    16.80% |  96 | 0.993
+#  #> persons.4 |  -1.19 | [-2.62, -0.31] | 95.20% |     0.80% | 115 | 0.992
 
 ## ---- warning=FALSE, message=FALSE--------------------------------------------
 library(psych)

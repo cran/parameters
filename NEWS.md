@@ -1,3 +1,54 @@
+# parameters 0.6.0
+
+## Breaking changes
+
+- Alias `model_bootstrap()` was removed, please use `bootstrap_model()`.
+- Alias `parameters_bootstrap()` was removed, please use `bootstrap_parameters()`.
+- Alias `model_simulate()` was removed, please use `simulate_model()`.
+- Alias `parameters_simulate()` was removed, please use `simulate_parameters()`.
+- Alias `parameters_selection()` was removed, please use `select_parameters()`.
+- Alias `parameters_reduction()` was removed, please use `reduce_parameters()`.
+- Functions `DDR()`, `ICA()` and `cmds()` are no longer exported, as these were intended to be used internally by `reduce_parameters()` only.
+- `skewness()` and `kurtosis()` always return a data frame.
+
+## New supported models
+
+- Added support for `arima` (*stats*), `bife` (*bife*), `bcplm` and `zcpglm` (*cplm*)
+
+## Changes to functions
+
+### model_parameters()
+
+- Improved print-method for `model_parameters.brmsfit()`.
+- Improved print-method for `model_parameters.merMod()` when fitting REWB-Models (see `demean()`).
+- Improved efficiency for `model_parameters()` (for linear mixed models) when `df_method = "kenward"`.
+- `model_parameters()` gets a `p_adjust`-argument, to adjust p-values for multiple comparisons.
+- Minor improvements for `cluster_analysis()` when `method = "kmeans"` and `force = TRUE` (factors now also work for kmeans-clustering).
+
+### p_value(), ci() and standard_error()
+
+- `p_value_kenward()`, `se_kenward()` etc. now give a warning when model was not fitted by REML.
+- Added `ci()`, `standard_error()` and `p_value()` for *lavaan* and *blavaan* objects.
+- Added `standard_error()` for *brmsfit* and *stanreg* objects.
+
+### Other changes
+
+- Run certain tests only locally, to reduce duration of CRAN checks.
+- `skewness()`, `kurtosis()` and `smoothness()` get an `iteration` argument, to set the numbers of bootstrap replicates for computing standard errors.
+- Improved print-method for `factor_analysis()`.
+- `demean()` now additionally converts factors with more than 2 levels to dummy-variables (binary), to mimic *panelr*-behaviour.
+
+## Bug fixes
+
+- Fixed minor issue with the `print()`-method for `model_parameters.befa()`.
+- Fixed issues in `model_parameters()` (for linear mixed models) with wrong order of degrees of freedom when `df_method` was different from default.
+- Fixed issues in `model_parameters()` (for linear mixed models) with accuracy of p-values when `df_method = "kenward`.
+- Fixed issues in `model_parameters()` with wrong test statistic for *lmerModLmerTest* models.
+- Fixed issue in `format_parameters()` (which is used to format output of `model_parameters()`) for factors, when variable name was also part of factor levels.
+- Fixed issue in `degrees_of_freedem()` for *logistf*-models, which unintentionally printed the complete model summary.
+- Fixed issue in `model_parameters()` for *mlm* models.
+- Fixed issue in `random_parameters()` for uncorrelated random effects.
+
 # parameters 0.5.0
 
 ## Breaking changes

@@ -15,8 +15,8 @@
 #'
 #' @details
 #'   \subsection{Technical Details}{
-#'     \code{simulate_model()} is a computationally faster alternative
-#'     to \code{bootstrap_model()}. Simulated draws for coefficients are based
+#'     \code{simulate_parameters()} is a computationally faster alternative
+#'     to \code{bootstrap_parameters()}. Simulated draws for coefficients are based
 #'     on a multivariate normal distribution (\code{MASS::mvrnorm()}) with mean
 #'     \code{mu = coef(model)} and variance \code{Sigma = vcov(model)}.
 #'   }
@@ -30,29 +30,28 @@
 #'
 #' @examples
 #' library(parameters)
-#' library(glmmTMB)
 #'
 #' model <- lm(Sepal.Length ~ Species * Petal.Width + Petal.Length, data = iris)
 #' simulate_parameters(model)
 #'
-#' model <- glmmTMB(
-#'   count ~ spp + mined + (1 | site),
-#'   ziformula = ~mined,
-#'   family = poisson(),
-#'   data = Salamanders
-#' )
-#' simulate_parameters(model, centrality = "mean")
-#' simulate_parameters(model, ci = c(.8, .95), component = "zero_inflated")
+#' \donttest{
+#' if (require("glmmTMB")) {
+#'   model <- glmmTMB(
+#'     count ~ spp + mined + (1 | site),
+#'     ziformula = ~mined,
+#'     family = poisson(),
+#'     data = Salamanders
+#'   )
+#'   simulate_parameters(model, centrality = "mean")
+#'   simulate_parameters(model, ci = c(.8, .95), component = "zero_inflated")
+#' }
+#' }
 #' @importFrom bayestestR describe_posterior
 #' @importFrom tools toTitleCase
 #' @export
 simulate_parameters <- function(model, ...) {
   UseMethod("simulate_parameters")
 }
-
-#' @rdname simulate_parameters
-#' @export
-parameters_simulate <- simulate_parameters
 
 
 

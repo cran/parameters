@@ -2,13 +2,10 @@
 % Please edit documentation in R/simulate_model.R
 \name{simulate_model}
 \alias{simulate_model}
-\alias{model_simulate}
 \alias{simulate_model.glmmTMB}
 \title{Simulated draws from model coefficients}
 \usage{
 simulate_model(model, iterations = 1000, ...)
-
-model_simulate(model, iterations = 1000, ...)
 
 \method{simulate_model}{glmmTMB}(
   model,
@@ -52,22 +49,24 @@ Simulate draws from a statistical model to return a data frame of estimates.
 }
 \examples{
 library(parameters)
-library(glmmTMB)
-
 model <- lm(Sepal.Length ~ Species * Petal.Width + Petal.Length, data = iris)
 head(simulate_model(model))
 
-model <- glmmTMB(
-  count ~ spp + mined + (1 | site),
-  ziformula = ~mined,
-  family = poisson(),
-  data = Salamanders
-)
-head(simulate_model(model))
-head(simulate_model(model, component = "zero_inflated"))
+\donttest{
+if (require("glmmTMB")) {
+  model <- glmmTMB(
+    count ~ spp + mined + (1 | site),
+    ziformula = ~mined,
+    family = poisson(),
+    data = Salamanders
+  )
+  head(simulate_model(model))
+  head(simulate_model(model, component = "zero_inflated"))
+}
+}
 }
 \seealso{
-\code{\link[=parameters_simulate]{simulate_parameters()}},
+\code{\link[=simulate_parameters]{simulate_parameters()}},
 \code{\link[=bootstrap_model]{bootstrap_model()}},
 \code{\link[=bootstrap_parameters]{bootstrap_parameters()}}
 }

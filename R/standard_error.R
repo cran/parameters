@@ -26,6 +26,8 @@
 #'    is returned.
 #' @inheritParams simulate_model
 #'
+#' @note For Bayesian models (from \pkg{rstanarm} or \pkg{brms}), the standard error is the SD of the posterior samples.
+#'
 #' @examples
 #' model <- lm(Petal.Length ~ Sepal.Length * Species, data = iris)
 #' standard_error(model)
@@ -129,6 +131,16 @@ standard_error.effectsize_std_params <- function(model, ...) {
 }
 
 
+#' @export
+standard_error.parameters_skewness <- function(model, ...) {
+  attributes(model)$SE
+}
+
+#' @export
+standard_error.parameters_kurtosis <- standard_error.parameters_skewness
+
+
+
 
 
 
@@ -174,8 +186,9 @@ standard_error.default <- function(model, method = NULL, ...) {
       se <- tryCatch(
         {
           varcov <- insight::get_varcov(model)
-          se <- sqrt(diag(varcov))
-          names(se) <- colnames(varcov)
+          se_from_varcov <- sqrt(diag(varcov))
+          names(se_from_varcov) <- colnames(varcov)
+          se_from_varcov
         },
         error = function(e) {
           NULL
@@ -774,8 +787,50 @@ standard_error.bracl <- function(model, ...) {
 
 
 
+# Bayesian ----------------------------------------------
+
+
+#' @export
+standard_error.stanreg <- function(model, effects = c("fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+  effects <- match.arg(effects)
+  component <- match.arg(component)
+
+  params <- insight::get_parameters(model, effects = effects, component = component, ...)
+
+  .data_frame(
+    Parameter = colnames(params),
+    SE = unname(sapply(params, stats::sd, na.rm = TRUE))
+  )
+}
+
+#' @export
+standard_error.brmsfit <- standard_error.stanreg
+
+#' @export
+standard_error.mvstanreg <- standard_error.stanreg
+
+
+
+
+
+
+
+
 
 # Other models ---------------------------------------------------------------
+
+
+#' @export
+standard_error.bife <- function(model, ...) {
+  cs <- summary(model)
+  se <- cs$cm[, 2]
+
+  .data_frame(
+    Parameter = .remove_backticks_from_string(rownames(cs$cm)),
+    SE = as.vector(se)
+  )
+}
+
 
 
 #' @export
@@ -810,6 +865,39 @@ standard_error.cpglm <- function(model, ...) {
     Parameter = params$Parameter,
     SE = as.vector(stats[, "Std. Error"])
   )
+}
+
+
+
+#' @importFrom utils capture.output
+#' @export
+standard_error.zcpglm <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+  if (!requireNamespace("cplm", quietly = TRUE)) {
+    stop("To use this function, please install package 'cplm'.")
+  }
+
+  component <- match.arg(component)
+  junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
+  params <- get_parameters(model)
+
+  tweedie <- data.frame(
+    Parameter = params$Parameter[params$Component == "conditional"],
+    SE = as.vector(stats$tweedie[, "Std. Error"]),
+    Component = "conditional",
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  zero <- data.frame(
+    Parameter = params$Parameter[params$Component == "zero_inflated"],
+    SE = as.vector(stats$zero[, "Std. Error"]),
+    Component = "zero_inflated",
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- .filter_component(rbind(tweedie, zero), component)
+  out
 }
 
 
@@ -1262,6 +1350,22 @@ standard_error.rma <- function(model, ...) {
     Parameter = .remove_backticks_from_string(params$Parameter),
     SE = model[["se"]]
   )
+}
+
+
+
+#' @export
+standard_error.lavaan <- function(model, ...) {
+  out <- .extract_parameters_lavaan(model, ...)
+  out[out$Operator != "~1", c("To", "Operator", "From", "SE")]
+}
+
+
+
+#' @export
+standard_error.blavaan <- function(model, ci = .95, ...) {
+  out <- .extract_parameters_blavaan(model, ...)
+  out[out$Operator != "~1", c("To", "Operator", "From", "SE")]
 }
 
 

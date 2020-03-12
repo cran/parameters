@@ -2,9 +2,9 @@
 
 
 #' @importFrom insight get_statistic get_parameters
-#' @importFrom stats confint
+#' @importFrom stats confint p.adjust.methods p.adjust
 #' @keywords internal
-.extract_parameters_generic <- function(model, ci, component, merge_by = c("Parameter", "Component"), standardize = NULL, effects = "fixed", robust = FALSE, df_method = NULL, ...) {
+.extract_parameters_generic <- function(model, ci, component, merge_by = c("Parameter", "Component"), standardize = NULL, effects = "fixed", robust = FALSE, df_method = NULL, p_adjust = NULL, ...) {
   # check if standardization is required and package available
   if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
     insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
@@ -137,6 +137,11 @@
   if (length(unique(parameters$Component)) == 1) parameters$Component <- NULL
   if (length(unique(parameters$Effects)) == 1 || effects == "fixed") parameters$Effects <- NULL
 
+  # adjust p-values?
+  if (!is.null(p_adjust) && tolower(p_adjust) %in% stats::p.adjust.methods && "p" %in% colnames(parameters)) {
+    parameters$p <- stats::p.adjust(parameters$p, method = p_adjust)
+  }
+
   rownames(parameters) <- NULL
   parameters
 }
@@ -149,22 +154,27 @@
 
 #' @importFrom stats confint
 #' @keywords internal
-.extract_parameters_mixed <- function(model, ci = .95, df_method = "wald", standardize = NULL, robust = FALSE, ...) {
+.extract_parameters_mixed <- function(model, ci = .95, df_method = "wald", standardize = NULL, robust = FALSE, p_adjust = NULL, ...) {
   # check if standardization is required and package available
   if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
     insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
     standardize <- NULL
   }
 
-  # for refit, we completely refit the model, than extract parameters, ci etc. as usual
+  # for refit, we completely refit the model, than extract parameters,
+  # ci etc. as usual - therefor, we set "standardize" to NULL
   if (!is.null(standardize) && standardize == "refit") {
     model <- effectsize::standardize(model, verbose = FALSE)
     standardize <- NULL
   }
 
+  special_df_methods <- c("betwithin", "satterthwaite", "ml1", "kenward", "kr")
+
+  # get parameters and statistic
   parameters <- insight::get_parameters(model, effects = "fixed", component = "all")
   statistic <- insight::get_statistic(model, component = "all")
 
+  # sometimes, due to merge(), row-order messes up, so we save this here
   original_order <- parameters$.id <- 1:nrow(parameters)
 
   # remove SE column
@@ -180,6 +190,14 @@
   } else {
     df <- Inf
   }
+
+  df_error <- data.frame(
+    Parameter = parameters$Parameter,
+    df_error = as.vector(df),
+    stringsAsFactors = FALSE
+  )
+  # for KR-dof, we have the SE as well, to save computation time
+  df_error$SE <- attr(df, "se", exact = TRUE)
 
 
   # Std Coefficients for other methods than "refit"
@@ -207,6 +225,9 @@
     if (!is.null(ci)) {
       if (isTRUE(robust)) {
         ci_df <- suppressMessages(ci_robust(model, ci = ci, ...))
+      } else if (df_method %in% c("kenward", "kr")) {
+        # special handling for KR-CIs, where we already have computed SE
+        ci_df <- .ci_kenward_dof(model, ci = ci, df_kr = df_error)
       } else {
         ci_df <- ci(model, ci = ci, method = df_method, effects = "fixed")
       }
@@ -223,6 +244,11 @@
   if (is.null(standardize) || !("SE" %in% colnames(parameters))) {
     if (isTRUE(robust)) {
       parameters <- merge(parameters, standard_error_robust(model, ...), by = "Parameter")
+      # special handling for KR-SEs, which we already have computed from dof
+    } else if ("SE" %in% colnames(df_error)) {
+      se_kr <- df_error
+      se_kr$df_error <- NULL
+      parameters <- merge(parameters, se_kr, by = "Parameter")
     } else {
       parameters <- merge(parameters, standard_error(model, method = df_method, effects = "fixed"), by = "Parameter")
     }
@@ -235,6 +261,9 @@
   } else {
     if ("Pr(>|z|)" %in% names(parameters)) {
       names(parameters)[grepl("Pr(>|z|)", names(parameters), fixed = TRUE)] <- "p"
+    } else if (df_method %in% special_df_methods) {
+      # special handling for KR-p, which we already have computed from dof
+      parameters <- merge(parameters, .p_value_dof_kr(model, params = parameters, dof = df_error), by = "Parameter")
     } else {
       parameters <- merge(parameters, p_value(model, dof = df, effects = "fixed"), by = "Parameter")
     }
@@ -242,7 +271,7 @@
 
 
   # adjust standard errors and test-statistic as well
-  if (!isTRUE(robust) && is.null(standardize) && df_method %in% c("betwithin", "ml1", "kenward", "kr")) {
+  if (!isTRUE(robust) && is.null(standardize) && df_method %in% special_df_methods) {
     parameters$Statistic <- parameters$Estimate / parameters$SE
   } else {
     parameters <- merge(parameters, statistic, by = "Parameter")
@@ -251,12 +280,18 @@
 
   # dof
   if (!"df" %in% names(parameters)) {
-    if (df_method %in% c("betwithin", "ml1", "satterthwaite", "kenward", "kr"))
-      df_error <- df
-    else
-      df_error <- degrees_of_freedom(model, method = "any")
-    if (!is.null(df_error) && (length(df_error) == 1 || length(df_error) == nrow(parameters))) {
-      parameters$df_error <- df_error
+    if (!df_method %in% special_df_methods) {
+      df_error <- data.frame(
+        Parameter = parameters$Parameter,
+        df_error = degrees_of_freedom(model, method = "any"),
+        stringsAsFactors = FALSE
+      )
+    }
+    if (!is.null(df_error) && nrow(df_error) == nrow(parameters)) {
+      if ("SE" %in% colnames(df_error)) {
+        df_error$SE <- NULL
+      }
+      parameters <- merge(parameters, df_error, by = "Parameter")
     }
   }
 
@@ -275,9 +310,71 @@
   order <- c("Parameter", coef_col, "SE", ci_cols, "t", "z", "df", "df_error", "p")
   parameters <- parameters[order[order %in% names(parameters)]]
 
+  # adjust p-values?
+  if (!is.null(p_adjust) && tolower(p_adjust) %in% stats::p.adjust.methods && "p" %in% colnames(parameters)) {
+    parameters$p <- stats::p.adjust(parameters$p, method = p_adjust)
+  }
+
+  # if we have within/between effects (from demean()), we can add a component
+  # column for nicer printing...
+  parameters <- .add_within_between_effects(model, parameters)
+
   rownames(parameters) <- NULL
   parameters
 }
+
+
+
+.add_within_between_effects <- function(model, parameters) {
+
+  # This function checks whether the model contains predictors that were
+  # "demeaned" using the "demean()" function. If so, these columns have an
+  # attribute indicating the within or between effect, and in such cases,
+  # this effect is used as "Component" value. by this, we get a nicer print
+  # for model parameters...
+
+  parameters$Component <- "rewb-contextual"
+
+  within_effects <- .find_within_between(model, "within-effect")
+  if (!is.null(within_effects)) {
+    index <- unique(unlist(sapply(within_effects, function(i) {
+      grep(i, parameters$Parameter, fixed = TRUE)
+    })))
+    parameters$Component[index] <- "within"
+  }
+
+  between_effects <- .find_within_between(model, "between-effect")
+  if (!is.null(between_effects)) {
+    index <- unique(unlist(sapply(between_effects, function(i) {
+      grep(i, parameters$Parameter, fixed = TRUE)
+    })))
+    parameters$Component[index] <- "between"
+  }
+
+  interactions <- grep(":", parameters$Parameter, fixed = TRUE)
+  if (length(interactions)) {
+    parameters$Component[interactions] <- "interactions"
+  }
+
+  if (!("within" %in% parameters$Component) || !("between" %in% parameters$Component)) {
+    parameters$Component <- NULL
+  }
+
+  parameters
+}
+
+
+
+#' @importFrom stats model.frame
+.find_within_between <- function(model, which_effect) {
+  mf <- stats::model.frame(model)
+  unlist(sapply(names(mf), function(i) {
+    if (!is.null(attr(mf[[i]], which_effect, exact = TRUE))) {
+      i
+    }
+  }))
+}
+
 
 
 
@@ -288,20 +385,13 @@
 
 #' @importFrom stats sd setNames
 #' @keywords internal
-.extract_parameters_bayesian <- function(model, centrality = "median", dispersion = FALSE, ci = .89, ci_method = "hdi", test = c("pd", "rope"), rope_range = "default", rope_ci = 1.0, bf_prior = NULL, diagnostic = c("ESS", "Rhat"), priors = TRUE, iterations = 1000, ...) {
+.extract_parameters_bayesian <- function(model, centrality = "median", dispersion = FALSE, ci = .89, ci_method = "hdi", test = c("pd", "rope"), rope_range = "default", rope_ci = 1.0, bf_prior = NULL, diagnostic = c("ESS", "Rhat"), priors = TRUE, ...) {
 
   # MCMCglmm need special handling
   if (inherits(model, "MCMCglmm")) {
     parameters <- bayestestR::describe_posterior(model, centrality = centrality, dispersion = dispersion, ci = ci, ci_method = ci_method, test = test, rope_range = rope_range, rope_ci = rope_ci, diagnostic = "ESS", ...)
-
-    # Bayesian Models
-  } else if ((insight::is_multivariate(model) && insight::model_info(model)[[1]]$is_bayesian) || insight::model_info(model)$is_bayesian) {
-    parameters <- bayestestR::describe_posterior(model, centrality = centrality, dispersion = dispersion, ci = ci, ci_method = ci_method, test = test, rope_range = rope_range, rope_ci = rope_ci, bf_prior = bf_prior, diagnostic = diagnostic, priors = priors, ...)
-
-    # Bootstrapped Models
   } else {
-    data <- bootstrap_model(model, iterations = iterations)
-    parameters <- bayestestR::describe_posterior(data, centrality = centrality, dispersion = dispersion, ci = ci, ci_method = ci_method, test = test, rope_range = rope_range, rope_ci = rope_ci, bf_prior = bf_prior, ...)
+    parameters <- bayestestR::describe_posterior(model, centrality = centrality, dispersion = dispersion, ci = ci, ci_method = ci_method, test = test, rope_range = rope_range, rope_ci = rope_ci, bf_prior = bf_prior, diagnostic = diagnostic, priors = priors, ...)
   }
 
   if (length(ci) > 1) {

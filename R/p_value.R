@@ -2,7 +2,8 @@
 #'
 #' This function attempts to return, or compute, p-values of a model's parameters. The nature of the p-values is different depending on the model:
 #' \itemize{
-#' \item Mixed models (lme4): By default, p-values are based on Wald-test approximations (see \code{\link{p_value_wald}}). For certain situations, the "m-l-1" rule might be a better approximation. That is, for \code{method = "ml1"}, \code{\link{p_value_ml1}} is called. For \code{lmerMod} objects, if \code{method = "kenward"}, p-values are based on Kenward-Roger approximations, i.e. \code{\link{p_value_kenward}} is called, and \code{method = "satterthwaite"} calls \code{\link{p_value_satterthwaite}}.
+#' \item Mixed models (\pkg{lme4}): By default, p-values are based on Wald-test approximations (see \code{\link{p_value_wald}}). For certain situations, the "m-l-1" rule might be a better approximation. That is, for \code{method = "ml1"}, \code{\link{p_value_ml1}} is called. For \code{lmerMod} objects, if \code{method = "kenward"}, p-values are based on Kenward-Roger approximations, i.e. \code{\link{p_value_kenward}} is called, and \code{method = "satterthwaite"} calls \code{\link{p_value_satterthwaite}}.
+#' \item Bayesian models (\pkg{rstanarm}, \pkg{brms}): For Bayesian models, the p-values corresponds to the \emph{probability of direction} (\code{\link[bayestestR]{p_direction}}), which is converted to a p-value using \code{\link[bayestestR]{convert_pd_to_p}}.
 #' }
 #'
 #' @param model A statistical model.
@@ -17,8 +18,11 @@
 #'   thus only work for those models supported by those packages.
 #'
 #' @examples
-#' model <- lme4::lmer(Petal.Length ~ Sepal.Length + (1 | Species), data = iris)
-#' p_value(model)
+#' if (require("lme4")) {
+#'   data(iris)
+#'   model <- lmer(Petal.Length ~ Sepal.Length + (1 | Species), data = iris)
+#'   p_value(model)
+#' }
 #' @return The p-values.
 #' @importFrom bayestestR p_direction convert_pd_to_p
 #' @importFrom stats coef vcov pt pnorm na.omit
@@ -77,8 +81,9 @@ p_value.default <- function(model, method = NULL, ...) {
     p <- tryCatch(
       {
         stat <- insight::get_statistic(model)
-        p <- 2 * stats::pnorm(abs(stat$Statistic), lower.tail = FALSE)
-        names(p) <- stat$Parameter
+        p_from_stat <- 2 * stats::pnorm(abs(stat$Statistic), lower.tail = FALSE)
+        names(p_from_stat) <- stat$Parameter
+        p_from_stat
       },
       error = function(e) {
         NULL
@@ -197,6 +202,40 @@ p_value.hurdle <- p_value.zeroinfl
 
 #' @export
 p_value.zerocount <- p_value.zeroinfl
+
+
+#' @importFrom utils capture.output
+#' @export
+p_value.zcpglm <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+  if (!requireNamespace("cplm", quietly = TRUE)) {
+    stop("To use this function, please install package 'cplm'.")
+  }
+
+  component <- match.arg(component)
+  junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
+  params <- get_parameters(model)
+
+  tweedie <- data.frame(
+    Parameter = params$Parameter[params$Component == "conditional"],
+    p = as.vector(stats$tweedie[, "Pr(>|z|)"]),
+    Component = "conditional",
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  zero <- data.frame(
+    Parameter = params$Parameter[params$Component == "zero_inflated"],
+    p = as.vector(stats$zero[, "Pr(>|z|)"]),
+    Component = "zero_inflated",
+    stringsAsFactors = FALSE,
+    row.names = NULL
+  )
+
+  out <- .filter_component(rbind(tweedie, zero), component)
+  out
+}
+
+
 
 
 
@@ -377,6 +416,10 @@ p_value.stanreg <- p_value.brmsfit
 
 #' @export
 p_value.BFBayesFactor <- p_value.brmsfit
+
+
+#' @export
+p_value.bcplm <- p_value.brmsfit
 
 
 
@@ -1202,6 +1245,35 @@ p_value.rma <- function(model, ...) {
     p = model$pval
   )
 }
+
+
+#' @export
+p_value.lavaan <- function(model, ...) {
+  out <- .extract_parameters_lavaan(model, ...)
+  out[out$Operator != "~1", c("To", "Operator", "From", "p")]
+}
+
+
+
+#' @export
+p_value.blavaan <- function(model, ci = .95, ...) {
+  out <- .extract_parameters_blavaan(model, ...)
+  out[out$Operator != "~1", c("To", "Operator", "From", "p")]
+}
+
+
+
+#' @export
+p_value.bife <- function(model, ...) {
+  cs <- summary(model)
+  p <- cs$cm[, 4]
+
+  .data_frame(
+    Parameter = .remove_backticks_from_string(rownames(cs$cm)),
+    p = as.vector(p)
+  )
+}
+
 
 
 

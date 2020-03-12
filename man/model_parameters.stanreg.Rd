@@ -17,7 +17,6 @@
   bf_prior = NULL,
   diagnostic = c("ESS", "Rhat"),
   priors = TRUE,
-  iterations = 1000,
   effects = "fixed",
   ...
 )
@@ -34,20 +33,20 @@
   bf_prior = NULL,
   diagnostic = c("ESS", "Rhat"),
   priors = TRUE,
-  iterations = 1000,
   effects = "fixed",
   component = "all",
+  exponentiate = FALSE,
   ...
 )
 }
 \arguments{
-\item{model}{Bayesian model.}
+\item{model}{Bayesian model. May also be a data frame with posterior samples.}
 
 \item{centrality}{The point-estimates (centrality indices) to compute.  Character (vector) or list with one or more of these options: \code{"median"}, \code{"mean"}, \code{"MAP"} or \code{"all"}.}
 
 \item{dispersion}{Logical, if \code{TRUE}, computes indices of dispersion related to the estimate(s) (\code{SD} and \code{MAD} for \code{mean} and \code{median}, respectively).}
 
-\item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
+\item{ci}{Credible Interval (CI) level. Default to 0.89 (89\%). See \code{\link[bayestestR]{ci}} for further details.}
 
 \item{ci_method}{The type of index used for Credible Interval. Can be
 \code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi}}), \code{"ETI"}
@@ -75,14 +74,14 @@ proportion of HDI, to use for the percentage in ROPE.}
 
 \item{priors}{Add the prior used for each parameter.}
 
-\item{iterations}{The number of bootstrap replicates. This only apply in the case of bootstrapped frequentist models.}
-
 \item{effects}{Should results for fixed effects, random effects or both be returned?
 Only applies to mixed models. May be abbreviated.}
 
 \item{...}{Arguments passed to or from other methods. For instance, when \code{bootstrap = TRUE}, arguments like \code{ci_method} are passed down to \code{\link[bayestestR]{describe_posterior}}.}
 
 \item{component}{Model component for which parameters should be shown. May be one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}), \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}) or \code{"all"}.}
+
+\item{exponentiate}{Logical, indicating whether or not to exponentiate the the coefficients (and related confidence intervals). This is typical for, say, logistic regressions, or more generally speaking: for models with log or logit link.}
 }
 \value{
 A data frame of indices related to the model's parameters.
@@ -90,11 +89,18 @@ A data frame of indices related to the model's parameters.
 \description{
 Parameters of Bayesian models.
 }
+\details{
+Currently supported models are \code{brmsfit}, \code{stanreg}, \code{stanmvreg}, \code{MCMCglmm}, \code{mcmc} and \code{bcplm}.
+}
+\note{
+If \code{model} is a data frame, arguments \code{diagnostic}, \code{bf_prior} and \code{priors} are ignored.
+}
 \examples{
 \donttest{
 library(parameters)
 if (require("rstanarm")) {
-  model <- rstanarm::stan_glm(Sepal.Length ~ Petal.Length * Species,
+  model <- stan_glm(
+    Sepal.Length ~ Petal.Length * Species,
     data = iris, iter = 500, refresh = 0
   )
   model_parameters(model)

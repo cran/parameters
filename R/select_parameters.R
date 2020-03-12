@@ -23,10 +23,16 @@
 #'
 #' # rstanarm -------------------------------------------
 #' if (require("rstanarm")) {
-#'   model <- stan_glm(mpg ~ ., data = mtcars, iter = 500, refresh = 0)
+#'   model <- stan_glm(
+#'     mpg ~ ., data = mtcars,
+#'     iter = 500, refresh = 0, verbose = FALSE
+#'   )
 #'   select_parameters(model, cross_validation = TRUE)
 #'
-#'   model <- stan_glm(mpg ~ cyl * disp * hp, data = mtcars, iter = 500, refresh = 0)
+#'   model <- stan_glm(
+#'     mpg ~ cyl * disp * hp, data = mtcars,
+#'     iter = 500, refresh = 0, verbose = FALSE
+#'   )
 #'   select_parameters(model, cross_validation = FALSE)
 #' }
 #' }
@@ -35,11 +41,6 @@
 select_parameters <- function(model, ...) {
   UseMethod("select_parameters")
 }
-
-#' @rdname select_parameters
-#' @export
-parameters_selection <- select_parameters
-
 
 
 #' @rdname select_parameters

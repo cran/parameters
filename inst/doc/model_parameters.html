@@ -636,72 +636,72 @@ body {
 <h3 id="frequentist">Frequentist</h3>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">cor.test</span>(iris<span class="op">$</span>Sepal.Length, iris<span class="op">$</span>Sepal.Width) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb1-2" title="2"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>&gt; Parameter1        |       Parameter2 |     r |     t |  df |     p |        95% CI |  Method
-&gt; --------------------------------------------------------------------------------------------
-&gt; iris$Sepal.Length | iris$Sepal.Width | -0.12 | -1.44 | 148 | 0.152 | [-0.27, 0.04] | Pearson
+<pre><code>#&gt; Parameter1        |       Parameter2 |     r |     t |  df |     p |        95% CI |  Method
+#&gt; --------------------------------------------------------------------------------------------
+#&gt; iris$Sepal.Length | iris$Sepal.Width | -0.12 | -1.44 | 148 | 0.152 | [-0.27, 0.04] | Pearson
 </code></pre>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">t.test</span>(mpg <span class="op">~</span><span class="st"> </span>vs, <span class="dt">data =</span> mtcars) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb3-2" title="2"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>&gt; Parameter | Group | Mean_Group1 | Mean_Group2 | Difference |     t |    df |      p |          95% CI |                  Method
-&gt; -------------------------------------------------------------------------------------------------------------------------------
-&gt; mpg       |    vs |       16.62 |       24.56 |       7.94 | -4.67 | 22.72 | &lt; .001 | [-11.46, -4.42] | Welch Two Sample t-test
+<pre><code>#&gt; Parameter | Group | Mean_Group1 | Mean_Group2 | Difference |     t |    df |      p |          95% CI |                  Method
+#&gt; -------------------------------------------------------------------------------------------------------------------------------
+#&gt; mpg       |    vs |       16.62 |       24.56 |       7.94 | -4.67 | 22.72 | &lt; .001 | [-11.46, -4.42] | Welch Two Sample t-test
 </code></pre>
 <h3 id="bayesian">Bayesian</h3>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">library</span>(BayesFactor)</a>
 <a class="sourceLine" id="cb5-2" title="2"></a>
 <a class="sourceLine" id="cb5-3" title="3">BayesFactor<span class="op">::</span><span class="kw">correlationBF</span>(iris<span class="op">$</span>Sepal.Length, iris<span class="op">$</span>Sepal.Width) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb5-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>&gt; Parameter | Median |        89% CI |     pd | % in ROPE |              Prior | Effects |   Component |   BF
-&gt; -----------------------------------------------------------------------------------------------------------
-&gt; rho       |  -0.11 | [-0.23, 0.02] | 92.90% |    43.13% | Cauchy (0 +- 0.33) |   fixed | conditional | 0.51
+<pre><code>#&gt; Parameter | Median |        89% CI |     pd | % in ROPE |              Prior | Effects |   Component |   BF
+#&gt; -----------------------------------------------------------------------------------------------------------
+#&gt; rho       |  -0.11 | [-0.23, 0.02] | 92.90% |    43.13% | Cauchy (0 +- 0.33) |   fixed | conditional | 0.51
 </code></pre>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">BayesFactor<span class="op">::</span><span class="kw">ttestBF</span>(<span class="dt">formula =</span> mpg <span class="op">~</span><span class="st"> </span>vs, <span class="dt">data =</span> mtcars) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb7-2" title="2"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>&gt; Parameter  | Median |          89% CI |     pd | % in ROPE |              Prior | Effects |   Component |     BF
-&gt; ----------------------------------------------------------------------------------------------------------------
-&gt; Difference |  -7.30 | [-10.15, -4.58] | 99.98% |        0% | Cauchy (0 +- 0.71) |   fixed | conditional | 529.27
+<pre><code>#&gt; Parameter  | Median |          89% CI |     pd | % in ROPE |              Prior | Effects |   Component |     BF
+#&gt; ----------------------------------------------------------------------------------------------------------------
+#&gt; Difference |  -7.30 | [-10.15, -4.58] | 99.98% |        0% | Cauchy (0 +- 0.71) |   fixed | conditional | 529.27
 </code></pre>
 <h2 id="anovas">ANOVAs</h2>
 <p>Indices of effect size for ANOVAs, such as partial and non-partial versions of <code>eta_squared()</code>, <code>epsilon_sqared()</code> or <code>omega_squared()</code>, were moved to the <a href="https://easystats.github.io/effectsize/"><strong>effectsize</strong>-package</a>. However, <strong>parameters</strong> uses these function to compute such indices for parameters summaries.</p>
 <h3 id="simple">Simple</h3>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">aov</span>(Sepal.Length <span class="op">~</span><span class="st"> </span>Species, <span class="dt">data =</span> iris) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb9-2" title="2"><span class="st">  </span><span class="kw">parameters</span>(<span class="dt">omega_squared =</span> <span class="st">&quot;partial&quot;</span>, <span class="dt">eta_squared =</span> <span class="st">&quot;partial&quot;</span>, <span class="dt">epsilon_squared =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
-<pre><code>&gt; Parameter | Sum_Squares |  df | Mean_Square |      F |      p | Omega_Sq (partial) | Eta_Sq (partial) | Epsilon_sq
-&gt; ------------------------------------------------------------------------------------------------------------------
-&gt; Species   |       63.21 |   2 |       31.61 | 119.26 | &lt; .001 |               0.61 |             0.62 |       0.61
-&gt; Residuals |       38.96 | 147 |        0.27 |        |        |                    |                  |
+<pre><code>#&gt; Parameter | Sum_Squares |  df | Mean_Square |      F |      p | Omega_Sq (partial) | Eta_Sq (partial) | Epsilon_sq
+#&gt; ------------------------------------------------------------------------------------------------------------------
+#&gt; Species   |       63.21 |   2 |       31.61 | 119.26 | &lt; .001 |               0.61 |             0.62 |       0.61
+#&gt; Residuals |       38.96 | 147 |        0.27 |        |        |                    |                  |
 </code></pre>
 <h3 id="repeated-measures">Repeated measures</h3>
 <p><code>parameters()</code> (resp. its alias <code>model_parameters()</code>) also works on repeated measures ANOVAs, whether computed from <code>aov()</code> or from a mixed model.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">aov</span>(mpg <span class="op">~</span><span class="st"> </span>am <span class="op">+</span><span class="st"> </span><span class="kw">Error</span>(gear), <span class="dt">data =</span> mtcars) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb11-2" title="2"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>&gt; Group  | Parameter | Sum_Squares | df | Mean_Square |    F |     p
-&gt; ------------------------------------------------------------------
-&gt; Within |        am |      145.45 |  1 |      145.45 | 5.85 | 0.022
-&gt; Within | Residuals |      720.85 | 29 |       24.86 |      |      
-&gt; gear   |        am |      259.75 |  1 |      259.75 |      |
+<pre><code>#&gt; Group  | Parameter | Sum_Squares | df | Mean_Square |    F |     p
+#&gt; ------------------------------------------------------------------
+#&gt; Within |        am |      145.45 |  1 |      145.45 | 5.85 | 0.022
+#&gt; Within | Residuals |      720.85 | 29 |       24.86 |      |      
+#&gt; gear   |        am |      259.75 |  1 |      259.75 |      |
 </code></pre>
 <h2 id="regressions-glms-mixed-models-gams-">Regressions (GLMs, Mixed Models, GAMs, …)</h2>
 <p><code>parameters()</code> (resp. its alias <code>model_parameters()</code>) was mainly built with regression models in mind. It works for many types of models and packages, including mixed models and Bayesian models.</p>
 <h3 id="glms">GLMs</h3>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">glm</span>(vs <span class="op">~</span><span class="st"> </span><span class="kw">poly</span>(mpg, <span class="dv">2</span>) <span class="op">+</span><span class="st"> </span>cyl, <span class="dt">data =</span> mtcars) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb13-2" title="2"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>&gt; Parameter        | Coefficient |   SE |         95% CI |     t | df |      p
-&gt; ----------------------------------------------------------------------------
-&gt; (Intercept)      |        2.04 | 0.39 | [ 1.27,  2.80] |  5.22 | 28 | &lt; .001
-&gt; mpg [1st degree] |       -0.33 | 0.61 | [-1.53,  0.87] | -0.53 | 28 | 0.599 
-&gt; mpg [2nd degree] |        0.10 | 0.32 | [-0.54,  0.74] |  0.31 | 28 | 0.762 
-&gt; cyl              |       -0.26 | 0.06 | [-0.38, -0.14] | -4.14 | 28 | &lt; .001
+<pre><code>#&gt; Parameter        | Coefficient |   SE |         95% CI |     t | df |      p
+#&gt; ----------------------------------------------------------------------------
+#&gt; (Intercept)      |        2.04 | 0.39 | [ 1.27,  2.80] |  5.22 | 28 | &lt; .001
+#&gt; mpg [1st degree] |       -0.33 | 0.61 | [-1.53,  0.87] | -0.53 | 28 | 0.599 
+#&gt; mpg [2nd degree] |        0.10 | 0.32 | [-0.54,  0.74] |  0.31 | 28 | 0.762 
+#&gt; cyl              |       -0.26 | 0.06 | [-0.38, -0.14] | -4.14 | 28 | &lt; .001
 </code></pre>
 <h3 id="mixed-models">Mixed Models</h3>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">library</span>(lme4)</a>
 <a class="sourceLine" id="cb15-2" title="2"></a>
 <a class="sourceLine" id="cb15-3" title="3"><span class="kw">lmer</span>(Sepal.Width <span class="op">~</span><span class="st"> </span>Petal.Length <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>Species), <span class="dt">data =</span> iris) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb15-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>&gt; Parameter    | Coefficient |   SE |       95% CI |    t |  df |      p
-&gt; ----------------------------------------------------------------------
-&gt; (Intercept)  |        2.00 | 0.56 | [0.90, 3.10] | 3.56 | 146 | &lt; .001
-&gt; Petal.Length |        0.28 | 0.06 | [0.17, 0.40] | 4.75 | 146 | &lt; .001
+<pre><code>#&gt; Parameter    | Coefficient |   SE |       95% CI |    t |  df |      p
+#&gt; ----------------------------------------------------------------------
+#&gt; (Intercept)  |        2.00 | 0.56 | [0.90, 3.10] | 3.56 | 146 | &lt; .001
+#&gt; Petal.Length |        0.28 | 0.06 | [0.17, 0.40] | 4.75 | 146 | &lt; .001
 </code></pre>
 <h3 id="bayesian-models">Bayesian Models</h3>
 <p><code>model_parameters()</code> works fine with Bayesian models from the <strong>rstanarm</strong> package…</p>
@@ -709,12 +709,12 @@ body {
 <a class="sourceLine" id="cb17-2" title="2"></a>
 <a class="sourceLine" id="cb17-3" title="3"><span class="kw">stan_glm</span>(mpg <span class="op">~</span><span class="st"> </span>wt <span class="op">*</span><span class="st"> </span>cyl, <span class="dt">data =</span> mtcars) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb17-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>&gt; Parameter   | Median |          89% CI |     pd | % in ROPE |  Rhat | ESS |               Prior
-&gt; -----------------------------------------------------------------------------------------------
-&gt; (Intercept) |  53.16 | [ 42.36, 61.52] |   100% |        0% | 1.002 | 188 | Normal (0 +- 60.27)
-&gt; wt          |  -8.19 | [-11.59, -4.40] |   100% |     0.20% | 1.006 | 184 | Normal (0 +- 15.40)
-&gt; cyl         |  -3.71 | [ -4.88, -1.77] |   100% |     0.20% | 1.000 | 206 |  Normal (0 +- 8.44)
-&gt; wt * cyl    |   0.76 | [  0.19,  1.25] | 98.40% |    32.00% | 1.004 | 179 |  Normal (0 +- 1.36)
+<pre><code>#&gt; Parameter   | Median |          89% CI |     pd | % in ROPE |  Rhat | ESS |               Prior
+#&gt; -----------------------------------------------------------------------------------------------
+#&gt; (Intercept) |  53.16 | [ 42.36, 61.52] |   100% |        0% | 1.002 | 188 | Normal (0 +- 60.27)
+#&gt; wt          |  -8.19 | [-11.59, -4.40] |   100% |     0.20% | 1.006 | 184 | Normal (0 +- 15.40)
+#&gt; cyl         |  -3.71 | [ -4.88, -1.77] |   100% |     0.20% | 1.000 | 206 |  Normal (0 +- 8.44)
+#&gt; wt * cyl    |   0.76 | [  0.19,  1.25] | 98.40% |    32.00% | 1.004 | 179 |  Normal (0 +- 1.36)
 </code></pre>
 <p>… as well as for (more complex) models from the <strong>brms</strong> package. For more complex models, other model components can be printed using the arguments <code>effects</code> and <code>component</code> arguments.</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1"><span class="kw">library</span>(brms)</a>
@@ -725,148 +725,144 @@ body {
 <a class="sourceLine" id="cb19-6" title="6">   zi <span class="op">~</span><span class="st"> </span>child <span class="op">+</span><span class="st"> </span>camper <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">|</span><span class="st"> </span>persons)</a>
 <a class="sourceLine" id="cb19-7" title="7"> ),</a>
 <a class="sourceLine" id="cb19-8" title="8"> <span class="dt">data =</span> fish,</a>
-<a class="sourceLine" id="cb19-9" title="9"> <span class="dt">family =</span> <span class="kw">zero_inflated_poisson</span>(),</a>
-<a class="sourceLine" id="cb19-10" title="10"> <span class="dt">iter =</span> <span class="dv">500</span>,</a>
-<a class="sourceLine" id="cb19-11" title="11"> <span class="dt">chains =</span> <span class="dv">1</span>,</a>
-<a class="sourceLine" id="cb19-12" title="12"> <span class="dt">refresh =</span> <span class="dv">0</span></a>
-<a class="sourceLine" id="cb19-13" title="13">)</a>
-<a class="sourceLine" id="cb19-14" title="14"><span class="kw">parameters</span>(model, <span class="dt">component =</span> <span class="st">&quot;conditional&quot;</span>)</a></code></pre></div>
-<pre><code>&gt; Parameter   | Median |         89% CI |   pd | % in ROPE | ESS |  Rhat
-&gt; ----------------------------------------------------------------------
-&gt; b_Intercept |  -0.82 | [-1.32, -0.43] | 100% |        0% |  75 | 1.012
-&gt; b_persons   |   0.83 | [ 0.70,  0.99] | 100% |        0% |  66 | 1.003
-&gt; b_child     |  -1.14 | [-1.30, -0.99] | 100% |        0% | 159 | 1.001
-&gt; b_camper1   |   0.75 | [ 0.59,  0.86] | 100% |        0% | 269 | 0.999
-</code></pre>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1"><span class="kw">parameters</span>(model, <span class="dt">effects =</span> <span class="st">&quot;all&quot;</span>, <span class="dt">component =</span> <span class="st">&quot;all&quot;</span>)</a></code></pre></div>
-<pre><code>&gt; # Fixed Effects (Count Model) 
-&gt; 
-&gt; Parameter   | Median |         89% CI |   pd | % in ROPE | ESS |  Rhat
-&gt; ----------------------------------------------------------------------
-&gt; (Intercept) |  -0.82 | [-1.32, -0.43] | 100% |        0% |  75 | 1.012
-&gt; persons     |   0.83 | [ 0.70,  0.99] | 100% |        0% |  66 | 1.003
-&gt; child       |  -1.14 | [-1.30, -0.99] | 100% |        0% | 159 | 1.001
-&gt; camper1     |   0.75 | [ 0.59,  0.86] | 100% |        0% | 269 | 0.999
-&gt; 
-&gt; # Fixed Effects (Zero-Inflated Model) 
-&gt; 
-&gt; Parameter   | Median |         89% CI |     pd | % in ROPE | ESS |  Rhat
-&gt; ------------------------------------------------------------------------
-&gt; (Intercept) |  -0.63 | [-1.84,  0.56] | 76.00% |     8.00% |  84 | 1.067
-&gt; child       |   1.81 | [ 1.27,  2.35] |   100% |        0% | 139 | 0.996
-&gt; camper1     |  -0.83 | [-1.61, -0.38] | 98.40% |     1.20% | 187 | 0.996
-&gt; 
-&gt; # Random Effects (Count Model) 
-&gt; 
-&gt; Parameter | Median |        89% CI |     pd | % in ROPE | ESS |  Rhat
-&gt; ---------------------------------------------------------------------
-&gt; persons.1 |   0.00 | [-0.26, 0.23] | 54.40% |    67.20% |  52 | 1.000
-&gt; persons.2 |   0.02 | [-0.13, 0.18] | 64.80% |    75.20% | 145 | 1.020
-&gt; persons.3 |   0.00 | [-0.15, 0.11] | 52.40% |    78.00% | 144 | 0.997
-&gt; persons.4 |   0.00 | [-0.18, 0.26] | 51.20% |    67.60% |  76 | 0.996
-&gt; 
-&gt; # Random Effects (Zero-Inflated Model) 
-&gt; 
-&gt; Parameter | Median |        89% CI |     pd | % in ROPE | ESS |  Rhat
-&gt; ---------------------------------------------------------------------
-&gt; persons.1 |   1.22 | [ 0.12, 2.62] | 95.60% |     1.60% |  56 | 1.093
-&gt; persons.2 |   0.23 | [-0.79, 1.61] | 64.00% |    10.00% |  56 | 1.097
-&gt; persons.3 |  -0.17 | [-1.13, 1.19] | 58.40% |     6.80% | 107 | 1.079
-&gt; persons.4 |  -1.34 | [-2.37, 0.07] | 96.00% |     3.20% | 107 | 1.058
-</code></pre>
+<a class="sourceLine" id="cb19-9" title="9"> <span class="dt">family =</span> <span class="kw">zero_inflated_poisson</span>()</a>
+<a class="sourceLine" id="cb19-10" title="10">)</a>
+<a class="sourceLine" id="cb19-11" title="11"><span class="kw">parameters</span>(model, <span class="dt">component =</span> <span class="st">&quot;conditional&quot;</span>)</a>
+<a class="sourceLine" id="cb19-12" title="12"><span class="co">#&gt; Parameter   | Median |         89% CI |     pd | % in ROPE | ESS |  Rhat</span></a>
+<a class="sourceLine" id="cb19-13" title="13"><span class="co">#&gt; ------------------------------------------------------------------------</span></a>
+<a class="sourceLine" id="cb19-14" title="14"><span class="co">#&gt; b_Intercept |  -0.87 | [-1.49, -0.08] | 96.80% |     4.80% |  78 | 1.000</span></a>
+<a class="sourceLine" id="cb19-15" title="15"><span class="co">#&gt; b_persons   |   0.84 | [ 0.60,  1.06] |   100% |        0% |  75 | 0.997</span></a>
+<a class="sourceLine" id="cb19-16" title="16"><span class="co">#&gt; b_child     |  -1.16 | [-1.32, -1.00] |   100% |        0% | 107 | 1.027</span></a>
+<a class="sourceLine" id="cb19-17" title="17"><span class="co">#&gt; b_camper1   |   0.74 | [ 0.52,  0.91] |   100% |        0% | 224 | 0.993</span></a>
+<a class="sourceLine" id="cb19-18" title="18"></a>
+<a class="sourceLine" id="cb19-19" title="19"><span class="kw">parameters</span>(model, <span class="dt">effects =</span> <span class="st">&quot;all&quot;</span>, <span class="dt">component =</span> <span class="st">&quot;all&quot;</span>)</a>
+<a class="sourceLine" id="cb19-20" title="20"><span class="co">#&gt; # Fixed Effects (Count Model) </span></a>
+<a class="sourceLine" id="cb19-21" title="21"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb19-22" title="22"><span class="co">#&gt; Parameter   | Median |         89% CI |     pd | % in ROPE | ESS |  Rhat</span></a>
+<a class="sourceLine" id="cb19-23" title="23"><span class="co">#&gt; ------------------------------------------------------------------------</span></a>
+<a class="sourceLine" id="cb19-24" title="24"><span class="co">#&gt; (Intercept) |  -0.87 | [-1.49, -0.08] | 96.80% |     4.80% |  78 | 1.000</span></a>
+<a class="sourceLine" id="cb19-25" title="25"><span class="co">#&gt; persons     |   0.84 | [ 0.60,  1.06] |   100% |        0% |  75 | 0.997</span></a>
+<a class="sourceLine" id="cb19-26" title="26"><span class="co">#&gt; child       |  -1.16 | [-1.32, -1.00] |   100% |        0% | 107 | 1.027</span></a>
+<a class="sourceLine" id="cb19-27" title="27"><span class="co">#&gt; camper1     |   0.74 | [ 0.52,  0.91] |   100% |        0% | 224 | 0.993</span></a>
+<a class="sourceLine" id="cb19-28" title="28"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb19-29" title="29"><span class="co">#&gt; # Fixed Effects (Zero-Inflated Model) </span></a>
+<a class="sourceLine" id="cb19-30" title="30"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb19-31" title="31"><span class="co">#&gt; Parameter   | Median |         89% CI |     pd | % in ROPE | ESS |  Rhat</span></a>
+<a class="sourceLine" id="cb19-32" title="32"><span class="co">#&gt; ------------------------------------------------------------------------</span></a>
+<a class="sourceLine" id="cb19-33" title="33"><span class="co">#&gt; (Intercept) |  -0.76 | [-1.66,  0.51] | 87.20% |    10.40% |  98 | 0.992</span></a>
+<a class="sourceLine" id="cb19-34" title="34"><span class="co">#&gt; child       |   1.87 | [ 1.37,  2.43] |   100% |        0% | 262 | 0.999</span></a>
+<a class="sourceLine" id="cb19-35" title="35"><span class="co">#&gt; camper1     |  -0.83 | [-1.44, -0.22] | 99.20% |     0.80% | 168 | 0.997</span></a>
+<a class="sourceLine" id="cb19-36" title="36"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb19-37" title="37"><span class="co">#&gt; # Random Effects (Count Model) </span></a>
+<a class="sourceLine" id="cb19-38" title="38"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb19-39" title="39"><span class="co">#&gt; Parameter | Median |        89% CI |     pd | % in ROPE | ESS |  Rhat</span></a>
+<a class="sourceLine" id="cb19-40" title="40"><span class="co">#&gt; ---------------------------------------------------------------------</span></a>
+<a class="sourceLine" id="cb19-41" title="41"><span class="co">#&gt; persons.1 |  -0.01 | [-0.40, 0.35] | 59.20% |    57.60% |  80 | 1.012</span></a>
+<a class="sourceLine" id="cb19-42" title="42"><span class="co">#&gt; persons.2 |   0.03 | [-0.15, 0.33] | 61.60% |    60.80% |  88 | 0.994</span></a>
+<a class="sourceLine" id="cb19-43" title="43"><span class="co">#&gt; persons.3 |  -0.02 | [-0.38, 0.11] | 63.20% |    64.80% |  66 | 1.008</span></a>
+<a class="sourceLine" id="cb19-44" title="44"><span class="co">#&gt; persons.4 |   0.00 | [-0.51, 0.29] | 51.20% |    62.40% |  76 | 0.992</span></a>
+<a class="sourceLine" id="cb19-45" title="45"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb19-46" title="46"><span class="co">#&gt; # Random Effects (Zero-Inflated Model) </span></a>
+<a class="sourceLine" id="cb19-47" title="47"><span class="co">#&gt; </span></a>
+<a class="sourceLine" id="cb19-48" title="48"><span class="co">#&gt; Parameter | Median |         89% CI |     pd | % in ROPE | ESS |  Rhat</span></a>
+<a class="sourceLine" id="cb19-49" title="49"><span class="co">#&gt; ----------------------------------------------------------------------</span></a>
+<a class="sourceLine" id="cb19-50" title="50"><span class="co">#&gt; persons.1 |   1.38 | [ 0.58,  2.66] | 97.60% |     1.60% | 108 | 0.992</span></a>
+<a class="sourceLine" id="cb19-51" title="51"><span class="co">#&gt; persons.2 |   0.27 | [-0.62,  1.40] | 68.80% |    13.60% | 100 | 1.002</span></a>
+<a class="sourceLine" id="cb19-52" title="52"><span class="co">#&gt; persons.3 |  -0.11 | [-1.36,  0.86] | 60.80% |    16.80% |  96 | 0.993</span></a>
+<a class="sourceLine" id="cb19-53" title="53"><span class="co">#&gt; persons.4 |  -1.19 | [-2.62, -0.31] | 95.20% |     0.80% | 115 | 0.992</span></a></code></pre></div>
 <h2 id="structural-models-pca-efa-cfa-sem">Structural Models (PCA, EFA, CFA, SEM…)</h2>
 <p>The <strong>parameters</strong> package extends the support to structural models.</p>
 <h3 id="principal-component-analysis-pca-and-exploratory-factor-analysis-efa">Principal Component Analysis (PCA) and Exploratory Factor Analysis (EFA)</h3>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1"><span class="kw">library</span>(psych)</a>
-<a class="sourceLine" id="cb23-2" title="2"></a>
-<a class="sourceLine" id="cb23-3" title="3">psych<span class="op">::</span><span class="kw">pca</span>(mtcars, <span class="dt">nfactors =</span> <span class="dv">3</span>) <span class="op">%&gt;%</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb23-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>&gt; # Rotated loadings from Principal Component Analysis (varimax-rotation)
-&gt; 
-&gt; Variable |   RC2 |   RC3 |   RC1 | Complexity | Uniqueness
-&gt; ----------------------------------------------------------
-&gt; mpg      |  0.66 | -0.41 | -0.54 |       2.63 |       0.10
-&gt; cyl      | -0.62 |  0.67 |  0.34 |       2.49 |       0.05
-&gt; disp     | -0.72 |  0.52 |  0.35 |       2.33 |       0.10
-&gt; hp       | -0.30 |  0.64 |  0.63 |       2.40 |       0.10
-&gt; drat     |  0.85 | -0.26 | -0.05 |       1.19 |       0.21
-&gt; wt       | -0.78 |  0.21 |  0.51 |       1.90 |       0.08
-&gt; qsec     | -0.18 | -0.91 | -0.28 |       1.28 |       0.06
-&gt; vs       |  0.28 | -0.86 | -0.23 |       1.36 |       0.12
-&gt; am       |  0.92 |  0.14 | -0.11 |       1.08 |       0.12
-&gt; gear     |  0.91 | -0.02 |  0.26 |       1.16 |       0.10
-&gt; carb     |  0.11 |  0.44 |  0.85 |       1.53 |       0.07
-&gt; 
-&gt; The 3 principal components (varimax rotation) accounted for 89.87% of the total variance of the original data (RC2 = 41.43%, RC3 = 29.06%, RC1 = 19.39%).
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" title="1"><span class="kw">library</span>(psych)</a>
+<a class="sourceLine" id="cb20-2" title="2"></a>
+<a class="sourceLine" id="cb20-3" title="3">psych<span class="op">::</span><span class="kw">pca</span>(mtcars, <span class="dt">nfactors =</span> <span class="dv">3</span>) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb20-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
+<pre><code>#&gt; # Rotated loadings from Principal Component Analysis (varimax-rotation)
+#&gt; 
+#&gt; Variable |   RC2 |   RC3 |   RC1 | Complexity | Uniqueness
+#&gt; ----------------------------------------------------------
+#&gt; mpg      |  0.66 | -0.41 | -0.54 |       2.63 |       0.10
+#&gt; cyl      | -0.62 |  0.67 |  0.34 |       2.49 |       0.05
+#&gt; disp     | -0.72 |  0.52 |  0.35 |       2.33 |       0.10
+#&gt; hp       | -0.30 |  0.64 |  0.63 |       2.40 |       0.10
+#&gt; drat     |  0.85 | -0.26 | -0.05 |       1.19 |       0.21
+#&gt; wt       | -0.78 |  0.21 |  0.51 |       1.90 |       0.08
+#&gt; qsec     | -0.18 | -0.91 | -0.28 |       1.28 |       0.06
+#&gt; vs       |  0.28 | -0.86 | -0.23 |       1.36 |       0.12
+#&gt; am       |  0.92 |  0.14 | -0.11 |       1.08 |       0.12
+#&gt; gear     |  0.91 | -0.02 |  0.26 |       1.16 |       0.10
+#&gt; carb     |  0.11 |  0.44 |  0.85 |       1.53 |       0.07
+#&gt; 
+#&gt; The 3 principal components (varimax rotation) accounted for 89.87% of the total variance of the original data (RC2 = 41.43%, RC3 = 29.06%, RC1 = 19.39%).
 </code></pre>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" title="1"><span class="kw">library</span>(FactoMineR)</a>
-<a class="sourceLine" id="cb25-2" title="2"></a>
-<a class="sourceLine" id="cb25-3" title="3">FactoMineR<span class="op">::</span><span class="kw">FAMD</span>(iris, <span class="dt">ncp =</span> <span class="dv">3</span>) <span class="op">%&gt;%</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb25-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>&gt; # Loadings from Principal Component Analysis (no rotation)
-&gt; 
-&gt; Variable     | Dim.1 | Dim.2 | Dim.3 | Complexity
-&gt; -------------------------------------------------
-&gt; Sepal.Length |  0.75 |  0.07 |  0.10 |       1.05
-&gt; Sepal.Width  |  0.23 |  0.51 |  0.23 |       1.86
-&gt; Petal.Length |  0.98 |  0.00 |  0.00 |       1.00
-&gt; Petal.Width  |  0.94 |  0.01 |  0.00 |       1.00
-&gt; Species      |  0.96 |  0.75 |  0.26 |       2.05
-&gt; 
-&gt; The 3 latent factors accounted for 96.73% of the total variance of the original data (Dim.1 = 64.50%, Dim.2 = 22.37%, Dim.3 = 9.86%).
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" title="1"><span class="kw">library</span>(FactoMineR)</a>
+<a class="sourceLine" id="cb22-2" title="2"></a>
+<a class="sourceLine" id="cb22-3" title="3">FactoMineR<span class="op">::</span><span class="kw">FAMD</span>(iris, <span class="dt">ncp =</span> <span class="dv">3</span>) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb22-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
+<pre><code>#&gt; # Loadings from Factor Analysis (no rotation)
+#&gt; 
+#&gt; Variable     | Dim.1 | Dim.2 | Dim.3 | Complexity
+#&gt; -------------------------------------------------
+#&gt; Sepal.Length |  0.75 |  0.07 |  0.10 |       1.05
+#&gt; Sepal.Width  |  0.23 |  0.51 |  0.23 |       1.86
+#&gt; Petal.Length |  0.98 |  0.00 |  0.00 |       1.00
+#&gt; Petal.Width  |  0.94 |  0.01 |  0.00 |       1.00
+#&gt; Species      |  0.96 |  0.75 |  0.26 |       2.05
+#&gt; 
+#&gt; The 3 latent factors accounted for 96.73% of the total variance of the original data (Dim.1 = 64.50%, Dim.2 = 22.37%, Dim.3 = 9.86%).
 </code></pre>
 <h3 id="confirmatory-factor-analysis-cfa-and-structural-equation-models-sem">Confirmatory Factor Analysis (CFA) and Structural Equation Models (SEM)</h3>
 <h4 id="frequentist-1">Frequentist</h4>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" title="1"><span class="kw">library</span>(lavaan)</a>
-<a class="sourceLine" id="cb27-2" title="2"></a>
-<a class="sourceLine" id="cb27-3" title="3">model &lt;-<span class="st"> </span>lavaan<span class="op">::</span><span class="kw">cfa</span>(<span class="st">&#39; visual  =~ x1 + x2 + x3</span></a>
-<a class="sourceLine" id="cb27-4" title="4"><span class="st">                       textual =~ x4 + x5 + x6</span></a>
-<a class="sourceLine" id="cb27-5" title="5"><span class="st">                       speed   =~ x7 + x8 + x9 &#39;</span>, </a>
-<a class="sourceLine" id="cb27-6" title="6">                       <span class="dt">data =</span> HolzingerSwineford1939)</a>
-<a class="sourceLine" id="cb27-7" title="7"></a>
-<a class="sourceLine" id="cb27-8" title="8"><span class="kw">model_parameters</span>(model)</a></code></pre></div>
-<pre><code>&gt; # Loading type
-&gt; 
-&gt; Link          | Coefficient |   SE |       95% CI |      p
-&gt; ----------------------------------------------------------
-&gt; visual =~ x1  |        1.00 | 0.00 | [1.00, 1.00] | &lt; .001
-&gt; visual =~ x2  |        0.55 | 0.10 | [0.36, 0.75] | &lt; .001
-&gt; visual =~ x3  |        0.73 | 0.11 | [0.52, 0.94] | &lt; .001
-&gt; textual =~ x4 |        1.00 | 0.00 | [1.00, 1.00] | &lt; .001
-&gt; textual =~ x5 |        1.11 | 0.07 | [0.98, 1.24] | &lt; .001
-&gt; textual =~ x6 |        0.93 | 0.06 | [0.82, 1.03] | &lt; .001
-&gt; speed =~ x7   |        1.00 | 0.00 | [1.00, 1.00] | &lt; .001
-&gt; speed =~ x8   |        1.18 | 0.16 | [0.86, 1.50] | &lt; .001
-&gt; speed =~ x9   |        1.08 | 0.15 | [0.79, 1.38] | &lt; .001
-&gt; 
-&gt; # Correlation type
-&gt; 
-&gt; Link              | Coefficient |   SE |       95% CI |      p
-&gt; --------------------------------------------------------------
-&gt; visual ~~ textual |        0.41 | 0.07 | [0.26, 0.55] | &lt; .001
-&gt; visual ~~ speed   |        0.26 | 0.06 | [0.15, 0.37] | &lt; .001
-&gt; textual ~~ speed  |        0.17 | 0.05 | [0.08, 0.27] | &lt; .001
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1"><span class="kw">library</span>(lavaan)</a>
+<a class="sourceLine" id="cb24-2" title="2"></a>
+<a class="sourceLine" id="cb24-3" title="3">model &lt;-<span class="st"> </span>lavaan<span class="op">::</span><span class="kw">cfa</span>(<span class="st">&#39; visual  =~ x1 + x2 + x3</span></a>
+<a class="sourceLine" id="cb24-4" title="4"><span class="st">                       textual =~ x4 + x5 + x6</span></a>
+<a class="sourceLine" id="cb24-5" title="5"><span class="st">                       speed   =~ x7 + x8 + x9 &#39;</span>, </a>
+<a class="sourceLine" id="cb24-6" title="6">                       <span class="dt">data =</span> HolzingerSwineford1939)</a>
+<a class="sourceLine" id="cb24-7" title="7"></a>
+<a class="sourceLine" id="cb24-8" title="8"><span class="kw">model_parameters</span>(model)</a></code></pre></div>
+<pre><code>#&gt; # Loading type
+#&gt; 
+#&gt; Link          | Coefficient |   SE |       95% CI |      p
+#&gt; ----------------------------------------------------------
+#&gt; visual =~ x1  |        1.00 | 0.00 | [1.00, 1.00] | &lt; .001
+#&gt; visual =~ x2  |        0.55 | 0.10 | [0.36, 0.75] | &lt; .001
+#&gt; visual =~ x3  |        0.73 | 0.11 | [0.52, 0.94] | &lt; .001
+#&gt; textual =~ x4 |        1.00 | 0.00 | [1.00, 1.00] | &lt; .001
+#&gt; textual =~ x5 |        1.11 | 0.07 | [0.98, 1.24] | &lt; .001
+#&gt; textual =~ x6 |        0.93 | 0.06 | [0.82, 1.03] | &lt; .001
+#&gt; speed =~ x7   |        1.00 | 0.00 | [1.00, 1.00] | &lt; .001
+#&gt; speed =~ x8   |        1.18 | 0.16 | [0.86, 1.50] | &lt; .001
+#&gt; speed =~ x9   |        1.08 | 0.15 | [0.79, 1.38] | &lt; .001
+#&gt; 
+#&gt; # Correlation type
+#&gt; 
+#&gt; Link              | Coefficient |   SE |       95% CI |      p
+#&gt; --------------------------------------------------------------
+#&gt; visual ~~ textual |        0.41 | 0.07 | [0.26, 0.55] | &lt; .001
+#&gt; visual ~~ speed   |        0.26 | 0.06 | [0.15, 0.37] | &lt; .001
+#&gt; textual ~~ speed  |        0.17 | 0.05 | [0.08, 0.27] | &lt; .001
 </code></pre>
 <h4 id="bayesian-1">Bayesian</h4>
 <p><code>blavaan</code> to be done.</p>
 <h2 id="meta-analysis">Meta-Analysis</h2>
 <p><code>parameters()</code> also works for <code>rma</code>-objects from the <strong>metafor</strong> package.</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" title="1"><span class="kw">library</span>(metafor)</a>
-<a class="sourceLine" id="cb29-2" title="2"></a>
-<a class="sourceLine" id="cb29-3" title="3">mydat &lt;-<span class="st"> </span><span class="kw">data.frame</span>(</a>
-<a class="sourceLine" id="cb29-4" title="4">  <span class="dt">effectsize =</span> <span class="kw">c</span>(<span class="op">-</span><span class="fl">0.393</span>, <span class="fl">0.675</span>, <span class="fl">0.282</span>, <span class="fl">-1.398</span>),</a>
-<a class="sourceLine" id="cb29-5" title="5">  <span class="dt">standarderror =</span> <span class="kw">c</span>(<span class="fl">0.317</span>, <span class="fl">0.317</span>, <span class="fl">0.13</span>, <span class="fl">0.36</span>)</a>
-<a class="sourceLine" id="cb29-6" title="6">)</a>
-<a class="sourceLine" id="cb29-7" title="7"></a>
-<a class="sourceLine" id="cb29-8" title="8"><span class="kw">rma</span>(<span class="dt">yi =</span> effectsize, <span class="dt">sei =</span> standarderror, <span class="dt">method =</span> <span class="st">&quot;REML&quot;</span>, <span class="dt">data =</span> mydat) <span class="op">%&gt;%</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb29-9" title="9"><span class="st">  </span><span class="kw">model_parameters</span>()</a></code></pre></div>
-<pre><code>&gt; Parameter | Coefficient |   SE |         95% CI |     z |      p | Weight
-&gt; -------------------------------------------------------------------------
-&gt; Study 1   |       -0.39 | 0.32 | [-1.01,  0.23] | -1.24 | 0.215  |   9.95
-&gt; Study 2   |        0.68 | 0.32 | [ 0.05,  1.30] |  2.13 | 0.033  |   9.95
-&gt; Study 3   |        0.28 | 0.13 | [ 0.03,  0.54] |  2.17 | 0.030  |  59.17
-&gt; Study 4   |       -1.40 | 0.36 | [-2.10, -0.69] | -3.88 | &lt; .001 |   7.72
-&gt; Overall   |       -0.18 | 0.44 | [-1.05,  0.68] | -0.42 | 0.676  |
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1"><span class="kw">library</span>(metafor)</a>
+<a class="sourceLine" id="cb26-2" title="2"></a>
+<a class="sourceLine" id="cb26-3" title="3">mydat &lt;-<span class="st"> </span><span class="kw">data.frame</span>(</a>
+<a class="sourceLine" id="cb26-4" title="4">  <span class="dt">effectsize =</span> <span class="kw">c</span>(<span class="op">-</span><span class="fl">0.393</span>, <span class="fl">0.675</span>, <span class="fl">0.282</span>, <span class="fl">-1.398</span>),</a>
+<a class="sourceLine" id="cb26-5" title="5">  <span class="dt">standarderror =</span> <span class="kw">c</span>(<span class="fl">0.317</span>, <span class="fl">0.317</span>, <span class="fl">0.13</span>, <span class="fl">0.36</span>)</a>
+<a class="sourceLine" id="cb26-6" title="6">)</a>
+<a class="sourceLine" id="cb26-7" title="7"></a>
+<a class="sourceLine" id="cb26-8" title="8"><span class="kw">rma</span>(<span class="dt">yi =</span> effectsize, <span class="dt">sei =</span> standarderror, <span class="dt">method =</span> <span class="st">&quot;REML&quot;</span>, <span class="dt">data =</span> mydat) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb26-9" title="9"><span class="st">  </span><span class="kw">model_parameters</span>()</a></code></pre></div>
+<pre><code>#&gt; Parameter | Coefficient |   SE |         95% CI |     z |      p | Weight
+#&gt; -------------------------------------------------------------------------
+#&gt; Study 1   |       -0.39 | 0.32 | [-1.01,  0.23] | -1.24 | 0.215  |   9.95
+#&gt; Study 2   |        0.68 | 0.32 | [ 0.05,  1.30] |  2.13 | 0.033  |   9.95
+#&gt; Study 3   |        0.28 | 0.13 | [ 0.03,  0.54] |  2.17 | 0.030  |  59.17
+#&gt; Study 4   |       -1.40 | 0.36 | [-2.10, -0.69] | -3.88 | &lt; .001 |   7.72
+#&gt; Overall   |       -0.18 | 0.44 | [-1.05,  0.68] | -0.42 | 0.676  |
 </code></pre>
 <h2 id="plotting-model-parameters">Plotting Model Parameters</h2>
 <p>There is a <code>plot()</code>-method implemented in the <a href="https://easystats.github.io/see/"><strong>see</strong>-package</a>. Several examples are shown <a href="https://easystats.github.io/see/articles/parameters.html">in this vignette</a>.</p>

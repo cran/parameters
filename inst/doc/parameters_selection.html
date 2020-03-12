@@ -600,7 +600,7 @@ body {
 
 <body>
 
-<h1 id="parameters-selection">Parameters Selection</h1>
+<h1 id="selection-of-model-parameters">Selection of Model Parameters</h1>
 <ul>
 <li><a href="#simple-linear-regression">Simple linear regression</a>
 <ul>
@@ -622,49 +622,49 @@ body {
 <p>Let’s try that with the linear regression predicting <strong>Sepal.Length</strong> with the <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"><code>iris</code></a> dataset, included by default in R.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">model &lt;-<span class="st"> </span><span class="kw">lm</span>(Sepal.Length <span class="op">~</span><span class="st"> </span>.<span class="op">*</span>., <span class="dt">data=</span>iris)</a>
 <a class="sourceLine" id="cb1-2" title="2"><span class="kw">summary</span>(model)</a></code></pre></div>
-<pre><code>&gt; 
-&gt; Call:
-&gt; lm(formula = Sepal.Length ~ . * ., data = iris)
-&gt; 
-&gt; Residuals:
-&gt;     Min      1Q  Median      3Q     Max 
-&gt; -0.5730 -0.2034  0.0035  0.1997  0.5702 
-&gt; 
-&gt; Coefficients:
-&gt;                                Estimate Std. Error t value Pr(&gt;|t|)  
-&gt; (Intercept)                     3.14635    1.40272    2.24    0.027 *
-&gt; Sepal.Width                     0.48464    0.41852    1.16    0.249  
-&gt; Petal.Length                   -0.50461    0.87589   -0.58    0.566  
-&gt; Petal.Width                     3.53596    1.63832    2.16    0.033 *
-&gt; Speciesversicolor              -2.81723    1.84173   -1.53    0.129  
-&gt; Speciesvirginica               -6.98585    3.56973   -1.96    0.053 .
-&gt; grp2                           -0.97614    0.78226   -1.25    0.214  
-&gt; grp3                           -0.82032    0.75569   -1.09    0.280  
-&gt; Sepal.Width:Petal.Length        0.16021    0.23508    0.68    0.497  
-&gt; Sepal.Width:Petal.Width        -0.73885    0.46392   -1.59    0.114  
-&gt; Sepal.Width:Speciesversicolor  -0.06240    0.69994   -0.09    0.929  
-&gt; Sepal.Width:Speciesvirginica    0.15652    1.06683    0.15    0.884  
-&gt; Sepal.Width:grp2                0.21824    0.24099    0.91    0.367  
-&gt; Sepal.Width:grp3                0.28766    0.23779    1.21    0.229  
-&gt; Petal.Length:Petal.Width       -0.29280    0.36826   -0.80    0.428  
-&gt; Petal.Length:Speciesversicolor  1.07990    0.54672    1.98    0.050 .
-&gt; Petal.Length:Speciesvirginica   1.50030    0.74199    2.02    0.045 *
-&gt; Petal.Length:grp2               0.23747    0.19687    1.21    0.230  
-&gt; Petal.Length:grp3              -0.04170    0.17893   -0.23    0.816  
-&gt; Petal.Width:Speciesversicolor  -0.14775    1.40148   -0.11    0.916  
-&gt; Petal.Width:Speciesvirginica    0.48417    1.67788    0.29    0.773  
-&gt; Petal.Width:grp2               -0.76517    0.40421   -1.89    0.061 .
-&gt; Petal.Width:grp3                0.00258    0.39882    0.01    0.995  
-&gt; Speciesversicolor:grp2          0.24501    0.67784    0.36    0.718  
-&gt; Speciesvirginica:grp2           0.48118    0.94497    0.51    0.612  
-&gt; Speciesversicolor:grp3          0.41806    0.62824    0.67    0.507  
-&gt; Speciesvirginica:grp3           0.23647    0.87030    0.27    0.786  
-&gt; ---
-&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-&gt; 
-&gt; Residual standard error: 0.28 on 123 degrees of freedom
-&gt; Multiple R-squared:  0.903,   Adjusted R-squared:  0.882 
-&gt; F-statistic: 43.9 on 26 and 123 DF,  p-value: &lt;2e-16
+<pre><code>#&gt; 
+#&gt; Call:
+#&gt; lm(formula = Sepal.Length ~ . * ., data = iris)
+#&gt; 
+#&gt; Residuals:
+#&gt;     Min      1Q  Median      3Q     Max 
+#&gt; -0.5730 -0.2034  0.0035  0.1997  0.5702 
+#&gt; 
+#&gt; Coefficients:
+#&gt;                                Estimate Std. Error t value Pr(&gt;|t|)  
+#&gt; (Intercept)                     3.14635    1.40272    2.24    0.027 *
+#&gt; Sepal.Width                     0.48464    0.41852    1.16    0.249  
+#&gt; Petal.Length                   -0.50461    0.87589   -0.58    0.566  
+#&gt; Petal.Width                     3.53596    1.63832    2.16    0.033 *
+#&gt; Speciesversicolor              -2.81723    1.84173   -1.53    0.129  
+#&gt; Speciesvirginica               -6.98585    3.56973   -1.96    0.053 .
+#&gt; grp2                           -0.97614    0.78226   -1.25    0.214  
+#&gt; grp3                           -0.82032    0.75569   -1.09    0.280  
+#&gt; Sepal.Width:Petal.Length        0.16021    0.23508    0.68    0.497  
+#&gt; Sepal.Width:Petal.Width        -0.73885    0.46392   -1.59    0.114  
+#&gt; Sepal.Width:Speciesversicolor  -0.06240    0.69994   -0.09    0.929  
+#&gt; Sepal.Width:Speciesvirginica    0.15652    1.06683    0.15    0.884  
+#&gt; Sepal.Width:grp2                0.21824    0.24099    0.91    0.367  
+#&gt; Sepal.Width:grp3                0.28766    0.23779    1.21    0.229  
+#&gt; Petal.Length:Petal.Width       -0.29280    0.36826   -0.80    0.428  
+#&gt; Petal.Length:Speciesversicolor  1.07990    0.54672    1.98    0.050 .
+#&gt; Petal.Length:Speciesvirginica   1.50030    0.74199    2.02    0.045 *
+#&gt; Petal.Length:grp2               0.23747    0.19687    1.21    0.230  
+#&gt; Petal.Length:grp3              -0.04170    0.17893   -0.23    0.816  
+#&gt; Petal.Width:Speciesversicolor  -0.14775    1.40148   -0.11    0.916  
+#&gt; Petal.Width:Speciesvirginica    0.48417    1.67788    0.29    0.773  
+#&gt; Petal.Width:grp2               -0.76517    0.40421   -1.89    0.061 .
+#&gt; Petal.Width:grp3                0.00258    0.39882    0.01    0.995  
+#&gt; Speciesversicolor:grp2          0.24501    0.67784    0.36    0.718  
+#&gt; Speciesvirginica:grp2           0.48118    0.94497    0.51    0.612  
+#&gt; Speciesversicolor:grp3          0.41806    0.62824    0.67    0.507  
+#&gt; Speciesvirginica:grp3           0.23647    0.87030    0.27    0.786  
+#&gt; ---
+#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+#&gt; 
+#&gt; Residual standard error: 0.28 on 123 degrees of freedom
+#&gt; Multiple R-squared:  0.903,  Adjusted R-squared:  0.882 
+#&gt; F-statistic: 43.9 on 26 and 123 DF,  p-value: &lt;2e-16
 </code></pre>
 <p><em><strong>Wow, that’s a lot of parameters! And almost none of them is significant…</strong></em></p>
 <p>Which is <em><strong>weird</strong></em>, considering that <strong>gorgeous R2! 0.882!</strong> <em>I wish I had that in my research…</em></p>
@@ -674,75 +674,75 @@ body {
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">library</span>(performance)</a>
 <a class="sourceLine" id="cb3-2" title="2"></a>
 <a class="sourceLine" id="cb3-3" title="3"><span class="kw">check_normality</span>(model)</a></code></pre></div>
-<pre><code>&gt; OK: Residuals appear as normally distributed (p = 0.115).
+<pre><code>#&gt; OK: Residuals appear as normally distributed (p = 0.115).
 </code></pre>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">check_heteroscedasticity</span>(model)</a></code></pre></div>
-<pre><code>&gt; OK: Error variance appears to be homoscedastic (p = 0.348).
+<pre><code>#&gt; OK: Error variance appears to be homoscedastic (p = 0.348).
 </code></pre>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">check_autocorrelation</span>(model)</a></code></pre></div>
-<pre><code>&gt; OK: Residuals appear to be independent and not autocorrelated (p = 0.446).
+<pre><code>#&gt; OK: Residuals appear to be independent and not autocorrelated (p = 0.446).
 </code></pre>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1"><span class="kw">check_collinearity</span>(model)</a></code></pre></div>
-<pre><code>&gt; # Check for Multicollinearity
-&gt; 
-&gt; High Correlation
-&gt; 
-&gt;                 Parameter        VIF Increased SE
-&gt;               Sepal.Width      61.39         7.84
-&gt;              Petal.Length    4410.44        66.41
-&gt;               Petal.Width    2876.94        53.64
-&gt;                   Species  611985.94       782.30
-&gt;                       grp   23782.23       154.21
-&gt;  Sepal.Width:Petal.Length    2796.78        52.88
-&gt;   Sepal.Width:Petal.Width    2159.27        46.47
-&gt;       Sepal.Width:Species  461389.69       679.26
-&gt;           Sepal.Width:grp   22277.15       149.26
-&gt;  Petal.Length:Petal.Width    5555.71        74.54
-&gt;      Petal.Length:Species 1872684.46      1368.46
-&gt;          Petal.Length:grp   40317.76       200.79
-&gt;       Petal.Width:Species  616688.46       785.30
-&gt;           Petal.Width:grp   12613.55       112.31
-&gt;               Species:grp  282568.74       531.57
+<pre><code>#&gt; # Check for Multicollinearity
+#&gt; 
+#&gt; High Correlation
+#&gt; 
+#&gt;                 Parameter        VIF Increased SE
+#&gt;               Sepal.Width      61.39         7.84
+#&gt;              Petal.Length    4410.44        66.41
+#&gt;               Petal.Width    2876.94        53.64
+#&gt;                   Species  611985.94       782.30
+#&gt;                       grp   23782.23       154.21
+#&gt;  Sepal.Width:Petal.Length    2796.78        52.88
+#&gt;   Sepal.Width:Petal.Width    2159.27        46.47
+#&gt;       Sepal.Width:Species  461389.69       679.26
+#&gt;           Sepal.Width:grp   22277.15       149.26
+#&gt;  Petal.Length:Petal.Width    5555.71        74.54
+#&gt;      Petal.Length:Species 1872684.46      1368.46
+#&gt;          Petal.Length:grp   40317.76       200.79
+#&gt;       Petal.Width:Species  616688.46       785.30
+#&gt;           Petal.Width:grp   12613.55       112.31
+#&gt;               Species:grp  282568.74       531.57
 </code></pre>
 <p>The main issue of the model seems to be the high <a href="https://en.wikipedia.org/wiki/Multicollinearity">multicollinearity</a>. This suggests that our model might not be able to give valid results about any individual predictor, nor tell which predictors are redundant with respect to others.</p>
-<h3 id="parameters-selection-1">Parameters selection</h3>
+<h3 id="parameters-selection">Parameters selection</h3>
 <p>Time to do some variables selection. This can be easily done using the <code>select_parameters()</code> function, that will <strong>automatically select the best variables</strong> and update the model accordingly. One way of using that is in a tidy pipeline (using <a href="https://cran.r-project.org/package=magrittr/README.html"><code>%&gt;%</code></a>), using this output to update a new model.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">lm</span>(Sepal.Length <span class="op">~</span><span class="st"> </span>.<span class="op">*</span>., <span class="dt">data =</span> iris) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb11-2" title="2"><span class="st">  </span><span class="kw">select_parameters</span>() <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb11-3" title="3"><span class="st">  </span><span class="kw">summary</span>()</a></code></pre></div>
-<pre><code>&gt; 
-&gt; Call:
-&gt; lm(formula = Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width + 
-&gt;     Species + grp + Sepal.Width:Petal.Width + Petal.Length:Species + 
-&gt;     Petal.Length:grp + Petal.Width:grp, data = iris)
-&gt; 
-&gt; Residuals:
-&gt;     Min      1Q  Median      3Q     Max 
-&gt; -0.6912 -0.1841 -0.0084  0.2045  0.6284 
-&gt; 
-&gt; Coefficients:
-&gt;                                Estimate Std. Error t value Pr(&gt;|t|)    
-&gt; (Intercept)                     2.20278    0.54238    4.06  8.2e-05 ***
-&gt; Sepal.Width                     0.83841    0.12868    6.52  1.3e-09 ***
-&gt; Petal.Length                   -0.02234    0.28169   -0.08  0.93690    
-&gt; Petal.Width                     1.18753    0.43904    2.70  0.00772 ** 
-&gt; Speciesversicolor              -1.22571    0.53650   -2.28  0.02389 *  
-&gt; Speciesvirginica               -3.30198    0.64766   -5.10  1.1e-06 ***
-&gt; grp2                           -0.35680    0.18083   -1.97  0.05053 .  
-&gt; grp3                            0.07139    0.18136    0.39  0.69446    
-&gt; Sepal.Width:Petal.Width        -0.34861    0.10225   -3.41  0.00086 ***
-&gt; Petal.Length:Speciesversicolor  0.57694    0.26857    2.15  0.03348 *  
-&gt; Petal.Length:Speciesvirginica   0.90715    0.27149    3.34  0.00108 ** 
-&gt; Petal.Length:grp2               0.24474    0.12851    1.90  0.05899 .  
-&gt; Petal.Length:grp3               0.00486    0.12514    0.04  0.96909    
-&gt; Petal.Width:grp2               -0.56926    0.29398   -1.94  0.05490 .  
-&gt; Petal.Width:grp3                0.01301    0.29155    0.04  0.96448    
-&gt; ---
-&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-&gt; 
-&gt; Residual standard error: 0.28 on 135 degrees of freedom
-&gt; Multiple R-squared:  0.893,   Adjusted R-squared:  0.881 
-&gt; F-statistic: 80.1 on 14 and 135 DF,  p-value: &lt;2e-16
+<pre><code>#&gt; 
+#&gt; Call:
+#&gt; lm(formula = Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width + 
+#&gt;     Species + grp + Sepal.Width:Petal.Width + Petal.Length:Species + 
+#&gt;     Petal.Length:grp + Petal.Width:grp, data = iris)
+#&gt; 
+#&gt; Residuals:
+#&gt;     Min      1Q  Median      3Q     Max 
+#&gt; -0.6912 -0.1841 -0.0084  0.2045  0.6284 
+#&gt; 
+#&gt; Coefficients:
+#&gt;                                Estimate Std. Error t value Pr(&gt;|t|)    
+#&gt; (Intercept)                     2.20278    0.54238    4.06  8.2e-05 ***
+#&gt; Sepal.Width                     0.83841    0.12868    6.52  1.3e-09 ***
+#&gt; Petal.Length                   -0.02234    0.28169   -0.08  0.93690    
+#&gt; Petal.Width                     1.18753    0.43904    2.70  0.00772 ** 
+#&gt; Speciesversicolor              -1.22571    0.53650   -2.28  0.02389 *  
+#&gt; Speciesvirginica               -3.30198    0.64766   -5.10  1.1e-06 ***
+#&gt; grp2                           -0.35680    0.18083   -1.97  0.05053 .  
+#&gt; grp3                            0.07139    0.18136    0.39  0.69446    
+#&gt; Sepal.Width:Petal.Width        -0.34861    0.10225   -3.41  0.00086 ***
+#&gt; Petal.Length:Speciesversicolor  0.57694    0.26857    2.15  0.03348 *  
+#&gt; Petal.Length:Speciesvirginica   0.90715    0.27149    3.34  0.00108 ** 
+#&gt; Petal.Length:grp2               0.24474    0.12851    1.90  0.05899 .  
+#&gt; Petal.Length:grp3               0.00486    0.12514    0.04  0.96909    
+#&gt; Petal.Width:grp2               -0.56926    0.29398   -1.94  0.05490 .  
+#&gt; Petal.Width:grp3                0.01301    0.29155    0.04  0.96448    
+#&gt; ---
+#&gt; Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+#&gt; 
+#&gt; Residual standard error: 0.28 on 135 degrees of freedom
+#&gt; Multiple R-squared:  0.893,  Adjusted R-squared:  0.881 
+#&gt; F-statistic: 80.1 on 14 and 135 DF,  p-value: &lt;2e-16
 </code></pre>
 <p>That’s still a lot of parameters, but as you can see, but almost all of them are now significant, and the R2 did not change much.</p>
 <p>Although appealing, please note that these automated selection methods are <a href="https://towardsdatascience.com/stopping-stepwise-why-stepwise-selection-is-bad-and-what-you-should-use-instead-90818b3f52df"><strong>quite criticized</strong></a>, and should not be used in place of <strong>theoretical</strong> or <strong>hypothetical</strong> reasons (<em>i.e.</em>, you should have justified hypotheses about the parameters of your model).</p>
@@ -754,43 +754,43 @@ body {
 <a class="sourceLine" id="cb13-3" title="3"><span class="kw">lmer</span>(Sepal.Length <span class="op">~</span><span class="st"> </span>Sepal.Width <span class="op">*</span><span class="st"> </span>Petal.Length <span class="op">*</span><span class="st"> </span>Petal.Width <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>Species), <span class="dt">data =</span> iris) <span class="op">%&gt;%</span></a>
 <a class="sourceLine" id="cb13-4" title="4"><span class="st">  </span><span class="kw">select_parameters</span>() <span class="op">%&gt;%</span></a>
 <a class="sourceLine" id="cb13-5" title="5"><span class="st">  </span><span class="kw">summary</span>()</a></code></pre></div>
-<pre><code>&gt; Linear mixed model fit by REML [&#39;lmerMod&#39;]
-&gt; Formula: Sepal.Length ~ Sepal.Width * Petal.Length * Petal.Width + (1 |  
-&gt;     Species)
-&gt;    Data: iris
-&gt; 
-&gt; REML criterion at convergence: 95
-&gt; 
-&gt; Scaled residuals: 
-&gt;     Min      1Q  Median      3Q     Max 
-&gt; -2.4935 -0.8045  0.0176  0.6593  2.3356 
-&gt; 
-&gt; Random effects:
-&gt;  Groups   Name        Variance Std.Dev.
-&gt;  Species  (Intercept) 0.0352   0.188   
-&gt;  Residual             0.0932   0.305   
-&gt; Number of obs: 150, groups:  Species, 3
-&gt; 
-&gt; Fixed effects:
-&gt;                                      Estimate Std. Error t value
-&gt; (Intercept)                            1.7768     0.9128    1.95
-&gt; Sepal.Width                            0.7501     0.2681    2.80
-&gt; Petal.Length                           0.8793     0.4971    1.77
-&gt; Petal.Width                           -2.0380     1.5196   -1.34
-&gt; Sepal.Width:Petal.Length              -0.1012     0.1611   -0.63
-&gt; Sepal.Width:Petal.Width                0.3435     0.4894    0.70
-&gt; Petal.Length:Petal.Width               0.2805     0.2428    1.16
-&gt; Sepal.Width:Petal.Length:Petal.Width  -0.0467     0.0769   -0.61
-&gt; 
-&gt; Correlation of Fixed Effects:
-&gt;             (Intr) Spl.Wd Ptl.Ln Ptl.Wd Sp.W:P.L S.W:P.W P.L:P.
-&gt; Sepal.Width -0.948                                             
-&gt; Petal.Lngth -0.746  0.757                                      
-&gt; Petal.Width -0.289  0.222 -0.306                               
-&gt; Spl.Wdt:P.L  0.705 -0.762 -0.983  0.338                        
-&gt; Spl.Wdt:P.W  0.250 -0.214  0.336 -0.986 -0.356                 
-&gt; Ptl.Lng:P.W  0.754 -0.705 -0.459 -0.679  0.416    0.642        
-&gt; S.W:P.L:P.W -0.732  0.730  0.442  0.675 -0.428   -0.670  -0.976
+<pre><code>#&gt; Linear mixed model fit by REML [&#39;lmerMod&#39;]
+#&gt; Formula: Sepal.Length ~ Sepal.Width * Petal.Length * Petal.Width + (1 |  
+#&gt;     Species)
+#&gt;    Data: iris
+#&gt; 
+#&gt; REML criterion at convergence: 95
+#&gt; 
+#&gt; Scaled residuals: 
+#&gt;     Min      1Q  Median      3Q     Max 
+#&gt; -2.4935 -0.8045  0.0176  0.6593  2.3356 
+#&gt; 
+#&gt; Random effects:
+#&gt;  Groups   Name        Variance Std.Dev.
+#&gt;  Species  (Intercept) 0.0352   0.188   
+#&gt;  Residual             0.0932   0.305   
+#&gt; Number of obs: 150, groups:  Species, 3
+#&gt; 
+#&gt; Fixed effects:
+#&gt;                                      Estimate Std. Error t value
+#&gt; (Intercept)                            1.7768     0.9128    1.95
+#&gt; Sepal.Width                            0.7501     0.2681    2.80
+#&gt; Petal.Length                           0.8793     0.4971    1.77
+#&gt; Petal.Width                           -2.0380     1.5196   -1.34
+#&gt; Sepal.Width:Petal.Length              -0.1012     0.1611   -0.63
+#&gt; Sepal.Width:Petal.Width                0.3435     0.4894    0.70
+#&gt; Petal.Length:Petal.Width               0.2805     0.2428    1.16
+#&gt; Sepal.Width:Petal.Length:Petal.Width  -0.0467     0.0769   -0.61
+#&gt; 
+#&gt; Correlation of Fixed Effects:
+#&gt;             (Intr) Spl.Wd Ptl.Ln Ptl.Wd Sp.W:P.L S.W:P.W P.L:P.
+#&gt; Sepal.Width -0.948                                             
+#&gt; Petal.Lngth -0.746  0.757                                      
+#&gt; Petal.Width -0.289  0.222 -0.306                               
+#&gt; Spl.Wdt:P.L  0.705 -0.762 -0.983  0.338                        
+#&gt; Spl.Wdt:P.W  0.250 -0.214  0.336 -0.986 -0.356                 
+#&gt; Ptl.Lng:P.W  0.754 -0.705 -0.459 -0.679  0.416    0.642        
+#&gt; S.W:P.L:P.W -0.732  0.730  0.442  0.675 -0.428   -0.670  -0.976
 </code></pre>
 
 </body>

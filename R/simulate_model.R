@@ -11,7 +11,7 @@
 #'
 #' @return A data frame.
 #'
-#' @seealso \code{\link[=parameters_simulate]{simulate_parameters()}},
+#' @seealso \code{\link[=simulate_parameters]{simulate_parameters()}},
 #' \code{\link[=bootstrap_model]{bootstrap_model()}},
 #' \code{\link[=bootstrap_parameters]{bootstrap_parameters()}}
 #'
@@ -32,27 +32,26 @@
 #'
 #' @examples
 #' library(parameters)
-#' library(glmmTMB)
-#'
 #' model <- lm(Sepal.Length ~ Species * Petal.Width + Petal.Length, data = iris)
 #' head(simulate_model(model))
 #'
-#' model <- glmmTMB(
-#'   count ~ spp + mined + (1 | site),
-#'   ziformula = ~mined,
-#'   family = poisson(),
-#'   data = Salamanders
-#' )
-#' head(simulate_model(model))
-#' head(simulate_model(model, component = "zero_inflated"))
+#' \donttest{
+#' if (require("glmmTMB")) {
+#'   model <- glmmTMB(
+#'     count ~ spp + mined + (1 | site),
+#'     ziformula = ~mined,
+#'     family = poisson(),
+#'     data = Salamanders
+#'   )
+#'   head(simulate_model(model))
+#'   head(simulate_model(model, component = "zero_inflated"))
+#' }
+#' }
 #' @export
 simulate_model <- function(model, iterations = 1000, ...) {
   UseMethod("simulate_model")
 }
 
-#' @rdname simulate_model
-#' @export
-model_simulate <- simulate_model
 
 
 # Models with single component only -----------------------------------------
@@ -286,8 +285,14 @@ simulate_model.vgam <- function(model, iterations = 1000, ...) {
 #' @export
 simulate_model.glmmTMB <- function(model, iterations = 1000, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
   component <- match.arg(component)
+  info <- insight::model_info(model)
 
-  if (component %in% c("zi", "zero_inflated", "all") && !insight::model_info(model)$is_zero_inflated) {
+  ## TODO remove is.list() when insight 0.8.3 on CRAN
+  if (!is.list(info)) {
+    info <- NULL
+  }
+
+  if (component %in% c("zi", "zero_inflated", "all") && !is.null(info) && !isTRUE(info$is_zero_inflated)) {
     insight::print_color("Model has no zero-inflation component. Simulating from conditional parameters.\n", "red")
     component <- "conditional"
   }

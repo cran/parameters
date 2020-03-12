@@ -19,7 +19,7 @@
 
 \item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
 
-\item{bootstrap}{Should estimates be based on bootstrapped model? If \code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian regressions} apply (see also \code{\link[=parameters_bootstrap]{parameters_bootstrap()}}).}
+\item{bootstrap}{Should estimates be based on bootstrapped model? If \code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian regressions} apply (see also \code{\link[=bootstrap_parameters]{bootstrap_parameters()}}).}
 
 \item{iterations}{The number of bootstrap replicates. This only apply in the case of bootstrapped frequentist models.}
 
@@ -46,6 +46,7 @@ if (require("metafor")) {
   model_parameters(model)
 }
 
+\donttest{
 # with subgroups
 if (require("metafor")) {
   data(dat.bcg)
@@ -60,5 +61,6 @@ if (require("metafor")) {
   dat$alloc <- ifelse(dat$alloc == "random", "random", "other")
   model <- rma(yi, vi, mods = ~ alloc, data = dat, digits = 3, slab = author)
   model_parameters(model)
+}
 }
 }

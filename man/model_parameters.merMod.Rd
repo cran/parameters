@@ -17,6 +17,7 @@
   exponentiate = FALSE,
   robust = FALSE,
   details = FALSE,
+  p_adjust = NULL,
   ...
 )
 
@@ -62,7 +63,7 @@
 
 \item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
 
-\item{bootstrap}{Should estimates be based on bootstrapped model? If \code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian regressions} apply (see also \code{\link[=parameters_bootstrap]{parameters_bootstrap()}}).}
+\item{bootstrap}{Should estimates be based on bootstrapped model? If \code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian regressions} apply (see also \code{\link[=bootstrap_parameters]{bootstrap_parameters()}}).}
 
 \item{df_method}{Method for computing degrees of freedom for p values, standard errors and confidence intervals (CI). May be \code{"wald"} (default, see \code{\link{degrees_of_freedom}}), \code{"ml1"} (see \code{\link{dof_ml1}}), \code{"betwithin"} (see \code{\link{dof_betwithin}}), \code{"satterthwaite"} (see \code{\link{dof_satterthwaite}}) or \code{"kenward"} (see \code{\link{dof_kenward}}). Note that when \code{df_method} is not \code{"wald"}, robust standard errors etc. cannot be computed.}
 
@@ -75,6 +76,8 @@
 \item{robust}{Logical, if \code{TRUE}, robust standard errors are calculated (if possible), and confidence intervals and p-values are based on these robust standard errors. Additional arguments like \code{vcov_estimation} or \code{vcov_type} are passed down to other methods, see \code{\link[=standard_error_robust]{standard_error_robust()}} for details.}
 
 \item{details}{Logical, if \code{TRUE}, a summary of the random effects is included. See \code{\link{random_parameters}} for details.}
+
+\item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to adjust p-values. See \code{\link[stats]{p.adjust}} for details.}
 
 \item{...}{Arguments passed to or from other methods. For instance, when \code{bootstrap = TRUE}, arguments like \code{ci_method} are passed down to \code{\link[bayestestR]{describe_posterior}}.}
 
@@ -90,10 +93,15 @@ Parameters from (linear) mixed models.
 }
 \examples{
 library(parameters)
-if (require("lme4") && require("glmmTMB")) {
+if (require("lme4")) {
+  data(mtcars)
   model <- lmer(mpg ~ wt + (1 | gear), data = mtcars)
   model_parameters(model)
+}
 
+\donttest{
+if (require("glmmTMB")) {
+  data(Salamanders)
   model <- glmmTMB(
     count ~ spp + mined + (1 | site),
     ziformula = ~mined,
@@ -102,7 +110,7 @@ if (require("lme4") && require("glmmTMB")) {
   )
   model_parameters(model, details = TRUE)
 }
-\donttest{
+
 if (require("lme4")) {
   model <- lmer(mpg ~ wt + (1 | gear), data = mtcars)
   model_parameters(model, bootstrap = TRUE, iterations = 50)

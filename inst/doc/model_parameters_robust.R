@@ -2,7 +2,7 @@
 library(knitr)
 options(knitr.kable.NA = '')
 options(digits = 2)
-knitr::opts_chunk$set(comment = ">")
+knitr::opts_chunk$set(comment = "#>")
 
 if (!requireNamespace("dplyr", quietly = TRUE) ||
     !requireNamespace("sandwich", quietly = TRUE) ||
