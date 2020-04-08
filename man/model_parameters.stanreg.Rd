@@ -18,6 +18,7 @@
   diagnostic = c("ESS", "Rhat"),
   priors = TRUE,
   effects = "fixed",
+  standardize = NULL,
   ...
 )
 
@@ -36,6 +37,7 @@
   effects = "fixed",
   component = "all",
   exponentiate = FALSE,
+  standardize = NULL,
   ...
 )
 }
@@ -77,11 +79,13 @@ proportion of HDI, to use for the percentage in ROPE.}
 \item{effects}{Should results for fixed effects, random effects or both be returned?
 Only applies to mixed models. May be abbreviated.}
 
+\item{standardize}{The method used for standardizing the parameters. Can be \code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"} or \code{NULL} (default) for no standardization. See 'Details' in \code{\link[effectsize]{standardize_parameters}}. Note that robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only works when \code{standardize="refit"}.}
+
 \item{...}{Arguments passed to or from other methods. For instance, when \code{bootstrap = TRUE}, arguments like \code{ci_method} are passed down to \code{\link[bayestestR]{describe_posterior}}.}
 
 \item{component}{Model component for which parameters should be shown. May be one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}), \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}) or \code{"all"}.}
 
-\item{exponentiate}{Logical, indicating whether or not to exponentiate the the coefficients (and related confidence intervals). This is typical for, say, logistic regressions, or more generally speaking: for models with log or logit link.}
+\item{exponentiate}{Logical, indicating whether or not to exponentiate the the coefficients (and related confidence intervals). This is typical for, say, logistic regressions, or more generally speaking: for models with log or logit link. \strong{Note:} standard errors are also transformed (by multiplying the standard errors with the exponentiated coefficients), to mimic behaviour of other software packages, such as Stata.}
 }
 \value{
 A data frame of indices related to the model's parameters.
@@ -93,6 +97,7 @@ Parameters of Bayesian models.
 Currently supported models are \code{brmsfit}, \code{stanreg}, \code{stanmvreg}, \code{MCMCglmm}, \code{mcmc} and \code{bcplm}.
 }
 \note{
+When \code{standardize = "refit"}, columns \code{diagnostic}, \code{bf_prior} and \code{priors} refer to the \emph{original} \code{model}.
 If \code{model} is a data frame, arguments \code{diagnostic}, \code{bf_prior} and \code{priors} are ignored.
 }
 \examples{

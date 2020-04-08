@@ -11,6 +11,10 @@
 #'   group-meaned and de-meaned variables of \code{x}. By default, de-meaned
 #'   variables will be suffixed with \code{"_within"} and grouped-meaned variables
 #'   with \code{"_between"}.
+#' @param add_attributes Logical, if \code{TRUE}, the returned variables gain
+#'   attributes to indicate the within- and between-effects. This is only relevant
+#'   when printing \code{model_parameters()} - in such cases, the within- and
+#'   between-effects are printed in separated blocks.
 #'
 #' @return A data frame with the group-/de-meaned variables, which get the suffix
 #'   \code{"_between"} (for the group-meaned variable) and \code{"_within"} (for
@@ -21,15 +25,23 @@
 #'     Mixed models include different levels of sources of variability, i.e.
 #'     error terms at each level. When macro-indicators (or level-2 predictors,
 #'     or higher-level units, or more general: \emph{group-level predictors that
-#'     are \strong{constant} within groups}, such as "education" within participants,
-#'     or GDP within countries) are included as fixed effects (i.e. treated as
-#'     covariate at level-1), the variance that is left unaccounted for this covariate
-#'     will be absorbed into the error terms of level-1 and level-2. Hence, the error
-#'     terms will be correlated with the covariate, which violates one of the
-#'     assumptions of mixed models (iid, independent and identically distributed
-#'     error terms). This bias is also called the \emph{heterogeneity bias}
-#'     (\cite{Bell et al. 2015}). To resolve this problem, level-2 predictors
-#'     used as (level-1) covariates should be "group-meaned".
+#'     \strong{vary} within and across groups}) are included as fixed effects (i.e.
+#'     treated as covariate at level-1), the variance that is left unaccounted for
+#'     this covariate will be absorbed into the error terms of level-1 and level-2
+#'     (\cite{Bafumi and Gelman 2006; Gelman and Hill 2007, Chapter 12.6.}):
+#'     \dQuote{Such covariates contain two parts: one that is specific to the
+#'     higher-level entity that does not vary between occasions, and one that
+#'     represents the difference between occasions, within higher-level entities}
+#'     (\cite{Bell et al. 2015}). Hence, the error terms will be correlated with
+#'     the covariate, which violates one of the assumptions of mixed models
+#'     (iid, independent and identically distributed error terms). This bias is
+#'     also called the \emph{heterogeneity bias} (\cite{Bell et al. 2015}). To
+#'     resolve this problem, level-2 predictors used as (level-1) covariates should
+#'     be separated into their "within" and "between" effects by "de-meaning" and
+#'     "group-meaning": After demeaning time-varying predictors, \dQuote{at the
+#'     higher level, the mean term is no longer constrained by Level 1 effects,
+#'     so it is free to account for all the higher-level variance associated
+#'     with that variable} (\cite{Bell et al. 2015}).
 #'   }
 #'   \subsection{Panel data and correlating fixed and group effects}{
 #'     \code{demean()} is intended to create group- and de-meaned variables
@@ -46,15 +58,17 @@
 #'     predictors, time-invariant predictors and random effects.
 #'    }
 #'   \subsection{Why mixed models are preferred over fixed effects models}{
-#'     A mixed models approach including time-varying and time-constant fixed
-#'     effects as well as random effects is superior to classic fixed-effects
-#'     models, which lack information of variation in the group-effects or
-#'     between-subject effects. Furthermore, fixed effects regression cannot
-#'     include random slopes, which means that fixed effects regressions are
-#'     neglecting \dQuote{cross-cluster differences in the effects of lower-level
-#'     controls (which) reduces the precision of estimated context effects,
-#'     resulting in unnecessarily wide confidence intervals and low statistical
-#'     power} (\cite{Heisig et al. 2017}).
+#'     A mixed models approach can model the causes of endogeneity explicitly
+#'     by including the (separated) within- and between-effects of time-varying
+#'     fixed effects and including time-constant fixed effects. Furthermore,
+#'     mixed models also include random effects, thus a mixed models approach
+#'     is superior to classic fixed-effects models, which lack information of
+#'     variation in the group-effects or between-subject effects. Furthermore,
+#'     fixed effects regression cannot include random slopes, which means that
+#'     fixed effects regressions are neglecting \dQuote{cross-cluster differences
+#'     in the effects of lower-level controls (which) reduces the precision of
+#'     estimated context effects, resulting in unnecessarily wide confidence
+#'     intervals and low statistical power} (\cite{Heisig et al. 2017}).
 #'   }
 #'   \subsection{Terminology}{
 #'     The group-meaned variable is simply the mean of an independent variable
@@ -112,15 +126,15 @@
 #'   \subsection{Analysing panel data with mixed models using lme4}{
 #'     A description of how to translate the
 #'     formulas described in \emph{Bell et al. 2018} into R using \code{lmer()}
-#'     from \pkg{lme4} or \code{glmmTMB()} from \pkg{glmmTMB} can be found here:
-#'     \href{https://strengejacke.github.io/mixed-models-snippets/random-effects-within-between-effects-model.html}{for lmer()}
-#'     and \href{https://strengejacke.github.io/mixed-models-snippets/random-effects-within-between-effects-model-glmmtmb.html}{for glmmTMB()}.
+#'     from \pkg{lme4} can be found in
+#'     \href{https://easystats.github.io/parameters/articles/demean.html}{this vignette}.
 #'   }
 #'
 #' @references \itemize{
 #'   \item Bafumi J, Gelman A. 2006. Fitting Multilevel Models When Predictors and Group Effects Correlate. In. Philadelphia, PA: Annual meeting of the American Political Science Association.
 #'   \item Bell A, Fairbrother M, Jones K. 2018. Fixed and Random Effects Models: Making an Informed Choice. Quality & Quantity.
 #'   \item Bell A, Jones K. 2015. Explaining Fixed Effects: Random Effects Modeling of Time-Series Cross-Sectional and Panel Data. Political Science Research and Methods, 3(1), 133–153.
+#'   \item Gelman A, Hill J. 2007. Data Analysis Using Regression and Multilevel/Hierarchical Models. Analytical Methods for Social Research. Cambridge, New York: Cambridge University Press
 #'   \item Giesselmann M, Schmidt-Catran A. 2018. Interactions in fixed effects regression models (Discussion Papers of DIW Berlin No. 1748). DIW Berlin, German Institute for Economic Research. Retrieved from https://ideas.repec.org/p/diw/diwwpp/dp1748.html
 #'   \item Heisig JP, Schaeffer M, Giesecke J. 2017. The Costs of Simplicity: Why Multilevel Models May Benefit from Accounting for Cross-Cluster Differences in the Effects of Controls. American Sociological Review 82 (4): 796–827.
 #'   \item Hoffman L. 2015. Longitudinal analysis: modeling within-person fluctuation and change. New York: Routledge
@@ -147,7 +161,7 @@
 #' demean(dat, select = c("a", "x*y"), group = "ID")
 #' @importFrom stats ave
 #' @export
-demean <- function(x, select, group, suffix_demean = "_within", suffix_groupmean = "_between") {
+demean <- function(x, select, group, suffix_demean = "_within", suffix_groupmean = "_between", add_attributes = TRUE) {
   interactions_no <- select[!grepl("(\\*|\\:)", select)]
   interactions_yes <- select[grepl("(\\*|\\:)", select)]
 
@@ -244,14 +258,16 @@ demean <- function(x, select, group, suffix_demean = "_within", suffix_groupmean
   colnames(x_dm) <- sprintf("%s%s", colnames(x_dm), suffix_demean)
   colnames(x_gm) <- sprintf("%s%s", colnames(x_gm), suffix_groupmean)
 
-  x_dm[] <- lapply(x_dm, function(i) {
-    attr(i, "within-effect") <- TRUE
-    i
-  })
-  x_gm[] <- lapply(x_gm, function(i) {
-    attr(i, "between-effect") <- TRUE
-    i
-  })
+  if (isTRUE(add_attributes)) {
+    x_dm[] <- lapply(x_dm, function(i) {
+      attr(i, "within-effect") <- TRUE
+      i
+    })
+    x_gm[] <- lapply(x_gm, function(i) {
+      attr(i, "between-effect") <- TRUE
+      i
+    })
+  }
 
   cbind(x_gm, x_dm)
 }

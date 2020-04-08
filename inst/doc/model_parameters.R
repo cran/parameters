@@ -40,14 +40,6 @@ BayesFactor::ttestBF(formula = mpg ~ vs, data = mtcars) %>%
   parameters()
 
 ## ---- warning=FALSE, message=FALSE--------------------------------------------
-aov(Sepal.Length ~ Species, data = iris) %>% 
-  parameters(omega_squared = "partial", eta_squared = "partial", epsilon_squared = TRUE)
-
-## ---- warning=FALSE, message=FALSE--------------------------------------------
-aov(mpg ~ am + Error(gear), data = mtcars) %>% 
-  parameters()
-
-## ---- warning=FALSE, message=FALSE--------------------------------------------
 glm(vs ~ poly(mpg, 2) + cyl, data = mtcars) %>% 
   parameters()
 
