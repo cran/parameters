@@ -1,3 +1,53 @@
+# parameters 0.7.0
+
+## General
+
+* We changed the computation of confidence intervals or standard errors, so these are now based on a t-distribution with degrees of freedom and not normal distribution assuming infinite degrees of freedom. This was implemented for most functions before and only affects few functions (like `equivalence_test()` or CIs for standardized parameters from `model_parameters()` when standardization method was `"posthoc"`).
+
+## New supported models
+
+* `averaging` (*MuMIn*), `bayesx` (*R2BayesX*), `afex_aov` (*afex*)
+
+## New functions
+
+* `check_heterogeneity()` as a small helper to find variables that have a within- and between-effect related to a grouping variable (and thus, may result in heterogeneity bias, see [this vignette](https://easystats.github.io/parameters/articles/demean.html)).
+
+## Changes to functions
+
+### `equivalence_test()`
+
+* gains a `rule` argument, so equivalence testing can be based on different approaches.
+* for mixed models gains an `effect` argument, to perform equivalence testing on random effects.
+* gains a `p_values` argument, to calculate p-values for the equivalence test.
+* now supports more frequentist model objects.
+
+### `describe_distribution()`
+
+* now works on grouped data frames.
+* gains `ci` and `iterations` arguments, to compute confidence intervals based on bootstrapping.
+* gains a `iqr` argument, to compute the interquartile range.
+* `SE` column was removed.
+
+### `model_parameters()`
+
+* `model_parameters()` for Stan-models (*brms*, *rstanarm*) gains a `group_level` argument to show or hide parameters for group levels of random effects.
+* Improved accuracy of confidence intervals in `model_parameters()` with `standardize = "basic"` or `standardize = "posthoc"`.
+* `model_parameters.merMod()` no longer passes `...` down to bootstrap-functions (i.e. when `bootstrap = TRUE`), as this might conflict with `lme4::bootMer()`.
+* For ordinal models (like `MASS::polr()` or `ordinal::clm()`), a `Component` column is added, indicating intercept categories (`"alpha"`) and estimates (`"beta"`).
+* The `select`-argument from `print.parameters_model()` now gets a `"minimal"`-option as shortcut to print coefficients, confidence intervals and p-values only.
+
+### Other changes
+
+* `parameters_table()` and `print.parameters_model()` now explicitly get arguments to define the digits for decimal places used in output.
+* `ci()`, `standard_error()`, `p_value()` and `model_parameters()` for *glmmTMB* models now also works for dispersion models.
+
+## Bug fixes
+
+* Fixed issue in `equivalence_test()` for mixed models.
+* Fixed bug for `model_parameters.anova(..., eta_squared = "partial")` when called with non-mixed models.
+* Fixed issue with wrong degrees of freedom in `model_parameters()` for *gam* models.
+* Fixed issue with unused arguments in `model_parameters()`.
+
 # parameters 0.6.1
 
 ## General

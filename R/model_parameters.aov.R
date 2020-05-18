@@ -15,8 +15,7 @@
 #' @note For anova-tables from mixed models (i.e. \code{anova(lmer())}), only partial or adjusted effect sizes can be computed.
 #'
 #' @examples
-#' if (requireNamespace("effectsize", quietly = TRUE) &&
-#'     packageVersion("effectsize") >= "0.2.9") {
+#' if (requireNamespace("effectsize", quietly = TRUE)) {
 #'   df <- iris
 #'   df$Sepal.Big <- ifelse(df$Sepal.Width >= 3, "Yes", "No")
 #'
@@ -86,6 +85,14 @@ model_parameters.anova <- model_parameters.aov
 #' @export
 model_parameters.aovlist <- model_parameters.aov
 
+#' @export
+model_parameters.afex_aov <- function(model, omega_squared = NULL, eta_squared = NULL, epsilon_squared = NULL, df_error = NULL, type = NULL, ...) {
+  if (!is.null(model$aov)) {
+    model_parameters(model$aov, omega_squared = omega_squared, eta_squared = eta_squared, epsilon_squared = epsilon_squared, df_error = df_error, type = type, ...)
+  } else {
+    NULL
+  }
+}
 
 
 
@@ -164,14 +171,19 @@ model_parameters.aovlist <- model_parameters.aov
 
   # check if we have any information on denominator df
   if (is.null(df_error) && !("DenDF" %in% colnames(model))) {
-    warning("Cannot compute effect size without denominator degrees of freedom. Please specify 'df_error', or use package 'lmerTest' to fit your mixed model.", call. = FALSE)
-    return(parameters)
+    if ("Residuals" %in% parameters$Parameter) {
+      df_col <- colnames(parameters)[colnames(parameters) %in% c("df", "df_error", "Df", "NumDF")]
+      df_error <- parameters[parameters$Parameter == "Residuals", df_col]
+    } else {
+      warning("Cannot compute effect size without denominator degrees of freedom. Please specify 'df_error', or use package 'lmerTest' to fit your mixed model.", call. = FALSE)
+      return(parameters)
+    }
   }
 
   # denominator DF
   if (is.null(df_error)) {
     df_error <- model$DenDF
-  } else {
+  } else if (length(df_error) > 1) {
     # term names
     rn <- rownames(model)
 
@@ -188,7 +200,7 @@ model_parameters.aovlist <- model_parameters.aov
 
   # numerator DF
   df_num <- NULL
-  df_num_cols <- colnames(model)[colnames(model) %in% c("Df", "NumDF")]
+  df_num_cols <- colnames(model)[colnames(model) %in% c("npar", "Df", "NumDF")]
 
   if (length(df_num_cols) != 0) {
     df_num <- model[[df_num_cols[1]]]

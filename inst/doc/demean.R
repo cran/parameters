@@ -10,6 +10,9 @@ knitr::opts_chunk$set(
 )
 
 if (!requireNamespace("lme4", quietly = TRUE) ||
+    !requireNamespace("dplyr", quietly = TRUE) ||
+    !requireNamespace("ggplot2", quietly = TRUE) ||
+    !requireNamespace("see", quietly = TRUE) ||
     !requireNamespace("lfe", quietly = TRUE)) {
   knitr::opts_chunk$set(eval = FALSE)
 } else {
@@ -23,6 +26,9 @@ set.seed(333)
 ## -----------------------------------------------------------------------------
 library(parameters)
 data("qol_cancer")
+
+## -----------------------------------------------------------------------------
+check_heterogeneity(qol_cancer, select = c("phq4", "education"), group = "ID")
 
 ## -----------------------------------------------------------------------------
 qol_cancer <- cbind(
@@ -52,7 +58,7 @@ model_parameters(fe_model2)[2:3, ]
 # we compare the results with those from the "lfe"-package for panel data
 library(lfe)
 fe_model3 <- felm(
-  QoL ~ time + phq4_within | ID,
+  QoL ~ time + phq4 | ID,
    data = qol_cancer
 )
 model_parameters(fe_model3)
@@ -95,4 +101,96 @@ model_parameters(rewb)
 
 ## -----------------------------------------------------------------------------
 random_parameters(rewb)
+
+## -----------------------------------------------------------------------------
+library(ggplot2)
+library(dplyr)
+library(see)
+
+set.seed(123)
+n <- 5
+b <- seq(1, 1.5, length.out = 5)
+x <- seq(2, 2 * n, 2)
+
+d <- do.call(rbind, lapply(1:n, function(i) {
+  data.frame(x = seq(1, n, by = .2),
+             y = 2 * x[i] + b[i] * seq(1, n, by = .2) + rnorm(21),
+             grp = as.factor(2 * i))
+}))
+
+d <- d %>%
+  group_by(grp) %>%
+  mutate(x = rev(15 - (x + 1.5 * as.numeric(grp)))) %>%
+  ungroup()
+
+labs <- c("very slow", "slow", "average", "fast", "very fast")
+levels(d$grp) <- rev(labs)
+
+d <- cbind(d, demean(d, c("x", "y"), group = "grp"))
+
+## ----echo=FALSE---------------------------------------------------------------
+ggplot(d, aes(x, y)) +
+  geom_point(colour = "#555555", size = 2.5, alpha = .5) +
+  see::theme_modern() +
+  labs(x = "Typing Speed", y = "Typing Errors", colour = "Type Experience")
+
+## ----echo=FALSE---------------------------------------------------------------
+ggplot(d, aes(x, y)) +
+  geom_point(colour = "#555555", size = 2.5, alpha = .5) +
+  geom_smooth(method = "lm", se = F, colour = "#555555") +
+  see::theme_modern() +
+  labs(x = "Typing Speed", y = "Typing Errors", colour = "Type Experience")
+
+## -----------------------------------------------------------------------------
+m1 <- lm(y ~ x, data = d)
+model_parameters(m1)
+
+## ----echo=FALSE---------------------------------------------------------------
+ggplot(d, aes(x, y)) +
+  geom_point(mapping = aes(colour = grp), size = 2.5, alpha = .5) +
+  geom_smooth(method = "lm", se = F, colour = "#555555") +
+  see::scale_color_flat() +
+  see::theme_modern() +
+  labs(x = "Typing Speed", y = "Typing Errors", colour = "Type Experience")
+
+## ----echo=FALSE---------------------------------------------------------------
+ggplot(d, aes(x, y)) +
+  geom_smooth(mapping = aes(colour = grp), method = "lm", se = FALSE) +
+  geom_point(mapping = aes(colour = grp), size = 2.2, alpha = .6) +
+  see::scale_color_flat() +
+  see::theme_modern() +
+  labs(x = "Typing Speed", y = "Typing Errors", colour = "Type Experience")
+
+## -----------------------------------------------------------------------------
+m2 <- lm(y ~ 0 + x_within + grp, data = d)
+model_parameters(m2)[1, ]
+
+## ----echo=FALSE---------------------------------------------------------------
+ggplot(d, aes(x, y)) +
+  geom_point(mapping = aes(colour = grp), size = 2.2, alpha = .6) +
+  geom_smooth(mapping = aes(x = x_between, y = y_between), method = "lm", se = F, colour = "#444444") +
+  see::scale_color_flat() +
+  see::theme_modern() +
+  labs(x = "Typing Speed", y = "Typing Errors", colour = "Type Experience")
+
+## -----------------------------------------------------------------------------
+m3 <- lm(y ~ x_between, data = d)
+model_parameters(m3)
+
+## ----echo=FALSE---------------------------------------------------------------
+ggplot(d, aes(x, y)) +
+  geom_smooth(mapping = aes(colour = grp), method = "lm", se = FALSE) +
+  geom_point(mapping = aes(colour = grp), size = 2.2, alpha = .6) +
+  geom_smooth(mapping = aes(x = x_between, y = y_between), method = "lm", se = F, colour = "#444444") +
+  see::scale_color_flat() +
+  see::theme_modern() +
+  labs(x = "Typing Speed", y = "Typing Errors", colour = "Type Experience")
+
+## -----------------------------------------------------------------------------
+m4 <- lmer(y ~ x_between + x_within + (1 | grp), data = d)
+model_parameters(m4)
+
+## -----------------------------------------------------------------------------
+m5 <- lmer(y ~ x_between + x_within + (1 + x_within | grp), data = d)
+model_parameters(m5)
 

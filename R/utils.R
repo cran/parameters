@@ -68,19 +68,28 @@
 #'
 #' @importFrom stats na.omit
 #' @keywords internal
-.factor_to_numeric <- function(x) {
+.factor_to_numeric <- function(x, lowest = NULL) {
   if (is.numeric(x)) {
     return(x)
+  }
+  if (is.logical(x)) {
+    return(as.numeric(x))
   }
 
   if (anyNA(suppressWarnings(as.numeric(as.character(stats::na.omit(x)))))) {
     if (is.character(x)) {
       x <- as.factor(x)
     }
+    x <- droplevels(x)
     levels(x) <- 1:nlevels(x)
   }
 
-  as.numeric(as.character(x))
+  out <- as.numeric(as.character(x))
+  if (!is.null(lowest)) {
+    difference <- min(out) - lowest
+    out <- out - difference
+  }
+  out
 }
 
 
@@ -219,4 +228,28 @@
 .n_unique <- function(x, na.rm = TRUE) {
   if (isTRUE(na.rm)) x <- stats::na.omit(x)
   length(unique(x))
+}
+
+
+
+
+#' @keywords internal
+.get_object <- function(x, attribute_name = "object_name") {
+  obj_name <- attr(x, attribute_name, exact = TRUE)
+  model <- NULL
+  if (!is.null(obj_name)) {
+    model <- tryCatch({
+      get(obj_name, envir = parent.frame())
+    }, error = function(e) {
+      NULL
+    })
+    if (is.null(model)) {
+      model <- tryCatch({
+        get(obj_name, envir = globalenv())
+      }, error = function(e) {
+        NULL
+      })
+    }
+  }
+  model
 }

@@ -37,7 +37,7 @@ Extract and compute indices and measures to describe parameters of meta-analysis
 }
 \examples{
 library(parameters)
-mydat <- data.frame(
+mydat <<- data.frame(
   effectsize = c(-0.393, 0.675, 0.282, -1.398),
   stderr = c(0.317, 0.317, 0.13, 0.36)
 )
@@ -46,7 +46,7 @@ if (require("metafor")) {
   model_parameters(model)
 }
 
-\donttest{
+\dontrun{
 # with subgroups
 if (require("metafor")) {
   data(dat.bcg)

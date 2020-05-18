@@ -150,6 +150,23 @@ p_value.tobit <- function(model, ...) {
 
 
 
+#' @export
+p_value.speedlm <- function(model, ...) {
+  p <- p_value.default(model, ...)
+  if (!is.numeric(p$p)) {
+    p$p <- tryCatch({
+      as.numeric(as.character(p$p))
+    },
+    error = function(e) {
+      p$p
+    })
+  }
+  p
+}
+
+
+
+
 
 
 
@@ -311,7 +328,7 @@ p_value.rlmerMod <- function(model, method = "wald", ...) {
 
 #' @rdname p_value
 #' @export
-p_value.glmmTMB <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+p_value.glmmTMB <- function(model, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), ...) {
   component <- match.arg(component)
   if (is.null(.check_component(model, component))) {
     return(NULL)
@@ -329,6 +346,7 @@ p_value.glmmTMB <- function(model, component = c("all", "conditional", "zi", "ze
   p <- do.call(rbind, x)
   p$Component <- .rename_values(p$Component, "cond", "conditional")
   p$Component <- .rename_values(p$Component, "zi", "zero_inflated")
+  p$Component <- .rename_values(p$Component, "disp", "dispersion")
 
   .filter_component(p, component)
 }
@@ -605,6 +623,33 @@ p_value.flexsurvreg <- function(model, ...) {
 
 
 # p-Values from Special Models -----------------------------------------------
+
+
+#' @rdname p_value
+#' @export
+p_value.averaging <- function(model, component = c("conditional", "full"), ...) {
+  component <- match.arg(component)
+  params <- get_parameters(model, component = component)
+  if (component == "full") {
+    s <- summary(model)$coefmat.full
+  } else {
+    s <- summary(model)$coefmat.subset
+  }
+
+  .data_frame(
+    Parameter = .remove_backticks_from_string(params$Parameter),
+    p = as.vector(s[, 5])
+  )
+}
+
+
+#' @export
+p_value.bayesx <- function(model, ...) {
+  .data_frame(
+    Parameter = find_parameters(model, component = "conditional", flatten = TRUE),
+    p = model$fixed.effects[, 4]
+  )
+}
 
 
 #' @rdname p_value

@@ -6,8 +6,8 @@
 #'
 #' @param model A model.
 #' @param vcov_estimation String, indicating the suffix of the \code{vcov*()}-function
-#'   from the \pkg{sandwich}-package, e.g. \code{vcov_estimation = "CL"} (which
-#'   calls \code{\link[sandwich]{vcovCL}} to compute clustered covariance matrix
+#'   from the \pkg{sandwich} or \pkg{clubSandwich} package, e.g. \code{vcov_estimation = "CL"}
+#'   (which calls \code{\link[sandwich]{vcovCL}} to compute clustered covariance matrix
 #'   estimators), or \code{vcov_estimation = "HC"} (which calls
 #'   \code{\link[sandwich:vcovHC]{vcovHC()}} to compute heteroskedasticity-consistent
 #'   covariance matrix estimators).
@@ -111,8 +111,7 @@ ci_robust <- function(model,
     robust = TRUE,
     vcov_estimation = vcov_estimation,
     vcov_type = vcov_type,
-    vcov_args = vcov_args,
-    ...
+    vcov_args = vcov_args
   )
 }
 

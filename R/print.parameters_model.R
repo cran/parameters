@@ -9,7 +9,8 @@
 #'   printed in a separate table. If \code{FALSE}, model parameters are printed
 #'   in a single table and a \code{Component} column is added to the output.
 #' @param select Character vector (or numeric index) of column names that should
-#'   be printed. If \code{NULL} (default), all columns are printed.
+#'   be printed. If \code{NULL} (default), all columns are printed. The shortcut
+#'   \code{select = "minimal"} prints coefficient, confidence intervals and p-values.
 #' @inheritParams parameters_table
 #' @return \code{NULL}
 #'
@@ -28,12 +29,20 @@
 #'
 #'   print(mp, split_components = FALSE)
 #'
-#'   print(mp, select = c("Parameter", "Coefficient", "CI_low", "CI_high"))
+#'   print(mp, select = c("Parameter", "Coefficient", "SE"))
+#'
+#'   print(mp, select = "minimal")
 #' }
 #' @importFrom insight format_table
 #' @export
-print.parameters_model <- function(x, pretty_names = TRUE, split_components = TRUE, select = NULL, ...) {
+print.parameters_model <- function(x, pretty_names = TRUE, split_components = TRUE, select = NULL, digits = 2, ci_digits = 2, p_digits = 3, ...) {
+  orig_x <- x
   res <- attributes(x)$details
+
+  # check if user supplied digits attributes
+  if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
+  if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
+  if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
 
   # minor fix for nested Anovas
   if ("Group" %in% colnames(x) && sum(x$Parameter == "Residuals") > 1) {
@@ -41,8 +50,12 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
   }
 
   if (!is.null(select)) {
-    if (is.numeric(select)) select <- colnames(x)[select]
-    select <- union(select, c("Component", "Effects", "Response", "Subgroup"))
+    if (all(select == "minimal")) {
+      select <- c("Parameter", "Coefficient", "CI", "CI_low", "CI_high", "p")
+    } else if (is.numeric(select)) {
+      select <- colnames(x)[select]
+    }
+    select <- union(select, c("Parameter", "Component", "Effects", "Response", "Subgroup"))
     to_remove <- setdiff(colnames(x), select)
     x[to_remove] <- NULL
   }
@@ -74,17 +87,18 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
   split_by <- split_by[nchar(split_by) > 0]
 
   if (split_components && !is.null(split_by) && length(split_by)) {
-    .print_model_parms_components(x, pretty_names, split_column = split_by, ...)
+    .print_model_parms_components(x, pretty_names, split_column = split_by, digits = digits, ci_digits = ci_digits, p_digits = p_digits, ...)
   } else {
-    formatted_table <- parameters_table(x, pretty_names = pretty_names, ...)
+    formatted_table <- parameters_table(x, pretty_names = pretty_names, digits = digits, ci_digits = ci_digits, p_digits = p_digits, ...)
     cat(insight::format_table(formatted_table))
   }
 
   # print summary for random effects
   if (!is.null(res)) {
     cat("\n")
-    .print_random_parameters(res, digits = attributes(x)$digits)
+    .print_random_parameters(res, digits = digits)
   }
+  invisible(orig_x)
 }
 
 
@@ -93,6 +107,7 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
 #' @export
 print.parameters_random <- function(x, digits = 2, ...) {
   .print_random_parameters(x, digits = digits)
+  invisible(x)
 }
 
 
@@ -159,15 +174,13 @@ print.parameters_random <- function(x, digits = 2, ...) {
 
 
 #' @keywords internal
-.print_model_parms_components <- function(x, pretty_names, split_column = "Component", ...) {
+.print_model_parms_components <- function(x, pretty_names, split_column = "Component", digits = 2, ci_digits = 2, p_digits = 3, ...) {
 
   # check if user supplied digits attributes
-  digits <- attributes(x)$digits
-  ci_digits <- attributes(x)$ci_digits
-  p_digits <- attributes(x)$p_digits
   is_ordinal_model <- attributes(x)$ordinal_model
-
   if (is.null(is_ordinal_model)) is_ordinal_model <- FALSE
+
+  is_zero_inflated <- (!is.null(x$Component) & "zero_inflated" %in% x$Component)
 
   # make sure we have correct order of levels from split-factor
   x[split_column] <- lapply(x[split_column], function(i) {
@@ -204,7 +217,10 @@ print.parameters_random <- function(x, digits = 2, ...) {
       if (type == "conditional") {
         names(tables[[type]])[names(tables[[type]]) == "t / F"] <- "t"
       }
+    } else if (type == "smooth_terms" && "t" %in% names(tables[[type]])) {
+      names(tables[[type]])[names(tables[[type]]) == "t"] <- "F"
     }
+
 
     if ("z / Chisq" %in% names(tables[[type]])) {
       if (type == "smooth_terms") {
@@ -237,11 +253,12 @@ print.parameters_random <- function(x, digits = 2, ...) {
       "fixed" = ,
       "conditional" = "Fixed Effects",
       "random" = "Random Effects",
-      "conditional.fixed" = "Fixed Effects (Count Model)",
-      "conditional.random" = "Random Effects (Count Model)",
+      "conditional.fixed" = ifelse(is_zero_inflated, "Fixed Effects (Count Model)", "Fixed Effects"),
+      "conditional.random" = ifelse(is_zero_inflated, "Random Effects (Count Model)", "Random Effects"),
       "zero_inflated" = "Zero-Inflated",
       "zero_inflated.fixed" = "Fixed Effects (Zero-Inflated Model)",
       "zero_inflated.random" = "Random Effects (Zero-Inflated Model)",
+      "dispersion" = "Dispersion",
       "simplex.fixed" = ,
       "simplex" = "Monotonic Effects",
       "smooth_sd" = "Smooth Terms (SD)",
@@ -305,14 +322,15 @@ print.parameters_random <- function(x, digits = 2, ...) {
 
 
 #' @export
-print.parameters_brms <- function(x, split_components = TRUE, select = NULL, ...) {
+print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...) {
+  orig_x <- x
   cp <- attributes(x)$parameter_info
 
   # check if user supplied digits attributes
-  ci <- attributes(x)$ci
-  digits <- attributes(x)$digits
-  ci_digits <- attributes(x)$ci_digits
-  p_digits <- attributes(x)$p_digits
+  ci <- .additional_arguments(x, "ci", .95)
+  digits <- .additional_arguments(x, "digits", 2)
+  ci_digits <- .additional_arguments(x, "ci_digits", 2)
+  p_digits <- .additional_arguments(x, "p_digits", 3)
 
   if (!split_components || is.null(cp)) {
     NextMethod()
@@ -346,4 +364,5 @@ print.parameters_brms <- function(x, split_components = TRUE, select = NULL, ...
       cat("\n")
     }
   }
+  invisible(orig_x)
 }

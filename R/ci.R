@@ -114,6 +114,19 @@ ci.mlm <- function(x, ci = .95, ...) {
 }
 
 
+#' @export
+ci.bayesx <- function(x, ci = .95, ...) {
+  ci_wald(model = x, ci = ci, dof = Inf, robust = FALSE, component = "conditional")
+}
+
+
+#' @export
+ci.averaging <- function(x, ci = .95, component = c("conditional", "full"), ...) {
+  component <- match.arg(component)
+  ci_wald(model = x, ci = ci, dof = Inf, component = component)
+}
+
+
 #' @method ci lm
 #' @export
 ci.lm <- function(x, ci = .95, method = NULL, ...) {
@@ -409,7 +422,7 @@ ci.DirichletRegModel <- function(x, ci = .95, component = c("all", "conditional"
 
 #' @rdname ci.merMod
 #' @export
-ci.glmmTMB <- function(x, ci = .95, component = c("all", "conditional", "zi", "zero_inflated"), method = c("wald", "ml1", "betwithin", "robust"), ...) {
+ci.glmmTMB <- function(x, ci = .95, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), method = c("wald", "ml1", "betwithin", "robust"), ...) {
   method <- tolower(method)
   method <- match.arg(method)
   component <- match.arg(component)
@@ -551,7 +564,7 @@ ci.lme <- function(x, ci = .95, method = c("wald", "betwithin", "ml1", "satterth
 
 
 #' @importFrom insight print_color
-#' @importFrom stats qnorm
+#' @importFrom stats qt
 #' @export
 ci.effectsize_std_params <- function(x, ci = .95, ...) {
   se <- attr(x, "standard_error")
@@ -561,9 +574,24 @@ ci.effectsize_std_params <- function(x, ci = .95, ...) {
     return(NULL)
   }
 
+  # check if we have model. if so, use df from model
+  model <- .get_object(x)
+  if (!is.null(model)) {
+    df <- degrees_of_freedom(model, method = "any")
+    if (!is.null(df)) {
+      if (length(df) > 1 && length(df) != nrow(x)) {
+        df <- Inf
+      }
+    } else {
+      df <- Inf
+    }
+  } else {
+    df <- Inf
+  }
+
   out <- lapply(ci, function(i) {
     alpha <- (1 + i) / 2
-    fac <- stats::qnorm(alpha)
+    fac <- stats::qt(alpha, df = df)
     data.frame(
       Parameter = x$Parameter,
       CI = i * 100,
@@ -608,20 +636,4 @@ ci.rma <- function(x, ci = .95, ...) {
     x <- NULL
   }
   x
-}
-
-
-#' @keywords internal
-.ci_from_refit <- function(std_coef, ci) {
-  se <- attributes(std_coef)$standard_error$SE
-  alpha <- (1 + ci) / 2
-  fac <- stats::qnorm(alpha)
-  out <- data.frame(
-    Parameter = std_coef$Parameter,
-    CI = ci * 100,
-    CI_low = std_coef$Std_Coefficient - se * fac,
-    CI_high = std_coef$Std_Coefficient + se * fac,
-    stringsAsFactors = FALSE
-  )
-  .remove_backticks_from_parameter_names(out)
 }

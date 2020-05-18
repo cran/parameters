@@ -11,6 +11,8 @@
 #' @seealso \code{\link[=standardize_names]{standardize_names()}} to rename
 #'   columns into a consistent, standardized naming scheme.
 #'
+#' @note There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#'
 #' @examples
 #' library(parameters)
 #' if (require("lme4")) {
@@ -29,6 +31,12 @@
 #'     data = Salamanders
 #'   )
 #'   model_parameters(model, details = TRUE)
+#'
+#'   # plot-method
+#'   if (require("see")) {
+#'     result <- model_parameters(model)
+#'     plot(result)
+#'   }
 #' }
 #'
 #' if (require("lme4")) {
@@ -45,23 +53,23 @@ model_parameters.merMod <- function(model, ci = .95, bootstrap = FALSE, df_metho
 
   # Processing
   if (bootstrap) {
-    parameters <- bootstrap_parameters(model, iterations = iterations, ci = ci, ...)
+    params <- bootstrap_parameters(model, iterations = iterations, ci = ci, ...)
   } else {
-    parameters <- .extract_parameters_mixed(model, ci = ci, df_method = df_method, robust = robust, standardize = standardize, p_adjust = p_adjust, ...)
+    params <- .extract_parameters_mixed(model, ci = ci, df_method = df_method, robust = robust, standardize = standardize, p_adjust = p_adjust, ...)
   }
 
 
-  if (exponentiate) parameters <- .exponentiate_parameters(parameters)
-  parameters <- .add_model_parameters_attributes(parameters, model, ci, exponentiate, ...)
+  if (exponentiate) params <- .exponentiate_parameters(params)
+  params <- .add_model_parameters_attributes(params, model, ci, exponentiate, ...)
 
   if (isTRUE(details)) {
-    attr(parameters, "details") <- .randomeffects_summary(model)
+    attr(params, "details") <- .randomeffects_summary(model)
   }
 
-  attr(parameters, "object_name") <- deparse(substitute(model), width.cutoff = 500)
-  class(parameters) <- c("parameters_model", "see_parameters_model", class(parameters))
+  attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  class(params) <- c("parameters_model", "see_parameters_model", class(params))
 
-  parameters
+  params
 }
 
 #' @export
@@ -73,39 +81,44 @@ model_parameters.lme <- model_parameters.merMod
 
 # Mixed Models with zero inflation ------------------------------------
 
+#' @importFrom stats coef
 #' @inheritParams simulate_model
 #' @rdname model_parameters.merMod
 #' @export
-model_parameters.glmmTMB <- function(model, ci = .95, bootstrap = FALSE, iterations = 1000, component = c("all", "conditional", "zi", "zero_inflated"), standardize = NULL, exponentiate = FALSE, df_method = NULL, details = FALSE, ...) {
+model_parameters.glmmTMB <- function(model, ci = .95, bootstrap = FALSE, iterations = 1000, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), standardize = NULL, exponentiate = FALSE, df_method = NULL, details = FALSE, ...) {
   component <- match.arg(component)
 
-  # p-values, CI and se might be based on differen df-methods
+  # p-values, CI and se might be based on different df-methods
   df_method <- .check_df_method(df_method)
 
-  # fix argument, if model has no zi-part
-  if (!insight::model_info(model)$is_zero_inflated && component != "conditional") {
+  # fix argument, if model has only conditional component
+  cs <- stats::coef(summary(model))
+  has_zeroinf <- insight::model_info(model)$is_zero_inflated
+  has_disp <- is.list(cs) && !is.null(cs$disp)
+
+  if (!has_zeroinf && !has_disp && component != "conditional") {
     component <- "conditional"
   }
 
   # Processing
   if (bootstrap) {
-    parameters <- bootstrap_parameters(model, iterations = iterations, ci = ci, ...)
+    params <- bootstrap_parameters(model, iterations = iterations, ci = ci, ...)
   } else {
-    parameters <- .extract_parameters_generic(model, ci = ci, component = component, standardize = standardize, robust = FALSE, df_method = df_method, ...)
+    params <- .extract_parameters_generic(model, ci = ci, component = component, standardize = standardize, robust = FALSE, df_method = df_method, ...)
   }
 
 
-  if (exponentiate) parameters <- .exponentiate_parameters(parameters)
-  parameters <- .add_model_parameters_attributes(parameters, model, ci, exponentiate, ...)
+  if (exponentiate) params <- .exponentiate_parameters(params)
+  params <- .add_model_parameters_attributes(params, model, ci, exponentiate, ...)
 
   if (isTRUE(details)) {
-    attr(parameters, "details") <- .randomeffects_summary(model)
+    attr(params, "details") <- .randomeffects_summary(model)
   }
 
-  attr(parameters, "object_name") <- deparse(substitute(model), width.cutoff = 500)
-  class(parameters) <- c("parameters_model", "see_parameters_model", class(parameters))
+  attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  class(params) <- c("parameters_model", "see_parameters_model", class(params))
 
-  parameters
+  params
 }
 
 #' @export

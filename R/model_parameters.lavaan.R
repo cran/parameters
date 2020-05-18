@@ -8,6 +8,7 @@
 #' @param type What type of links to return. Can be \code{"all"} or some of \code{c("regression", "correlation", "loading", "variance", "mean")}.
 #' @param ... Arguments passed to or from other methods.
 #'
+#' @note There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 #'
 #' @examples
 #' library(parameters)
@@ -106,9 +107,16 @@ n_parameters.blavaan <- n_parameters.lavaan
 
 
 #' @importFrom insight format_table
+#' @inheritParams parameters_table
 #' @export
-print.parameters_sem <- function(x, ...) {
-  .print_model_parms_components(x, pretty_names = TRUE, split_column = "Type")
+print.parameters_sem <- function(x, digits = 2, ci_digits = 2, p_digits = 3, ...) {
+  # check if user supplied digits attributes
+  if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
+  if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
+  if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
+
+  .print_model_parms_components(x, pretty_names = TRUE, split_column = "Type", digits = digits, ci_digits = ci_digits, p_digits = p_digits)
+  invisible(x)
 }
 
 

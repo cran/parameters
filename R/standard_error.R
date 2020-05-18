@@ -351,7 +351,7 @@ standard_error.merMod <- function(model, effects = c("fixed", "random"), method 
 
 #' @rdname standard_error
 #' @export
-standard_error.glmmTMB <- function(model, effects = c("fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+standard_error.glmmTMB <- function(model, effects = c("fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), ...) {
   component <- match.arg(component)
   effects <- match.arg(effects)
 
@@ -389,6 +389,7 @@ standard_error.glmmTMB <- function(model, effects = c("fixed", "random"), compon
     se <- do.call(rbind, x)
     se$Component <- .rename_values(se$Component, "cond", "conditional")
     se$Component <- .rename_values(se$Component, "zi", "zero_inflated")
+    se$Component <- .rename_values(se$Component, "disp", "dispersion")
 
     .filter_component(se, component)
   }
@@ -805,6 +806,14 @@ standard_error.brmsfit <- standard_error.stanreg
 
 #' @export
 standard_error.mvstanreg <- standard_error.stanreg
+
+#' @export
+standard_error.bayesx <- function(model, ...) {
+  .data_frame(
+    Parameter = find_parameters(model, component = "conditional", flatten = TRUE),
+    SE = model$fixed.effects[, 2]
+  )
+}
 
 
 
@@ -1340,12 +1349,37 @@ standard_error.gmnl <- function(model, ...) {
 
 
 
+
+
+
+# Special classes and models -----------------------------
+
+
 #' @export
 standard_error.rma <- function(model, ...) {
   params <- insight::get_parameters(model)
   .data_frame(
     Parameter = .remove_backticks_from_string(params$Parameter),
     SE = model[["se"]]
+  )
+}
+
+
+
+#' @rdname standard_error
+#' @export
+standard_error.averaging <- function(model, component = c("conditional", "full"), ...) {
+  component <- match.arg(component)
+  params <- get_parameters(model, component = component)
+  if (component == "full") {
+    s <- summary(model)$coefmat.full
+  } else {
+    s <- summary(model)$coefmat.subset
+  }
+
+  .data_frame(
+    Parameter = .remove_backticks_from_string(params$Parameter),
+    SE = as.vector(s[, 3])
   )
 }
 

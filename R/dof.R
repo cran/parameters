@@ -85,6 +85,7 @@ dof <- degrees_of_freedom
 
 
 
+# Analytical approach ------------------------------
 
 
 #' @keywords internal
@@ -105,6 +106,10 @@ dof <- degrees_of_freedom
 
 
 
+
+
+# Model approach (Residual df) ------------------------------
+
 #' @importFrom bayestestR bayesian_as_frequentist
 #' @importFrom stats df.residual
 #' @keywords internal
@@ -112,7 +117,7 @@ dof <- degrees_of_freedom
   info <- insight::model_info(model, verbose = FALSE)
 
   ## TODO remove is.list() when insight 0.8.3 on CRAN
-  if (!is.null(info) && is.list(info) && info$is_bayesian) {
+  if (!is.null(info) && is.list(info) && info$is_bayesian && !inherits(model, "bayesx")) {
     model <- bayestestR::bayesian_as_frequentist(model)
   }
 
@@ -137,11 +142,36 @@ dof <- degrees_of_freedom
     }
   }
 
+
+  # special cases
+  if (inherits(model, "gam")) {
+    dof <- .dof_fit_gam(model, dof)
+  }
+
+  dof
+}
+
+# helper --------------
+
+.dof_fit_gam <- function(model, dof) {
+  params <- insight::find_parameters(model)
+  if (!is.null(params$conditional)) {
+    dof <- rep(dof, length(params$conditional))
+  }
+  if (!is.null(params$smooth_terms)) {
+    s <- summary(model)
+    dof <- c(dof, s$s.table[, "Ref.df"])
+  }
   dof
 }
 
 
 
+
+
+
+
+# Helper, check args ------------------------------
 
 .dof_method_ok <- function(model, method) {
   if (is.null(method)) {
