@@ -259,6 +259,7 @@ print.parameters_random <- function(x, digits = 2, ...) {
       "zero_inflated.fixed" = "Fixed Effects (Zero-Inflated Model)",
       "zero_inflated.random" = "Random Effects (Zero-Inflated Model)",
       "dispersion" = "Dispersion",
+      "marginal" = "Marginal Effects",
       "simplex.fixed" = ,
       "simplex" = "Monotonic Effects",
       "smooth_sd" = "Smooth Terms (SD)",
@@ -366,3 +367,7 @@ print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...
   }
   invisible(orig_x)
 }
+
+
+#' @export
+print.parameters_simulate <- print.parameters_model

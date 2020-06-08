@@ -8,6 +8,7 @@
 #' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.
 #' @inheritParams simulate_model
 #' @inheritParams standard_error
+#' @inheritParams p_value
 #'
 #' @return A data frame containing the CI bounds.
 #'
@@ -469,6 +470,57 @@ ci.MixMod <- function(x, ci = .95, component = c("all", "conditional", "zi", "ze
 
 
 
+# mfx models -----------------------------------------
+
+
+#' @export
+ci.logitor <- function(x, ci = .95, method = NULL, ...) {
+  robust <- !is.null(method) && method == "robust"
+  ci_wald(model = x$fit, ci = ci, robust = robust, ...)
+}
+
+#' @export
+ci.poissonirr <- ci.logitor
+
+#' @export
+ci.negbinirr <- ci.logitor
+
+#' @rdname ci.merMod
+#' @export
+ci.poissonmfx <- function(x, ci = .95, component = c("all", "conditional", "marginal"), method = NULL, ...) {
+  component <- match.arg(component)
+  robust <- !is.null(method) && method == "robust"
+  ci_wald(model = x, ci = ci, component = component, robust = robust, ...)
+}
+
+#' @export
+ci.negbinmfx <- ci.poissonmfx
+
+#' @export
+ci.logitmfx <- ci.poissonmfx
+
+#' @export
+ci.probitmfx <- ci.poissonmfx
+
+#' @export
+ci.betaor <- function(x, ci = .95, component = c("all", "conditional", "precision"), ...) {
+  component <- match.arg(component)
+  ci_wald(model = x$fit, ci = ci, dof = Inf, component = component)
+}
+
+#' @rdname ci.merMod
+#' @export
+ci.betamfx <- function(x, ci = .95, component = c("all", "conditional", "precision", "marginal"), method = NULL, ...) {
+  component <- match.arg(component)
+  robust <- !is.null(method) && method == "robust"
+  ci_wald(model = x, ci = ci, component = component, robust = robust, ...)
+}
+
+
+
+
+
+
 # Special models -----------------------------------------
 
 
@@ -489,6 +541,7 @@ ci.clm2 <- function(x, ci = .95, component = c("all", "conditional", "scale"), .
 
 #' @export
 ci.clmm2 <- ci.clm2
+
 
 
 #' @export

@@ -8,9 +8,11 @@
 #'
 #' @param model A statistical model.
 #' @param method For mixed models, can be \code{\link[=p_value_wald]{"wald"}} (default), \code{\link[=p_value_ml1]{"ml1"}}, \code{\link[=p_value_betwithin]{"betwithin"}}, \code{\link[=p_value_satterthwaite]{"satterthwaite"}} or \code{\link[=p_value_kenward]{"kenward"}}. For models that are supported by the \pkg{sandwich} or \pkg{clubSandwich} packages, may also be \code{method = "robust"} to compute p-values based ob robust standard errors.
+#' @param adjust Character value naming the method used to adjust p-values or confidence intervals. See \code{\link[emmeans]{summary.emmGrid}} for details.
 #' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.
 #' @inheritParams simulate_model
 #' @inheritParams standard_error
+#' @inheritParams ci.merMod
 #'
 #' @note \code{p_value_robust()} resp. \code{p_value(method = "robust")}
 #'   rely on the \pkg{sandwich} or \pkg{clubSandwich} package (the latter if
@@ -229,20 +231,16 @@ p_value.zcpglm <- function(model, component = c("all", "conditional", "zi", "zer
   junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
   params <- get_parameters(model)
 
-  tweedie <- data.frame(
+  tweedie <- .data_frame(
     Parameter = params$Parameter[params$Component == "conditional"],
     p = as.vector(stats$tweedie[, "Pr(>|z|)"]),
-    Component = "conditional",
-    stringsAsFactors = FALSE,
-    row.names = NULL
+    Component = "conditional"
   )
 
-  zero <- data.frame(
+  zero <- .data_frame(
     Parameter = params$Parameter[params$Component == "zero_inflated"],
     p = as.vector(stats$zero[, "Pr(>|z|)"]),
-    Component = "zero_inflated",
-    stringsAsFactors = FALSE,
-    row.names = NULL
+    Component = "zero_inflated"
   )
 
   out <- .filter_component(rbind(tweedie, zero), component)
@@ -470,6 +468,26 @@ p_value.svyolr <- function(model, ...) {
 }
 
 
+#' @rdname p_value
+#' @export
+p_value.emmGrid <- function(model, ci = .95, adjust = "none", ...) {
+  s <- summary(model, level = ci, adjust = adjust)
+  estimate_pos <- which(colnames(s) == model@misc$estName)
+
+  if (length(estimate_pos)) {
+    stat <- insight::get_statistic(model, ci = ci, adjust = adjust)
+    p <- 2 * stats::pt(abs(stat$Statistic), df = s$df, lower.tail = FALSE)
+
+    .data_frame(
+      s[, 1:(estimate_pos - 1), drop = FALSE],
+      p = as.vector(p)
+    )
+  } else {
+    return(NULL)
+  }
+}
+
+
 
 #' @export
 p_value.svyglm.nb <- function(model, ...) {
@@ -622,7 +640,94 @@ p_value.flexsurvreg <- function(model, ...) {
 
 
 
+# p-Values from mfx Models -----------------------------------------------
+
+
+#' @export
+p_value.logitor <- function(model, method = NULL, ...) {
+  p_value.default(model$fit, method = method, ...)
+}
+
+#' @export
+p_value.poissonirr <- p_value.logitor
+
+#' @export
+p_value.negbinirr <- p_value.logitor
+
+#' @rdname p_value
+#' @export
+p_value.poissonmfx <- function(model, component = c("all", "conditional", "marginal"), ...) {
+  parms <- insight::get_parameters(model, component = "all")
+  cs <- stats::coef(summary(model$fit))
+  p <- c(as.vector(model$mfxest[, 4]), as.vector(cs[, 4]))
+
+  out <- .data_frame(
+    Parameter = parms$Parameter,
+    p = p,
+    Component = parms$Component
+  )
+
+  component <- match.arg(component)
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
+
+  out
+}
+
+#' @export
+p_value.logitmfx <- p_value.poissonmfx
+
+#' @export
+p_value.probitmfx <- p_value.poissonmfx
+
+#' @export
+p_value.negbinmfx <- p_value.poissonmfx
+
+#' @export
+p_value.betaor <- function(model, component = c("all", "conditional", "precision"), ...) {
+  component = match.arg(component)
+  p_value.betareg(model$fit, component = component, ...)
+}
+
+#' @rdname p_value
+#' @export
+p_value.betamfx <- function(model, component = c("all", "conditional", "precision", "marginal"), ...) {
+  parms <- insight::get_parameters(model, component = "all")
+  cs <- do.call(rbind, stats::coef(summary(model$fit)))
+  p <- c(as.vector(model$mfxest[, 4]), as.vector(cs[, 4]))
+
+  out <- .data_frame(
+    Parameter = parms$Parameter,
+    p = p,
+    Component = parms$Component
+  )
+
+  component <- match.arg(component)
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
+
+  out
+}
+
+
+
+
+
+
 # p-Values from Special Models -----------------------------------------------
+
+
+#' @importFrom stats na.omit
+#' @export
+p_value.robmixglm <- function(model, ...) {
+  p <- stats::na.omit(.get_pval_from_summary(model))
+  .data_frame(
+    Parameter = names(p),
+    p = as.vector(p)
+  )
+}
 
 
 #' @rdname p_value

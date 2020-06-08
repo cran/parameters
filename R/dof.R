@@ -4,6 +4,7 @@
 #'
 #' @param model A statistical model.
 #' @param method Can be \code{"analytical"} (default, DoFs are estimated based on the model type), \code{"fit"}, in which case they are directly taken from the model if available (for Bayesian models, the goal (looking for help to make it happen) would be to refit the model as a frequentist one before extracting the DoFs), \code{"ml1"} (see \code{\link{dof_ml1}}), \code{"betwithin"} (see \code{\link{dof_betwithin}}), \code{"satterthwaite"} (see \code{\link{dof_satterthwaite}}), \code{"kenward"} (see \code{\link{dof_kenward}}) or \code{"any"}, which tries to extract DoF by any of those methods, whichever succeeds.
+#' @param ... Currently not used.
 #'
 #' @details Methods for calculating degrees of freedom:
 #' \itemize{
@@ -41,7 +42,14 @@
 #' }
 #' }
 #' @export
-degrees_of_freedom <- function(model, method = "analytical") {
+degrees_of_freedom <- function(model, ...) {
+  UseMethod("degrees_of_freedom")
+}
+
+
+#' @rdname degrees_of_freedom
+#' @export
+degrees_of_freedom.default <- function(model, method = "analytical", ...) {
   method <- tolower(method)
   method <- match.arg(method, c("analytical", "any", "fit", "ml1", "betwithin", "satterthwaite", "kenward", "nokr", "wald"))
 
@@ -78,6 +86,41 @@ degrees_of_freedom <- function(model, method = "analytical") {
 #' @rdname degrees_of_freedom
 #' @export
 dof <- degrees_of_freedom
+
+
+#' @export
+degrees_of_freedom.emmGrid <- function(model,...) {
+  summary(model)$df
+}
+
+#' @export
+degrees_of_freedom.logitor <- function(model,...) {
+  degrees_of_freedom.default(model$fit, ...)
+}
+
+#' @export
+degrees_of_freedom.poissonirr <- degrees_of_freedom.logitor
+
+#' @export
+degrees_of_freedom.negbinirr <- degrees_of_freedom.logitor
+
+#' @export
+degrees_of_freedom.poissonmfx <- degrees_of_freedom.logitor
+
+#' @export
+degrees_of_freedom.logitmfx <- degrees_of_freedom.logitor
+
+#' @export
+degrees_of_freedom.negbinmfx <- degrees_of_freedom.logitor
+
+#' @export
+degrees_of_freedom.probitmfx <- degrees_of_freedom.logitor
+
+#' @export
+degrees_of_freedom.betaor <- degrees_of_freedom.logitor
+
+#' @export
+degrees_of_freedom.betamfx <- degrees_of_freedom.logitor
 
 
 

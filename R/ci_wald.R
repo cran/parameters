@@ -9,7 +9,7 @@
 #'
 #' @importFrom stats qt coef
 #' @export
-ci_wald <- function(model, ci = .95, dof = NULL, effects = c("fixed", "random", "all"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "precision", "scale", "smooth_terms", "full"), robust = FALSE, ...) {
+ci_wald <- function(model, ci = .95, dof = NULL, effects = c("fixed", "random", "all"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion", "precision", "scale", "smooth_terms", "full", "marginal"), robust = FALSE, ...) {
   effects <- match.arg(effects)
   component <- match.arg(component)
   out <- lapply(ci, function(i) {
@@ -22,7 +22,7 @@ ci_wald <- function(model, ci = .95, dof = NULL, effects = c("fixed", "random", 
 
 
 #' @importFrom insight get_parameters n_obs
-#' @importFrom stats qt
+#' @importFrom stats qt complete.cases
 #' @keywords internal
 .ci_wald <- function(model, ci, dof, effects, component, robust = FALSE, method = "wald", se = NULL, ...) {
   params <- insight::get_parameters(model, effects = effects, component = component)
@@ -74,5 +74,9 @@ ci_wald <- function(model, ci = .95, dof = NULL, effects = c("fixed", "random", 
   if ("Component" %in% names(params)) out$Component <- params$Component
   if ("Effects" %in% names(params) && effects != "fixed") out$Effects <- params$Effects
 
-  out
+  if (anyNA(params$Estimate)) {
+    out[stats::complete.cases(out), ]
+  } else {
+    out
+  }
 }

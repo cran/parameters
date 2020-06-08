@@ -1,3 +1,21 @@
+# parameters 0.8.0
+
+## New supported models
+
+* `robmixglm` (*robmixglm*), `betaor`, `betamfx`, `logitor`, `poissonirr`, `negbinirr`, `logitmfx`, `probitmfx`, `poissonmfx`, `negbinmfx` (*mfx*), partial support `emmGrid` (*emmeans*)
+
+## Changes to functions
+
+### `simulate_parameters()` and `simulate_model()`
+
+* has a nicer `print()` method.
+* now also simulate parameters from the dispersion model for *glmmTMB* objects.
+* gets a `verbose` argument, to show or hide warnings and messages.
+
+## Bug fixes
+
+* fix issue with rank deficient models.
+
 # parameters 0.7.0
 
 ## General

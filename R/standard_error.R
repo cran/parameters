@@ -274,9 +274,10 @@ standard_error.lm <- function(model, method = NULL, ...) {
   if (isTRUE(robust)) {
     standard_error_robust(model, ...)
   } else {
+    se <- .get_se_from_summary(model)
     .data_frame(
-      Parameter = insight::find_parameters(model, effects = "fixed", component = "conditional", flatten = TRUE),
-      SE = .get_se_from_summary(model)
+      Parameter = names(se),
+      SE = as.vector(se)
     )
   }
 }
@@ -512,10 +513,9 @@ standard_error.zerocount <- standard_error.zeroinfl
 standard_error.aov <- function(model, ...) {
   params <- model_parameters(model)
 
-  data.frame(
+  .data_frame(
     Parameter = params$Parameter,
-    SE = params$SE,
-    stringsAsFactors = FALSE
+    SE = params$SE
   )
 }
 
@@ -826,6 +826,17 @@ standard_error.bayesx <- function(model, ...) {
 # Other models ---------------------------------------------------------------
 
 
+#' @importFrom stats na.omit
+#' @export
+standard_error.robmixglm <- function(model, ...) {
+  se <- stats::na.omit(.get_se_from_summary(model))
+  .data_frame(
+    Parameter = names(se),
+    SE = as.vector(se)
+  )
+}
+
+
 #' @export
 standard_error.bife <- function(model, ...) {
   cs <- summary(model)
@@ -886,20 +897,16 @@ standard_error.zcpglm <- function(model, component = c("all", "conditional", "zi
   junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
   params <- get_parameters(model)
 
-  tweedie <- data.frame(
+  tweedie <- .data_frame(
     Parameter = params$Parameter[params$Component == "conditional"],
     SE = as.vector(stats$tweedie[, "Std. Error"]),
-    Component = "conditional",
-    stringsAsFactors = FALSE,
-    row.names = NULL
+    Component = "conditional"
   )
 
-  zero <- data.frame(
+  zero <- .data_frame(
     Parameter = params$Parameter[params$Component == "zero_inflated"],
     SE = as.vector(stats$zero[, "Std. Error"]),
-    Component = "zero_inflated",
-    stringsAsFactors = FALSE,
-    row.names = NULL
+    Component = "zero_inflated"
   )
 
   out <- .filter_component(rbind(tweedie, zero), component)
@@ -1352,7 +1359,99 @@ standard_error.gmnl <- function(model, ...) {
 
 
 
+# mfx models -----------------------------
+
+#' @export
+standard_error.logitor <- function(model, ...) {
+  standard_error.lm(model$fit, ...)
+}
+
+#' @export
+standard_error.poissonirr <- standard_error.logitor
+
+#' @export
+standard_error.negbinirr <- standard_error.logitor
+
+#' @rdname standard_error
+#' @export
+standard_error.poissonmfx <- function(model, component = c("all", "conditional", "marginal"), ...) {
+  parms <- insight::get_parameters(model, component = "all")
+  cs <- stats::coef(summary(model$fit))
+  se <- c(as.vector(model$mfxest[, 2]), as.vector(cs[, 2]))
+
+  out <- .data_frame(
+    Parameter = parms$Parameter,
+    SE = se,
+    Component = parms$Component
+  )
+
+  component <- match.arg(component)
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
+
+  out
+}
+
+#' @export
+standard_error.logitmfx <- standard_error.poissonmfx
+
+#' @export
+standard_error.probitmfx <- standard_error.poissonmfx
+
+#' @export
+standard_error.negbinmfx <- standard_error.poissonmfx
+
+#' @export
+standard_error.betaor <- function(model, component = c("all", "conditional", "precision"), ...) {
+  component = match.arg(component)
+  standard_error.betareg(model$fit, component = component, ...)
+}
+
+#' @rdname standard_error
+#' @export
+standard_error.betamfx <- function(model, component = c("all", "conditional", "precision", "marginal"), ...) {
+  parms <- insight::get_parameters(model, component = "all")
+  cs <- do.call(rbind, stats::coef(summary(model$fit)))
+  se <- c(as.vector(model$mfxest[, 2]), as.vector(cs[, 2]))
+
+  out <- .data_frame(
+    Parameter = parms$Parameter,
+    SE = se,
+    Component = parms$Component
+  )
+
+  component <- match.arg(component)
+  if (component != "all") {
+    out <- out[out$Component == component, ]
+  }
+
+  out
+}
+
+
+
+
+
+
+
 # Special classes and models -----------------------------
+
+
+#' @export
+standard_error.emmGrid <- function(model, ...) {
+  s <- summary(model)
+  estimate_pos <- which(colnames(s) == model@misc$estName)
+
+  if (length(estimate_pos)) {
+    .data_frame(
+      s[, 1:(estimate_pos - 1), drop = FALSE],
+      SE = s$SE
+    )
+  } else {
+    return(NULL)
+  }
+}
 
 
 #' @export
