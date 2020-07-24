@@ -610,7 +610,8 @@ body {
 </ul></li>
 <li><a href="#mixed-and-bayesian-models">Mixed and Bayesian models</a>
 <ul>
-<li><a href="#mixed-model">Mixed model</a></li>
+<li><a href="#mixed-models">Mixed models</a></li>
+<li><a href="#bayesian-models">Bayesian models</a></li>
 </ul></li>
 </ul>
 <p>Also known as <a href="https://en.wikipedia.org/wiki/Feature_selection"><strong>feature selection</strong></a> in machine learning, the goal of variable selection is to <strong>identify a subset of predictors</strong> to <strong>simplify models</strong>. This can benefit model interpretation, shorten fitting time, and improve generalization (by reducing overfitting).</p>
@@ -618,9 +619,9 @@ body {
 <p>The <code>parameters</code> package implements a helper that will <strong>automatically pick a method deemed appropriate for the provided model</strong>, run the variables selection and return the <strong>optimal formula</strong>, which you can then re-use to update the model.</p>
 <h2 id="simple-linear-regression">Simple linear regression</h2>
 <h3 id="fit-a-powerful-model">Fit a powerful model</h3>
-<p>If you are familiar with R and the formula interface, you know of the possibility of including a dot (<code>.</code>) in the formula, signifying <strong>“all the remaining variables”</strong>. Curiously, few are aware of the possibility of additionally easily adding <strong>all the interaction terms</strong>. This can be achieved using the <code>*.*</code> notation.</p>
+<p>If you are familiar with R and the formula interface, you know of the possibility of including a dot (<code>.</code>) in the formula, signifying <strong>“all the remaining variables”</strong>. Curiously, few are aware of the possibility of additionally easily adding <strong>all the interaction terms</strong>. This can be achieved using the <code>.*.</code> notation.</p>
 <p>Let’s try that with the linear regression predicting <strong>Sepal.Length</strong> with the <a href="https://en.wikipedia.org/wiki/Iris_flower_data_set"><code>iris</code></a> dataset, included by default in R.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">model &lt;-<span class="st"> </span><span class="kw">lm</span>(Sepal.Length <span class="op">~</span><span class="st"> </span>.<span class="op">*</span>., <span class="dt">data=</span>iris)</a>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">model &lt;-<span class="st"> </span><span class="kw">lm</span>(Sepal.Length <span class="op">~</span><span class="st"> </span>.<span class="op">*</span>., <span class="dt">data =</span> iris)</a>
 <a class="sourceLine" id="cb1-2" title="2"><span class="kw">summary</span>(model)</a></code></pre></div>
 <pre><code>#&gt; 
 #&gt; Call:
@@ -674,7 +675,7 @@ body {
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">library</span>(performance)</a>
 <a class="sourceLine" id="cb3-2" title="2"></a>
 <a class="sourceLine" id="cb3-3" title="3"><span class="kw">check_normality</span>(model)</a></code></pre></div>
-<pre><code>#&gt; OK: Residuals appear as normally distributed (p = 0.115).
+<pre><code>#&gt; OK: residuals appear as normally distributed (p = 0.115).
 </code></pre>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">check_heteroscedasticity</span>(model)</a></code></pre></div>
 <pre><code>#&gt; OK: Error variance appears to be homoscedastic (p = 0.348).
@@ -748,49 +749,74 @@ body {
 <p>Although appealing, please note that these automated selection methods are <a href="https://towardsdatascience.com/stopping-stepwise-why-stepwise-selection-is-bad-and-what-you-should-use-instead-90818b3f52df"><strong>quite criticized</strong></a>, and should not be used in place of <strong>theoretical</strong> or <strong>hypothetical</strong> reasons (<em>i.e.</em>, you should have justified hypotheses about the parameters of your model).</p>
 <h2 id="mixed-and-bayesian-models">Mixed and Bayesian models</h2>
 <p>For simple linear regressions as above, the selection is made using the <code>step()</code> function (available in base R). This performs a <a href="https://en.wikipedia.org/wiki/Stepwise_regression"><strong>stepwise</strong></a> selection. However, this procedures is not available for other types of models, such as <strong>mixed</strong> or <strong>Bayesian</strong> models.</p>
-<h3 id="mixed-model">Mixed model</h3>
+<h3 id="mixed-models">Mixed models</h3>
+<p>For mixed models (of class <code>merMod</code>), stepwise selection is based on <code>cAIC4::stepcAIC()</code>. This step function only searches the “best” model based on the <em>random effects structure</em>, i.e. <code>select_parameters()</code> adds or excludes random effects until the cAIC can’t be improved further.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1"><span class="kw">library</span>(lme4)</a>
-<a class="sourceLine" id="cb13-2" title="2"></a>
-<a class="sourceLine" id="cb13-3" title="3"><span class="kw">lmer</span>(Sepal.Length <span class="op">~</span><span class="st"> </span>Sepal.Width <span class="op">*</span><span class="st"> </span>Petal.Length <span class="op">*</span><span class="st"> </span>Petal.Width <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span><span class="op">|</span>Species), <span class="dt">data =</span> iris) <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb13-4" title="4"><span class="st">  </span><span class="kw">select_parameters</span>() <span class="op">%&gt;%</span></a>
-<a class="sourceLine" id="cb13-5" title="5"><span class="st">  </span><span class="kw">summary</span>()</a></code></pre></div>
+<a class="sourceLine" id="cb13-2" title="2"><span class="kw">data</span>(<span class="st">&quot;qol_cancer&quot;</span>)</a>
+<a class="sourceLine" id="cb13-3" title="3"></a>
+<a class="sourceLine" id="cb13-4" title="4"><span class="co"># multiple models are checked, however, initial models</span></a>
+<a class="sourceLine" id="cb13-5" title="5"><span class="co"># already seems to be the best one...</span></a>
+<a class="sourceLine" id="cb13-6" title="6"><span class="kw">lmer</span>(</a>
+<a class="sourceLine" id="cb13-7" title="7">  QoL <span class="op">~</span><span class="st"> </span>time <span class="op">+</span><span class="st"> </span>phq4 <span class="op">+</span><span class="st"> </span>age <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">+</span><span class="st"> </span>time <span class="op">|</span><span class="st"> </span>hospital <span class="op">/</span><span class="st"> </span>ID),</a>
+<a class="sourceLine" id="cb13-8" title="8">  <span class="dt">data =</span> qol_cancer</a>
+<a class="sourceLine" id="cb13-9" title="9">) <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb13-10" title="10"><span class="st">  </span><span class="kw">select_parameters</span>() <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb13-11" title="11"><span class="st">  </span><span class="kw">summary</span>()</a></code></pre></div>
 <pre><code>#&gt; Linear mixed model fit by REML [&#39;lmerMod&#39;]
-#&gt; Formula: Sepal.Length ~ Sepal.Width * Petal.Length * Petal.Width + (1 |  
-#&gt;     Species)
-#&gt;    Data: iris
+#&gt; Formula: QoL ~ time + phq4 + age + (1 + time | ID:hospital)
+#&gt;    Data: qol_cancer
 #&gt; 
-#&gt; REML criterion at convergence: 95
+#&gt; REML criterion at convergence: 4647
 #&gt; 
 #&gt; Scaled residuals: 
-#&gt;     Min      1Q  Median      3Q     Max 
-#&gt; -2.4935 -0.8045  0.0176  0.6593  2.3356 
+#&gt;    Min     1Q Median     3Q    Max 
+#&gt; -3.580 -0.393  0.078  0.510  2.504 
 #&gt; 
 #&gt; Random effects:
-#&gt;  Groups   Name        Variance Std.Dev.
-#&gt;  Species  (Intercept) 0.0352   0.188   
-#&gt;  Residual             0.0932   0.305   
-#&gt; Number of obs: 150, groups:  Species, 3
+#&gt;  Groups      Name        Variance Std.Dev. Corr 
+#&gt;  ID:hospital (Intercept) 203.3    14.26         
+#&gt;              time         12.7     3.56    -0.72
+#&gt;  Residual                143.1    11.96         
+#&gt; Number of obs: 564, groups:  ID:hospital, 188
 #&gt; 
 #&gt; Fixed effects:
-#&gt;                                      Estimate Std. Error t value
-#&gt; (Intercept)                            1.7768     0.9128    1.95
-#&gt; Sepal.Width                            0.7501     0.2681    2.80
-#&gt; Petal.Length                           0.8793     0.4971    1.77
-#&gt; Petal.Width                           -2.0380     1.5196   -1.34
-#&gt; Sepal.Width:Petal.Length              -0.1012     0.1611   -0.63
-#&gt; Sepal.Width:Petal.Width                0.3435     0.4894    0.70
-#&gt; Petal.Length:Petal.Width               0.2805     0.2428    1.16
-#&gt; Sepal.Width:Petal.Length:Petal.Width  -0.0467     0.0769   -0.61
+#&gt;             Estimate Std. Error t value
+#&gt; (Intercept)  71.5309     1.6919   42.28
+#&gt; time          1.1489     0.6695    1.72
+#&gt; phq4         -4.7711     0.3236  -14.75
+#&gt; age          -0.0185     0.1889   -0.10
 #&gt; 
 #&gt; Correlation of Fixed Effects:
-#&gt;             (Intr) Spl.Wd Ptl.Ln Ptl.Wd Sp.W:P.L S.W:P.W P.L:P.
-#&gt; Sepal.Width -0.948                                             
-#&gt; Petal.Lngth -0.746  0.757                                      
-#&gt; Petal.Width -0.289  0.222 -0.306                               
-#&gt; Spl.Wdt:P.L  0.705 -0.762 -0.983  0.338                        
-#&gt; Spl.Wdt:P.W  0.250 -0.214  0.336 -0.986 -0.356                 
-#&gt; Ptl.Lng:P.W  0.754 -0.705 -0.459 -0.679  0.416    0.642        
-#&gt; S.W:P.L:P.W -0.732  0.730  0.442  0.675 -0.428   -0.670  -0.976
+#&gt;      (Intr) time   phq4  
+#&gt; time -0.844              
+#&gt; phq4  0.033 -0.027       
+#&gt; age  -0.021 -0.003  0.107
+</code></pre>
+<h3 id="bayesian-models">Bayesian models</h3>
+<p>For Bayesian models, <code>select_parameters()</code> uses the <strong>projpred</strong> package to select the best parameters for the model.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">library</span>(rstanarm)</a>
+<a class="sourceLine" id="cb15-2" title="2">model &lt;-<span class="st"> </span><span class="kw">stan_glm</span>(</a>
+<a class="sourceLine" id="cb15-3" title="3">  mpg <span class="op">~</span><span class="st"> </span>., <span class="dt">data =</span> mtcars,</a>
+<a class="sourceLine" id="cb15-4" title="4">  <span class="dt">iter =</span> <span class="dv">500</span>, <span class="dt">refresh =</span> <span class="dv">0</span>, <span class="dt">verbose =</span> <span class="ot">FALSE</span></a>
+<a class="sourceLine" id="cb15-5" title="5">)</a>
+<a class="sourceLine" id="cb15-6" title="6"><span class="kw">select_parameters</span>(model, <span class="dt">cross_validation =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<pre><code>#&gt; stan_glm
+#&gt;  family:       gaussian [identity]
+#&gt;  formula:      mpg ~ wt
+#&gt;  observations: 32
+#&gt;  predictors:   2
+#&gt; ------
+#&gt;             Median MAD_SD
+#&gt; (Intercept) 37.3    1.8  
+#&gt; wt          -5.3    0.6  
+#&gt; 
+#&gt; Auxiliary parameter(s):
+#&gt;       Median MAD_SD
+#&gt; sigma 3.1    0.4   
+#&gt; 
+#&gt; ------
+#&gt; * For help interpreting the printed output see ?print.stanreg
+#&gt; * For info on the priors used see ?prior_summary.stanreg
 </code></pre>
 
 </body>

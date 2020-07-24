@@ -50,6 +50,14 @@ these vignettes:
   - [Structural models (EFA, CFA,
     SEM…)](https://easystats.github.io/parameters/articles/efa_cfa.html)
 
+## Contributing and Support
+
+In case you want to file an issue or contribute in another way to the
+package, please follow [this
+guide](https://github.com/easystats/parameters/blob/master/.github/CONTRIBUTING.md).
+For questions about the functionality, you may either contact us via
+email or also file an issue.
+
 # Features
 
 ## Model’s parameters description
@@ -167,7 +175,7 @@ model_parameters(model)
 
 </p>
 
-[`parameters_selection()`](https://easystats.github.io/parameters/articles/parameters_selection.html)
+[`select_parameters()`](https://easystats.github.io/parameters/articles/parameters_selection.html)
 can help you quickly select and retain the most relevant predictors
 using methods tailored for the model type.
 
@@ -209,7 +217,7 @@ describe_distribution(iris)
 
 In order to cite this package, please use the following citation:
 
-  - Makowski D, Ben-Shachar M, Lüdecke D (2019). “Describe and
+  - Lüdecke D, Ben-Shachar M, Makowski D (2019). “Describe and
     understand your model’s parameters.” CRAN. R package,
     <https://github.com/easystats/parameters>.
 

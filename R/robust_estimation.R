@@ -13,7 +13,7 @@
 #'   covariance matrix estimators).
 #' @param vcov_type Character vector, specifying the estimation type for the
 #'   robust covariance matrix estimation (see \code{\link[sandwich:vcovHC]{vcovHC()}}
-#'   or \code{\link[clubSandwich:vcovCR]{vcovCR()}} for details).
+#'   or \code{clubSandwich::vcovCR()} for details).
 #' @param vcov_args List of named vectors, used as additional arguments that
 #'   are passed down to the \pkg{sandwich}-function specified in \code{vcov_estimation}.
 #' @param ... Arguments passed to or from other methods. For \code{standard_error()},
@@ -26,17 +26,21 @@
 #'   and will thus only work for those models supported by those packages.
 #'
 #' @examples
-#' # robust standard errors, calling sandwich::vcovHC(type="HC3") by default
-#' model <- lm(Petal.Length ~ Sepal.Length * Species, data = iris)
-#' standard_error_robust(model)
+#' if (require("sandwich")) {
+#'   # robust standard errors, calling sandwich::vcovHC(type="HC3") by default
+#'   model <- lm(Petal.Length ~ Sepal.Length * Species, data = iris)
+#'   standard_error_robust(model)
+#' }
 #'
-#' # cluster-robust standard errors, using clubSandwich
-#' iris$cluster <- factor(rep(LETTERS[1:8], length.out = nrow(iris)))
-#' standard_error_robust(
-#'   model,
-#'   vcov_type = "CR2",
-#'   vcov_args = list(cluster = iris$cluster)
-#' )
+#' if (require("clubSandwich")) {
+#'   # cluster-robust standard errors, using clubSandwich
+#'   iris$cluster <- factor(rep(LETTERS[1:8], length.out = nrow(iris)))
+#'   standard_error_robust(
+#'     model,
+#'     vcov_type = "CR2",
+#'     vcov_args = list(cluster = iris$cluster)
+#'   )
+#' }
 #' @return A data frame.
 #' @export
 standard_error_robust <- function(model,
@@ -136,25 +140,17 @@ ci_robust <- function(model,
     if (!requireNamespace("clubSandwich", quietly = TRUE)) {
       stop("Package `clubSandwich` needed for this function. Please install and try again.")
     }
-    package <- "clubSandwich"
+    .vcov <- do.call(clubSandwich::vcovCR, c(list(obj = x, type = vcov_type), vcov_args))
   } else {
     if (!requireNamespace("sandwich", quietly = TRUE)) {
       stop("Package `sandwich` needed for this function. Please install and try again.")
     }
-    package <- "sandwich"
+    vcov_fun <- get(vcov_fun, asNamespace("sandwich"))
+    .vcov <- do.call(vcov_fun, c(list(x = x, type = vcov_type), vcov_args))
   }
 
   # get coefficients
   params <- insight::get_parameters(x)
-
-  # compute robust standard errors based on vcov
-  if (package == "sandwich") {
-    vcov_fun <- get(vcov_fun, asNamespace("sandwich"))
-    .vcov <- do.call(vcov_fun, c(list(x = x, type = vcov_type), vcov_args))
-  } else {
-    vcov_fun <- clubSandwich::vcovCR
-    .vcov <- do.call(vcov_fun, c(list(obj = x, type = vcov_type), vcov_args))
-  }
 
   se <- sqrt(diag(.vcov))
   dendf <- degrees_of_freedom(x, method = "any")

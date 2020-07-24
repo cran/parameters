@@ -1,6 +1,6 @@
 #' Degrees of Freedom (DoF)
 #'
-#' Estimate or extract degrees of freedom of models.
+#' Estimate or extract degrees of freedom of models parameters.
 #'
 #' @param model A statistical model.
 #' @param method Can be \code{"analytical"} (default, DoFs are estimated based on the model type), \code{"fit"}, in which case they are directly taken from the model if available (for Bayesian models, the goal (looking for help to make it happen) would be to refit the model as a frequentist one before extracting the DoFs), \code{"ml1"} (see \code{\link{dof_ml1}}), \code{"betwithin"} (see \code{\link{dof_betwithin}}), \code{"satterthwaite"} (see \code{\link{dof_satterthwaite}}), \code{"kenward"} (see \code{\link{dof_kenward}}) or \code{"any"}, which tries to extract DoF by any of those methods, whichever succeeds.
@@ -8,16 +8,17 @@
 #'
 #' @details Methods for calculating degrees of freedom:
 #' \itemize{
-#' \item \code{"analytical"} For models of class \code{lmerMod}, Kenward-Roger approximated degrees of freedoms are calculated, for other models, \code{n-k} (number of observations minus number of parameters).
-#' \item \code{"fit"} Tries to extract residual degrees of freedom, and returns \code{Inf} if residual degrees of freedom could not be extracted.
-#' \item \code{"any"} First tries to extract residual degrees of freedom, and if these are not available, extracts analytical degrees of freedom.
-#' \item \code{"nokr"} Same as \code{"analytical"}, but does not Kenward-Roger approximation for models of class \code{lmerMod}. Instead, always uses \code{n-k} to calculate df for any model.
-#' \item \code{"wald"} Returns \code{Inf}.
-#' \item \code{"kenward"} Calls \code{\link{dof_kenward}}.
-#' \item \code{"satterthwaite"} Calls \code{\link{dof_satterthwaite}}.
-#' \item \code{"ml1"} Calls \code{\link{dof_ml1}}.
-#' \item \code{"betwithin"} Calls \code{\link{dof_betwithin}}.
+#' \item \code{"analytical"} for models of class \code{lmerMod}, Kenward-Roger approximated degrees of freedoms are calculated, for other models, \code{n-k} (number of observations minus number of parameters).
+#' \item \code{"fit"} tries to extract residual degrees of freedom, and returns \code{Inf} if residual degrees of freedom could not be extracted.
+#' \item \code{"any"} first tries to extract residual degrees of freedom, and if these are not available, extracts analytical degrees of freedom.
+#' \item \code{"nokr"} same as \code{"analytical"}, but does not Kenward-Roger approximation for models of class \code{lmerMod}. Instead, always uses \code{n-k} to calculate df for any model.
+#' \item \code{"wald"} returns \code{Inf}.
+#' \item \code{"kenward"} calls \code{\link{dof_kenward}}.
+#' \item \code{"satterthwaite"} calls \code{\link{dof_satterthwaite}}.
+#' \item \code{"ml1"} calls \code{\link{dof_ml1}}.
+#' \item \code{"betwithin"} calls \code{\link{dof_betwithin}}.
 #' }
+#' For models with z-statistic, the returned degrees of freedom for model parameters is \code{Inf} (unless \code{method = "ml1"} or \code{method = "betwithin"}), because there is only one distribution for the related test statistic.
 #'
 #' @examples
 #' model <- lm(Sepal.Length ~ Petal.Length * Species, data = iris)
@@ -47,14 +48,21 @@ degrees_of_freedom <- function(model, ...) {
 }
 
 
+#' @importFrom insight find_statistic
 #' @rdname degrees_of_freedom
 #' @export
 degrees_of_freedom.default <- function(model, method = "analytical", ...) {
   method <- tolower(method)
-  method <- match.arg(method, c("analytical", "any", "fit", "ml1", "betwithin", "satterthwaite", "kenward", "nokr", "wald"))
+  method <- match.arg(method, c("analytical", "any", "fit", "ml1", "betwithin", "satterthwaite", "kenward", "nokr", "wald", "profile"))
 
-  if (!.dof_method_ok(model, method)) {
+  if (!.dof_method_ok(model, method) || method == "profile") {
     method <- "any"
+  }
+
+  # for z-statistic, always return Inf
+  stat <- insight::find_statistic(model)
+  if (!is.null(stat) && stat == "z-statistic" && !(method %in% c("ml1", "betwithin"))) {
+    return(Inf)
   }
 
   if (method == "any") {
@@ -80,6 +88,10 @@ degrees_of_freedom.default <- function(model, method = "analytical", ...) {
     dof <- .degrees_of_freedom_fit(model)
   }
 
+  if (!is.null(dof) && length(dof) > 0 && all(dof == 0)) {
+    warning("Model has zero degrees of freedom!", call. = FALSE)
+  }
+
   dof
 }
 
@@ -91,6 +103,11 @@ dof <- degrees_of_freedom
 #' @export
 degrees_of_freedom.emmGrid <- function(model,...) {
   summary(model)$df
+}
+
+#' @export
+degrees_of_freedom.glht <- function(model,...) {
+  model$df
 }
 
 #' @export
@@ -220,19 +237,31 @@ degrees_of_freedom.betamfx <- degrees_of_freedom.logitor
   if (is.null(method)) {
     return(TRUE)
   }
-  info <- insight::model_info(model, verbose = FALSE)
-  ## TODO remove is.list() when insight 0.8.3 on CRAN
-  if (is.null(info) || !is.list(info) || !info$is_mixed) {
-    return(FALSE)
-  }
+
   method <- tolower(method)
-  if (!(method %in% c("analytical", "any", "fit", "satterthwaite", "betwithin", "kenward", "kr", "nokr", "wald", "ml1"))) {
-    warning("'df_method' must be one of 'wald', 'kenward', 'satterthwaite', 'betwithin' or ' ml1'. Using 'wald' now.", call. = FALSE)
+  if (inherits(model, c("polr", "glm"))) {
+    if (method %in% c("analytical", "any", "fit", "profile", "wald", "nokr")) {
+      return(TRUE)
+    } else {
+      warning("'df_method' must be one of 'wald' or 'profile'. Using 'wald' now.", call. = FALSE)
+      return(FALSE)
+    }
+  }
+
+  info <- insight::model_info(model, verbose = FALSE)
+  if (is.null(info) || !info$is_mixed) {
     return(FALSE)
   }
+
+  if (!(method %in% c("analytical", "any", "fit", "satterthwaite", "betwithin", "kenward", "kr", "nokr", "wald", "ml1"))) {
+    warning("'df_method' must be one of 'wald', 'kenward', 'satterthwaite', 'betwithin' or 'ml1'. Using 'wald' now.", call. = FALSE)
+    return(FALSE)
+  }
+
   if (!info$is_linear && method %in% c("satterthwaite", "kenward", "kr")) {
     warning(sprintf("'%s'-degrees of freedoms are only available for linear mixed models.", method), call. = FALSE)
     return(FALSE)
   }
+
   return(TRUE)
 }

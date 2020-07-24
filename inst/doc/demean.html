@@ -618,6 +618,7 @@ body {
 <li><a href="#model-4-mixed-model-with-within--and-between-subjects">Model 4: Mixed model with within- and between-subjects</a></li>
 <li><a href="#model-5-complex-random-effects-within-between-model">Model 5: Complex Random-Effects Within-Between Model</a></li>
 </ul></li>
+<li><a href="#balanced-versus-imbalanced-groups">Balanced versus imbalanced groups</a></li>
 <li><a href="#references">References</a></li>
 </ul>
 <p>This vignette explains the rational behind the <a href="https://easystats.github.io/parameters/reference/demean.html"><code>demean()</code></a> function. We give recommendations how to analyze multilevel or hierarchical data structures, when macro-indicators (or level-2 predictors, or higher-level units, or more general: <em>group-level predictors</em>) are used as covariates and the model suffers from <strong>heterogeneity bias</strong> (Bell and Jones 2015).</p>
@@ -844,6 +845,8 @@ body {
 <a class="sourceLine" id="cb9-13" title="13"><span class="co">#&gt; N (groups per factor)</span></a>
 <a class="sourceLine" id="cb9-14" title="14"><span class="co">#&gt;   ID                                  188</span></a>
 <a class="sourceLine" id="cb9-15" title="15"><span class="co">#&gt; Observations                          564</span></a></code></pre></div>
+<p><strong>What about imbalanced groups, i.e. large differences in N per group?</strong></p>
+<p>See little example after this visual example…</p>
 <h1 id="a-visual-example">A visual example</h1>
 <p>First, we generate some fake data that implies a linear relationship between outcome and independent variable. The objective is that the amount of typing errors depends on how fast (typing speed) you can type, however, the more typing experience you have, the faster you can type. Thus, the outcome measure is “amount of typing errors”, while our predictor is “typing speed”. Furthermore, we have repeated measurements of people with different “typing experience levels”.</p>
 <p>The results show that we will have two sources of variation: Overall, more experienced typists make less mistakes (group-level pattern). When typing faster, typists make more mistakes (individual-level pattern).</p>
@@ -944,6 +947,51 @@ body {
 <a class="sourceLine" id="cb15-15" title="15"><span class="co">#&gt; Parameter | Coefficient |   SE |       95% CI |     t | df |      p</span></a>
 <a class="sourceLine" id="cb15-16" title="16"><span class="co">#&gt; -------------------------------------------------------------------</span></a>
 <a class="sourceLine" id="cb15-17" title="17"><span class="co">#&gt; x_within  |        1.20 | 0.10 | [1.01, 1.40] | 12.16 | 98 | &lt; .001</span></a></code></pre></div>
+<h1 id="balanced-versus-imbalanced-groups">Balanced versus imbalanced groups</h1>
+<p>The “simple” linear slope of the between-effect (and also from the within-effect) is (almost) identical in “classical” linear regression compared to linear mixed models when the groups are balanced, i.e. when the number of observation per group is similar or the same.</p>
+<p>Whenever group size is imbalanced, the “simple” linear slope will be adjusted. This leads to different estimates for between-effects between classical and mixed models regressions due to shrinkage - i.e. for larger variation of group sizes we find stronger regularization of estimates.</p>
+<p>Hence, for mixed models with larger differences in number of observation per random effects group, the between-effect will differ from the between-effect calculated by “classical” regression models. However, this shrinkage is a desired property of mixed models and usually improves the estimates.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1"><span class="kw">set.seed</span>(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb16-2" title="2">n &lt;-<span class="st"> </span><span class="dv">5</span></a>
+<a class="sourceLine" id="cb16-3" title="3">b &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">1</span>, <span class="fl">1.5</span>, <span class="dt">length.out =</span> <span class="dv">5</span>)</a>
+<a class="sourceLine" id="cb16-4" title="4">x &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">2</span>, <span class="dv">2</span> <span class="op">*</span><span class="st"> </span>n, <span class="dv">2</span>)</a>
+<a class="sourceLine" id="cb16-5" title="5"></a>
+<a class="sourceLine" id="cb16-6" title="6">d &lt;-<span class="st"> </span><span class="kw">do.call</span>(rbind, <span class="kw">lapply</span>(<span class="dv">1</span><span class="op">:</span>n, <span class="cf">function</span>(i) {</a>
+<a class="sourceLine" id="cb16-7" title="7">  <span class="kw">data.frame</span>(<span class="dt">x =</span> <span class="kw">seq</span>(<span class="dv">1</span>, n, <span class="dt">by =</span> <span class="fl">.2</span>),</a>
+<a class="sourceLine" id="cb16-8" title="8">             <span class="dt">y =</span> <span class="dv">2</span> <span class="op">*</span><span class="st"> </span>x[i] <span class="op">+</span><span class="st"> </span>b[i] <span class="op">*</span><span class="st"> </span><span class="kw">seq</span>(<span class="dv">1</span>, n, <span class="dt">by =</span> <span class="fl">.2</span>) <span class="op">+</span><span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">21</span>),</a>
+<a class="sourceLine" id="cb16-9" title="9">             <span class="dt">grp =</span> <span class="kw">as.factor</span>(<span class="dv">2</span> <span class="op">*</span><span class="st"> </span>i))</a>
+<a class="sourceLine" id="cb16-10" title="10">}))</a>
+<a class="sourceLine" id="cb16-11" title="11"></a>
+<a class="sourceLine" id="cb16-12" title="12"><span class="co"># create imbalanced groups</span></a>
+<a class="sourceLine" id="cb16-13" title="13">d<span class="op">$</span>grp[<span class="kw">sample</span>(<span class="kw">which</span>(d<span class="op">$</span>grp <span class="op">==</span><span class="st"> </span><span class="dv">8</span>), <span class="dv">10</span>)] &lt;-<span class="st"> </span><span class="dv">6</span></a>
+<a class="sourceLine" id="cb16-14" title="14">d<span class="op">$</span>grp[<span class="kw">sample</span>(<span class="kw">which</span>(d<span class="op">$</span>grp <span class="op">==</span><span class="st"> </span><span class="dv">4</span>), <span class="dv">8</span>)] &lt;-<span class="st"> </span><span class="dv">2</span></a>
+<a class="sourceLine" id="cb16-15" title="15">d<span class="op">$</span>grp[<span class="kw">sample</span>(<span class="kw">which</span>(d<span class="op">$</span>grp <span class="op">==</span><span class="st"> </span><span class="dv">10</span>), <span class="dv">9</span>)] &lt;-<span class="st"> </span><span class="dv">6</span></a>
+<a class="sourceLine" id="cb16-16" title="16"></a>
+<a class="sourceLine" id="cb16-17" title="17">d &lt;-<span class="st"> </span>d <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb16-18" title="18"><span class="st">  </span><span class="kw">group_by</span>(grp) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb16-19" title="19"><span class="st">  </span><span class="kw">mutate</span>(<span class="dt">x =</span> <span class="kw">rev</span>(<span class="dv">15</span> <span class="op">-</span><span class="st"> </span>(x <span class="op">+</span><span class="st"> </span><span class="fl">1.5</span> <span class="op">*</span><span class="st"> </span><span class="kw">as.numeric</span>(grp)))) <span class="op">%&gt;%</span></a>
+<a class="sourceLine" id="cb16-20" title="20"><span class="st">  </span><span class="kw">ungroup</span>()</a>
+<a class="sourceLine" id="cb16-21" title="21"></a>
+<a class="sourceLine" id="cb16-22" title="22">labs &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;very slow&quot;</span>, <span class="st">&quot;slow&quot;</span>, <span class="st">&quot;average&quot;</span>, <span class="st">&quot;fast&quot;</span>, <span class="st">&quot;very fast&quot;</span>)</a>
+<a class="sourceLine" id="cb16-23" title="23"><span class="kw">levels</span>(d<span class="op">$</span>grp) &lt;-<span class="st"> </span><span class="kw">rev</span>(labs)</a>
+<a class="sourceLine" id="cb16-24" title="24"></a>
+<a class="sourceLine" id="cb16-25" title="25">d &lt;-<span class="st"> </span><span class="kw">cbind</span>(d, <span class="kw">demean</span>(d, <span class="kw">c</span>(<span class="st">&quot;x&quot;</span>, <span class="st">&quot;y&quot;</span>), <span class="dt">group =</span> <span class="st">&quot;grp&quot;</span>))</a>
+<a class="sourceLine" id="cb16-26" title="26"></a>
+<a class="sourceLine" id="cb16-27" title="27"><span class="co"># Between-subject effect of typing speed</span></a>
+<a class="sourceLine" id="cb16-28" title="28">m1 &lt;-<span class="st"> </span><span class="kw">lm</span>(y <span class="op">~</span><span class="st"> </span>x_between, <span class="dt">data =</span> d)</a>
+<a class="sourceLine" id="cb16-29" title="29"><span class="kw">model_parameters</span>(m1)</a>
+<a class="sourceLine" id="cb16-30" title="30"><span class="co">#&gt; Parameter   | Coefficient |   SE |         95% CI |      t |  df |      p</span></a>
+<a class="sourceLine" id="cb16-31" title="31"><span class="co">#&gt; -------------------------------------------------------------------------</span></a>
+<a class="sourceLine" id="cb16-32" title="32"><span class="co">#&gt; (Intercept) |       38.32 | 1.33 | [35.69, 40.95] |  28.87 | 103 | &lt; .001</span></a>
+<a class="sourceLine" id="cb16-33" title="33"><span class="co">#&gt; x_between   |       -2.81 | 0.16 | [-3.13, -2.49] | -17.47 | 103 | &lt; .001</span></a>
+<a class="sourceLine" id="cb16-34" title="34"></a>
+<a class="sourceLine" id="cb16-35" title="35"><span class="co"># Between-subject effect of typing speed, accounting for goup structure</span></a>
+<a class="sourceLine" id="cb16-36" title="36">m2 &lt;-<span class="st"> </span><span class="kw">lmer</span>(y <span class="op">~</span><span class="st"> </span>x_between <span class="op">+</span><span class="st"> </span>(<span class="dv">1</span> <span class="op">|</span><span class="st"> </span>grp), <span class="dt">data =</span> d)</a>
+<a class="sourceLine" id="cb16-37" title="37"><span class="kw">model_parameters</span>(m2)</a>
+<a class="sourceLine" id="cb16-38" title="38"><span class="co">#&gt; Parameter   | Coefficient |   SE |         95% CI |     t |  df |      p</span></a>
+<a class="sourceLine" id="cb16-39" title="39"><span class="co">#&gt; ------------------------------------------------------------------------</span></a>
+<a class="sourceLine" id="cb16-40" title="40"><span class="co">#&gt; (Intercept) |       37.02 | 2.73 | [31.66, 42.38] | 13.54 | 101 | &lt; .001</span></a>
+<a class="sourceLine" id="cb16-41" title="41"><span class="co">#&gt; x_between   |       -2.71 | 0.35 | [-3.39, -2.03] | -7.81 | 101 | &lt; .001</span></a></code></pre></div>
 <h1 id="references">References</h1>
 <div id="refs" class="references">
 

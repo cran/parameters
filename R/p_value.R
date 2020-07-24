@@ -3,12 +3,12 @@
 #' This function attempts to return, or compute, p-values of a model's parameters. The nature of the p-values is different depending on the model:
 #' \itemize{
 #' \item Mixed models (\pkg{lme4}): By default, p-values are based on Wald-test approximations (see \code{\link{p_value_wald}}). For certain situations, the "m-l-1" rule might be a better approximation. That is, for \code{method = "ml1"}, \code{\link{p_value_ml1}} is called. For \code{lmerMod} objects, if \code{method = "kenward"}, p-values are based on Kenward-Roger approximations, i.e. \code{\link{p_value_kenward}} is called, and \code{method = "satterthwaite"} calls \code{\link{p_value_satterthwaite}}.
-#' \item Bayesian models (\pkg{rstanarm}, \pkg{brms}): For Bayesian models, the p-values corresponds to the \emph{probability of direction} (\code{\link[bayestestR]{p_direction}}), which is converted to a p-value using \code{\link[bayestestR]{convert_pd_to_p}}.
+#' \item Bayesian models (\pkg{rstanarm}, \pkg{brms}): For Bayesian models, the p-values corresponds to the \emph{probability of direction} (\code{\link[bayestestR]{p_direction}}), which is converted to a p-value using \code{bayestestR::convert_pd_to_p()}.
 #' }
 #'
 #' @param model A statistical model.
 #' @param method For mixed models, can be \code{\link[=p_value_wald]{"wald"}} (default), \code{\link[=p_value_ml1]{"ml1"}}, \code{\link[=p_value_betwithin]{"betwithin"}}, \code{\link[=p_value_satterthwaite]{"satterthwaite"}} or \code{\link[=p_value_kenward]{"kenward"}}. For models that are supported by the \pkg{sandwich} or \pkg{clubSandwich} packages, may also be \code{method = "robust"} to compute p-values based ob robust standard errors.
-#' @param adjust Character value naming the method used to adjust p-values or confidence intervals. See \code{\link[emmeans]{summary.emmGrid}} for details.
+#' @param adjust Character value naming the method used to adjust p-values or confidence intervals. See \code{?emmeans::summary.emmGrid} for details.
 #' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.
 #' @inheritParams simulate_model
 #' @inheritParams standard_error
@@ -392,6 +392,25 @@ p_value.mixor <- function(model, effects = c("all", "fixed", "random"), ...) {
 }
 
 
+#' @importFrom insight get_parameters
+#' @export
+p_value.glmm <- function(model, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  s <- summary(model)
+
+  out <- insight::get_parameters(model, effects = "all")
+  out$p <- c(s$coefmat[, 4], s$nucoefmat[, 4])
+  out <- out[, c("Parameter", "p", "Effects")]
+
+  if (effects != "all") {
+    out <- out[out$Effects == effects, , drop = FALSE]
+    out$Effects <- NULL
+  }
+
+  out
+}
+
+
 
 
 
@@ -719,6 +738,17 @@ p_value.betamfx <- function(model, component = c("all", "conditional", "precisio
 # p-Values from Special Models -----------------------------------------------
 
 
+#' @importFrom insight find_parameters
+#' @export
+p_value.glht <- function(model, ...) {
+  s <- summary(model)
+  .data_frame(
+    Parameter = insight::find_parameters(model, flatten = TRUE),
+    p = unname(s$test$pvalues)
+  )
+}
+
+
 #' @importFrom stats na.omit
 #' @export
 p_value.robmixglm <- function(model, ...) {
@@ -867,25 +897,11 @@ p_value.glmx <- function(model, ...) {
 
 #' @export
 p_value.rq <- function(model, ...) {
-  p <- tryCatch(
-    {
-      cs <- suppressWarnings(stats::coef(summary(model)))
-      cs[, "Pr(>|t|)"]
-    },
-    error = function(e) {
-      .get_pval_from_summary(
-        model,
-        cs = suppressWarnings(stats::coef(summary(model, covariance = TRUE)))
-      )
-    }
-  )
+  p <- .get_quantreg_p(model)
 
   params <- insight::get_parameters(model)
-
-  .data_frame(
-    Parameter = params$Parameter,
-    p = p
-  )
+  params$p <- p
+  params[intersect(colnames(params), c("Parameter", "p", "Component"))]
 }
 
 #' @export
@@ -1325,7 +1341,7 @@ p_value.plm <- function(model, ...) {
   p <- stats::coef(summary(model))
 
   .data_frame(
-    Parameter = .remove_backticks_from_string(names(p[, 4])),
+    Parameter = .remove_backticks_from_string(rownames(p)),
     p = as.vector(p[, 4])
   )
 }
@@ -1391,6 +1407,18 @@ p_value.rma <- function(model, ...) {
     Parameter = .remove_backticks_from_string(params$Parameter),
     p = model$pval
   )
+}
+
+
+#' @export
+p_value.metaplus <- function(model, ...) {
+  out <- .data_frame(
+    Parameter = .remove_backticks_from_string(rownames(model$results)),
+    p = as.vector(model$results[, "pvalue"])
+  )
+
+  out$Parameter[grepl("muhat", out$Parameter)] <- "(Intercept)"
+  out
 }
 
 
@@ -1498,5 +1526,53 @@ p_value.list <- function(model, ...) {
   }
 
   names(p) <- .remove_backticks_from_string(names(p))
+  p
+}
+
+
+
+#' @importFrom stats coef setNames
+#' @importFrom insight get_varcov
+.get_quantreg_p <- function(model) {
+  p <- tryCatch(
+    {
+      cs <- suppressWarnings(stats::coef(summary(model)))
+      cs[, "Pr(>|t|)"]
+    },
+    error = function(e) { NULL }
+  )
+
+  if (is.null(p)) {
+    p <- tryCatch(
+      {
+        .get_pval_from_summary(
+          model,
+          cs = suppressWarnings(stats::coef(summary(model, covariance = TRUE)))
+        )
+      },
+      error = function(e) { NULL }
+    )
+  }
+
+  if (is.null(p)) {
+    p <- tryCatch(
+      {
+        sc <- summary(model)
+        if (all(unlist(lapply(sc, is.list)))) {
+          list_sc <- lapply(sc, function(i) {
+            .x <- as.data.frame(i)
+            .x$Parameter <- rownames(.x)
+            .x
+          })
+          out <- do.call(rbind, list_sc)
+          p <- stats::setNames(out[[grep("^coefficients\\.Pr", colnames(out))]], sprintf("tau (%g)", out$tau))
+        } else {
+          p <- stats::setNames(unname(sc$coefficients[, 6]), names(sc$coefficients[, 6]))
+        }
+      },
+      error = function(e) { NULL }
+    )
+  }
+
   p
 }

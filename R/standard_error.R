@@ -731,7 +731,7 @@ standard_error.polr <- function(model, method = NULL, ...) {
 standard_error.mixor <- function(model, effects = c("all", "fixed", "random"), ...) {
   effects <- match.arg(effects)
   stats <- model$Model[, "Std. Error"]
-  parms <- get_parameters(model, effects = effects)
+  parms <- insight::get_parameters(model, effects = effects)
 
   .data_frame(
     Parameter = parms$Parameter,
@@ -742,13 +742,33 @@ standard_error.mixor <- function(model, effects = c("all", "fixed", "random"), .
 
 
 
+#' @importFrom insight get_parameters get_varcov
+#' @export
+standard_error.glmm <- function(model, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  s <- summary(model)
+
+  out <- insight::get_parameters(model, effects = "all")
+  out$SE <- sqrt(diag(insight::get_varcov(model, effects = "all")))
+  out <- out[, c("Parameter", "SE", "Effects")]
+
+  if (effects != "all") {
+    out <- out[out$Effects == effects, , drop = FALSE]
+    out$Effects <- NULL
+  }
+
+  out
+}
+
+
+
 #' @rdname standard_error
 #' @importFrom insight get_parameters
 #' @export
 standard_error.clm2 <- function(model, component = c("all", "conditional", "scale"), ...) {
   component <- match.arg(component)
   stats <- .get_se_from_summary(model)
-  parms <- get_parameters(model, component = component)
+  parms <- insight::get_parameters(model, component = component)
 
   .data_frame(
     Parameter = parms$Parameter,
@@ -826,6 +846,16 @@ standard_error.bayesx <- function(model, ...) {
 # Other models ---------------------------------------------------------------
 
 
+#' @export
+standard_error.glht <- function(model, ...) {
+  s <- summary(model)
+  .data_frame(
+    Parameter = insight::find_parameters(model, flatten = TRUE),
+    SE = unname(s$test$sigma)
+  )
+}
+
+
 #' @importFrom stats na.omit
 #' @export
 standard_error.robmixglm <- function(model, ...) {
@@ -895,7 +925,7 @@ standard_error.zcpglm <- function(model, component = c("all", "conditional", "zi
 
   component <- match.arg(component)
   junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
-  params <- get_parameters(model)
+  params <- insight::get_parameters(model)
 
   tweedie <- .data_frame(
     Parameter = params$Parameter[params$Component == "conditional"],
@@ -934,29 +964,15 @@ standard_error.cpglmm <- function(model, ...) {
 
 #' @export
 standard_error.rq <- function(model, ...) {
-  se <- tryCatch(
-    {
-      cs <- suppressWarnings(stats::coef(summary(model)))
-      se_column <- intersect(c("Std Error", "Std. Error"), colnames(cs))
-      if (length(se_column)) {
-        cs[, se_column]
-      } else {
-        vc <- insight::get_varcov(model)
-        as.vector(sqrt(diag(vc)))
-      }
-    },
-    error = function(e) {
-      vc <- insight::get_varcov(model)
-      as.vector(sqrt(diag(vc)))
-    }
-  )
+  se <- .get_quantreg_se(model)
+  if (is.null(se)) {
+    vc <- insight::get_varcov(model)
+    se <- as.vector(sqrt(diag(vc)))
+  }
 
   params <- insight::get_parameters(model)
-
-  .data_frame(
-    Parameter = params$Parameter,
-    SE = se
-  )
+  params$SE <- se
+  params[intersect(colnames(params), c("Parameter", "SE", "Component"))]
 }
 
 #' @export
@@ -964,8 +980,6 @@ standard_error.crq <- standard_error.rq
 
 #' @export
 standard_error.nlrq <- standard_error.rq
-
-
 
 #' @export
 standard_error.rqss <- function(model, component = c("all", "conditional", "smooth_terms"), ...) {
@@ -1217,7 +1231,7 @@ standard_error.plm <- function(model, ...) {
   se <- stats::coef(summary(model))
 
   .data_frame(
-    Parameter = .remove_backticks_from_string(names(se[, 2])),
+    Parameter = .remove_backticks_from_string(rownames(se)),
     SE = as.vector(se[, 2])
   )
 }
@@ -1465,11 +1479,28 @@ standard_error.rma <- function(model, ...) {
 
 
 
+#' @export
+standard_error.metaplus <- function(model, ...) {
+  ci_low <- as.vector(model$results[, "95% ci.lb"])
+  ci_high <- as.vector(model$results[, "95% ci.ub"])
+  cis <- apply(cbind(ci_low, ci_high), MARGIN = 1, diff)
+
+  out <- .data_frame(
+    Parameter = .remove_backticks_from_string(rownames(model$results)),
+    SE = cis / (2 * stats::qnorm(.975))
+  )
+
+  out$Parameter[grepl("muhat", out$Parameter)] <- "(Intercept)"
+  out
+}
+
+
+
 #' @rdname standard_error
 #' @export
 standard_error.averaging <- function(model, component = c("conditional", "full"), ...) {
   component <- match.arg(component)
-  params <- get_parameters(model, component = component)
+  params <- insight::get_parameters(model, component = component)
   if (component == "full") {
     s <- summary(model)$coefmat.full
   } else {
@@ -1530,6 +1561,46 @@ standard_error.blavaan <- function(model, ci = .95, ...) {
   }
 
   names(se) <- .remove_backticks_from_string(names(se))
+  se
+}
+
+
+#' @importFrom stats coef setNames
+#' @importFrom insight get_varcov
+.get_quantreg_se <- function(model) {
+  se <- tryCatch(
+    {
+      cs <- suppressWarnings(stats::coef(summary(model)))
+      se_column <- intersect(c("Std Error", "Std. Error"), colnames(cs))
+      if (length(se_column)) {
+        cs[, se_column]
+      } else {
+        vc <- insight::get_varcov(model)
+        as.vector(sqrt(diag(vc)))
+      }
+    },
+    error = function(e) { NULL }
+  )
+
+  if (is.null(se)) {
+    se <- tryCatch(
+      {
+        sc <- summary(model)
+        if (all(unlist(lapply(sc, is.list)))) {
+          list_sc <- lapply(sc, function(i) {
+            .x <- as.data.frame(i)
+            .x$Parameter <- rownames(.x)
+            .x
+          })
+          out <- do.call(rbind, list_sc)
+          se <- stats::setNames(out$coefficients.Std.Error, sprintf("tau (%g)", out$tau))
+        } else {
+          se <- stats::setNames(unname(sc$coefficients[, 4]), names(sc$coefficients[, 4]))
+        }
+      },
+      error = function(e) { NULL }
+    )
+  }
   se
 }
 

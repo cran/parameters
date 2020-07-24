@@ -632,7 +632,7 @@ body {
 <ul>
 <li>The names of the returned data frame are <strong>specific</strong> to their content. For instance, the column containing the statistic is named following the statistic name, i.e., <em>t</em>, <em>z</em>, etc., instead of a generic name such as <em>statistic</em> (<strong>however</strong>, you can get standardized (generic) column names using <a href="https://easystats.github.io/parameters/reference/standardize_names.html"><code>standardize_names()</code></a>).</li>
 <li>It is able to compute or extract indices not available by default, such as <strong><em>p</em>-values</strong>, <strong>CIs</strong>, etc.</li>
-<li>It includes <strong>feature engineering</strong> capabilities, including parameters <a href="https://easystats.github.io/parameters/articles/bootstrapping.html"><strong>bootstrapping</strong></a>.</li>
+<li>It includes <strong>feature engineering</strong> capabilities, including parameters <a href="https://easystats.github.io/parameters/reference/bootstrap_model.html"><strong>bootstrapping</strong></a>.</li>
 </ul>
 <h2 id="correlations-and-t-tests">Correlations and <em>t</em>-tests</h2>
 <h3 id="frequentist">Frequentist</h3>
@@ -679,9 +679,9 @@ body {
 <a class="sourceLine" id="cb11-2" title="2"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
 <pre><code>#&gt; Group  | Parameter | Sum_Squares | df | Mean_Square |    F |     p
 #&gt; ------------------------------------------------------------------
+#&gt; gear   |        am |      259.75 |  1 |      259.75 |      |      
 #&gt; Within |        am |      145.45 |  1 |      145.45 | 5.85 | 0.022
-#&gt; Within | Residuals |      720.85 | 29 |       24.86 |      |      
-#&gt; gear   |        am |      259.75 |  1 |      259.75 |      |
+#&gt; Within | Residuals |      720.85 | 29 |       24.86 |      |
 </code></pre>
 <h2 id="regressions-glms-mixed-models-gams-">Regressions (GLMs, Mixed Models, GAMs, …)</h2>
 <p><code>parameters()</code> (resp. its alias <code>model_parameters()</code>) was mainly built with regression models in mind. It works for many types of models and packages, including mixed models and Bayesian models.</p>
@@ -764,17 +764,17 @@ body {
 <a class="sourceLine" id="cb19-18" title="18"><span class="kw">parameters</span>(model)</a></code></pre></div>
 <pre><code>#&gt; # Fixed Effects component
 #&gt; 
-#&gt; Parameter   | Coefficient |   SE |            95% CI |       z |   df |      p
-#&gt; ------------------------------------------------------------------------------
-#&gt; (Intercept) |      200.03 | 0.10 | [ 199.84, 200.22] | 2056.35 | 5195 | &lt; .001
-#&gt; sd [ten]    |      -99.71 | 0.22 | [-100.14, -99.29] | -458.39 | 5195 | &lt; .001
+#&gt; Parameter   | Coefficient |   SE |            95% CI |       z |      p
+#&gt; -----------------------------------------------------------------------
+#&gt; (Intercept) |      200.03 | 0.10 | [ 199.84, 200.22] | 2056.35 | &lt; .001
+#&gt; sd [ten]    |      -99.71 | 0.22 | [-100.14, -99.29] | -458.39 | &lt; .001
 #&gt; 
 #&gt; # Dispersion component
 #&gt; 
-#&gt; Parameter   | Coefficient |   SE |       95% CI |      z |   df |      p
-#&gt; ------------------------------------------------------------------------
-#&gt; (Intercept) |        3.20 | 0.03 | [3.15, 3.26] | 115.48 | 5195 | &lt; .001
-#&gt; sd [ten]    |        1.39 | 0.04 | [1.31, 1.46] |  35.35 | 5195 | &lt; .001
+#&gt; Parameter   | Coefficient |   SE |       95% CI |      z |      p
+#&gt; -----------------------------------------------------------------
+#&gt; (Intercept) |        3.20 | 0.03 | [3.15, 3.26] | 115.48 | &lt; .001
+#&gt; sd [ten]    |        1.39 | 0.04 | [1.31, 1.46] |  35.35 | &lt; .001
 </code></pre>
 <h3 id="bayesian-models">Bayesian Models</h3>
 <p><code>model_parameters()</code> works fine with Bayesian models from the <strong>rstanarm</strong> package…</p>
@@ -784,12 +784,12 @@ body {
 <a class="sourceLine" id="cb21-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
 <pre><code>#&gt; # Fixed effects 
 #&gt; 
-#&gt; Parameter   | Median |          89% CI |     pd | % in ROPE |  Rhat |    ESS |               Prior
-#&gt; --------------------------------------------------------------------------------------------------
-#&gt; (Intercept) |  52.34 | [ 45.00, 62.69] |   100% |        0% | 1.026 | 184.21 | Normal (0 +- 60.27)
-#&gt; wt          |  -7.95 | [-11.64, -4.86] |   100% |     0.20% | 1.028 | 188.70 | Normal (0 +- 15.40)
-#&gt; cyl         |  -3.54 | [ -5.10, -2.24] | 99.80% |     0.80% | 1.027 | 184.74 |  Normal (0 +- 8.44)
-#&gt; wt:cyl      |   0.71 | [  0.27,  1.22] | 97.80% |    32.80% | 1.034 | 168.05 |  Normal (0 +- 1.36)
+#&gt; Parameter   | Median |          89% CI |     pd | % in ROPE |  Rhat |    ESS |                   Prior
+#&gt; ------------------------------------------------------------------------------------------------------
+#&gt; (Intercept) |  51.90 | [ 42.20, 60.03] |   100% |        0% | 1.023 | 130.16 | Normal (20.09 +- 15.07)
+#&gt; wt          |  -7.69 | [-10.62, -3.73] | 99.80% |        0% | 1.027 | 128.49 |  Normal (0.00 +- 15.40)
+#&gt; cyl         |  -3.38 | [ -5.02, -1.83] | 99.80% |     0.20% | 1.014 | 150.89 |   Normal (0.00 +- 8.44)
+#&gt; wt:cyl      |   0.68 | [  0.17,  1.14] | 98.80% |    41.40% | 1.022 | 127.92 |   Normal (0.00 +- 1.36)
 </code></pre>
 <p>… as well as for (more complex) models from the <strong>brms</strong> package. For more complex models, other model components can be printed using the arguments <code>effects</code> and <code>component</code> arguments.</p>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1"><span class="kw">library</span>(brms)</a>
@@ -876,13 +876,13 @@ body {
 <a class="sourceLine" id="cb26-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
 <pre><code>#&gt; # Loadings from Factor Analysis (no rotation)
 #&gt; 
-#&gt; Variable     | Dim.1 |    Dim.2 |    Dim.3 | Complexity
-#&gt; -------------------------------------------------------
-#&gt; Sepal.Length |  0.75 |     0.07 |     0.10 |       1.05
-#&gt; Sepal.Width  |  0.23 |     0.51 |     0.23 |       1.86
-#&gt; Petal.Length |  0.98 | 1.32e-03 | 1.99e-03 |       1.00
-#&gt; Petal.Width  |  0.94 |     0.01 | 2.82e-05 |       1.00
-#&gt; Species      |  0.96 |     0.75 |     0.26 |       2.05
+#&gt; Variable     | Dim.1 | Dim.2 |    Dim.3 | Complexity
+#&gt; ----------------------------------------------------
+#&gt; Sepal.Length |  0.75 |  0.07 |     0.10 |       1.05
+#&gt; Sepal.Width  |  0.23 |  0.51 |     0.23 |       1.86
+#&gt; Petal.Length |  0.98 |  0.00 |     0.00 |       1.00
+#&gt; Petal.Width  |  0.94 |  0.01 | 2.82e-05 |       1.00
+#&gt; Species      |  0.96 |  0.75 |     0.26 |       2.05
 #&gt; 
 #&gt; The 3 latent factors accounted for 96.73% of the total variance of the original data (Dim.1 = 64.50%, Dim.2 = 22.37%, Dim.3 = 9.86%).
 </code></pre>

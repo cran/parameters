@@ -20,7 +20,6 @@
 #'   model <- lmer(mpg ~ wt + (1 | gear), data = mtcars)
 #'   model_parameters(model)
 #' }
-#'
 #' \donttest{
 #' if (require("glmmTMB")) {
 #'   data(Salamanders)
@@ -153,6 +152,27 @@ model_parameters.mixor <- function(model, ci = .95, effects = c("all", "fixed", 
     attr(out, "details") <- .randomeffects_summary(model)
   }
 
+  out
+}
+
+
+#' @export
+model_parameters.glmm <- function(model, ci = .95, effects = c("all", "fixed", "random"), bootstrap = FALSE, iterations = 1000, standardize = NULL, exponentiate = FALSE, ...) {
+  effects <- match.arg(effects)
+  out <- .model_parameters_generic(
+    model = model,
+    ci = ci,
+    bootstrap = bootstrap,
+    iterations = iterations,
+    merge_by = c("Parameter", "Effects"),
+    standardize = standardize,
+    exponentiate = exponentiate,
+    effects = effects,
+    robust = FALSE,
+    ...
+  )
+
+  attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   out
 }
 

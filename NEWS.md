@@ -1,3 +1,26 @@
+# parameters 0.8.1
+
+## New supported models
+
+* `metaplus` (*metaplus*), `glht` (*multcomp*), `glmm`  (*glmm*), `manova` (*stats*), `crq` and `crqs` (*quantreg*)
+* Improved support for models from the *rms*  package.
+
+## Changes to functions
+
+* Improved parameters formatting for ordered factors in `model_parameters()` (and `format_parameters()`).
+* Argument `df_method` can now also be applied to GLMs, to allow calculation of confidence intervals based on Wald-approximation, not profiled confidence intervals. This speeds up computation of CIs for models fit to large data sets.
+* Improved `select_parameters()` for mixed models, and revised docs and associated vignette.
+
+## Bug fixes
+
+* Allow `threshold` to be passed to `efa_to_cfa()` when the model is from `factor_analysis()`.
+* Allow correlation matrix to be passed to `factor_analysis()`.
+* Fix CRAN check issues.
+* Fix issue in `model_parameters()` for models with non-estimable parameters or statistics.
+* Fix issue in `model_parameters()` for *plm* models with only one parameter.
+* Fix issue in `check_heterogeneity()` in case no predictor would cause heterogeneity bias.
+* Make sure *clubSandwich* is used conditionally in all places, to properly pass CRAN checks.
+
 # parameters 0.8.0
 
 ## New supported models
@@ -271,7 +294,7 @@ Parts of the **parameter** package are restructured and functions focussing on a
 - `standard_error()` for mixed models gets an `effects` argument, to return standard errors for random effects.
 - The `method`-argument for `ci()` gets a new option, `"robust"`, to compute confidence intervals based on robust standard errors. Furthermore, `ci_wald()` gets a `robust`-argument to do the same.
 - `format_p()` gets a `digits`-argument to set the amount of digits for p-values.
-- `model_parameters()` now accepts (non-documented) arguments `digits`, `ci_digits` and `p_digits` to change the amount and style of formatting values. See [examples in `model_parameters.lm()`](https://easystats.github.io/parameters/reference/model_parameters.lm.html).
+- `model_parameters()` now accepts (non-documented) arguments `digits`, `ci_digits` and `p_digits` to change the amount and style of formatting values. See [examples in `model_parameters.default()`](https://easystats.github.io/parameters/reference/model_parameters.default.html).
 - Improved `print()` method for `model_parameters()` when used with Bayesian models.
 - Added further method (gap-statistic) to `n_clusters()`.
 

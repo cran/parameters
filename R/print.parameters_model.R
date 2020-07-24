@@ -60,6 +60,10 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
     x[to_remove] <- NULL
   }
 
+  # remove columns that have only NA or Inf
+  to_remove <- sapply(x, function(col) all(is.na(col) | all(is.infinite(col))))
+  if (any(to_remove)) x[to_remove] <- NULL
+
   if (!is.null(attributes(x)$title)) {
     insight::print_color(paste0("# ", attributes(x)$title, "\n\n"), "blue")
   } else if (!is.null(res)) {
@@ -264,6 +268,7 @@ print.parameters_random <- function(x, digits = 2, ...) {
       "simplex" = "Monotonic Effects",
       "smooth_sd" = "Smooth Terms (SD)",
       "smooth_terms" = "Smooth Terms",
+      "sigma.fixed" = ,
       "sigma" = "Sigma",
       "Correlation" = "Correlation",
       "SD/Cor" = "SD / Correlation",
@@ -303,6 +308,9 @@ print.parameters_random <- function(x, digits = 2, ...) {
       s1 <- component_name
       s2 <- ""
     } else if (component_name %in% c("Within-Effects", "Between-Effects")) {
+      s1 <- component_name
+      s2 <- ""
+    } else if (grepl(tolower(split_column), tolower(component_name), fixed = TRUE)) {
       s1 <- component_name
       s2 <- ""
     } else {
@@ -348,7 +356,7 @@ print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...
     for (i in out) {
       insight::print_color(paste0("# ", attr(i, "main_title")), "blue")
       cat(" ")
-      insight::print_color(attr(i, "sub_title"), "red")
+      insight::print_color(gsub("  ", " ", attr(i, "sub_title"), fixed = TRUE), "red")
       cat("\n\n")
 
       rem <- which(colnames(i) %in% c("Parameter", "Component", "Effects", "Group", "Response", "Subgroup", "Function"))

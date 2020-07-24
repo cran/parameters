@@ -13,6 +13,12 @@
     standardize <- NULL
   }
 
+  # ==== model exceptions
+
+  if (inherits(model, c("crq", "crqs"))) {
+    merge_by <- c("Parameter", "Component")
+  }
+
 
   # ==== for refit, we completely refit the model, than extract parameters, ci etc. as usual
 
@@ -444,7 +450,7 @@
   } else if (!is.null(standardize)) {
     parameters <- bayestestR::describe_posterior(model, centrality = centrality, dispersion = dispersion, ci = ci, ci_method = ci_method, test = test, rope_range = rope_range, rope_ci = rope_ci, bf_prior = bf_prior, diagnostic = diagnostic, priors = priors, ...)
 
-    # Don't test BF on standerdized params
+    # Don't test BF on standardized params
     test_no_BF <- test[!test %in% c("bf", "bayesfactor", "bayes_factor")]
     if (length(test_no_BF) == 0) test_no_BF <- NULL
     std_post <- effectsize::standardize_posteriors(model, method = standardize)
@@ -595,7 +601,12 @@
 .extract_parameters_anova <- function(model) {
 
   # Processing
-  if ("aov" %in% class(model)) {
+  if ("manova" %in% class(model)) {
+    parameters <- as.data.frame(summary(model)$stats)
+    parameters$Parameter <- trimws(row.names(parameters))
+    parameters[["den Df"]] <- NULL
+    parameters[["num Df"]] <- NULL
+  } else if ("aov" %in% class(model)) {
     parameters <- as.data.frame(summary(model)[[1]])
     parameters$Parameter <- trimws(row.names(parameters))
   } else if ("anova" %in% class(model)) {
@@ -629,54 +640,57 @@
     if (names(model)[1L] == "(Intercept)") {
       model <- model[-1L]
     }
-    parameters <- data.frame()
-    rowmax <- 0
-    for (i in names(model)) {
-      temp <- as.data.frame(summary(model[[i]])[[1]])
+    parameters <- Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE), lapply(names(model), function(i) {
+      aov_summary <- summary(model[[i]])
+      if (inherits(aov_summary, "summary.manova")) {
+        temp <- as.data.frame(aov_summary$stats)
+      } else {
+        temp <- as.data.frame(aov_summary[[1]])
+      }
       temp$Parameter <- trimws(row.names(temp))
       temp$Group <- i
-      row.names(temp) <- 1:nrow(temp) + rowmax
-      rowmax <- nrow(temp)
-      if (nrow(parameters) == 0) {
-        parameters <- temp
-      } else {
-        parameters <- merge(parameters, temp, all = TRUE)
-      }
-    }
-    parameters <- parameters[order(parameters$Group), ]
+      temp
+    }))
+    # parameters <- parameters[order(parameters$Group), ]
+  } else if ("anova.rms" %in% class(model)) {
+    parameters <- data.frame(model)
+    parameters$Parameter <- rownames(parameters)
+    parameters$Parameter[parameters$Parameter == "ERROR"] <- "Residuals"
+    parameters$Parameter[parameters$Parameter == "TOTAL"] <- "Total"
   }
 
   # Rename
-  names(parameters) <- gsub("Pr(>F)", "p", names(parameters), fixed = TRUE)
-  names(parameters) <- gsub("Df", "df", names(parameters), fixed = TRUE)
+  names(parameters) <- gsub("(Pr|P)\\(>.*\\)", "p", names(parameters))
   names(parameters) <- gsub("npar", "df", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("NumDF", "df", names(parameters), fixed = TRUE)
+  names(parameters) <- gsub("d.f.", "df", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Chi.Df", "Chisq_df", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Chi DoF", "Chisq_df", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Sum Sq", "Sum_Squares", names(parameters), fixed = TRUE)
+  names(parameters) <- gsub("Partial.SS", "Sum_Squares_Partial", names(parameters), fixed = TRUE)
+  names(parameters) <- gsub("Sum of Sq", "Sum_Squares", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Mean Sq", "Mean_Square", names(parameters), fixed = TRUE)
+  names(parameters) <- gsub("MS", "Mean_Square", names(parameters), fixed = TRUE)
+  names(parameters) <- gsub("approx F", "F", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("F value", "F", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Res.Df", "df_residual", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Res.DoF", "df_residual", names(parameters), fixed = TRUE)
-  names(parameters) <- gsub("Sum of Sq", "Sum_Squares", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Chisq", "Chisq", names(parameters), fixed = TRUE)
-  names(parameters) <- gsub("Pr(>Chi_Square)", "p", names(parameters), fixed = TRUE)
-  names(parameters) <- gsub("Pr(>ChiSquare)", "p", names(parameters), fixed = TRUE)
-  names(parameters) <- gsub("Pr(>Chisq)", "p", names(parameters), fixed = TRUE)
-  names(parameters) <- gsub("P(>|Chi|)", "p", names(parameters), fixed = TRUE)
-  names(parameters) <- gsub("Pr(>Chi)", "p", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Pr..Chisq.", "p", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Pr..Chi.", "p", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Chi.sq", "Chisq", names(parameters), fixed = TRUE)
+  names(parameters) <- gsub("Chi-Square", "Chisq", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("LR.Chisq", "Chisq", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("LR Chisq", "Chisq", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("p.value", "p", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("logLik", "Log_Likelihood", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("deviance", "Deviance", names(parameters), fixed = TRUE)
+  names(parameters) <- gsub("^P$", "p", names(parameters))
+  names(parameters) <- gsub("Df", "df", names(parameters), fixed = TRUE)
 
   # Reorder
   row.names(parameters) <- NULL
-  order <- c("Group", "Parameter", "AIC", "BIC", "Log_Likelihood", "Deviance", "Chisq", "Chisq_df", "RSS", "Sum_Squares", "df", "df_residual", "Mean_Square", "F", "p")
+  order <- c("Group", "Parameter", "Pillai", "AIC", "BIC", "Log_Likelihood", "Deviance", "Chisq", "Chisq_df", "RSS", "Sum_Squares", "Sum_Squares_Partial", "df", "df_residual", "Mean_Square", "F", "p")
   parameters <- parameters[order[order %in% names(parameters)]]
 
   .remove_backticks_from_parameter_names(parameters)

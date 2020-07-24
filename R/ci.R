@@ -466,6 +466,14 @@ ci.MixMod <- function(x, ci = .95, component = c("all", "conditional", "zi", "ze
 }
 
 
+#' @export
+ci.glmm <- function(x, ci = .95, effects = c("all", "fixed", "random"), ...) {
+  effects <- match.arg(effects)
+  ci_wald(model = x, ci = ci, dof = Inf, effects = effects, robust = FALSE)
+}
+
+
+
 
 
 
@@ -522,6 +530,28 @@ ci.betamfx <- function(x, ci = .95, component = c("all", "conditional", "precisi
 
 
 # Special models -----------------------------------------
+
+
+#' @importFrom stats pnorm
+#' @export
+ci.glht <- function(x, ci = .95, method = "robust", ...) {
+  s <- summary(x)
+  robust <- !is.null(method) && method == "robust"
+
+  if (robust) {
+    adjusted_ci <- 2 * stats::pnorm(s$test$qfunction(ci)) - 1
+    dof <- Inf
+  } else {
+    adjusted_ci <- ci
+    dof <- x$df
+  }
+  out <- ci_wald(model = x, ci = adjusted_ci, dof = dof, ...)
+
+  if (robust) {
+    out$CI <- 100 * ci
+  }
+  out
+}
 
 
 #' @rdname ci.merMod
@@ -672,6 +702,20 @@ ci.rma <- function(x, ci = .95, ...) {
     )
   })
   .remove_backticks_from_parameter_names(do.call(rbind, out))
+}
+
+
+
+#' @export
+ci.metaplus <- function(x, ...) {
+  out <- .data_frame(
+    Parameter = .remove_backticks_from_string(rownames(x$results)),
+    CI_low = as.vector(x$results[, "95% ci.lb"]),
+    CI_high = as.vector(x$results[, "95% ci.ub"])
+  )
+
+  out$Parameter[grepl("muhat", out$Parameter)] <- "(Intercept)"
+  out
 }
 
 

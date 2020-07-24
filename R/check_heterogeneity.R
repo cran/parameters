@@ -11,6 +11,12 @@ check_heterogeneity <- function(x, select = NULL, group = NULL) {
     data <- insight::get_data(x)
     select <- insight::find_predictors(x, effects = "fixed", component = "conditional", flatten = TRUE)
   } else {
+    if (inherits(select, "formula")) {
+      select <- all.vars(select)
+    }
+    if (inherits(group, "formula")) {
+      group <- all.vars(group)
+    }
     data <- x
   }
 
@@ -34,6 +40,12 @@ check_heterogeneity <- function(x, select = NULL, group = NULL) {
   }, as.character(combinations[[1]]), as.character(combinations[[2]]), SIMPLIFY = FALSE)
 
   out <- unname(unlist(.compact_list(result)))
+
+  if (is.null(out)) {
+    message("No predictor found that could cause heterogeneity bias.")
+    return(invisible(NULL))
+  }
+
   class(out) <- c("check_heterogeneity", class(out))
 
   out

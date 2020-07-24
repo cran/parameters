@@ -29,7 +29,42 @@ format_parameters <- function(model) {
 
 #' @export
 format_parameters.default <- function(model) {
-  original_names <- names <- insight::find_parameters(model, effects = "fixed", flatten = TRUE)
+  .format_parameter_default(model)
+}
+
+
+#' @export
+format_parameters.glmm <- function(model) {
+  .format_parameter_default(model, effects = "all")
+}
+
+
+#' @export
+format_parameters.rma <- function(model) {
+  params <- insight::find_parameters(model, flatten = TRUE)
+  names(params) <- params
+  params
+}
+
+
+#' @export
+format_parameters.parameters_model <- function(model) {
+  if (!is.null(attributes(model)$pretty_names)) {
+    model$Parameter <- attributes(model)$pretty_names[model$Parameter]
+  }
+  model
+}
+
+
+
+
+
+# Utilities ---------------------------------------------------------------
+
+
+
+.format_parameter_default <- function(model, effects = "fixed") {
+  original_names <- names <- insight::find_parameters(model, effects = effects, flatten = TRUE)
   info <- insight::model_info(model, verbose = FALSE)
 
   ## TODO remove is.list() when insight 0.8.3 on CRAN
@@ -142,31 +177,6 @@ format_parameters.default <- function(model) {
 }
 
 
-#' @export
-format_parameters.rma <- function(model) {
-  params <- insight::find_parameters(model, flatten = TRUE)
-  names(params) <- params
-  params
-}
-
-
-#' @export
-format_parameters.parameters_model <- function(model) {
-  if (!is.null(attributes(model)$pretty_names)) {
-    model$Parameter <- attributes(model)$pretty_names[model$Parameter]
-  }
-  model
-}
-
-
-
-
-
-# Utilities ---------------------------------------------------------------
-
-
-
-
 #' @keywords internal
 .format_parameter <- function(name, variable, type, level) {
 
@@ -199,6 +209,11 @@ format_parameters.parameters_model <- function(model) {
   if (type == "smooth") {
     name <- gsub("^smooth_(.*)\\[(.*)\\]", "\\2", name)
     name <- gsub("s(", "Smooth term (", name, fixed = TRUE)
+  }
+
+  # Ordered
+  if (type == "ordered") {
+    name <- paste(variable, level)
   }
 
   name
@@ -237,4 +252,15 @@ format_parameters.parameters_model <- function(model) {
 #' @keywords internal
 .format_log <- function(name, variable, type) {
   paste0(variable, " [", gsub("(.*)\\((.*)\\)", "\\1", name), "]")
+}
+
+#' @keywords internal
+.format_ordered <- function(degree) {
+  switch(
+    degree,
+    ".L" = "[linear]",
+    ".Q" = "[quadratic]",
+    ".C" = "[cubic]",
+    paste0("[", parameters::format_order(as.numeric(gsub("^", "", degree, fixed = TRUE)), textual = FALSE), " degree]")
+  )
 }

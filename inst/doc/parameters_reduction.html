@@ -667,7 +667,7 @@ body {
 #&gt; 
 #&gt; The unique principal component accounted for 52.82% of the total variance of the original data.
 </code></pre>
-<p>The <code>principal_component()</code> function automatically selected one component (if the number of components is not specified, this function uses <a href="https://easystats.github.io/parameters/articles/n_factors.html"><code>n_factors()</code></a> to estimate the optimal number to keep) and returned the <strong>loadings</strong>, i.e., the relationship with all of the original variables.</p>
+<p>The <code>principal_component()</code> function automatically selected one component (if the number of components is not specified, this function uses <a href="https://easystats.github.io/parameters/reference/n_factors.html"><code>n_factors()</code></a> to estimate the optimal number to keep) and returned the <strong>loadings</strong>, i.e., the relationship with all of the original variables.</p>
 <p>As we can see here, it seems that our new component captured the essence (more than half of the total variance present in the original dataset) of all our other variables together. We can <strong>extract</strong> the values of this component for each of our observation using the <code>predict()</code> method and add in the response variable of our initial dataset.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1">newdata &lt;-<span class="st"> </span><span class="kw">predict</span>(pca)</a>
 <a class="sourceLine" id="cb9-2" title="2">newdata<span class="op">$</span>rating &lt;-<span class="st"> </span>attitude<span class="op">$</span>rating</a></code></pre></div>

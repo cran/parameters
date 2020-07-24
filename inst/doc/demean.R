@@ -194,3 +194,38 @@ model_parameters(m4)
 m5 <- lmer(y ~ x_between + x_within + (1 + x_within | grp), data = d)
 model_parameters(m5)
 
+## -----------------------------------------------------------------------------
+set.seed(123)
+n <- 5
+b <- seq(1, 1.5, length.out = 5)
+x <- seq(2, 2 * n, 2)
+
+d <- do.call(rbind, lapply(1:n, function(i) {
+  data.frame(x = seq(1, n, by = .2),
+             y = 2 * x[i] + b[i] * seq(1, n, by = .2) + rnorm(21),
+             grp = as.factor(2 * i))
+}))
+
+# create imbalanced groups
+d$grp[sample(which(d$grp == 8), 10)] <- 6
+d$grp[sample(which(d$grp == 4), 8)] <- 2
+d$grp[sample(which(d$grp == 10), 9)] <- 6
+
+d <- d %>%
+  group_by(grp) %>%
+  mutate(x = rev(15 - (x + 1.5 * as.numeric(grp)))) %>%
+  ungroup()
+
+labs <- c("very slow", "slow", "average", "fast", "very fast")
+levels(d$grp) <- rev(labs)
+
+d <- cbind(d, demean(d, c("x", "y"), group = "grp"))
+
+# Between-subject effect of typing speed
+m1 <- lm(y ~ x_between, data = d)
+model_parameters(m1)
+
+# Between-subject effect of typing speed, accounting for goup structure
+m2 <- lmer(y ~ x_between + (1 | grp), data = d)
+model_parameters(m2)
+
