@@ -116,7 +116,17 @@ model_parameters.glm <- function(model, ci = .95, df_method = "profile", bootstr
 #' @export
 model_parameters.polr <- model_parameters.glm
 
+#' @export
+model_parameters.negbin <- model_parameters.glm
 
+#' @export
+model_parameters.logistf <- model_parameters.glm
+
+#' @export
+model_parameters.mle2 <- model_parameters.glm
+
+#' @export
+model_parameters.mle <- model_parameters.glm
 
 
 
@@ -233,3 +243,11 @@ model_parameters.glmx <- function(model, ci = .95, bootstrap = FALSE, iterations
   attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   out
 }
+
+
+
+#' @export
+model_parameters.sem <- model_parameters.default
+
+#' @export
+model_parameters.mipo <- model_parameters.default

@@ -48,6 +48,10 @@ format_parameters.rma <- function(model) {
 
 
 #' @export
+format_parameters.mira <- format_parameters.rma
+
+
+#' @export
 format_parameters.parameters_model <- function(model) {
   if (!is.null(attributes(model)$pretty_names)) {
     model$Parameter <- attributes(model)$pretty_names[model$Parameter]
@@ -197,6 +201,16 @@ format_parameters.parameters_model <- function(model) {
 
   # log-transformation
   if (type == "logarithm") {
+    name <- .format_log(name = name, variable = variable, type = type)
+  }
+
+  # exp-transformation
+  if (type == "exponentiation") {
+    name <- .format_log(name = name, variable = variable, type = type)
+  }
+
+  # log-transformation
+  if (type == "squareroot") {
     name <- .format_log(name = name, variable = variable, type = type)
   }
 

@@ -165,6 +165,8 @@ ci.gam <- function(x, ci = .95, ...) {
   ci_wald(model = x, ci = ci, ...)
 }
 
+#' @export
+ci.mipo <- ci.gam
 
 #' @export
 ci.list <- function(x, ci = .95, ...) {
@@ -207,6 +209,13 @@ ci.negbin <- ci.glm
 
 #' @export
 ci.logistf <- ci.glm
+
+#' @export
+ci.mle2 <- ci.glm
+
+#' @export
+ci.mle <- ci.glm
+
 
 
 #' @rdname ci.merMod
@@ -349,6 +358,9 @@ ci.vglm <- ci.gamlss
 
 #' @export
 ci.svyglm.glimML <- ci.gamlss
+
+#' @export
+ci.sem <- ci.gamlss
 
 
 #' @rdname ci.merMod
@@ -532,6 +544,16 @@ ci.betamfx <- function(x, ci = .95, component = c("all", "conditional", "precisi
 # Special models -----------------------------------------
 
 
+#' @export
+ci.lqmm <- function(x, ...) {
+  out <- model_parameters(x, ...)
+  as.data.frame(out[c("Parameter", "CI_low", "CI_high")])
+}
+
+#' @export
+ci.lqm <- ci.lqmm
+
+
 #' @importFrom stats pnorm
 #' @export
 ci.glht <- function(x, ci = .95, method = "robust", ...) {
@@ -603,7 +625,7 @@ ci.lavaan <- function(x, ci = .95, ...) {
 
 #' @export
 ci.blavaan <- function(x, ci = .95, ...) {
-  out <- .extract_parameters_blavaan(model = x, ci = ci, ...)
+  out <- .extract_parameters_lavaan(model = x, ci = ci, ...)
   out$CI <- ci * 100
   out[out$Operator != "~1", c("To", "Operator", "From", "CI", "CI_low", "CI_high")]
 }

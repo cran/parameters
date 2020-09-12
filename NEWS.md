@@ -1,4 +1,32 @@
-# parameters 0.8.1
+# parameters 0.8.5
+
+## General
+
+* Added vignette on model parameters and missing data.
+* Update citation.
+
+## New supported model classes
+
+* Support for `mipo` (*mice*), `lqm` and `lqmm` (*lqmm*). Preliminary support for `semLME` (*smicd*), `mle2` (*bbmle*), `mle` (*stats4*)
+* `model_parameters()` for objects of class `mira` (*mice*).
+
+## Changes to functions
+
+* `model_parameters()` gets a specific behaviour for brms-meta-analysis models.
+* `model_parameters()` for *lavaan* and *blavaan* now also prints self-defined parameters.
+* `model_parameters()` for *lavaan* and *blavaan* gains more option for standardized parameters.
+
+## Bug fixes
+
+* Fix issue in `model_parameters()` for `coxph.penal` models.
+* Fix issue in `model_parameters.metaplus()` with random effects.
+* Fix issue in `check_heterogeneity()` when `x` was a mixed model.
+* Fix issue in `check_heterogeneity()` for data with missing values.
+* Fix issue in `dof_ml1()` when random-effect terms where character vectors.
+* Fix issue in `print()` method for `model_parameters()` that printed empty lines for rows with complete missing values. Empty lines are now removed.
+* Fix issue in `parameters_type()` when `exp()` was used in a model formula.
+
+# parameters 0.8.2
 
 ## New supported models
 

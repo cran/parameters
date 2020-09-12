@@ -257,6 +257,25 @@ p_value.zcpglm <- function(model, component = c("all", "conditional", "zi", "zer
 
 
 #' @export
+p_value.sem <- function(model, ...) {
+  if (!.is_semLme(model)) {
+    return(NULL)
+  }
+
+  stat <- insight::get_statistic(model)
+  if (is.null(stat)) {
+    return(NULL)
+  }
+
+  .data_frame(
+    Parameter = stat$Parameter,
+    p = 2 * stats::pnorm(abs(stat$Statistic), lower.tail = FALSE)
+  )
+}
+
+
+
+#' @export
 p_value.lme <- function(model, ...) {
   cs <- stats::coef(summary(model))
   p <- cs[, 5]
@@ -588,8 +607,14 @@ p_value.coxph <- function(model, method = NULL, ...) {
   }
 
   cs <- stats::coef(summary(model))
-  p <- cs[, 5]
+  p_column <- grep("^(Pr\\(>|p)", colnames(cs))
+  p <- cs[, p_column]
   params <- insight::get_parameters(model)
+
+  # check
+  if (length(p) > nrow(params)) {
+    p <- p[match(params$Parameter, .remove_backticks_from_string(rownames(cs)))]
+  }
 
   .data_frame(
     Parameter = params$Parameter,
@@ -736,6 +761,38 @@ p_value.betamfx <- function(model, component = c("all", "conditional", "precisio
 
 
 # p-Values from Special Models -----------------------------------------------
+
+
+#' @export
+p_value.lqmm <- function(model, ...) {
+  out <- model_parameters(model, ...)
+  as.data.frame(out[c("Parameter", "p")])
+}
+
+#' @export
+p_value.lqm <- p_value.lqmm
+
+
+#' @export
+p_value.mipo <- function(model, ...) {
+  .data_frame(
+    Parameter = as.vector(summary(model)$term),
+    p = as.vector(summary(model)$p.value)
+  )
+}
+
+
+#' @export
+p_value.mle2 <- function(model, ...) {
+  if (!requireNamespace("bbmle", quietly = TRUE)) {
+    stop("Package `bbmle` needs to be installed to extract p-values.", call. = FALSE)
+  }
+  s <- bbmle::summary(model)
+  .data_frame(
+    Parameter = names(s@coef[, 4]),
+    p = unname(s@coef[, 4])
+  )
+}
 
 
 #' @importFrom insight find_parameters
@@ -1432,7 +1489,7 @@ p_value.lavaan <- function(model, ...) {
 
 #' @export
 p_value.blavaan <- function(model, ci = .95, ...) {
-  out <- .extract_parameters_blavaan(model, ...)
+  out <- .extract_parameters_lavaan(model, ...)
   out[out$Operator != "~1", c("To", "Operator", "From", "p")]
 }
 

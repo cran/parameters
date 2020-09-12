@@ -97,9 +97,13 @@
       } else {
         ci_df <- suppressMessages(ci(model, ci = ci, effects = effects, component = component))
       }
-      if (length(ci) > 1) ci_df <- bayestestR::reshape_ci(ci_df)
-      ci_cols <- names(ci_df)[!names(ci_df) %in% c("CI", merge_by)]
-      parameters <- merge(parameters, ci_df, by = merge_by)
+      if (!is.null(ci_df)) {
+        if (length(ci) > 1) ci_df <- bayestestR::reshape_ci(ci_df)
+        ci_cols <- names(ci_df)[!names(ci_df) %in% c("CI", merge_by)]
+        parameters <- merge(parameters, ci_df, by = merge_by)
+      } else {
+        ci_cols <- c()
+      }
     } else {
       ci_cols <- c()
     }
@@ -109,24 +113,33 @@
   # ==== p value
 
   if (isTRUE(robust)) {
-    parameters <- merge(parameters, p_value_robust(model, ...), by = merge_by)
+    pval <- p_value_robust(model, ...)
   } else if (!is.null(df_method)) {
-    parameters <- merge(parameters, p_value(model, effects = effects, component = component, method = df_method), by = merge_by)
+    pval <- p_value(model, effects = effects, component = component, method = df_method)
   } else {
-    parameters <- merge(parameters, p_value(model, effects = effects, component = component), by = merge_by)
+    pval <- p_value(model, effects = effects, component = component)
+  }
+
+  if (!is.null(pval)) {
+    parameters <- merge(parameters, pval, by = merge_by)
   }
 
 
   # ==== standard error - only if we don't already have SE for std. parameters
 
+  std_err <- NULL
   if (is.null(standardize)) {
     if (isTRUE(robust)) {
-      parameters <- merge(parameters, standard_error_robust(model, ...), by = merge_by)
+      std_err <- standard_error_robust(model, ...)
     } else if (!is.null(df_method)) {
-      parameters <- merge(parameters, standard_error(model, effects = effects, component = component, method = df_method), by = merge_by)
+      std_err <- standard_error(model, effects = effects, component = component, method = df_method)
     } else {
-      parameters <- merge(parameters, standard_error(model, effects = effects, component = component), by = merge_by)
+      std_err <- standard_error(model, effects = effects, component = component)
     }
+  }
+
+  if (!is.null(std_err)) {
+    parameters <- merge(parameters, std_err, by = merge_by)
   }
 
 
@@ -134,7 +147,7 @@
 
   if (isTRUE(robust)) {
     parameters$Statistic <- parameters$Estimate / parameters$SE
-  } else {
+  } else if (!is.null(statistic)) {
     parameters <- merge(parameters, statistic, by = merge_by)
   }
 
@@ -157,13 +170,16 @@
 
   # ==== Renaming
 
-  names(parameters) <- gsub("Statistic", gsub("-statistic", "", attr(statistic, "statistic", exact = TRUE), fixed = TRUE), names(parameters))
+  if ("Statistic" %in% names(parameters)) {
+    names(parameters) <- gsub("Statistic", gsub("(-|\\s)statistic", "", attr(statistic, "statistic", exact = TRUE)), names(parameters))
+    names(parameters) <- gsub("chi-squared", "chisq", names(parameters))
+  }
   names(parameters) <- gsub("Estimate", "Coefficient", names(parameters))
 
 
   # ==== Reorder
 
-  col_order <- c("Parameter", coef_col, "SE", ci_cols, "t", "z", "t / F", "z / Chisq", "F", "chisq", "df", "df_error", "p", "Component", "Response", "Effects")
+  col_order <- c("Parameter", coef_col, "SE", ci_cols, "t", "z", "t / F", "z / Chisq", "F", "chisq", "chi-squared", "df", "df_error", "p", "Component", "Response", "Effects")
   parameters <- parameters[col_order[col_order %in% names(parameters)]]
 
 
@@ -190,6 +206,19 @@
   if (!is.null(p_adjust) && tolower(p_adjust) %in% stats::p.adjust.methods && "p" %in% colnames(parameters)) {
     parameters$p <- stats::p.adjust(parameters$p, method = p_adjust)
   }
+
+
+  # ==== remove all complete-missing cases
+
+  parameters <- parameters[apply(parameters, 1, function(i) !all(is.na(i))), ]
+
+
+  # ==== add within/between attributes
+
+  if (inherits(model, c("glmmTMB", "MixMod"))) {
+    parameters <- .add_within_between_effects(model, parameters)
+  }
+
 
   rownames(parameters) <- NULL
   parameters
@@ -385,7 +414,9 @@
   # this effect is used as "Component" value. by this, we get a nicer print
   # for model parameters...
 
-  parameters$Component <- "rewb-contextual"
+  if (is.null(parameters$Component)) {
+    parameters$Component <- "rewb-contextual"
+  }
 
   within_effects <- .find_within_between(model, "within-effect")
   if (!is.null(within_effects)) {
@@ -435,6 +466,8 @@
 # Bayes function ------------------------------------------------------
 
 
+#' @importFrom bayestestR describe_posterior reshape_ci
+#' @importFrom insight is_multivariate
 #' @importFrom stats sd setNames na.omit
 #' @keywords internal
 .extract_parameters_bayesian <- function(model, centrality = "median", dispersion = FALSE, ci = .89, ci_method = "hdi", test = c("pd", "rope"), rope_range = "default", rope_ci = 1.0, bf_prior = NULL, diagnostic = c("ESS", "Rhat"), priors = TRUE, standardize = NULL, ...) {
@@ -442,6 +475,12 @@
   if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
     insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
     standardize <- NULL
+  }
+
+  # no ROPE for multi-response models
+  if (insight::is_multivariate(model)) {
+    test <- setdiff(test, c("rope", "p_rope"))
+    warning("Multivariate response models are not yet supported for tests 'rope' and 'p_rope'.", call. = FALSE)
   }
 
   # MCMCglmm need special handling
@@ -493,6 +532,14 @@
     stop("Package 'lavaan' required for this function to work. Please install it by running `install.packages('lavaan')`.")
   }
 
+  # check for valid parameters
+  if (!is.logical(standardize)) {
+    if (!(standardize %in% c("all", "std.all", "latent", "std.lv", "no_exogenous", "std.nox"))) {
+      warning("'standardize' should be one of TRUE, 'all', 'std.all', 'latent', 'std.lv', 'no_exogenous' or 'std.nox'. Returning unstandardized solution.", call. = FALSE)
+      standardize <- FALSE
+    }
+  }
+
   # CI
   if (length(ci) > 1) {
     ci <- ci[1]
@@ -500,86 +547,72 @@
   }
 
   # Get estimates
-  if (standardize == FALSE) {
-    data <- lavaan::parameterEstimates(model, se = TRUE, level = ci, ...)
-  } else {
-    data <- lavaan::standardizedsolution(model, se = TRUE, level = ci, ...)
+  data <- lavaan::parameterEstimates(model, se = TRUE, level = ci, ...)
+  label <- data$label
+
+  # check if standardized estimates are requested, and if so, which type
+  if (isTRUE(standardize) || !is.logical(standardize)) {
+    if (is.logical(standardize)) {
+      standardize <- "all"
+    }
+    type <- switch(
+      standardize,
+      "all" = ,
+      "std.all" = "std.all",
+      "latent" = ,
+      "std.lv" = "std.lv",
+      "no_exogenous" = ,
+      "std.nox" = "std.nox",
+      "std.all"
+    )
+    data <- lavaan::standardizedsolution(model, se = TRUE, level = ci, type = type, ...)
     names(data)[names(data) == "est.std"] <- "est"
   }
 
 
-
-  params <- data.frame(
-    To = data$lhs,
-    Operator = data$op,
-    From = data$rhs,
-    Coefficient = data$est,
-    SE = data$se,
-    CI_low = data$ci.lower,
-    CI_high = data$ci.upper,
-    p = data$pvalue
-  )
-
-  params$Type <- ifelse(params$Operator == "=~", "Loading",
-    ifelse(params$Operator == "~", "Regression",
-      ifelse(params$Operator == "~~", "Correlation",
-        ifelse(params$Operator == "~1", "Mean", NA)
-      )
+  if (inherits(model, "blavaan")) {
+    params <- data.frame(
+      To = data$lhs,
+      Operator = data$op,
+      From = data$rhs,
+      Coefficient = data$est,
+      SE = data$se,
+      CI_low = data$ci.lower,
+      CI_high = data$ci.upper,
+      stringsAsFactors = FALSE
     )
-  )
-  params$Type <- ifelse(as.character(params$From) == as.character(params$To), "Variance", params$Type)
-  params$p <- ifelse(is.na(params$p), 0, params$p)
-
-  if ("group" %in% names(data)) {
-    params$Group <- data$group
-  }
-
-  params
-}
-
-
-
-
-#' @keywords internal
-.extract_parameters_blavaan <- function(model, ci = 0.95, standardize = FALSE, ...) {
-  if (!requireNamespace("lavaan", quietly = TRUE)) {
-    stop("Package 'lavaan' required for this function to work. Please install it by running `install.packages('lavaan')`.")
-  }
-
-  # CI
-  if (length(ci) > 1) {
-    ci <- ci[1]
-    warning(paste0("blavaan models only accept one level of CI :( Keeping the first one: `ci = ", ci, "`."))
-  }
-
-  # Get estimates
-  if (standardize == FALSE) {
-    data <- lavaan::parameterEstimates(model, se = TRUE, level = ci, ...)
   } else {
-    data <- lavaan::standardizedsolution(model, se = TRUE, level = ci, ...)
-    names(data)[names(data) == "est.std"] <- "est"
+    params <- data.frame(
+      To = data$lhs,
+      Operator = data$op,
+      From = data$rhs,
+      Coefficient = data$est,
+      SE = data$se,
+      CI_low = data$ci.lower,
+      CI_high = data$ci.upper,
+      p = data$pvalue,
+      stringsAsFactors = FALSE
+    )
   }
 
-
-
-  params <- data.frame(
-    To = data$lhs,
-    Operator = data$op,
-    From = data$rhs,
-    Coefficient = data$est,
-    SE = data$se,
-    CI_low = data$ci.lower,
-    CI_high = data$ci.upper
-  )
+  if (!is.null(label)) {
+    params$Label <- label
+  }
 
   params$Type <- ifelse(params$Operator == "=~", "Loading",
     ifelse(params$Operator == "~", "Regression",
       ifelse(params$Operator == "~~", "Correlation",
-        ifelse(params$Operator == "~1", "Mean", NA)
+        ifelse(params$Operator == ":=", "Defined",
+          ifelse(params$Operator == "~1", "Mean", NA)
+        )
       )
     )
   )
   params$Type <- ifelse(as.character(params$From) == as.character(params$To), "Variance", params$Type)
+
+  if ("p" %in% colnames(params)) {
+    params$p <- ifelse(is.na(params$p), 0, params$p)
+  }
 
   if ("group" %in% names(data)) {
     params$Group <- data$group

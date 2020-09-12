@@ -10,11 +10,13 @@
 #'   in a single table and a \code{Component} column is added to the output.
 #' @param select Character vector (or numeric index) of column names that should
 #'   be printed. If \code{NULL} (default), all columns are printed. The shortcut
-#'   \code{select = "minimal"} prints coefficient, confidence intervals and p-values.
+#'   \code{select = "minimal"} prints coefficient, confidence intervals and p-values,
+#'   while \code{select = "short"} prints coefficient, standard errors and p-values.
 #' @inheritParams parameters_table
 #' @return \code{NULL}
 #'
 #' @examples
+#' \donttest{
 #' library(parameters)
 #' if (require("glmmTMB")) {
 #'   model <- glmmTMB(
@@ -32,6 +34,7 @@
 #'   print(mp, select = c("Parameter", "Coefficient", "SE"))
 #'
 #'   print(mp, select = "minimal")
+#' }
 #' }
 #' @importFrom insight format_table
 #' @export
@@ -52,10 +55,17 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
   if (!is.null(select)) {
     if (all(select == "minimal")) {
       select <- c("Parameter", "Coefficient", "CI", "CI_low", "CI_high", "p")
+    } else if (all(select == "short")) {
+      select <- c("Parameter", "Coefficient", "SE", "p")
     } else if (is.numeric(select)) {
       select <- colnames(x)[select]
     }
     select <- union(select, c("Parameter", "Component", "Effects", "Response", "Subgroup"))
+    # for emmGrid objects, we save specific parameter names as attribute
+    parameter_names <- attributes(x)$parameter_names
+    if (!is.null(parameter_names)) {
+      select <- c(parameter_names, select)
+    }
     to_remove <- setdiff(colnames(x), select)
     x[to_remove] <- NULL
   }
@@ -81,6 +91,13 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
     pretty_names <- FALSE
   }
 
+  # for bayesian meta, remove ROPE_CI
+  if (isTRUE(attributes(x)$is_bayes_meta)) {
+    x$CI <- NULL
+    x$ROPE_CI <- NULL
+    x$ROPE_low <- NULL
+    x$ROPE_high <- NULL
+  }
 
   split_by <- ""
   split_by <- c(split_by, ifelse("Component" %in% names(x) && .n_unique(x$Component) > 1, "Component", ""))
@@ -191,6 +208,12 @@ print.parameters_random <- function(x, digits = 2, ...) {
     if (!is.factor(i)) i <- factor(i, levels = unique(i))
     i
   })
+
+  # fix column output
+  if (inherits(attributes(x)$model, c("lavaan", "blavaan")) && "Label" %in% colnames(x)) {
+    x$From <- ifelse(x$Label == "" | x$Label == x$To, x$From, paste0(x$From, " (", x$Label, ")"))
+    x$Label <- NULL
+  }
 
   # set up split-factor
   if (length(split_column) > 1) {
@@ -313,6 +336,9 @@ print.parameters_random <- function(x, digits = 2, ...) {
     } else if (grepl(tolower(split_column), tolower(component_name), fixed = TRUE)) {
       s1 <- component_name
       s2 <- ""
+    } else if (split_column == "Type") {
+      s1 <- component_name
+      s2 <- ""
     } else {
       s1 <- component_name
       s2 <- split_column
@@ -379,3 +405,6 @@ print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...
 
 #' @export
 print.parameters_simulate <- print.parameters_model
+
+#' @export
+print.parameters_brms_meta <- print.parameters_model

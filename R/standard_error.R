@@ -599,6 +599,11 @@ standard_error.coxph <- function(model, method = NULL, ...) {
   cs <- stats::coef(summary(model))
   se <- cs[, 3]
 
+  # check
+  if (length(se) > nrow(params)) {
+    se <- se[match(params$Parameter, .remove_backticks_from_string(rownames(cs)))]
+  }
+
   .data_frame(
     Parameter = params$Parameter,
     SE = as.vector(se)
@@ -847,11 +852,63 @@ standard_error.bayesx <- function(model, ...) {
 
 
 #' @export
+standard_error.lqmm <- function(model, ...) {
+  out <- model_parameters(model, ...)
+  as.data.frame(out[c("Parameter", "SE")])
+}
+
+#' @export
+standard_error.lqm <- standard_error.lqmm
+
+
+#' @export
+standard_error.mipo <- function(model, ...) {
+  .data_frame(
+    Parameter = as.vector(summary(model)$term),
+    SE = as.vector(summary(model)$std.error)
+  )
+}
+
+
+#' @export
+standard_error.mle2 <- function(model, ...) {
+  if (!requireNamespace("bbmle", quietly = TRUE)) {
+    stop("Package `bbmle` needs to be installed to extract standard errors.", call. = FALSE)
+  }
+  s <- bbmle::summary(model)
+  .data_frame(
+    Parameter = names(s@coef[, 2]),
+    SE = unname(s@coef[, 2])
+  )
+}
+
+#' @export
+standard_error.mle <- standard_error.mle2
+
+
+
+#' @export
 standard_error.glht <- function(model, ...) {
   s <- summary(model)
   .data_frame(
     Parameter = insight::find_parameters(model, flatten = TRUE),
     SE = unname(s$test$sigma)
+  )
+}
+
+
+#' @export
+standard_error.sem <- function(model, ...) {
+  if (!.is_semLme(model)) {
+    return(NULL)
+  }
+  if (is.null(model$se)) {
+    warning("Model has no standard errors. Please fit model again with bootstrapped standard errors.", call. = FALSE)
+    return(NULL)
+  }
+  .data_frame(
+    Parameter = names(model$se),
+    SE = unname(model$se)
   )
 }
 
@@ -1525,7 +1582,7 @@ standard_error.lavaan <- function(model, ...) {
 
 #' @export
 standard_error.blavaan <- function(model, ci = .95, ...) {
-  out <- .extract_parameters_blavaan(model, ...)
+  out <- .extract_parameters_lavaan(model, ...)
   out[out$Operator != "~1", c("To", "Operator", "From", "SE")]
 }
 
