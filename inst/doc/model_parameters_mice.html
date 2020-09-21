@@ -607,11 +607,11 @@ body {
 </ul>
 <h2 id="model-parameters-from-mira-objects">Model Parameters from <code>mira</code> objects</h2>
 <p><code>model_parameters()</code> can be used in combination with the <em>mice</em> package to deal with missing data, in particular to summaries regression models used with multiple imputed datasets. It computes pooled summaries of multiple imputed repeated regression analyses, i.e. of objects of class <code>mira</code>. Thus, <code>model_parameters()</code> for <code>mira</code>-objects is comparable to the <code>pool()</code>-function from <em>mice</em>, but only focuses on the final summary of parameters and does not include the diagnostic statistic per estimate.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">library</span>(mice)</a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="kw">library</span>(parameters)</a>
-<a class="sourceLine" id="cb1-3" title="3"></a>
-<a class="sourceLine" id="cb1-4" title="4"><span class="kw">data</span>(<span class="st">&quot;nhanes2&quot;</span>)</a>
-<a class="sourceLine" id="cb1-5" title="5">imp &lt;-<span class="st"> </span><span class="kw">mice</span>(nhanes2)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(mice)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(parameters)</span>
+<span id="cb1-3"><a href="#cb1-3"></a></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="kw">data</span>(<span class="st">&quot;nhanes2&quot;</span>)</span>
+<span id="cb1-5"><a href="#cb1-5"></a>imp &lt;-<span class="st"> </span><span class="kw">mice</span>(nhanes2)</span></code></pre></div>
 <pre><code>#&gt; 
 #&gt;  iter imp variable
 #&gt;   1   1  bmi  hyp  chl
@@ -640,9 +640,9 @@ body {
 #&gt;   5   4  bmi  hyp  chl
 #&gt;   5   5  bmi  hyp  chl
 </code></pre>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1">fit &lt;-<span class="st"> </span><span class="kw">with</span>(<span class="dt">data =</span> imp, <span class="dt">exp =</span> <span class="kw">lm</span>(bmi <span class="op">~</span><span class="st"> </span>age <span class="op">+</span><span class="st"> </span>hyp <span class="op">+</span><span class="st"> </span>chl))</a>
-<a class="sourceLine" id="cb3-2" title="2"></a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="kw">model_parameters</span>(fit)</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>fit &lt;-<span class="st"> </span><span class="kw">with</span>(<span class="dt">data =</span> imp, <span class="dt">exp =</span> <span class="kw">lm</span>(bmi <span class="op">~</span><span class="st"> </span>age <span class="op">+</span><span class="st"> </span>hyp <span class="op">+</span><span class="st"> </span>chl))</span>
+<span id="cb3-2"><a href="#cb3-2"></a></span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="kw">model_parameters</span>(fit)</span></code></pre></div>
 <pre><code>#&gt; Parameter   | Coefficient |   SE |          95% CI |     t |    df |      p
 #&gt; ---------------------------------------------------------------------------
 #&gt; (Intercept) |       19.33 | 4.26 | [ 10.39, 28.27] |  4.54 | 18.26 | &lt; .001
@@ -653,13 +653,13 @@ body {
 </code></pre>
 <p>Not all packages work with <code>with.mids()</code> from package <em>mice</em>. Thus, for some modeling packages, it’s not possible to perform multiply imputed repeated analyses, i.e. you cannot work with imputed data for such models. We give an example for the <em>GLMMadaptive</em> package here.</p>
 <p>First, we generate a dataset with missing values. We take the data <code>cbpp</code> from <em>lme4</em> and randomly assign some missing values into one of the predictors. Then we impute the data, using <code>mice()</code> from package <em>mice</em>.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">library</span>(lme4)</a>
-<a class="sourceLine" id="cb5-2" title="2"><span class="kw">library</span>(GLMMadaptive)</a>
-<a class="sourceLine" id="cb5-3" title="3"></a>
-<a class="sourceLine" id="cb5-4" title="4"><span class="kw">data</span>(cbpp)</a>
-<a class="sourceLine" id="cb5-5" title="5">cbpp<span class="op">$</span>period[<span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(cbpp), <span class="dt">size =</span> <span class="dv">10</span>)] &lt;-<span class="st"> </span><span class="ot">NA</span></a>
-<a class="sourceLine" id="cb5-6" title="6"></a>
-<a class="sourceLine" id="cb5-7" title="7">imputed_data &lt;-<span class="st"> </span><span class="kw">mice</span>(cbpp)</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">library</span>(lme4)</span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="kw">library</span>(GLMMadaptive)</span>
+<span id="cb5-3"><a href="#cb5-3"></a></span>
+<span id="cb5-4"><a href="#cb5-4"></a><span class="kw">data</span>(cbpp)</span>
+<span id="cb5-5"><a href="#cb5-5"></a>cbpp<span class="op">$</span>period[<span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(cbpp), <span class="dt">size =</span> <span class="dv">10</span>)] &lt;-<span class="st"> </span><span class="ot">NA</span></span>
+<span id="cb5-6"><a href="#cb5-6"></a></span>
+<span id="cb5-7"><a href="#cb5-7"></a>imputed_data &lt;-<span class="st"> </span><span class="kw">mice</span>(cbpp)</span></code></pre></div>
 <pre><code>#&gt; 
 #&gt;  iter imp variable
 #&gt;   1   1  period
@@ -689,28 +689,28 @@ body {
 #&gt;   5   5  period
 </code></pre>
 <p>Using <code>with</code> to compute multiple regression analyses for each imputed dataset fails.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">fit &lt;-<span class="st"> </span><span class="kw">with</span>(<span class="dt">data =</span> imputed_data, <span class="dt">expr =</span> GLMMadaptive<span class="op">::</span><span class="kw">mixed_model</span>(</a>
-<a class="sourceLine" id="cb7-2" title="2">  <span class="kw">cbind</span>(incidence, size <span class="op">-</span><span class="st"> </span>incidence) <span class="op">~</span><span class="st"> </span>period,</a>
-<a class="sourceLine" id="cb7-3" title="3">  <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>herd,</a>
-<a class="sourceLine" id="cb7-4" title="4">  <span class="dt">family =</span> binomial</a>
-<a class="sourceLine" id="cb7-5" title="5">))</a>
-<a class="sourceLine" id="cb7-6" title="6"><span class="co">#&gt; Error in as.data.frame(data) : </span></a>
-<a class="sourceLine" id="cb7-7" title="7"><span class="co">#&gt;   argument &quot;data&quot; is missing, with no default</span></a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>fit &lt;-<span class="st"> </span><span class="kw">with</span>(<span class="dt">data =</span> imputed_data, <span class="dt">expr =</span> GLMMadaptive<span class="op">::</span><span class="kw">mixed_model</span>(</span>
+<span id="cb7-2"><a href="#cb7-2"></a>  <span class="kw">cbind</span>(incidence, size <span class="op">-</span><span class="st"> </span>incidence) <span class="op">~</span><span class="st"> </span>period,</span>
+<span id="cb7-3"><a href="#cb7-3"></a>  <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>herd,</span>
+<span id="cb7-4"><a href="#cb7-4"></a>  <span class="dt">family =</span> binomial</span>
+<span id="cb7-5"><a href="#cb7-5"></a>))</span>
+<span id="cb7-6"><a href="#cb7-6"></a><span class="co">#&gt; Error in as.data.frame(data) : </span></span>
+<span id="cb7-7"><a href="#cb7-7"></a><span class="co">#&gt;   argument &quot;data&quot; is missing, with no default</span></span></code></pre></div>
 <p>However, we can use a workaround by calculating the regression models for each imputed dataset manually, using <code>complete()</code> from package <em>mice</em>. Please note that it is important to mimic the structure of <code>mira</code>-objects! The returned model objects have to be saved as a list named <code>analyses</code>. This list must be of class <code>mira</code> and <code>list</code>, and can be used with <code>model_parameters()</code>.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1">analyses &lt;-<span class="st"> </span><span class="kw">as.list</span>(<span class="kw">seq_len</span>(imputed_data<span class="op">$</span>m))</a>
-<a class="sourceLine" id="cb8-2" title="2"><span class="cf">for</span> (i <span class="cf">in</span> <span class="kw">seq_along</span>(analyses)) {</a>
-<a class="sourceLine" id="cb8-3" title="3">  data.i &lt;-<span class="st"> </span><span class="kw">complete</span>(imputed_data, i)</a>
-<a class="sourceLine" id="cb8-4" title="4">  analyses[[i]] &lt;-<span class="st"> </span><span class="kw">mixed_model</span>(</a>
-<a class="sourceLine" id="cb8-5" title="5">    <span class="kw">cbind</span>(incidence, size <span class="op">-</span><span class="st"> </span>incidence) <span class="op">~</span><span class="st"> </span>period,</a>
-<a class="sourceLine" id="cb8-6" title="6">    <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>herd,</a>
-<a class="sourceLine" id="cb8-7" title="7">    <span class="dt">data =</span> data.i,</a>
-<a class="sourceLine" id="cb8-8" title="8">    <span class="dt">family =</span> binomial</a>
-<a class="sourceLine" id="cb8-9" title="9">  )</a>
-<a class="sourceLine" id="cb8-10" title="10">}</a>
-<a class="sourceLine" id="cb8-11" title="11">object &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">analyses =</span> analyses)</a>
-<a class="sourceLine" id="cb8-12" title="12"><span class="kw">class</span>(object) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;mira&quot;</span>, <span class="st">&quot;matrix&quot;</span>, <span class="st">&quot;list&quot;</span>)</a>
-<a class="sourceLine" id="cb8-13" title="13"></a>
-<a class="sourceLine" id="cb8-14" title="14"><span class="kw">model_parameters</span>(object)</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>analyses &lt;-<span class="st"> </span><span class="kw">as.list</span>(<span class="kw">seq_len</span>(imputed_data<span class="op">$</span>m))</span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="kw">seq_along</span>(analyses)) {</span>
+<span id="cb8-3"><a href="#cb8-3"></a>  data.i &lt;-<span class="st"> </span><span class="kw">complete</span>(imputed_data, i)</span>
+<span id="cb8-4"><a href="#cb8-4"></a>  analyses[[i]] &lt;-<span class="st"> </span><span class="kw">mixed_model</span>(</span>
+<span id="cb8-5"><a href="#cb8-5"></a>    <span class="kw">cbind</span>(incidence, size <span class="op">-</span><span class="st"> </span>incidence) <span class="op">~</span><span class="st"> </span>period,</span>
+<span id="cb8-6"><a href="#cb8-6"></a>    <span class="dt">random =</span> <span class="op">~</span><span class="st"> </span><span class="dv">1</span> <span class="op">|</span><span class="st"> </span>herd,</span>
+<span id="cb8-7"><a href="#cb8-7"></a>    <span class="dt">data =</span> data.i,</span>
+<span id="cb8-8"><a href="#cb8-8"></a>    <span class="dt">family =</span> binomial</span>
+<span id="cb8-9"><a href="#cb8-9"></a>  )</span>
+<span id="cb8-10"><a href="#cb8-10"></a>}</span>
+<span id="cb8-11"><a href="#cb8-11"></a>object &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">analyses =</span> analyses)</span>
+<span id="cb8-12"><a href="#cb8-12"></a><span class="kw">class</span>(object) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;mira&quot;</span>, <span class="st">&quot;matrix&quot;</span>, <span class="st">&quot;list&quot;</span>)</span>
+<span id="cb8-13"><a href="#cb8-13"></a></span>
+<span id="cb8-14"><a href="#cb8-14"></a><span class="kw">model_parameters</span>(object)</span></code></pre></div>
 <pre><code>#&gt; Parameter   | Coefficient |   SE |         95% CI |     z |      p
 #&gt; ------------------------------------------------------------------
 #&gt; (Intercept) |       -1.61 | 0.27 | [-2.13, -1.08] | -6.00 | &lt; .001
@@ -720,8 +720,8 @@ body {
 </code></pre>
 <h2 id="model-parameters-from-mipo-objects">Model Parameters from <code>mipo</code> objects</h2>
 <p>It is also possible to compute summaries of pooled objects of class <code>mipo</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">data</span>(<span class="st">&quot;nhanes2&quot;</span>)</a>
-<a class="sourceLine" id="cb10-2" title="2">imp &lt;-<span class="st"> </span><span class="kw">mice</span>(nhanes2)</a></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">data</span>(<span class="st">&quot;nhanes2&quot;</span>)</span>
+<span id="cb10-2"><a href="#cb10-2"></a>imp &lt;-<span class="st"> </span><span class="kw">mice</span>(nhanes2)</span></code></pre></div>
 <pre><code>#&gt; 
 #&gt;  iter imp variable
 #&gt;   1   1  bmi  hyp  chl
@@ -750,10 +750,10 @@ body {
 #&gt;   5   4  bmi  hyp  chl
 #&gt;   5   5  bmi  hyp  chl
 </code></pre>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1">fit &lt;-<span class="st"> </span><span class="kw">with</span>(<span class="dt">data =</span> imp, <span class="dt">exp =</span> <span class="kw">lm</span>(bmi <span class="op">~</span><span class="st"> </span>age <span class="op">+</span><span class="st"> </span>hyp <span class="op">+</span><span class="st"> </span>chl))</a>
-<a class="sourceLine" id="cb12-2" title="2">pooled &lt;-<span class="st"> </span><span class="kw">pool</span>(fit)</a>
-<a class="sourceLine" id="cb12-3" title="3"></a>
-<a class="sourceLine" id="cb12-4" title="4"><span class="kw">model_parameters</span>(pooled)</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a>fit &lt;-<span class="st"> </span><span class="kw">with</span>(<span class="dt">data =</span> imp, <span class="dt">exp =</span> <span class="kw">lm</span>(bmi <span class="op">~</span><span class="st"> </span>age <span class="op">+</span><span class="st"> </span>hyp <span class="op">+</span><span class="st"> </span>chl))</span>
+<span id="cb12-2"><a href="#cb12-2"></a>pooled &lt;-<span class="st"> </span><span class="kw">pool</span>(fit)</span>
+<span id="cb12-3"><a href="#cb12-3"></a></span>
+<span id="cb12-4"><a href="#cb12-4"></a><span class="kw">model_parameters</span>(pooled)</span></code></pre></div>
 <pre><code>#&gt; Parameter   | Coefficient |   SE |          95% CI |     t |    df |      p
 #&gt; ---------------------------------------------------------------------------
 #&gt; (Intercept) |       17.94 | 3.76 | [  9.98, 25.90] |  4.77 | 16.44 | &lt; .001

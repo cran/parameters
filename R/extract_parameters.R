@@ -4,7 +4,7 @@
 #' @importFrom insight get_statistic get_parameters
 #' @importFrom stats confint p.adjust.methods p.adjust
 #' @keywords internal
-.extract_parameters_generic <- function(model, ci, component, merge_by = c("Parameter", "Component"), standardize = NULL, effects = "fixed", robust = FALSE, df_method = NULL, p_adjust = NULL, ...) {
+.extract_parameters_generic <- function(model, ci, component, merge_by = c("Parameter", "Component"), standardize = NULL, effects = "fixed", robust = FALSE, df_method = NULL, p_adjust = NULL, wb_component = FALSE, ...) {
 
   # ==== check if standardization is required and package available
 
@@ -73,7 +73,7 @@
     parameters <- merge(parameters, std_coef, by = merge_by)
     coef_col <- "Std_Coefficient"
     # merge all data, including CI and SE for std. parameters
-    if (inherits(std_coef, "effectsize_std_params")) {
+    if (inherits(std_coef, c("effectsize_std_params", "effectsize_table"))) {
       parameters <- merge(parameters, ci(std_coef, ci = ci), by = merge_by)
       parameters <- merge(parameters, standard_error(std_coef), by = merge_by)
     }
@@ -215,7 +215,7 @@
 
   # ==== add within/between attributes
 
-  if (inherits(model, c("glmmTMB", "MixMod"))) {
+  if (inherits(model, c("glmmTMB", "MixMod")) && isTRUE(wb_component)) {
     parameters <- .add_within_between_effects(model, parameters)
   }
 
@@ -232,7 +232,7 @@
 
 #' @importFrom stats confint
 #' @keywords internal
-.extract_parameters_mixed <- function(model, ci = .95, df_method = "wald", standardize = NULL, robust = FALSE, p_adjust = NULL, ...) {
+.extract_parameters_mixed <- function(model, ci = .95, df_method = "wald", standardize = NULL, robust = FALSE, p_adjust = NULL, wb_component = FALSE, ...) {
   # check if standardization is required and package available
   if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
     insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
@@ -288,7 +288,7 @@
     parameters <- merge(parameters, std_coef, by = "Parameter")
     coef_col <- "Std_Coefficient"
     # merge all data, including CI and SE for std. parameters
-    if (inherits(std_coef, "effectsize_std_params")) {
+    if (inherits(std_coef, c("effectsize_std_params", "effectsize_table"))) {
       parameters <- merge(parameters, ci(std_coef, ci = ci), by = "Parameter")
       parameters <- merge(parameters, standard_error(std_coef), by = "Parameter")
     }
@@ -398,7 +398,9 @@
 
   # if we have within/between effects (from demean()), we can add a component
   # column for nicer printing...
-  parameters <- .add_within_between_effects(model, parameters)
+  if (isTRUE(wb_component)) {
+    parameters <- .add_within_between_effects(model, parameters)
+  }
 
   rownames(parameters) <- NULL
   parameters
@@ -414,11 +416,19 @@
   # this effect is used as "Component" value. by this, we get a nicer print
   # for model parameters...
 
+  # extract attributes that indicate within and between effects
+  within_effects <- .find_within_between(model, "within-effect")
+  between_effects <- .find_within_between(model, "between-effect")
+
+  # if there are no attributes, return
+  if (is.null(within_effects) && is.null(between_effects)) {
+    return(parameters)
+  }
+
   if (is.null(parameters$Component)) {
     parameters$Component <- "rewb-contextual"
   }
 
-  within_effects <- .find_within_between(model, "within-effect")
   if (!is.null(within_effects)) {
     index <- unique(unlist(sapply(within_effects, function(i) {
       grep(i, parameters$Parameter, fixed = TRUE)
@@ -426,7 +436,6 @@
     parameters$Component[index] <- "within"
   }
 
-  between_effects <- .find_within_between(model, "between-effect")
   if (!is.null(between_effects)) {
     index <- unique(unlist(sapply(between_effects, function(i) {
       grep(i, parameters$Parameter, fixed = TRUE)
@@ -439,7 +448,7 @@
     parameters$Component[interactions] <- "interactions"
   }
 
-  if (!("within" %in% parameters$Component) || !("between" %in% parameters$Component)) {
+  if (((!("within" %in% parameters$Component) || !("between" %in% parameters$Component)) && inherits(model, "merMod")) || all(parameters$Component == "rewb-contextual")) {
     parameters$Component <- NULL
   }
 

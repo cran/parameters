@@ -71,7 +71,7 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
   }
 
   # remove columns that have only NA or Inf
-  to_remove <- sapply(x, function(col) all(is.na(col) | all(is.infinite(col))))
+  to_remove <- sapply(x, function(col) all(is.na(col) | is.infinite(col)))
   if (any(to_remove)) x[to_remove] <- NULL
 
   if (!is.null(attributes(x)$title)) {
@@ -330,7 +330,7 @@ print.parameters_random <- function(x, digits = 2, ...) {
     } else if (split_column == "Subgroup") {
       s1 <- component_name
       s2 <- ""
-    } else if (component_name %in% c("Within-Effects", "Between-Effects")) {
+    } else if (component_name %in% c("Within-Effects", "Between-Effects", "(Cross-Level) Interactions")) {
       s1 <- component_name
       s2 <- ""
     } else if (grepl(tolower(split_column), tolower(component_name), fixed = TRUE)) {
