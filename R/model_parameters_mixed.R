@@ -9,7 +9,7 @@
 #' @param wb_component Logical, if \code{TRUE} and models contains within- and between-effects (see \code{\link{demean}}), the \code{Component} column will indicate which variables belong to the within-effects, between-effects, and cross-level interactions. By default, the \code{Component} column indicates, which parameters belong to the conditional or zero-inflated component of the model.
 #' @inheritParams model_parameters.default
 #'
-#' @seealso \code{\link[=standardize_names]{standardize_names()}} to rename
+#' @seealso \code{\link[insight:standardize_names]{standardize_names()}} to rename
 #'   columns into a consistent, standardized naming scheme.
 #'
 #' @note There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
@@ -31,12 +31,6 @@
 #'     data = Salamanders
 #'   )
 #'   model_parameters(model, details = TRUE)
-#'
-#'   # plot-method
-#'   if (require("see")) {
-#'     result <- model_parameters(model)
-#'     plot(result)
-#'   }
 #' }
 #'
 #' if (require("lme4")) {
@@ -60,7 +54,7 @@ model_parameters.merMod <- function(model, ci = .95, bootstrap = FALSE, df_metho
 
 
   if (exponentiate) params <- .exponentiate_parameters(params)
-  params <- .add_model_parameters_attributes(params, model, ci, exponentiate, ...)
+  params <- .add_model_parameters_attributes(params, model, ci, exponentiate, bootstrap, iterations, df_method, ...)
 
   if (isTRUE(details)) {
     attr(params, "details") <- .randomeffects_summary(model)
@@ -225,6 +219,27 @@ model_parameters.cpglmm <- model_parameters.clmm
 
 #' @export
 model_parameters.rlmerMod <- model_parameters.clmm
+
+
+#' @export
+model_parameters.merModList <- function(model, ci = .95, exponentiate = FALSE, p_adjust = NULL, ...) {
+  out <- .model_parameters_generic(
+    model = model,
+    ci = ci,
+    bootstrap = FALSE,
+    iterations = 10,
+    merge_by = "Parameter",
+    standardize = NULL,
+    exponentiate = exponentiate,
+    robust = FALSE,
+    p_adjust = p_adjust,
+    ...
+  )
+
+  attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  out
+}
+
 
 
 

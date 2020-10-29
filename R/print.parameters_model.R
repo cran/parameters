@@ -12,6 +12,8 @@
 #'   be printed. If \code{NULL} (default), all columns are printed. The shortcut
 #'   \code{select = "minimal"} prints coefficient, confidence intervals and p-values,
 #'   while \code{select = "short"} prints coefficient, standard errors and p-values.
+#' @param show_sigma Logical, if \code{FALSE}, adds information about the residual
+#'   standard deviation.
 #' @inheritParams parameters_table
 #' @return \code{NULL}
 #'
@@ -38,9 +40,16 @@
 #' }
 #' @importFrom insight format_table
 #' @export
-print.parameters_model <- function(x, pretty_names = TRUE, split_components = TRUE, select = NULL, digits = 2, ci_digits = 2, p_digits = 3, ...) {
+print.parameters_model <- function(x, pretty_names = TRUE, split_components = TRUE, select = NULL, digits = 2, ci_digits = 2, p_digits = 3, show_sigma = FALSE, ...) {
+  # save original input
   orig_x <- x
+
+  # save attributes
   res <- attributes(x)$details
+  coef_name <- attributes(x)$coefficient_name
+  sigma <- attributes(x)$sigma
+  s_value <- attributes(x)$s_value
+  ci_method <- .additional_arguments(x, "bayes_ci_method", NULL)
 
   # check if user supplied digits attributes
   if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
@@ -107,16 +116,48 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
 
   split_by <- split_by[nchar(split_by) > 0]
 
+  if (!is.null(coef_name)) {
+    colnames(x)[which(colnames(x) == "Coefficient")] <- coef_name
+    colnames(x)[which(colnames(x) == "Std_Coefficient")] <- paste0("Std_", coef_name)
+  }
+
+  if (isTRUE(s_value) && "p" %in% colnames(x)) {
+    colnames(x)[colnames(x) == "p"] <- "s"
+    x[["s"]] <- log2(1 / x[["s"]])
+  }
+
   if (split_components && !is.null(split_by) && length(split_by)) {
-    .print_model_parms_components(x, pretty_names, split_column = split_by, digits = digits, ci_digits = ci_digits, p_digits = p_digits, ...)
+    .print_model_parms_components(x, pretty_names, split_column = split_by, digits = digits, ci_digits = ci_digits, p_digits = p_digits, coef_column = coef_name, ...)
   } else {
     formatted_table <- parameters_table(x, pretty_names = pretty_names, digits = digits, ci_digits = ci_digits, p_digits = p_digits, ...)
     cat(insight::format_table(formatted_table))
   }
 
+  # print residual standard deviation
+  if (!is.null(sigma) && isTRUE(show_sigma)) {
+    cat("\n")
+    insight::print_color(sprintf("Residual standard deviation: %.*f", digits, sigma), "blue")
+  }
+
+  # for Bayesian models
+  if (!is.null(ci_method)) {
+    ci_method <- switch(
+      toupper(ci_method),
+      "HDI" = "highest density intervals",
+      "ETI" = "equal-tailed intervals",
+      "SI" = "support intervals",
+      "uncertainty intervals"
+    )
+    message(paste0("Using ", ci_method, " as credible intervals."))
+  }
+
   # print summary for random effects
   if (!is.null(res)) {
-    cat("\n")
+    if (isTRUE(show_sigma)) {
+      cat("\n\n")
+    } else {
+      cat("\n")
+    }
     .print_random_parameters(res, digits = digits)
   }
   invisible(orig_x)
@@ -195,13 +236,15 @@ print.parameters_random <- function(x, digits = 2, ...) {
 
 
 #' @keywords internal
-.print_model_parms_components <- function(x, pretty_names, split_column = "Component", digits = 2, ci_digits = 2, p_digits = 3, ...) {
+.print_model_parms_components <- function(x, pretty_names, split_column = "Component", digits = 2, ci_digits = 2, p_digits = 3, coef_column = NULL, ...) {
 
   # check if user supplied digits attributes
   is_ordinal_model <- attributes(x)$ordinal_model
   if (is.null(is_ordinal_model)) is_ordinal_model <- FALSE
 
+  # zero-inflated stuff
   is_zero_inflated <- (!is.null(x$Component) & "zero_inflated" %in% x$Component)
+  zi_coef_name <- attributes(x)$zi_coefficient_name
 
   # make sure we have correct order of levels from split-factor
   x[split_column] <- lapply(x[split_column], function(i) {
@@ -249,12 +292,12 @@ print.parameters_random <- function(x, digits = 2, ...) {
     }
 
 
-    if ("z / Chisq" %in% names(tables[[type]])) {
+    if ("z / Chi2" %in% names(tables[[type]])) {
       if (type == "smooth_terms") {
-        names(tables[[type]])[names(tables[[type]]) == "z / Chisq"] <- "Chisq"
+        names(tables[[type]])[names(tables[[type]]) == "z / Chi2"] <- "Chi2"
       }
       if (type == "conditional") {
-        names(tables[[type]])[names(tables[[type]]) == "z / Chisq"] <- "z"
+        names(tables[[type]])[names(tables[[type]]) == "z / Chi2"] <- "z"
       }
     }
 
@@ -272,6 +315,12 @@ print.parameters_random <- function(x, digits = 2, ...) {
     attr(tables[[type]], "ci_digits") <- ci_digits
     attr(tables[[type]], "p_digits") <- p_digits
 
+    # rename columns for zero-inflation part
+    if (grepl("^zero", type) && !is.null(zi_coef_name) && !is.null(coef_column)) {
+      colnames(tables[[type]])[which(colnames(tables[[type]]) == coef_column)] <- zi_coef_name
+      colnames(tables[[type]])[which(colnames(tables[[type]]) == paste0("Std_", coef_column))] <- paste0("Std_", zi_coef_name)
+    }
+
     formatted_table <- parameters_table(tables[[type]], pretty_names = pretty_names, ...)
 
     component_name <- switch(
@@ -287,6 +336,8 @@ print.parameters_random <- function(x, digits = 2, ...) {
       "zero_inflated.random" = "Random Effects (Zero-Inflated Model)",
       "dispersion" = "Dispersion",
       "marginal" = "Marginal Effects",
+      "emmeans" = "Estimated Marginal Means",
+      "contrasts" = "Contrasts",
       "simplex.fixed" = ,
       "simplex" = "Monotonic Effects",
       "smooth_sd" = "Smooth Terms (SD)",
@@ -302,6 +353,8 @@ print.parameters_random <- function(x, digits = 2, ...) {
       "extra.fixed" = "Extra Parameters",
       "nu" = "Nu",
       "tau" = "Tau",
+      "meta" = "Meta-Parameters",
+      "studies" = "Studies",
       "within" = "Within-Effects",
       "between" = "Between-Effects",
       "interactions" = "(Cross-Level) Interactions",
@@ -341,7 +394,7 @@ print.parameters_random <- function(x, digits = 2, ...) {
       s2 <- ""
     } else {
       s1 <- component_name
-      s2 <- split_column
+      s2 <- ifelse(tolower(split_column) == "component", "", split_column)
     }
 
 
@@ -363,6 +416,7 @@ print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...
 
   # check if user supplied digits attributes
   ci <- .additional_arguments(x, "ci", .95)
+  ci_method <- .additional_arguments(x, "bayes_ci_method", NULL)
   digits <- .additional_arguments(x, "digits", 2)
   ci_digits <- .additional_arguments(x, "ci_digits", 2)
   p_digits <- .additional_arguments(x, "p_digits", 3)
@@ -399,6 +453,18 @@ print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...
       cat("\n")
     }
   }
+
+  if (!is.null(ci_method)) {
+    ci_method <- switch(
+      toupper(ci_method),
+      "HDI" = "highest density intervals",
+      "ETI" = "equal-tailed intervals",
+      "SI" = "support intervals",
+      "uncertainty intervals"
+    )
+    message(paste0("Using ", ci_method, " as credible intervals."))
+  }
+
   invisible(orig_x)
 }
 

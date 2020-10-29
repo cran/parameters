@@ -8,6 +8,7 @@
 #'   with zero-inflated component. \code{component} may be one of \code{"conditional"},
 #'   \code{"zi"}, \code{"zero-inflated"} or \code{"all"} (default). May be abbreviated.
 #' @inheritParams bootstrap_model
+#' @inheritParams p_value
 #'
 #' @return A data frame.
 #'
@@ -296,7 +297,7 @@ simulate_model.vgam <- function(model, iterations = 1000, ...) {
 #' @export
 simulate_model.glmmTMB <- function(model, iterations = 1000, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), verbose = FALSE, ...) {
   component <- match.arg(component)
-  info <- insight::model_info(model)
+  info <- insight::model_info(model, verbose = FALSE)
 
   ## TODO remove is.list() when insight 0.8.3 on CRAN
   if (!is.list(info)) {
@@ -379,6 +380,20 @@ simulate_model.zerocount <- simulate_model.zeroinfl
 
 # Other models ---------------------------------------
 
+
+#' @importFrom insight find_response
+#' @export
+simulate_model.mlm <- function(model, iterations = 1000, ...) {
+  responses <- insight::find_response(model, combine = FALSE)
+  out <- .simulate_model(model, iterations, component = "conditional", effects = "fixed")
+
+  cn <- paste0(colnames(out), rep(responses, each = length(colnames(out)) / length(responses)))
+  colnames(out) <- cn
+
+  class(out) <- c("parameters_simulate_model", class(out))
+  attr(out, "object_name") <- .safe_deparse(substitute(model))
+  out
+}
 
 #' @export
 simulate_model.betareg <- function(model, iterations = 1000, component = c("all", "conditional", "precision"), ...) {

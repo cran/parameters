@@ -14,6 +14,7 @@
   rope_range = "default",
   rope_ci = 0.89,
   priors = TRUE,
+  verbose = TRUE,
   ...
 )
 }
@@ -49,6 +50,8 @@ proportion of HDI, to use for the percentage in ROPE.}
 
 \item{priors}{Add the prior used for each parameter.}
 
+\item{verbose}{Toggle warnings and messages.}
+
 \item{...}{Additional arguments to be passed to or from methods.}
 }
 \value{
@@ -77,5 +80,4 @@ library(BayesFactor)
 model <- ttestBF(x = rnorm(100, 1, 1))
 model_parameters(model)
 }
-
 }

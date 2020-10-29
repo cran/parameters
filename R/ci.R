@@ -4,7 +4,7 @@
 #'
 #' @param x A statistical model.
 #' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%).
-#' @param method For mixed models, can be \code{\link[=ci_wald]{"wald"}} (default), \code{\link[=ci_ml1]{"ml1"}} or \code{\link[=ci_betwithin]{"betwithin"}}. For linear mixed model, can also be \code{\link[=ci_satterthwaite]{"satterthwaite"}}, \code{\link[=ci_kenward]{"kenward"}} or \code{"boot"} and \code{lme4::confint.merMod}). For (generalized) linear models, can be \code{"robust"} to compute confidence intervals based on robust standard errors, and for generalized linear models, may also be \code{"profile"} (default) or \code{"wald"}.
+#' @param method For mixed models, can be \code{\link[=ci_wald]{"wald"}} (default), \code{\link[=ci_ml1]{"ml1"}} or \code{\link[=ci_betwithin]{"betwithin"}}. For linear mixed model, can also be \code{\link[=ci_satterthwaite]{"satterthwaite"}}, \code{\link[=ci_kenward]{"kenward"}} or \code{"boot"} and \code{lme4::confint.merMod}). For (generalized) linear models, can be \code{"robust"} to compute confidence intervals based on robust covariance matrix estimation, and for generalized linear models, may also be \code{"profile"} (default) or \code{"wald"}.
 #' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.
 #' @inheritParams simulate_model
 #' @inheritParams standard_error
@@ -99,25 +99,36 @@ ci.default <- function(x, ci = .95, method = NULL, ...) {
 
 #' @export
 ci.mlm <- function(x, ci = .95, ...) {
-  out <- lapply(ci, function(i) {
-    .ci <- stats::confint(x, level = i, ...)
-    rn <- rownames(.ci)
-    .data_frame(
-      Parameter = gsub("^(.*):(.*)", "\\2", rn),
-      CI = i,
-      CI_low = .ci[, 1],
-      CI_high = .ci[, 2],
-      Response = gsub("^(.*):(.*)", "\\1", rn)
-    )
-  })
+  if (is.null(insight::find_weights(x))) {
+    out <- lapply(ci, function(i) {
+      .ci <- stats::confint(x, level = i, ...)
+      rn <- rownames(.ci)
+      .data_frame(
+        Parameter = gsub("^(.*):(.*)", "\\2", rn),
+        CI = i,
+        CI_low = .ci[, 1],
+        CI_high = .ci[, 2],
+        Response = gsub("^(.*):(.*)", "\\1", rn)
+      )
+    })
+    out <- .remove_backticks_from_parameter_names(do.call(rbind, out))
+  } else {
+    out <- .data_frame(ci_wald(x, ci = ci, ...), Response = insight::get_parameters(x)$Response)
+  }
 
-  .remove_backticks_from_parameter_names(do.call(rbind, out))
+  out
 }
 
 
 #' @export
 ci.bayesx <- function(x, ci = .95, ...) {
   ci_wald(model = x, ci = ci, dof = Inf, robust = FALSE, component = "conditional")
+}
+
+
+#' @export
+ci.merModList <- function(x, ci = .95, ...) {
+  ci_wald(model = x, ci = ci, dof = NULL, robust = FALSE, component = "conditional")
 }
 
 
@@ -166,7 +177,18 @@ ci.gam <- function(x, ci = .95, ...) {
 }
 
 #' @export
+ci.scam <- ci.gam
+
+#' @export
 ci.mipo <- ci.gam
+
+#' @export
+ci.mira <- function(x, ci = .95, ...) {
+  if (!requireNamespace("mice", quietly = TRUE)) {
+    stop("Package 'mice' needed for this function to work. Please install it.")
+  }
+  ci(mice::pool(x), ci = ci, ...)
+}
 
 #' @export
 ci.list <- function(x, ci = .95, ...) {
@@ -426,6 +448,50 @@ ci.DirichletRegModel <- function(x, ci = .95, component = c("all", "conditional"
 
 
 
+#' @rdname ci.merMod
+#' @export
+ci.HLfit <- function(x, ci = 0.95, method = c("wald", "ml1", "betwithin", "profile", "boot"), iterations = 100, ...) {
+  method <- tolower(method)
+  method <- match.arg(method)
+
+  # Wald approx
+  if (method == "wald") {
+    out <- ci_wald(model = x, ci = ci, dof = Inf)
+
+    # ml1 approx
+  } else if (method == "ml1") {
+    out <- ci_ml1(x, ci)
+
+    # betwithin approx
+  } else if (method == "betwithin") {
+    out <- ci_betwithin(x, ci)
+
+    # profiled
+  } else if (method == "profile") {
+    nparms <- n_parameters(x)
+    conf <- stats::confint(x, parm = 1:nparms, level = ci, verbose = FALSE, boot_args = NULL)
+    if (nparms == 1) {
+      out <- as.data.frame(t(conf$interval))
+    } else {
+      out <- as.data.frame(do.call(rbind, lapply(conf, function(i) i$interval)))
+    }
+    colnames(out) <- c("CI_low", "CI_high")
+    out$Parameter <- insight::find_parameters(x, effects = "fixed", flatten = TRUE)
+    out$CI <- ci * 100
+    out <- out[c("Parameter", "CI", "CI_low", "CI_high")]
+  }
+
+  #   # bootstrapping
+  # } else if (method == "boot") {
+  #   out <- stats::confint(x, parm = n_parameters(x), level = ci, verbose = FALSE, boot_args = list(nsim = iterations, showpbar = FALSE))
+  # }
+
+  out
+}
+
+
+
+
 
 
 
@@ -435,12 +501,12 @@ ci.DirichletRegModel <- function(x, ci = .95, component = c("all", "conditional"
 
 #' @rdname ci.merMod
 #' @export
-ci.glmmTMB <- function(x, ci = .95, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), method = c("wald", "ml1", "betwithin", "robust"), ...) {
+ci.glmmTMB <- function(x, ci = .95, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), method = c("wald", "ml1", "betwithin", "robust"), verbose = TRUE, ...) {
   method <- tolower(method)
   method <- match.arg(method)
   component <- match.arg(component)
 
-  if (is.null(.check_component(x, component))) {
+  if (is.null(.check_component(x, component, verbose = verbose))) {
     return(NULL)
   }
 
@@ -469,9 +535,9 @@ ci.zerocount <- ci.glmmTMB
 
 #' @rdname ci.merMod
 #' @export
-ci.MixMod <- function(x, ci = .95, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+ci.MixMod <- function(x, ci = .95, component = c("all", "conditional", "zi", "zero_inflated"), verbose = TRUE, ...) {
   component <- match.arg(component)
-  if (is.null(.check_component(x, component))) {
+  if (is.null(.check_component(x, component, verbose = verbose))) {
     return(NULL)
   }
   ci_wald(model = x, ci = ci, dof = Inf, component = component)
@@ -544,6 +610,18 @@ ci.betamfx <- function(x, ci = .95, component = c("all", "conditional", "precisi
 # Special models -----------------------------------------
 
 
+# ci.emm_list
+# ci.emmGrid
+# - implamented in bayestestR
+
+
+
+#' @export
+ci.margins <- function(x, ci = .95, ...) {
+  ci_wald(model = x, ci = ci, dof = Inf, ...)
+}
+
+
 #' @export
 ci.lqmm <- function(x, ...) {
   out <- model_parameters(x, ...)
@@ -582,6 +660,31 @@ ci.betareg <- function(x, ci = .95, component = c("all", "conditional", "precisi
   component <- match.arg(component)
   ci_wald(model = x, ci = ci, dof = Inf, component = component)
 }
+
+
+# ci.vgam <- function(x, ci = .95, component = c("all", "conditional", "smooth"), ...) {
+#   component <- match.arg(component)
+#
+#   # dof and SE
+#   dof <- degrees_of_freedom(x)
+#   se <- standard_error(x)$SE
+#   params <- insight::get_parameters(x)
+#
+#   se <- se[!is.na(dof)]
+#   dof <- dof[!is.na(dof)]
+#   params_names <- names(dof)
+#
+#   # Wald CI for non-chisq parameters
+#   out <- ci_wald(model = x, ci = ci, dof = Inf)
+#
+#   chisq_fac <- stats::qchisq(se, df = dof, lower.tail = FALSE)
+#   for (i in 1:length(params_names)) {
+#     out$CI_low[out$Parameter == params_names[i]] <- params$Estimate[params$Parameter == params_names[i]] - se[i] * chisq_fac[i]
+#     out$CI_high[out$Parameter == params_names[i]] <- params$Estimate[params$Parameter == params_names[i]] + se[i] * chisq_fac[i]
+#   }
+#
+#   out
+# }
 
 
 #' @rdname ci.merMod
@@ -671,11 +774,13 @@ ci.lme <- function(x, ci = .95, method = c("wald", "betwithin", "ml1", "satterth
 #' @importFrom insight print_color
 #' @importFrom stats qt
 #' @export
-ci.effectsize_std_params <- function(x, ci = .95, ...) {
+ci.effectsize_std_params <- function(x, ci = .95, verbose = TRUE, ...) {
   se <- attr(x, "standard_error")
 
   if (is.null(se)) {
-    insight::print_color("\nCould not extract standard errors of standardized coefficients.\n", "red")
+    if (isTRUE(verbose)) {
+      insight::print_color("\nCould not extract standard errors of standardized coefficients.\n", "red")
+    }
     return(NULL)
   }
 
@@ -748,6 +853,34 @@ ci.metaplus <- function(x, ...) {
 }
 
 
+#' @export
+ci.meta_random <- function(x, method = "hdi", ...) {
+  # process arguments
+  params <- as.data.frame(x$estimates)
+  ci_method <- match.arg(method, choices = c("hdi", "eti"))
+
+  # extract ci-level and find ci-columns
+  ci <- .meta_bma_extract_ci(params)
+  ci_cols <- .metabma_ci_columns(ci_method, ci)
+
+  out <- data.frame(
+    Parameter = rownames(params),
+    CI = .95,
+    CI_low = params[[ci_cols[1]]],
+    CI_high = params[[ci_cols[2]]],
+    stringsAsFactors = FALSE
+  )
+
+  out$Parameter[grepl("d", out$Parameter)] <- "(Intercept)"
+  out
+}
+
+#' @export
+ci.meta_fixed <- ci.meta_random
+
+#' @export
+ci.meta_bma <- ci.meta_random
+
 
 
 
@@ -756,9 +889,11 @@ ci.metaplus <- function(x, ...) {
 
 
 #' @keywords internal
-.check_component <- function(m, x) {
+.check_component <- function(m, x, verbose = TRUE) {
   if (!insight::model_info(m)$is_zero_inflated && x %in% c("zi", "zero_inflated")) {
-    insight::print_color("Model has no zero-inflation component!\n", "red")
+    if (isTRUE(verbose)) {
+      insight::print_color("Model has no zero-inflation component!\n", "red")
+    }
     x <- NULL
   }
   x

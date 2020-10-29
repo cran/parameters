@@ -12,24 +12,24 @@ if (!requireNamespace("mice", quietly = TRUE) ||
 
 set.seed(333)
 
-## ----message=FALSE------------------------------------------------------------
+## ----message=FALSE, warning=FALSE---------------------------------------------
 library(mice)
 library(parameters)
 
 data("nhanes2")
-imp <- mice(nhanes2)
+imp <- mice(nhanes2, printFlag = FALSE)
 fit <- with(data = imp, exp = lm(bmi ~ age + hyp + chl))
 
 model_parameters(fit)
 
-## ----message=FALSE------------------------------------------------------------
+## ----message=FALSE, warning=FALSE---------------------------------------------
 library(lme4)
 library(GLMMadaptive)
 
 data(cbpp)
 cbpp$period[sample(1:nrow(cbpp), size = 10)] <- NA
 
-imputed_data <- mice(cbpp)
+imputed_data <- mice(cbpp, printFlag = FALSE)
 
 ## ----message=FALSE, eval=FALSE------------------------------------------------
 #  fit <- with(data = imputed_data, expr = GLMMadaptive::mixed_model(
@@ -41,24 +41,36 @@ imputed_data <- mice(cbpp)
 #  #>   argument "data" is missing, with no default
 
 ## ----message=FALSE------------------------------------------------------------
-analyses <- as.list(seq_len(imputed_data$m))
-for (i in seq_along(analyses)) {
-  data.i <- complete(imputed_data, i)
-  analyses[[i]] <- mixed_model(
+models <- lapply(1:imputed_data$m, function(i) {
+  mixed_model(
     cbind(incidence, size - incidence) ~ period,
     random = ~ 1 | herd,
-    data = data.i,
+    data = complete(imputed_data, action = i),
     family = binomial
   )
-}
-object <- list(analyses = analyses)
-class(object) <- c("mira", "matrix", "list")
-
-model_parameters(object)
+})
+pool_parameters(models)
 
 ## ----message=FALSE------------------------------------------------------------
+library(mice)
+library(parameters)
+
 data("nhanes2")
-imp <- mice(nhanes2)
+imp <- mice(nhanes2, printFlag = FALSE)
+
+# approach when model is supported by "mice"
+fit <- with(data = imp, exp = lm(bmi ~ age + hyp + chl))
+summary(pool(fit))
+
+# approach when model is *not* supported by "mice"
+models <- lapply(1:5, function(i) {
+  lm(bmi ~ age + hyp + chl, data = complete(imp, action = i))
+})
+pool_parameters(models)
+
+## ----message=FALSE, warning=FALSE---------------------------------------------
+data("nhanes2")
+imp <- mice(nhanes2, printFlag = FALSE)
 fit <- with(data = imp, exp = lm(bmi ~ age + hyp + chl))
 pooled <- pool(fit)
 

@@ -22,7 +22,7 @@ standard_error(model, ...)
 
 \method{standard_error}{factor}(model, force = FALSE, verbose = TRUE, ...)
 
-\method{standard_error}{default}(model, method = NULL, ...)
+\method{standard_error}{default}(model, method = NULL, verbose = TRUE, ...)
 
 \method{standard_error}{merMod}(model, effects = c("fixed", "random"), method = NULL, ...)
 
@@ -30,6 +30,7 @@ standard_error(model, ...)
   model,
   effects = c("fixed", "random"),
   component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
+  verbose = TRUE,
   ...
 )
 
@@ -37,6 +38,7 @@ standard_error(model, ...)
   model,
   effects = c("fixed", "random"),
   component = c("all", "conditional", "zi", "zero_inflated"),
+  verbose = TRUE,
   ...
 )
 
@@ -44,6 +46,7 @@ standard_error(model, ...)
   model,
   component = c("all", "conditional", "zi", "zero_inflated"),
   method = NULL,
+  verbose = TRUE,
   ...
 )
 
@@ -80,7 +83,7 @@ value \code{1} (unless the factor has numeric levels, which are converted
 to the corresponding numeric value). By default, \code{NA} is returned
 for factors or character vectors.}
 
-\item{verbose}{Toggle off warnings.}
+\item{verbose}{Toggle warnings and messages.}
 
 \item{method}{If \code{"robust"}, robust standard errors are computed
 by calling \code{\link[=standard_error_robust]{standard_error_robust()}}.
@@ -102,7 +105,7 @@ with zero-inflated component. \code{component} may be one of \code{"conditional"
 \code{"zi"}, \code{"zero-inflated"} or \code{"all"} (default). May be abbreviated.}
 }
 \value{
-A data frame.
+A data frame with at least two columns: the parameter names and the standard errors. Depending on the model, may also include columns for model components etc.
 }
 \description{
 \code{standard_error()} attempts to return standard errors of model parameters, while \code{standard_error_robust()} attempts to return robust standard errors.

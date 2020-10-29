@@ -7,9 +7,6 @@
 \alias{model_parameters.betamfx}
 \alias{model_parameters.default}
 \alias{model_parameters.glm}
-\alias{model_parameters.betareg}
-\alias{model_parameters.clm2}
-\alias{model_parameters.glmx}
 \title{Parameters from (General) Linear Models}
 \usage{
 \method{model_parameters}{logitor}(
@@ -74,42 +71,6 @@
   p_adjust = NULL,
   ...
 )
-
-\method{model_parameters}{betareg}(
-  model,
-  ci = 0.95,
-  bootstrap = FALSE,
-  iterations = 1000,
-  component = c("conditional", "precision", "all"),
-  standardize = NULL,
-  exponentiate = FALSE,
-  p_adjust = NULL,
-  ...
-)
-
-\method{model_parameters}{clm2}(
-  model,
-  ci = 0.95,
-  bootstrap = FALSE,
-  iterations = 1000,
-  component = c("all", "conditional", "scale"),
-  standardize = NULL,
-  exponentiate = FALSE,
-  p_adjust = NULL,
-  ...
-)
-
-\method{model_parameters}{glmx}(
-  model,
-  ci = 0.95,
-  bootstrap = FALSE,
-  iterations = 1000,
-  component = c("all", "conditional", "extra"),
-  standardize = NULL,
-  exponentiate = FALSE,
-  p_adjust = NULL,
-  ...
-)
 }
 \arguments{
 \item{model}{Model object.}
@@ -130,7 +91,7 @@
 
 \item{...}{Arguments passed to or from other methods. For instance, when \code{bootstrap = TRUE}, arguments like \code{ci_method} are passed down to \code{\link[bayestestR]{describe_posterior}}.}
 
-\item{component}{Model component for which parameters should be shown. May be one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}), \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}), \code{"marginal"} (\pkg{mfx}) or \code{"all"}.}
+\item{component}{Model component for which parameters should be shown. May be one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}), \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}), \code{"marginal"} (\pkg{mfx}), \code{"conditional"} or \code{"full"} (for \code{MuMIn::model.avg()}) or \code{"all"}.}
 
 \item{df_method}{Method for computing degrees of freedom for confidence intervals (CI). Only applies to models of class \code{glm} or \code{polr}. May be \code{"profile"} or \code{"wald"}.}
 }
@@ -164,6 +125,6 @@ model_parameters(model)
 model_parameters(model, exponentiate = TRUE)
 }
 \seealso{
-\code{\link[=standardize_names]{standardize_names()}} to rename
+\code{\link[insight:standardize_names]{standardize_names()}} to rename
   columns into a consistent, standardized naming scheme.
 }

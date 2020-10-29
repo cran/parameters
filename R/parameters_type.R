@@ -83,7 +83,7 @@ parameters_type <- function(model, ...) {
   if (is.null(data)) {
     return(NULL)
   }
-  reference <- .list_factors_numerics(data)
+  reference <- .list_factors_numerics(data, model)
 
   # Get types
   main <- .parameters_type_table(names = params$Parameter, data, reference)
@@ -274,9 +274,45 @@ parameters_type <- function(model, ...) {
 
 
 #' @keywords internal
-.list_factors_numerics <- function(data) {
+.list_factors_numerics <- function(data, model) {
   out <- list()
   out$numeric <- names(data[sapply(data, is.numeric)])
+
+  # get contrast coding
+  contrast_coding <- tryCatch(
+    {
+      model$contrasts
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+
+  # if contrasts are given as matrix, find related contrast name
+  if (!is.null(contrast_coding)) {
+    contrast_coding <- lapply(contrast_coding, function(i) {
+      if (is.array(i)) {
+        cn <- colnames(i)
+        if (is.null(cn)) {
+          if (rowMeans(i)[1] == -1) {
+            i <- "contr.helmert"
+          } else {
+            i <- "contr.sum"
+          }
+        } else if (cn[1] == ".L") {
+          i <- "contr.poly"
+        } else if (cn[1] == "2") {
+          i <- "contr.treatment2"
+        } else if (cn[1] == "1") {
+          i <- "contr.SAS2"
+        } else {
+          i <- "contr.custom"
+          attr(i, "column_names") <- cn
+        }
+      }
+      i
+    })
+  }
 
   # Ordered factors
   out$ordered <- names(data[sapply(data, is.ordered)])
@@ -287,8 +323,16 @@ parameters_type <- function(model, ...) {
   out$levels <- NA
   out$levels_parent <- NA
   for (fac in out$factor) {
-    if (fac %in% out$ordered) {
+    if ((fac %in% out$ordered && is.null(contrast_coding[[fac]])) || (!is.null(contrast_coding[[fac]]) && any(contrast_coding[[fac]] %in% "contr.poly"))) {
       levels <- paste0(fac, c(".L", ".Q", ".C", paste0("^", 4:1000))[1:length(unique(data[[fac]]))])
+    } else if (!is.null(contrast_coding[[fac]]) && any(contrast_coding[[fac]] %in% c("contr.SAS2", "contr.sum", "contr.bayes", "contr.helmert"))) {
+      levels <- paste0(fac, 1:length(unique(data[[fac]])))
+    } else if (!is.null(contrast_coding[[fac]]) && any(contrast_coding[[fac]] %in% c("contr.treatment2"))) {
+      levels <- paste0(fac, 2:length(unique(data[[fac]])))
+    } else if (!is.null(contrast_coding[[fac]]) && any(contrast_coding[[fac]] %in% c("contr.SAS"))) {
+      levels <- paste0(fac, rev(unique(data[[fac]])))
+    } else if (!is.null(contrast_coding[[fac]]) && any(contrast_coding[[fac]] %in% c("contr.custom"))) {
+      levels <- paste0(fac, attributes(contrast_coding[[fac]])$column_names)
     } else {
       levels <- paste0(fac, unique(data[[fac]]))
     }

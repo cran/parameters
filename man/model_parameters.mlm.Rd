@@ -5,6 +5,7 @@
 \alias{model_parameters.multinom}
 \alias{model_parameters.bracl}
 \alias{model_parameters.DirichletRegModel}
+\alias{model_parameters.clm2}
 \title{Parameters from multinomial or cumulative link models}
 \usage{
 \method{model_parameters}{mlm}(
@@ -50,6 +51,18 @@
   exponentiate = FALSE,
   ...
 )
+
+\method{model_parameters}{clm2}(
+  model,
+  ci = 0.95,
+  bootstrap = FALSE,
+  iterations = 1000,
+  component = c("all", "conditional", "scale"),
+  standardize = NULL,
+  exponentiate = FALSE,
+  p_adjust = NULL,
+  ...
+)
 }
 \arguments{
 \item{model}{A model with multinomial or categorical response value.}
@@ -68,7 +81,7 @@
 
 \item{...}{Arguments passed to or from other methods. For instance, when \code{bootstrap = TRUE}, arguments like \code{ci_method} are passed down to \code{\link[bayestestR]{describe_posterior}}.}
 
-\item{component}{Model component for which parameters should be shown. May be one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}), \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}), \code{"marginal"} (\pkg{mfx}) or \code{"all"}.}
+\item{component}{Model component for which parameters should be shown. May be one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}), \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}), \code{"marginal"} (\pkg{mfx}), \code{"conditional"} or \code{"full"} (for \code{MuMIn::model.avg()}) or \code{"all"}.}
 }
 \value{
 A data frame of indices related to the model's parameters.
@@ -97,6 +110,6 @@ if (require("brglm2")) {
 }
 }
 \seealso{
-\code{\link[=standardize_names]{standardize_names()}} to rename
+\code{\link[insight:standardize_names]{standardize_names()}} to rename
   columns into a consistent, standardized naming scheme.
 }

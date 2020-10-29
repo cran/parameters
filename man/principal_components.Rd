@@ -20,9 +20,9 @@ closest_component(x)
 \arguments{
 \item{x}{A data frame or a statistical model.}
 
-\item{n}{Number of components to extract. If \code{n="all"}, then \code{n} is set as the number of variables minus 1 (\code{ncol(x)-1}). If \code{n="auto"} (default) or \code{n=NULL}, the number of components is selected through \code{\link{n_factors}}. In \code{\link{reduce_parameters}}, can also be \code{"max"}, in which case it will select all the components that are maximally pseudo-loaded (i.e., correlated) by at least one variable.}
+\item{n}{Number of components to extract. If \code{n="all"}, then \code{n} is set as the number of variables minus 1 (\code{ncol(x)-1}). If \code{n="auto"} (default) or \code{n=NULL}, the number of components is selected through \code{\link{n_factors}} resp. \code{\link{n_components}}. In \code{\link{reduce_parameters}}, can also be \code{"max"}, in which case it will select all the components that are maximally pseudo-loaded (i.e., correlated) by at least one variable.}
 
-\item{rotation}{If not \code{"none"}, the PCA / FA will be computed using the \pkg{psych} package. Possible options include \code{"varimax"}, \code{"quartimax"}, \code{"promax"}, \code{"oblimin"}, \code{"simplimax"}, and \code{"cluster"}. See \code{\link[psych]{fa}} for details.}
+\item{rotation}{If not \code{"none"}, the PCA / FA will be computed using the \pkg{psych} package. Possible options include \code{"varimax"}, \code{"quartimax"}, \code{"promax"}, \code{"oblimin"}, \code{"simplimax"}, or \code{"cluster"} (and more). See \code{\link[psych]{fa}} for details.}
 
 \item{sort}{Sort the loadings.}
 
@@ -65,10 +65,24 @@ This function performs a principal component analysis (PCA) and returns the load
  There is a simplified rule of thumb that may help do decide whether to run
  a factor analysis or a principal component analysis:
  \itemize{
-   \item Run factor analysis if you assume or wish to test a theoretical model of latent factors causing observed variables.
-   \item Run principal component analysis If you want to simply reduce your correlated observed variables to a smaller set of important independent composite variables.
+   \item Run \emph{factor analysis} if you assume or wish to test a theoretical model of latent factors causing observed variables.
+   \item Run \emph{principal component analysis} If you want to simply reduce your correlated observed variables to a smaller set of important independent composite variables.
  }
  (Source: \href{https://stats.stackexchange.com/q/1576/54740}{CrossValidated})
+ }
+ \subsection{Computing Item Scores}{
+   Use \code{\link{get_scores}} to compute scores for the "subscales" represented
+   by the extracted principal components. \code{get_scores()} takes the results
+   from \code{principal_components()} and extracts the variables for each
+   component found by the PCA. Then, for each of these "subscales", row means
+   are calculated (which equals adding up the single items and dividing by
+   the number of items). This results in a sum score for each component from
+   the PCA, which is on the same scale as the original, single items that were
+   used to compute the PCA.
+
+   One can also use \code{predict()} to back-predict scores for each component,
+   to which one can provide \code{newdata} or a vector of \code{names} for the
+   components.
  }
 }
 \note{
@@ -83,8 +97,9 @@ if (require("psych")) {
   principal_components(mtcars[, 1:7], n = 2, threshold = 2, sort = TRUE)
 
   pca <- principal_components(mtcars[, 1:5], n = 2, rotation = "varimax")
-  summary(pca)
-  predict(pca)
+  pca  # Print loadings
+  summary(pca)  # Print information about the factors
+  predict(pca, names=c("Component1", "Component2"))  # Back-predict scores
 
   # which variables from the original data belong to which extracted component?
   closest_component(pca)
@@ -104,5 +119,5 @@ if (require("psych")) {
 }
 }
 \seealso{
-\code{\link[performance]{check_itemscale}} to compute various measures of internal consistencies applied to the (sub)scales (i.e. components) extracted from the PCA.
+\code{\link[performance]{check_itemscale}} to compute various measures of internal consistencies applied to the (sub)scales (i.e. components) extracted from the PCA. Use \code{\link{get_scores}} to compute scores for each subscale.
 }

@@ -15,7 +15,6 @@
 #'   matrix estimators. For certain mixed models, \code{method} may also be one
 #'   of \code{"wald"}, \code{\link[=p_value_ml1]{"ml1"}}, \code{\link[=p_value_betwithin]{"betwithin"}},
 #'   \code{\link[=p_value_satterthwaite]{"satterthwaite"}} or \code{\link[=p_value_kenward]{"kenward"}}.
-#' @param verbose Toggle off warnings.
 #' @param ... Arguments passed to or from other methods. For \code{standard_error()},
 #'   if \code{method = "robust"}, arguments \code{vcov_estimation}, \code{vcov_type}
 #'   and \code{vcov_args} can be passed down to \code{\link[=standard_error_robust]{standard_error_robust()}}.
@@ -25,13 +24,15 @@
 #'    a list of standard errors (per group level) for random intercepts and slopes
 #'    is returned.
 #' @inheritParams simulate_model
+#' @inheritParams p_value
 #'
 #' @note For Bayesian models (from \pkg{rstanarm} or \pkg{brms}), the standard error is the SD of the posterior samples.
+#'
+#' @return A data frame with at least two columns: the parameter names and the standard errors. Depending on the model, may also include columns for model components etc.
 #'
 #' @examples
 #' model <- lm(Petal.Length ~ Sepal.Length * Species, data = iris)
 #' standard_error(model)
-#' @return A data frame.
 #' @importFrom stats coef vcov setNames var na.omit
 #' @importFrom insight get_varcov print_color get_parameters find_parameters
 #' @importFrom utils capture.output
@@ -77,13 +78,15 @@ standard_error.data.frame <- function(model, verbose = TRUE, ...) {
 
 
 #' @export
-standard_error.list <- function(model, ...) {
+standard_error.list <- function(model, verbose = TRUE, ...) {
   if ("gam" %in% names(model)) {
     model <- model$gam
     class(model) <- c("gam", "lm", "glm")
     standard_error(model)
   } else {
-    insight::print_color("\nCould not extract standard errors from model object.\n", "red")
+    if (isTRUE(verbose)) {
+      insight::print_color("\nCould not extract standard errors from model object.\n", "red")
+    }
   }
 }
 
@@ -114,11 +117,13 @@ standard_error.xtabs <- standard_error.table
 
 #' @importFrom insight print_color
 #' @export
-standard_error.effectsize_std_params <- function(model, ...) {
+standard_error.effectsize_std_params <- function(model, verbose = TRUE, ...) {
   se <- attr(model, "standard_error")
 
   if (is.null(se)) {
-    insight::print_color("\nCould not extract standard errors of standardized coefficients.\n", "red")
+    if (isTRUE(verbose)) {
+      insight::print_color("\nCould not extract standard errors of standardized coefficients.\n", "red")
+    }
     return(NULL)
   }
 
@@ -160,7 +165,7 @@ standard_error.parameters_kurtosis <- standard_error.parameters_skewness
 
 #' @rdname standard_error
 #' @export
-standard_error.default <- function(model, method = NULL, ...) {
+standard_error.default <- function(model, method = NULL, verbose = TRUE, ...) {
   if (!is.null(method)) {
     method <- tolower(method)
   } else {
@@ -204,7 +209,9 @@ standard_error.default <- function(model, method = NULL, ...) {
 
 
     if (is.null(se)) {
-      insight::print_color("\nCould not extract standard errors from model object.\n", "red")
+      if (isTRUE(verbose)) {
+        insight::print_color("\nCould not extract standard errors from model object.\n", "red")
+      }
     } else {
       .data_frame(
         Parameter = names(se),
@@ -257,6 +264,17 @@ standard_error.mlm <- function(model, ...) {
   })
 
   .remove_backticks_from_parameter_names(do.call(rbind, se))
+}
+
+
+#' @export
+standard_error.merModList <- function(model, ...) {
+  s <- suppressWarnings(summary(model))
+  out <- .data_frame(
+    Parameter = s$fe$term,
+    SE = s$fe$std.error
+  )
+  .remove_backticks_from_parameter_names(out)
 }
 
 
@@ -361,7 +379,7 @@ standard_error.merMod <- function(model, effects = c("fixed", "random"), method 
 
 #' @rdname standard_error
 #' @export
-standard_error.glmmTMB <- function(model, effects = c("fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), ...) {
+standard_error.glmmTMB <- function(model, effects = c("fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), verbose = TRUE, ...) {
   component <- match.arg(component)
   effects <- match.arg(effects)
 
@@ -383,7 +401,7 @@ standard_error.glmmTMB <- function(model, effects = c("fixed", "random"), compon
       return(NULL)
     }
   } else {
-    if (is.null(.check_component(model, component))) {
+    if (is.null(.check_component(model, component, verbose = verbose))) {
       return(NULL)
     }
 
@@ -410,7 +428,7 @@ standard_error.glmmTMB <- function(model, effects = c("fixed", "random"), compon
 #' @rdname standard_error
 #' @importFrom insight find_random
 #' @export
-standard_error.MixMod <- function(model, effects = c("fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated"), ...) {
+standard_error.MixMod <- function(model, effects = c("fixed", "random"), component = c("all", "conditional", "zi", "zero_inflated"), verbose = TRUE, ...) {
   component <- match.arg(component)
   effects <- match.arg(effects)
 
@@ -436,7 +454,7 @@ standard_error.MixMod <- function(model, effects = c("fixed", "random"), compone
     }
     rand.se
   } else {
-    if (is.null(.check_component(model, component))) {
+    if (is.null(.check_component(model, component, verbose = verbose))) {
       return(NULL)
     }
 
@@ -459,6 +477,26 @@ standard_error.MixMod <- function(model, effects = c("fixed", "random"), compone
 
 
 
+#' @export
+standard_error.HLfit <- function(model, method = NULL, ...) {
+  if (is.null(method)) method <- "wald"
+
+  if (method == "ml1") {
+    se_ml1(model)
+  } else if (method == "betwithin") {
+    se_betwithin(model)
+  } else {
+    utils::capture.output(se <- summary(model)$beta_table[, 2])
+    .data_frame(
+      Parameter = insight::find_parameters(model, effects = "fixed", component = "conditional", flatten = TRUE),
+      SE = as.vector(se)
+    )
+  }
+}
+
+
+
+
 
 
 
@@ -467,9 +505,9 @@ standard_error.MixMod <- function(model, effects = c("fixed", "random"), compone
 
 #' @rdname standard_error
 #' @export
-standard_error.zeroinfl <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), method = NULL, ...) {
+standard_error.zeroinfl <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), method = NULL, verbose = TRUE, ...) {
   component <- match.arg(component)
-  if (is.null(.check_component(model, component))) {
+  if (is.null(.check_component(model, component, verbose = verbose))) {
     return(NULL)
   }
 
@@ -861,6 +899,16 @@ standard_error.bayesx <- function(model, ...) {
 
 
 #' @export
+standard_error.margins <- function(model, ...) {
+  params <- insight::get_parameters(model)
+  .data_frame(
+    Parameter = params$Parameter,
+    SE = summary(model)$SE
+  )
+}
+
+
+#' @export
 standard_error.lqmm <- function(model, ...) {
   out <- model_parameters(model, ...)
   as.data.frame(out[c("Parameter", "SE")])
@@ -876,6 +924,15 @@ standard_error.mipo <- function(model, ...) {
     Parameter = as.vector(summary(model)$term),
     SE = as.vector(summary(model)$std.error)
   )
+}
+
+
+#' @export
+standard_error.mira <- function(model,...) {
+  if (!requireNamespace("mice", quietly = TRUE)) {
+    stop("Package 'mice' needed for this function to work. Please install it.")
+  }
+  standard_error(mice::pool(model), ...)
 }
 
 
@@ -1317,6 +1374,9 @@ standard_error.gam <- function(model, ...) {
   )
 }
 
+#' @export
+standard_error.scam <- standard_error.gam
+
 
 #' @export
 standard_error.gamm <- function(model, ...) {
@@ -1406,6 +1466,8 @@ standard_error.vglm <- function(model, ...) {
 standard_error.vgam <- function(model, ...) {
   params <- insight::get_parameters(model)
   se <- sqrt(diag(insight::get_varcov(model)))
+  # sort
+  se <- se[params$Parameter]
   .data_frame(
     Parameter = .remove_backticks_from_string(names(se)),
     SE = as.vector(se),
@@ -1524,13 +1586,40 @@ standard_error.emmGrid <- function(model, ...) {
   estimate_pos <- which(colnames(s) == model@misc$estName)
 
   if (length(estimate_pos)) {
-    .data_frame(
-      s[, 1:(estimate_pos - 1), drop = FALSE],
-      SE = s$SE
-    )
+    params <- s[, 1:(estimate_pos - 1), drop = FALSE]
+    if (ncol(params) >= 2) {
+      r <- apply(params, 1, function(i) paste0(colnames(params), " [", i, "]"))
+      out <- .data_frame(
+        Parameter = unname(sapply(as.data.frame(r), paste, collapse = ", ")),
+        SE = unname(s$SE)
+      )
+    } else {
+      out <- .data_frame(Parameter = as.vector(params[[1]]), SE = s$SE)
+    }
   } else {
-    return(NULL)
+    out <- NULL
   }
+  out
+}
+
+
+#' @export
+standard_error.emm_list <- function(model, ...) {
+  params <- insight::get_parameters(model)
+  s <- summary(model)
+  se <- unlist(lapply(s, function(i) {
+    if (is.null(i$SE)) {
+      rep(NA, nrow(i))
+    } else {
+      i$SE
+    }
+  }))
+
+  .data_frame(
+    Parameter = params$Parameter,
+    SE = unname(se),
+    Component = params$Component
+  )
 }
 
 
@@ -1559,6 +1648,25 @@ standard_error.metaplus <- function(model, ...) {
   out$Parameter[grepl("muhat", out$Parameter)] <- "(Intercept)"
   out
 }
+
+
+#' @export
+standard_error.meta_random <- function(model, ...) {
+  params <- as.data.frame(model$estimates)
+  out <- data.frame(
+    Parameter = .remove_backticks_from_string(rownames(params)),
+    SE = params$sd,
+    stringsAsFactors = FALSE
+  )
+  out$Parameter[grepl("d", out$Parameter)] <- "(Intercept)"
+  out
+}
+
+#' @export
+standard_error.meta_fixed <- standard_error.meta_random
+
+#' @export
+standard_error.meta_bma <- standard_error.meta_random
 
 
 

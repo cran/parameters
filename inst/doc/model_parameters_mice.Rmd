@@ -38,12 +38,12 @@ set.seed(333)
 
 `model_parameters()` can be used in combination with the *mice* package to deal with missing data, in particular to summaries regression models used with multiple imputed datasets. It computes pooled summaries of multiple imputed repeated regression analyses, i.e. of objects of class `mira`. Thus, `model_parameters()` for `mira`-objects is comparable to the `pool()`-function from *mice*, but only focuses on the final summary of parameters and does not include the diagnostic statistic per estimate.
 
-```{r message=FALSE}
+```{r message=FALSE, warning=FALSE}
 library(mice)
 library(parameters)
 
 data("nhanes2")
-imp <- mice(nhanes2)
+imp <- mice(nhanes2, printFlag = FALSE)
 fit <- with(data = imp, exp = lm(bmi ~ age + hyp + chl))
 
 model_parameters(fit)
@@ -53,14 +53,14 @@ Not all packages work with `with.mids()` from package *mice*. Thus, for some mod
 
 First, we generate a dataset with missing values. We take the data `cbpp` from *lme4* and randomly assign some missing values into one of the predictors. Then we impute the data, using `mice()` from package *mice*.
 
-```{r message=FALSE}
+```{r message=FALSE, warning=FALSE}
 library(lme4)
 library(GLMMadaptive)
 
 data(cbpp)
 cbpp$period[sample(1:nrow(cbpp), size = 10)] <- NA
 
-imputed_data <- mice(cbpp)
+imputed_data <- mice(cbpp, printFlag = FALSE)
 ```
 
 Using `with` to compute multiple regression analyses for each imputed dataset fails.
@@ -75,32 +75,54 @@ fit <- with(data = imputed_data, expr = GLMMadaptive::mixed_model(
 #>   argument "data" is missing, with no default
 ```
 
-However, we can use a workaround by calculating the regression models for each imputed dataset manually, using `complete()` from package *mice*. Please note that it is important to mimic the structure of `mira`-objects! The returned model objects have to be saved as a list named `analyses`. This list must be of class `mira` and `list`, and can be used with `model_parameters()`.
+However, we can use a workaround by using `pool_parameters()`, which works on a list of model objects. So whenever a model-object is not yet supported by `mice::with()`, you can instead fit multiple models to the imputed datasets and pool all parameters with `pool_parameters()`:
+
+The steps would be:
+
+1. Calculate the regression models for each imputed dataset manually (either by using `complete()` from package *mice* to get the imputed datasets, or by accessing the datasets directly from the `mids` object)
+2. Save all model objects in a list.
+3. Pass ths list to `pool_parameters()`. 
 
 ```{r message=FALSE}
-analyses <- as.list(seq_len(imputed_data$m))
-for (i in seq_along(analyses)) {
-  data.i <- complete(imputed_data, i)
-  analyses[[i]] <- mixed_model(
+models <- lapply(1:imputed_data$m, function(i) {
+  mixed_model(
     cbind(incidence, size - incidence) ~ period,
     random = ~ 1 | herd,
-    data = data.i,
+    data = complete(imputed_data, action = i),
     family = binomial
   )
-}
-object <- list(analyses = analyses)
-class(object) <- c("mira", "matrix", "list")
-
-model_parameters(object)
+})
+pool_parameters(models)
 ```
+
+For comparison and to show that the results from `mice:pool()` and `pool_parameters()` are identical, we take an example that also works with the _mice_ package:
+
+```{r message=FALSE}
+library(mice)
+library(parameters)
+
+data("nhanes2")
+imp <- mice(nhanes2, printFlag = FALSE)
+
+# approach when model is supported by "mice"
+fit <- with(data = imp, exp = lm(bmi ~ age + hyp + chl))
+summary(pool(fit))
+
+# approach when model is *not* supported by "mice"
+models <- lapply(1:5, function(i) {
+  lm(bmi ~ age + hyp + chl, data = complete(imp, action = i))
+})
+pool_parameters(models)
+```
+
 
 ## Model Parameters from `mipo` objects
 
 It is also possible to compute summaries of pooled objects of class `mipo`.
 
-```{r message=FALSE}
+```{r message=FALSE, warning=FALSE}
 data("nhanes2")
-imp <- mice(nhanes2)
+imp <- mice(nhanes2, printFlag = FALSE)
 fit <- with(data = imp, exp = lm(bmi ~ age + hyp + chl))
 pooled <- pool(fit)
 

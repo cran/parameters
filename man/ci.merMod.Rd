@@ -7,6 +7,7 @@
 \alias{ci.polr}
 \alias{ci.mixor}
 \alias{ci.DirichletRegModel}
+\alias{ci.HLfit}
 \alias{ci.glmmTMB}
 \alias{ci.zeroinfl}
 \alias{ci.hurdle}
@@ -35,11 +36,20 @@
 
 \method{ci}{DirichletRegModel}(x, ci = 0.95, component = c("all", "conditional", "precision"), ...)
 
+\method{ci}{HLfit}(
+  x,
+  ci = 0.95,
+  method = c("wald", "ml1", "betwithin", "profile", "boot"),
+  iterations = 100,
+  ...
+)
+
 \method{ci}{glmmTMB}(
   x,
   ci = 0.95,
   component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
   method = c("wald", "ml1", "betwithin", "robust"),
+  verbose = TRUE,
   ...
 )
 
@@ -48,6 +58,7 @@
   ci = 0.95,
   component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
   method = c("wald", "ml1", "betwithin", "robust"),
+  verbose = TRUE,
   ...
 )
 
@@ -56,6 +67,7 @@
   ci = 0.95,
   component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
   method = c("wald", "ml1", "betwithin", "robust"),
+  verbose = TRUE,
   ...
 )
 
@@ -63,6 +75,7 @@
   x,
   ci = 0.95,
   component = c("all", "conditional", "zi", "zero_inflated"),
+  verbose = TRUE,
   ...
 )
 
@@ -93,7 +106,7 @@
 
 \item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
 
-\item{method}{For mixed models, can be \code{\link[=ci_wald]{"wald"}} (default), \code{\link[=ci_ml1]{"ml1"}} or \code{\link[=ci_betwithin]{"betwithin"}}. For linear mixed model, can also be \code{\link[=ci_satterthwaite]{"satterthwaite"}}, \code{\link[=ci_kenward]{"kenward"}} or \code{"boot"} and \code{lme4::confint.merMod}). For (generalized) linear models, can be \code{"robust"} to compute confidence intervals based on robust standard errors, and for generalized linear models, may also be \code{"profile"} (default) or \code{"wald"}.}
+\item{method}{For mixed models, can be \code{\link[=ci_wald]{"wald"}} (default), \code{\link[=ci_ml1]{"ml1"}} or \code{\link[=ci_betwithin]{"betwithin"}}. For linear mixed model, can also be \code{\link[=ci_satterthwaite]{"satterthwaite"}}, \code{\link[=ci_kenward]{"kenward"}} or \code{"boot"} and \code{lme4::confint.merMod}). For (generalized) linear models, can be \code{"robust"} to compute confidence intervals based on robust covariance matrix estimation, and for generalized linear models, may also be \code{"profile"} (default) or \code{"wald"}.}
 
 \item{...}{Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.}
 
@@ -107,6 +120,10 @@ is returned.}
 or for the zero-inflated part of the model be returned? Applies to models
 with zero-inflated component. \code{component} may be one of \code{"conditional"},
 \code{"zi"}, \code{"zero-inflated"} or \code{"all"} (default). May be abbreviated.}
+
+\item{iterations}{The number of draws to simulate/bootstrap.}
+
+\item{verbose}{Toggle warnings and messages.}
 }
 \value{
 A data frame containing the CI bounds.

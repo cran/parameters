@@ -7,6 +7,7 @@ knitr::opts_chunk$set(comment = "#>")
 if (!requireNamespace("dplyr", quietly = TRUE) ||
     !requireNamespace("performance", quietly = TRUE) ||
     !requireNamespace("rstanarm", quietly = TRUE) ||
+    # !requireNamespace("projpred", quietly = TRUE) ||
     !requireNamespace("lme4", quietly = TRUE)) {
   knitr::opts_chunk$set(eval = FALSE)
 } else {
@@ -45,12 +46,4 @@ lmer(
 ) %>% 
   select_parameters() %>%
   summary()
-
-## ----message=FALSE, warning=FALSE---------------------------------------------
-library(rstanarm)
-model <- stan_glm(
-  mpg ~ ., data = mtcars,
-  iter = 500, refresh = 0, verbose = FALSE
-)
-select_parameters(model, cross_validation = TRUE)
 

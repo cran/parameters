@@ -40,10 +40,46 @@ format_parameters.glmm <- function(model) {
 
 
 #' @export
+format_parameters.emm_list <- function(model) {
+  NULL
+}
+
+
+#' @export
+format_parameters.margins <- function(model) {
+  NULL
+}
+
+
+#' @export
 format_parameters.rma <- function(model) {
   params <- insight::find_parameters(model, flatten = TRUE)
   names(params) <- params
   params
+}
+
+
+#' @export
+format_parameters.meta_random <- function(model) {
+  # params <- insight::find_parameters(model, flatten = TRUE)
+  # names(params) <- params
+  # params
+
+  ## TODO enable once insight 0.11.0 is on CRAN
+  NULL
+}
+
+#' @export
+format_parameters.meta_fixed <- format_parameters.meta_random
+
+#' @export
+format_parameters.meta_bma <- format_parameters.meta_random
+
+
+
+#' @export
+format_parameters.merModList <- function(model) {
+  .format_parameter_default(model[[1]])
 }
 
 

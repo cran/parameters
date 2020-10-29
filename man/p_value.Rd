@@ -3,90 +3,43 @@
 \name{p_value}
 \alias{p_value}
 \alias{p_value.default}
-\alias{p_value.lmerMod}
-\alias{p_value.merMod}
-\alias{p_value.rlmerMod}
-\alias{p_value.glmmTMB}
-\alias{p_value.MixMod}
-\alias{p_value.mixor}
 \alias{p_value.emmGrid}
-\alias{p_value.poissonmfx}
-\alias{p_value.betamfx}
-\alias{p_value.averaging}
-\alias{p_value.DirichletRegModel}
-\alias{p_value.clm2}
 \alias{p_value.gee}
 \title{p-values}
 \usage{
 p_value(model, ...)
 
-\method{p_value}{default}(model, method = NULL, ...)
-
-\method{p_value}{lmerMod}(model, method = "wald", ...)
-
-\method{p_value}{merMod}(model, method = "wald", ...)
-
-\method{p_value}{rlmerMod}(model, method = "wald", ...)
-
-\method{p_value}{glmmTMB}(
-  model,
-  component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
-  ...
-)
-
-\method{p_value}{MixMod}(model, component = c("all", "conditional", "zi", "zero_inflated"), ...)
-
-\method{p_value}{mixor}(model, effects = c("all", "fixed", "random"), ...)
+\method{p_value}{default}(model, method = NULL, verbose = TRUE, ...)
 
 \method{p_value}{emmGrid}(model, ci = 0.95, adjust = "none", ...)
-
-\method{p_value}{poissonmfx}(model, component = c("all", "conditional", "marginal"), ...)
-
-\method{p_value}{betamfx}(
-  model,
-  component = c("all", "conditional", "precision", "marginal"),
-  ...
-)
-
-\method{p_value}{averaging}(model, component = c("conditional", "full"), ...)
-
-\method{p_value}{DirichletRegModel}(model, component = c("all", "conditional", "precision"), ...)
-
-\method{p_value}{clm2}(model, component = c("all", "conditional", "scale"), ...)
 
 \method{p_value}{gee}(model, method = NULL, ...)
 }
 \arguments{
 \item{model}{A statistical model.}
 
-\item{...}{Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.}
+\item{...}{Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed. Only available for models where \code{method = "robust"} is supported.}
 
-\item{method}{For mixed models, can be \code{\link[=p_value_wald]{"wald"}} (default), \code{\link[=p_value_ml1]{"ml1"}}, \code{\link[=p_value_betwithin]{"betwithin"}}, \code{\link[=p_value_satterthwaite]{"satterthwaite"}} or \code{\link[=p_value_kenward]{"kenward"}}. For models that are supported by the \pkg{sandwich} or \pkg{clubSandwich} packages, may also be \code{method = "robust"} to compute p-values based ob robust standard errors.}
+\item{method}{If \code{"robust"}, and if model is supported by the \pkg{sandwich} or \pkg{clubSandwich} packages, computes p-values based on robust covariance matrix estimation.}
 
-\item{component}{Should all parameters, parameters for the conditional model,
-or for the zero-inflated part of the model be returned? Applies to models
-with zero-inflated component. \code{component} may be one of \code{"conditional"},
-\code{"zi"}, \code{"zero-inflated"} or \code{"all"} (default). May be abbreviated.}
-
-\item{effects}{Should standard errors for fixed effects or random effects
-be returned? Only applies to mixed models. May be abbreviated. When
-standard errors for random effects are requested, for each grouping factor
-a list of standard errors (per group level) for random intercepts and slopes
-is returned.}
+\item{verbose}{Toggle warnings and messages.}
 
 \item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
 
 \item{adjust}{Character value naming the method used to adjust p-values or confidence intervals. See \code{?emmeans::summary.emmGrid} for details.}
 }
 \value{
-The p-values.
+A data frame with at least two columns: the parameter names and the p-values. Depending on the model, may also include columns for model components etc.
 }
 \description{
-This function attempts to return, or compute, p-values of a model's parameters. The nature of the p-values is different depending on the model:
+This function attempts to return, or compute, p-values of a model's parameters. See the documentation for your object's class:
 \itemize{
-\item Mixed models (\pkg{lme4}): By default, p-values are based on Wald-test approximations (see \code{\link{p_value_wald}}). For certain situations, the "m-l-1" rule might be a better approximation. That is, for \code{method = "ml1"}, \code{\link{p_value_ml1}} is called. For \code{lmerMod} objects, if \code{method = "kenward"}, p-values are based on Kenward-Roger approximations, i.e. \code{\link{p_value_kenward}} is called, and \code{method = "satterthwaite"} calls \code{\link{p_value_satterthwaite}}.
-\item Bayesian models (\pkg{rstanarm}, \pkg{brms}): For Bayesian models, the p-values corresponds to the \emph{probability of direction} (\code{\link[bayestestR]{p_direction}}), which is converted to a p-value using \code{bayestestR::convert_pd_to_p()}.
-}
+ \item{\link[=p_value.lmerMod]{Mixed models} (\pkg{lme4}, \pkg{nlme}, \pkg{glmmTMB}, ...)}
+ \item{\link[=p_value.brmsfit]{Bayesian models} (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, ...)}
+ \item{\link[=p_value.zeroinfl]{Zero-inflated models} (\code{hurdle}, \code{zeroinfl}, \code{zerocount}, ...)}
+ \item{\link[=p_value.poissonmfx]{Marginal effects models} (\pkg{mfx})}
+ \item{\link[=p_value.DirichletRegModel]{Models with special components} (\code{DirichletRegModel}, \code{clm2}, \code{cgam}, ...)}
+ }
 }
 \note{
 \code{p_value_robust()} resp. \code{p_value(method = "robust")}
@@ -95,9 +48,7 @@ This function attempts to return, or compute, p-values of a model's parameters. 
   thus only work for those models supported by those packages.
 }
 \examples{
-if (require("lme4")) {
-  data(iris)
-  model <- lmer(Petal.Length ~ Sepal.Length + (1 | Species), data = iris)
-  p_value(model)
-}
+data(iris)
+model <- lm(Petal.Length ~ Sepal.Length + Species, data = iris)
+p_value(model)
 }

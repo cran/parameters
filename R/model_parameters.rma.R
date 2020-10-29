@@ -31,7 +31,12 @@
 #'   model <- rma(yi, vi, mods = ~ alloc, data = dat, digits = 3, slab = author)
 #'   model_parameters(model)
 #' }
-#' }
+#'
+#' if (require("metaBMA")) {
+#'   data(towels)
+#'   m <- meta_random(logOR, SE, study, data = towels)
+#'   model_parameters(m)
+#' }}
 #' @return A data frame of indices related to the model's parameters.
 #' @importFrom stats qt pt setNames
 #' @export
@@ -183,4 +188,161 @@ model_parameters.metaplus <- function(model, ci = .95, bootstrap = FALSE, iterat
   attr(out, "measure") <- "Estimate"
 
   out
+}
+
+
+
+#' @export
+model_parameters.meta_random <- function(model, ci = .95, ci_method = "hdi", exponentiate = FALSE, ...) {
+  # process arguments
+  params <- as.data.frame(model$estimates)
+  ci_method <- match.arg(ci_method, choices = c("hdi", "eti"))
+
+  # parameters of studies included
+  study_params <- model$data
+  fac <- stats::qnorm((1 + ci) / 2, lower.tail = TRUE)
+
+  out_study <- data.frame(
+    Parameter = study_params$labels,
+    Coefficient = study_params$y,
+    SE = study_params$SE,
+    CI_low = study_params$y - fac * study_params$SE,
+    CI_high = study_params$y + fac * study_params$SE,
+    Weight = 1 / study_params$SE^2,
+    BF = NA,
+    Rhat = NA,
+    ESS = NA,
+    Component = "studies",
+    stringsAsFactors = FALSE
+  )
+
+  # extract ci-level and find ci-columns
+  ci <- .meta_bma_extract_ci(params)
+  ci_cols <- .metabma_ci_columns(ci_method, ci)
+
+  # parameters of overall / tau
+  out <- data.frame(
+    Parameter = rownames(params),
+    Coefficient = params$mean,
+    SE = params$sd,
+    CI_low = params[[ci_cols[1]]],
+    CI_high = params[[ci_cols[2]]],
+    Weight = NA,
+    BF = NA,
+    Rhat = params$Rhat,
+    ESS = params$n_eff,
+    Component = "meta",
+    stringsAsFactors = FALSE
+  )
+
+  # fix intercept name
+  out$Parameter[out$Parameter == "d"] <- "Overall"
+
+  # add BF
+  out$BF[1] <- model$BF[2, 1]
+
+  # merge
+  out <- rbind(out_study, out)
+
+  if (exponentiate) out <- .exponentiate_parameters(out)
+  out <- .add_model_parameters_attributes(params = out, model = model, ci = ci, exponentiate = exponentiate, ci_method = ci_method, ...)
+
+  # final atributes
+  attr(out, "measure") <- "Estimate"
+  attr(out, "object_name") <- .safe_deparse(substitute(model))
+
+  ## TODO remove once insight > 0.10.0 is on CRAN
+  attr(out, "data") <- model$data$data
+  class(out) <- c("parameters_model", "see_parameters_model", class(params))
+
+  out
+}
+
+
+#' @export
+model_parameters.meta_fixed <- model_parameters.meta_random
+
+
+#' @export
+model_parameters.meta_bma <- function(model, ci = .95, ci_method = "hdi", exponentiate = FALSE, ...) {
+  # process arguments
+  params <- as.data.frame(model$estimates)
+  ci_method <- match.arg(ci_method, choices = c("hdi", "eti"))
+
+  # parameters of studies included
+  study_params <- model$meta$fixed$data
+  fac <- stats::qnorm((1 + ci) / 2, lower.tail = TRUE)
+
+  out_study <- data.frame(
+    Parameter = study_params$labels,
+    Coefficient = study_params$y,
+    SE = study_params$SE,
+    CI_low = study_params$y - fac * study_params$SE,
+    CI_high = study_params$y + fac * study_params$SE,
+    Weight = 1 / study_params$SE^2,
+    BF = NA,
+    Rhat = NA,
+    ESS = NA,
+    Component = "studies",
+    stringsAsFactors = FALSE
+  )
+
+  # extract ci-level and find ci-columns
+  ci <- .meta_bma_extract_ci(params)
+  ci_cols <- .metabma_ci_columns(ci_method, ci)
+
+  out <- data.frame(
+    Parameter = rownames(params),
+    Coefficient = params$mean,
+    SE = params$sd,
+    CI_low = params[[ci_cols[1]]],
+    CI_high = params[[ci_cols[2]]],
+    Weight = NA,
+    BF = NA,
+    Rhat = params$Rhat,
+    ESS = params$n_eff,
+    Component = "meta",
+    stringsAsFactors = FALSE
+  )
+
+  # add BF
+  out$BF <- c(NA, model$BF[2, 1], model$BF[4, 1])
+
+  # merge
+  out <- rbind(out_study, out)
+
+  if (exponentiate) out <- .exponentiate_parameters(out)
+  out <- .add_model_parameters_attributes(params = out, model = model, ci = ci, exponentiate = exponentiate, ci_method = ci_method, ...)
+
+  # final attributes
+  attr(out, "measure") <- "Estimate"
+  attr(out, "object_name") <- .safe_deparse(substitute(model))
+
+  ## TODO remove once insight > 0.10.0 is on CRAN
+  attr(out, "data") <- model$meta$fixed$data$data
+  class(out) <- c("parameters_model", "see_parameters_model", class(params))
+
+  out
+}
+
+
+
+
+
+
+# helper ------
+
+
+.meta_bma_extract_ci <- function(params) {
+  hpd_col <- colnames(params)[grepl("hpd(\\d+)_lower", colnames(params))]
+  as.numeric(gsub("hpd(\\d+)_lower", "\\1", hpd_col)) / 100
+}
+
+
+.metabma_ci_columns <- function(ci_method, ci) {
+  switch(
+    toupper(ci_method),
+    "HDI" = sprintf(c("hpd%i_lower", "hpd%i_upper"), 100 * ci),
+    c(sprintf("%g%%", (100 * (1 - ci)) / 2), sprintf("%g%%", 100 - (100 * (1 - ci)) / 2))
+  )
 }

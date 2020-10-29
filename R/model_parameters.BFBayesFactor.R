@@ -4,6 +4,7 @@
 #'
 #' @param model Object of class \code{BFBayesFactor}.
 #' @inheritParams bayestestR::describe_posterior
+#' @inheritParams p_value
 #'
 #' @details
 #' The meaning of the extracted parameters: For
@@ -25,30 +26,42 @@
 #' model <- ttestBF(x = rnorm(100, 1, 1))
 #' model_parameters(model)
 #' }
-#'
 #' @return A data frame of indices related to the model's parameters.
 #' @importFrom stats na.omit
 #' @importFrom bayestestR bayesfactor_models
 #' @export
-model_parameters.BFBayesFactor <- function(model, centrality = "median", dispersion = FALSE, ci = 0.89, ci_method = "hdi", test = c("pd", "rope"), rope_range = "default", rope_ci = 0.89, priors = TRUE, ...) {
+model_parameters.BFBayesFactor <- function(model, centrality = "median", dispersion = FALSE, ci = 0.89, ci_method = "hdi", test = c("pd", "rope"), rope_range = "default", rope_ci = 0.89, priors = TRUE, verbose = TRUE, ...) {
 
   if (any(grepl("^Null", names(model@numerator)))) {
-    insight::print_color("Nothing to compute for point-null models.\nSee github.com/easystats/parameters/issues/226\n", "red")
+    if (isTRUE(verbose)) {
+      insight::print_color("Nothing to compute for point-null models.\nSee github.com/easystats/parameters/issues/226\n", "red")
+    }
     return(NULL)
   }
 
-  out <- bayestestR::describe_posterior(model, centrality = centrality, dispersion = dispersion, ci = ci, ci_method = ci_method, test = test, rope_range = rope_range, rope_ci = rope_ci, priors = priors, ...)
-
-  # Add components and effects columns
-  tryCatch(
-    {
-      params <- insight::clean_parameters(model)[, c("Parameter", "Effects", "Component")]
-      out <- merge(out, params, sort = FALSE)
-    },
-    error = function(e) {
-      NULL
+  if (.classify_BFBayesFactor(model)[1] == "xtable") {
+    out <- data.frame(BF = NA)
+  } else {
+    if (is.null(insight::get_parameters(model))) {
+      if (isTRUE(verbose)) {
+        insight::print_color("Can't extract model parameters.\n", "red")
+      }
+      return(NULL)
     }
-  )
+
+    out <- bayestestR::describe_posterior(model, centrality = centrality, dispersion = dispersion, ci = ci, ci_method = ci_method, test = test, rope_range = rope_range, rope_ci = rope_ci, priors = priors, ...)
+
+    # Add components and effects columns
+    tryCatch(
+      {
+        params <- insight::clean_parameters(model)[, c("Parameter", "Effects", "Component")]
+        out <- merge(out, params, sort = FALSE)
+      },
+      error = function(e) {
+        NULL
+      }
+    )
+  }
 
   # Extract BF
   tryCatch(
@@ -60,7 +73,7 @@ model_parameters.BFBayesFactor <- function(model, centrality = "median", dispers
     }
   )
 
-  # Remove unecessary columns
+  # Remove unnecessary columns
   if ("CI" %in% names(out) && length(stats::na.omit(unique(out$CI))) == 1) {
     out$CI <- NULL
   }
@@ -77,4 +90,33 @@ model_parameters.BFBayesFactor <- function(model, centrality = "median", dispers
   class(out) <- c("parameters_model", class(out))
 
   out
+}
+
+
+
+
+
+# helper -------
+
+
+.classify_BFBayesFactor <- function(x) {
+  if (!requireNamespace("BayesFactor", quietly = TRUE)) {
+    stop("This function needs `BayesFactor` to be installed.")
+  }
+
+  if (any(class(x@denominator) %in% c("BFcorrelation"))) {
+    "correlation"
+  } else if (any(class(x@denominator) %in% c("BFoneSample"))) {
+    "ttest1"
+  } else if (any(class(x@denominator) %in% c("BFindepSample"))) {
+    "ttest2"
+  } else if (any(class(x@denominator) %in% c("BFmetat"))) {
+    "meta"
+  } else if (any(class(x@denominator) %in% c("BFlinearModel"))) {
+    "linear"
+  } else if (any(class(x@denominator) %in% c("BFcontingencyTable"))) {
+    "xtable"
+  } else {
+    class(x@denominator)
+  }
 }

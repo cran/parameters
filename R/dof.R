@@ -102,8 +102,27 @@ dof <- degrees_of_freedom
 
 
 #' @export
+degrees_of_freedom.merModList <- function(model,...) {
+  s <- suppressWarnings(summary(model))
+  s$fe$df
+}
+
+
+#' @export
 degrees_of_freedom.emmGrid <- function(model,...) {
   summary(model)$df
+}
+
+#' @export
+degrees_of_freedom.emm_list <- function(model,...) {
+  s <- summary(model)
+  unname(unlist(lapply(s, function(i) {
+    if (is.null(i$df)) {
+      Inf
+    } else {
+      i$df
+    }
+  })))
 }
 
 #' @export
@@ -123,6 +142,22 @@ degrees_of_freedom.lqm <- degrees_of_freedom.lqmm
 #' @export
 degrees_of_freedom.mipo <- function(model,...) {
   as.vector(summary(model)$df)
+}
+
+#' @export
+degrees_of_freedom.mira <- function(model,...) {
+  if (!requireNamespace("mice", quietly = TRUE)) {
+    stop("Package 'mice' needed for this function to work. Please install it.")
+  }
+  degrees_of_freedom(mice::pool(model), ...)
+}
+
+#' @export
+degrees_of_freedom.vgam <- function(model,...) {
+  params <- insight::get_parameters(model)
+  out <- setNames(rep(NA, nrow(params)), params$Parameter)
+  out[names(model@nl.df)] <- model@nl.df
+  out
 }
 
 #' @export
@@ -167,6 +202,10 @@ degrees_of_freedom.betamfx <- degrees_of_freedom.logitor
 .degrees_of_freedom_analytical <- function(model, kenward = TRUE) {
   nparam <- n_parameters(model)
   n <- insight::n_obs(model)
+
+  if (is.null(n)) {
+    n <- Inf
+  }
 
   if (isTRUE(kenward) && inherits(model, "lmerMod")) {
     dof <- as.numeric(dof_kenward(model))

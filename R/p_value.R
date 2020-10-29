@@ -1,15 +1,19 @@
 #' p-values
 #'
-#' This function attempts to return, or compute, p-values of a model's parameters. The nature of the p-values is different depending on the model:
+#' This function attempts to return, or compute, p-values of a model's parameters. See the documentation for your object's class:
 #' \itemize{
-#' \item Mixed models (\pkg{lme4}): By default, p-values are based on Wald-test approximations (see \code{\link{p_value_wald}}). For certain situations, the "m-l-1" rule might be a better approximation. That is, for \code{method = "ml1"}, \code{\link{p_value_ml1}} is called. For \code{lmerMod} objects, if \code{method = "kenward"}, p-values are based on Kenward-Roger approximations, i.e. \code{\link{p_value_kenward}} is called, and \code{method = "satterthwaite"} calls \code{\link{p_value_satterthwaite}}.
-#' \item Bayesian models (\pkg{rstanarm}, \pkg{brms}): For Bayesian models, the p-values corresponds to the \emph{probability of direction} (\code{\link[bayestestR]{p_direction}}), which is converted to a p-value using \code{bayestestR::convert_pd_to_p()}.
-#' }
+#'  \item{\link[=p_value.lmerMod]{Mixed models} (\pkg{lme4}, \pkg{nlme}, \pkg{glmmTMB}, ...)}
+#'  \item{\link[=p_value.brmsfit]{Bayesian models} (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, ...)}
+#'  \item{\link[=p_value.zeroinfl]{Zero-inflated models} (\code{hurdle}, \code{zeroinfl}, \code{zerocount}, ...)}
+#'  \item{\link[=p_value.poissonmfx]{Marginal effects models} (\pkg{mfx})}
+#'  \item{\link[=p_value.DirichletRegModel]{Models with special components} (\code{DirichletRegModel}, \code{clm2}, \code{cgam}, ...)}
+#'  }
 #'
 #' @param model A statistical model.
-#' @param method For mixed models, can be \code{\link[=p_value_wald]{"wald"}} (default), \code{\link[=p_value_ml1]{"ml1"}}, \code{\link[=p_value_betwithin]{"betwithin"}}, \code{\link[=p_value_satterthwaite]{"satterthwaite"}} or \code{\link[=p_value_kenward]{"kenward"}}. For models that are supported by the \pkg{sandwich} or \pkg{clubSandwich} packages, may also be \code{method = "robust"} to compute p-values based ob robust standard errors.
+#' @param method If \code{"robust"}, and if model is supported by the \pkg{sandwich} or \pkg{clubSandwich} packages, computes p-values based on robust covariance matrix estimation.
 #' @param adjust Character value naming the method used to adjust p-values or confidence intervals. See \code{?emmeans::summary.emmGrid} for details.
-#' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.
+#' @param verbose Toggle warnings and messages.
+#' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed. Only available for models where \code{method = "robust"} is supported.
 #' @inheritParams simulate_model
 #' @inheritParams standard_error
 #' @inheritParams ci.merMod
@@ -19,14 +23,12 @@
 #'   \code{vcov_estimation = "CR"} for cluster-robust standard errors) and will
 #'   thus only work for those models supported by those packages.
 #'
+#' @return A data frame with at least two columns: the parameter names and the p-values. Depending on the model, may also include columns for model components etc.
+#'
 #' @examples
-#' if (require("lme4")) {
-#'   data(iris)
-#'   model <- lmer(Petal.Length ~ Sepal.Length + (1 | Species), data = iris)
-#'   p_value(model)
-#' }
-#' @return The p-values.
-#' @importFrom bayestestR p_direction convert_pd_to_p
+#' data(iris)
+#' model <- lm(Petal.Length ~ Sepal.Length + Species, data = iris)
+#' p_value(model)
 #' @importFrom stats coef vcov pt pnorm na.omit
 #' @importFrom insight get_statistic get_parameters find_parameters print_color
 #' @importFrom methods slot
@@ -43,7 +45,7 @@ p_value <- function(model, ...) {
 
 #' @rdname p_value
 #' @export
-p_value.default <- function(model, method = NULL, ...) {
+p_value.default <- function(model, method = NULL, verbose = TRUE, ...) {
   if (!is.null(method)) {
     method <- tolower(method)
   } else {
@@ -91,7 +93,9 @@ p_value.default <- function(model, method = NULL, ...) {
   }
 
   if (is.null(p)) {
-    insight::print_color("\nCould not extract p-values from model object.\n", "red")
+    if (isTRUE(verbose)) {
+      insight::print_color("\nCould not extract p-values from model object.\n", "red")
+    }
   } else {
     .data_frame(
       Parameter = names(p),
@@ -170,314 +174,6 @@ p_value.speedlm <- function(model, ...) {
 
 
 
-
-
-# p-Values from Zero-Inflated Models ------------------------------------------
-
-
-#' @export
-p_value.zeroinfl <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), method = NULL, ...) {
-  component <- match.arg(component)
-  if (is.null(.check_component(model, component))) {
-    return(NULL)
-  }
-
-  robust <- !is.null(method) && method == "robust"
-  if (isTRUE(robust)) {
-    return(p_value_robust(model, ...))
-  }
-
-  cs <- .compact_list(stats::coef(summary(model)))
-  x <- lapply(names(cs), function(i) {
-    comp <- ifelse(i == "count", "conditional", "zi")
-    stats <- cs[[i]]
-
-    # remove log(theta)
-    theta <- grepl("Log(theta)", rownames(stats), fixed = TRUE)
-    if (any(theta)) {
-      stats <- stats[!theta, ]
-    }
-
-    .data_frame(
-      Parameter = insight::find_parameters(model, effects = "fixed", component = comp, flatten = TRUE),
-      p = as.vector(stats[, 4]),
-      Component = comp
-    )
-  })
-
-  p <- do.call(rbind, x)
-  p$Component <- .rename_values(p$Component, "cond", "conditional")
-  p$Component <- .rename_values(p$Component, "zi", "zero_inflated")
-
-  .filter_component(p, component)
-}
-
-
-#' @export
-p_value.hurdle <- p_value.zeroinfl
-
-#' @export
-p_value.zerocount <- p_value.zeroinfl
-
-
-#' @importFrom utils capture.output
-#' @export
-p_value.zcpglm <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
-  if (!requireNamespace("cplm", quietly = TRUE)) {
-    stop("To use this function, please install package 'cplm'.")
-  }
-
-  component <- match.arg(component)
-  junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
-  params <- get_parameters(model)
-
-  tweedie <- .data_frame(
-    Parameter = params$Parameter[params$Component == "conditional"],
-    p = as.vector(stats$tweedie[, "Pr(>|z|)"]),
-    Component = "conditional"
-  )
-
-  zero <- .data_frame(
-    Parameter = params$Parameter[params$Component == "zero_inflated"],
-    p = as.vector(stats$zero[, "Pr(>|z|)"]),
-    Component = "zero_inflated"
-  )
-
-  out <- .filter_component(rbind(tweedie, zero), component)
-  out
-}
-
-
-
-
-
-
-
-# p-Values from Mixed Models -----------------------------------------------
-
-
-#' @export
-p_value.sem <- function(model, ...) {
-  if (!.is_semLme(model)) {
-    return(NULL)
-  }
-
-  stat <- insight::get_statistic(model)
-  if (is.null(stat)) {
-    return(NULL)
-  }
-
-  .data_frame(
-    Parameter = stat$Parameter,
-    p = 2 * stats::pnorm(abs(stat$Statistic), lower.tail = FALSE)
-  )
-}
-
-
-
-#' @export
-p_value.lme <- function(model, ...) {
-  cs <- stats::coef(summary(model))
-  p <- cs[, 5]
-
-  .data_frame(
-    Parameter = .remove_backticks_from_string(rownames(cs)),
-    p = as.vector(p)
-  )
-}
-
-
-
-#' @rdname p_value
-#' @export
-p_value.lmerMod <- function(model, method = "wald", ...) {
-  method <- tolower(method)
-  method <- match.arg(method, c("wald", "ml1", "betwithin", "satterthwaite", "kr", "kenward"))
-  if (method == "wald") {
-    p_value_wald(model, ...)
-  } else if (method == "ml1") {
-    p_value_ml1(model, ...)
-  } else if (method == "betwithin") {
-    p_value_betwithin(model, ...)
-  } else if (method == "satterthwaite") {
-    p_value_satterthwaite(model, ...)
-  } else if (method %in% c("kr", "kenward")) {
-    p_value_kenward(model, ...)
-  }
-}
-
-
-
-#' @rdname p_value
-#' @export
-p_value.merMod <- function(model, method = "wald", ...) {
-  method <- tolower(method)
-  method <- match.arg(method, c("wald", "betwithin", "ml1"))
-  if (method == "wald") {
-    dof <- Inf
-  } else if (method == "ml1") {
-    dof <- dof_ml1(model)
-  } else {
-    dof <- dof_betwithin(model)
-  }
-  p_value_wald(model, dof, ...)
-}
-
-#' @export
-p_value.cpglmm <- p_value.merMod
-
-
-#' @rdname p_value
-#' @export
-p_value.rlmerMod <- function(model, method = "wald", ...) {
-  method <- match.arg(method, c("wald", "betwithin", "ml1"))
-  if (method == "wald") {
-    dof <- Inf
-  } else if (method == "ml1") {
-    dof <- dof_ml1(model)
-  } else {
-    dof <- dof_betwithin(model)
-  }
-  p_value_wald(model, dof, ...)
-}
-
-
-
-#' @rdname p_value
-#' @export
-p_value.glmmTMB <- function(model, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), ...) {
-  component <- match.arg(component)
-  if (is.null(.check_component(model, component))) {
-    return(NULL)
-  }
-
-  cs <- .compact_list(stats::coef(summary(model)))
-  x <- lapply(names(cs), function(i) {
-    .data_frame(
-      Parameter = insight::find_parameters(model, effects = "fixed", component = i, flatten = TRUE),
-      p = as.vector(cs[[i]][, 4]),
-      Component = i
-    )
-  })
-
-  p <- do.call(rbind, x)
-  p$Component <- .rename_values(p$Component, "cond", "conditional")
-  p$Component <- .rename_values(p$Component, "zi", "zero_inflated")
-  p$Component <- .rename_values(p$Component, "disp", "dispersion")
-
-  .filter_component(p, component)
-}
-
-
-
-#' @rdname p_value
-#' @export
-p_value.MixMod <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
-  component <- match.arg(component)
-  if (is.null(.check_component(model, component))) {
-    return(NULL)
-  }
-
-  s <- summary(model)
-  cs <- list(s$coef_table, s$coef_table_zi)
-  names(cs) <- c("conditional", "zero_inflated")
-  cs <- .compact_list(cs)
-  x <- lapply(names(cs), function(i) {
-    .data_frame(
-      Parameter = insight::find_parameters(model, effects = "fixed", component = i, flatten = TRUE),
-      p = as.vector(cs[[i]][, 4]),
-      Component = i
-    )
-  })
-
-  p <- do.call(rbind, x)
-  .filter_component(p, component)
-}
-
-
-#' @rdname p_value
-#' @importFrom insight get_parameters
-#' @export
-p_value.mixor <- function(model, effects = c("all", "fixed", "random"), ...) {
-  effects <- match.arg(effects)
-  stats <- model$Model[, "P(>|z|)"]
-  parms <- get_parameters(model, effects = effects)
-
-  .data_frame(
-    Parameter = parms$Parameter,
-    p = stats[parms$Parameter],
-    Effects = parms$Effects
-  )
-}
-
-
-#' @importFrom insight get_parameters
-#' @export
-p_value.glmm <- function(model, effects = c("all", "fixed", "random"), ...) {
-  effects <- match.arg(effects)
-  s <- summary(model)
-
-  out <- insight::get_parameters(model, effects = "all")
-  out$p <- c(s$coefmat[, 4], s$nucoefmat[, 4])
-  out <- out[, c("Parameter", "p", "Effects")]
-
-  if (effects != "all") {
-    out <- out[out$Effects == effects, , drop = FALSE]
-    out$Effects <- NULL
-  }
-
-  out
-}
-
-
-
-
-
-
-
-# p-Values from Bayesian Models -----------------------------------------------
-
-
-#' @export
-p_value.MCMCglmm <- function(model, ...) {
-  nF <- model$Fixed$nfl
-  p <- 1 - colSums(model$Sol[, 1:nF, drop = FALSE] > 0) / dim(model$Sol)[1]
-
-  .data_frame(
-    Parameter = insight::find_parameters(model, effects = "fixed", flatten = TRUE),
-    p = p
-  )
-}
-
-
-#' @export
-p_value.brmsfit <- function(model, ...) {
-  p <- bayestestR::p_direction(model)
-
-  .data_frame(
-    Parameter = .remove_backticks_from_string(p$Parameter),
-    p = sapply(p$pd, bayestestR::convert_pd_to_p, simplify = TRUE)
-  )
-}
-
-
-#' @export
-p_value.stanreg <- p_value.brmsfit
-
-
-#' @export
-p_value.BFBayesFactor <- p_value.brmsfit
-
-
-#' @export
-p_value.bcplm <- p_value.brmsfit
-
-
-
-
-
-
-
 # p-Values from Survey Models -----------------------------------------------
 
 
@@ -525,6 +221,49 @@ p_value.emmGrid <- function(model, ci = .95, adjust = "none", ...) {
   }
 }
 
+
+#' @export
+p_value.emm_list <- function(model, ...) {
+  params <- insight::get_parameters(model)
+  s <- summary(model)
+
+  # p-values
+  p <- unlist(lapply(s, function(i) {
+    if (is.null(i$p)) {
+      rep(NA, nrow(i))
+    } else {
+      i$p
+    }
+  }))
+
+  # result
+  out <- .data_frame(
+    Parameter = params$Parameter,
+    p = as.vector(p),
+    Component = params$Component
+  )
+
+  # any missing values?
+  if (anyNA(out$p)) {
+
+    # standard errors
+    se <- unlist(lapply(s, function(i) {
+      if (is.null(i$SE)) {
+        rep(NA, nrow(i))
+      } else {
+        i$SE
+      }
+    }))
+
+    # test statistic and p-values
+    stat <- params$Estimate / se
+    df <- degrees_of_freedom(model)
+    p_val <- 2 * stats::pt(abs(stat), df = df, lower.tail = FALSE)
+    out$p[is.na(out$p)] <- p_val[is.na(out$p)]
+  }
+
+  out
+}
 
 
 #' @export
@@ -684,83 +423,19 @@ p_value.flexsurvreg <- function(model, ...) {
 
 
 
-# p-Values from mfx Models -----------------------------------------------
-
-
-#' @export
-p_value.logitor <- function(model, method = NULL, ...) {
-  p_value.default(model$fit, method = method, ...)
-}
-
-#' @export
-p_value.poissonirr <- p_value.logitor
-
-#' @export
-p_value.negbinirr <- p_value.logitor
-
-#' @rdname p_value
-#' @export
-p_value.poissonmfx <- function(model, component = c("all", "conditional", "marginal"), ...) {
-  parms <- insight::get_parameters(model, component = "all")
-  cs <- stats::coef(summary(model$fit))
-  p <- c(as.vector(model$mfxest[, 4]), as.vector(cs[, 4]))
-
-  out <- .data_frame(
-    Parameter = parms$Parameter,
-    p = p,
-    Component = parms$Component
-  )
-
-  component <- match.arg(component)
-  if (component != "all") {
-    out <- out[out$Component == component, ]
-  }
-
-  out
-}
-
-#' @export
-p_value.logitmfx <- p_value.poissonmfx
-
-#' @export
-p_value.probitmfx <- p_value.poissonmfx
-
-#' @export
-p_value.negbinmfx <- p_value.poissonmfx
-
-#' @export
-p_value.betaor <- function(model, component = c("all", "conditional", "precision"), ...) {
-  component = match.arg(component)
-  p_value.betareg(model$fit, component = component, ...)
-}
-
-#' @rdname p_value
-#' @export
-p_value.betamfx <- function(model, component = c("all", "conditional", "precision", "marginal"), ...) {
-  parms <- insight::get_parameters(model, component = "all")
-  cs <- do.call(rbind, stats::coef(summary(model$fit)))
-  p <- c(as.vector(model$mfxest[, 4]), as.vector(cs[, 4]))
-
-  out <- .data_frame(
-    Parameter = parms$Parameter,
-    p = p,
-    Component = parms$Component
-  )
-
-  component <- match.arg(component)
-  if (component != "all") {
-    out <- out[out$Component == component, ]
-  }
-
-  out
-}
-
-
-
-
 
 
 # p-Values from Special Models -----------------------------------------------
+
+
+#' @export
+p_value.margins <- function(model, ...) {
+  params <- insight::get_parameters(model)
+  .data_frame(
+    Parameter = params$Parameter,
+    p = summary(model)$p
+  )
+}
 
 
 #' @export
@@ -779,6 +454,15 @@ p_value.mipo <- function(model, ...) {
     Parameter = as.vector(summary(model)$term),
     p = as.vector(summary(model)$p.value)
   )
+}
+
+
+#' @export
+p_value.mira <- function(model,...) {
+  if (!requireNamespace("mice", quietly = TRUE)) {
+    stop("Package 'mice' needed for this function to work. Please install it.")
+  }
+  p_value(mice::pool(model), ...)
 }
 
 
@@ -817,24 +501,6 @@ p_value.robmixglm <- function(model, ...) {
 }
 
 
-#' @rdname p_value
-#' @export
-p_value.averaging <- function(model, component = c("conditional", "full"), ...) {
-  component <- match.arg(component)
-  params <- get_parameters(model, component = component)
-  if (component == "full") {
-    s <- summary(model)$coefmat.full
-  } else {
-    s <- summary(model)$coefmat.subset
-  }
-
-  .data_frame(
-    Parameter = .remove_backticks_from_string(params$Parameter),
-    p = as.vector(s[, 5])
-  )
-}
-
-
 #' @export
 p_value.bayesx <- function(model, ...) {
   .data_frame(
@@ -843,81 +509,6 @@ p_value.bayesx <- function(model, ...) {
   )
 }
 
-
-#' @rdname p_value
-#' @export
-p_value.DirichletRegModel <- function(model, component = c("all", "conditional", "precision"), ...) {
-  component <- match.arg(component)
-  params <- insight::get_parameters(model)
-
-  out <- .data_frame(
-    Parameter = params$Parameter,
-    Response = params$Response,
-    p = as.vector(2 * stats::pnorm(-abs(params$Estimate / model$se)))
-  )
-
-  if (!is.null(params$Component)) {
-    out$Component <- params$Component
-  } else {
-    component <- "all"
-  }
-
-  if (component != "all") {
-    out <- out[out$Component == component, ]
-  }
-
-  out
-}
-
-
-#' @rdname p_value
-#' @export
-p_value.clm2 <- function(model, component = c("all", "conditional", "scale"), ...) {
-  component <- match.arg(component)
-
-  params <- insight::get_parameters(model)
-  cs <- stats::coef(summary(model))
-  p <- cs[, 4]
-
-  out <- .data_frame(
-    Parameter = params$Parameter,
-    Component = params$Component,
-    p = as.vector(p)
-  )
-
-  if (component != "all") {
-    out <- out[out$Component == component, ]
-  }
-
-  out
-}
-
-
-#' @export
-p_value.clmm2 <- p_value.clm2
-
-
-#' @export
-p_value.cgam <- function(model, component = c("all", "conditional", "smooth_terms"), ...) {
-  component <- match.arg(component)
-
-  params <- insight::get_parameters(model, component = "all")
-  cs <- summary(model)
-  p <- as.vector(cs$coefficients[, 4])
-  if (!is.null(cs$coefficients2)) p <- c(p, as.vector(cs$coefficients2[, "p.value"]))
-
-  out <- .data_frame(
-    Parameter = params$Parameter,
-    Component = params$Component,
-    p = as.vector(p)
-  )
-
-  if (component != "all") {
-    out <- out[out$Component == component, ]
-  }
-
-  out
-}
 
 
 #' @importFrom utils capture.output
@@ -1254,6 +845,10 @@ p_value.gam <- function(model, ...) {
 }
 
 
+#' @export
+p_value.scam <- p_value.gam
+
+
 
 #' @export
 p_value.Gam <- function(model, ...) {
@@ -1442,17 +1037,13 @@ p_value.vglm <- function(model, ...) {
 
 
 
+#' @importFrom stats pchisq
 #' @export
 p_value.vgam <- function(model, ...) {
-  params <- insight::get_parameters(model)
   stat <- insight::get_statistic(model)
-  p <- 2 * stats::pnorm(abs(stat$Statistic), lower.tail = FALSE)
+  stat$p <- as.vector(stats::pchisq(stat$Statistic, df = degrees_of_freedom(model), lower.tail = FALSE))
 
-  .data_frame(
-    Parameter = .remove_backticks_from_string(stat$Parameter),
-    p = as.vector(p),
-    Component = params$Component
-  )
+  stat[c("Parameter", "p", "Component")]
 }
 
 
@@ -1539,13 +1130,15 @@ p_value.data.frame <- function(model, ...) {
 
 
 #' @export
-p_value.list <- function(model, ...) {
+p_value.list <- function(model, verbose = TRUE, ...) {
   if ("gam" %in% names(model)) {
     model <- model$gam
     class(model) <- c("gam", "lm", "glm")
     p_value(model)
   } else {
-    insight::print_color("\nCould not extract p-values from model object.\n", "red")
+    if (isTRUE(verbose)) {
+      insight::print_color("\nCould not extract p-values from model object.\n", "red")
+    }
   }
 }
 

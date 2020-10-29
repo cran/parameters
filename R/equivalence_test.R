@@ -14,9 +14,9 @@ bayestestR::equivalence_test
 #' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%).
 #' @param rule Character, indicating the rules when testing for practical equivalence. Can be \code{"bayes"}, \code{"classic"} or \code{"cet"}. See 'Details'.
 #' @param p_values Logical, if \code{TRUE}, adjusted p-values for equivalence testing are calculated.
-#' @param verbose Toggle off warnings.
 #' @param ... Arguments passed to or from other methods.
 #' @inheritParams model_parameters.merMod
+#' @inheritParams p_value
 #'
 #' @seealso For more details, see \code{\link[bayestestR:equivalence_test]{equivalence_test()}}.
 #'   Further readings can be found in the references.
@@ -270,6 +270,9 @@ equivalence_test.parameters_simulate_model <- function(x, range = "default", ci 
 
   if (all(range == "default")) {
     range <- bayestestR::rope_range(x)
+    if (is.list(range)) {
+      range <- range[[which.max(sapply(range, diff))]]
+    }
   } else if (!all(is.numeric(range)) | length(range) != 2) {
     stop("`range` should be 'default' or a vector of 2 numeric values (e.g., c(-0.1, 0.1)).")
   }
