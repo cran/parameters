@@ -1,5 +1,4 @@
 if (require("testthat") && require("parameters") && require("psych")) {
-
   test_that("principal_components", {
     x <- parameters::principal_components(mtcars[, 1:7], rotation = "varimax")
 
@@ -44,6 +43,29 @@ if (require("testthat") && require("parameters") && require("psych")) {
     testthat::expect_equal(
       colnames(x),
       c("Variable", "PC1", "PC2", "Complexity")
+    )
+  })
+
+
+  # predict ----------------------
+
+  data(bfi)
+  d <- na.omit(bfi[, 1:25])
+  model <- psych::fa(d, nfactors = 5)
+  mp <- model_parameters(model, sort = TRUE, threshold = "max")
+
+  test_that("predict model_parameters fa", {
+    pr <- suppressWarnings(predict(mp, names = c("Neuroticism", "Conscientiousness", "Extraversion", "Agreeableness", "Opennness")))
+    out <- head(pr, 5)
+    expect_equal(
+      out$Neuroticism,
+      c(-0.22242, 0.1618, 0.61907, -0.11692, -0.17372),
+      tolerance = 0.01
+    )
+    expect_equal(
+      out$Opennness,
+      c(-1.6092, -0.17222, 0.23341, -1.06152, -0.66086),
+      tolerance = 0.01
     )
   })
 }

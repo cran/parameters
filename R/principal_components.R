@@ -8,6 +8,10 @@
 #' @param sort Sort the loadings.
 #' @param threshold A value between 0 and 1 indicates which (absolute) values from the loadings should be removed. An integer higher than 1 indicates the n strongest loadings to retain. Can also be \code{"max"}, in which case it will only display the maximum loading per variable (the most simple structure).
 #' @param standardize A logical value indicating whether the variables should be standardized (centered and scaled) to have unit variance before the analysis takes place (in general, such scaling is advisable).
+#' @param object An object of class \code{parameters_pca} or \code{parameters_efa}
+#' @param newdata An optional data frame in which to look for variables with which to predict. If omitted, the fitted values are used.
+#' @param names Optional character vector to name columns of the returned data frame.
+#' @param keep_na Logical, if \code{TRUE}, predictions also return observations with missing values from the original data, hence the number of rows of predicted data and original data is equal.
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @details
@@ -57,30 +61,32 @@
 #'    components.
 #'  }
 #'
-#' @note There is a \code{summary()}-method that prints the Eigenvalues and (explained) variance for each extracted component. \code{closest_component()} will return a numeric vector with the assigned component index for each column from the original data frame. There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#' @note There is a \code{summary()}-method that prints the Eigenvalues and (explained) variance for each extracted component. \code{closest_component()} will return a numeric vector with the assigned component index for each column from the original data frame. \code{rotated_data()} will return the rotated data, including missing values, so it matches the original data frame. There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 #'
 #' @seealso \code{\link[performance]{check_itemscale}} to compute various measures of internal consistencies applied to the (sub)scales (i.e. components) extracted from the PCA. Use \code{\link{get_scores}} to compute scores for each subscale.
 #'
 #' @examples
+#' \donttest{
 #' library(parameters)
 #' if (require("psych")) {
 #'   principal_components(mtcars[, 1:7], n = "all", threshold = 0.2)
-#'   principal_components(mtcars[, 1:7], n = 2, rotation = "oblimin",
-#'                        threshold = "max", sort = TRUE)
+#'   principal_components(mtcars[, 1:7],
+#'     n = 2, rotation = "oblimin",
+#'     threshold = "max", sort = TRUE
+#'   )
 #'   principal_components(mtcars[, 1:7], n = 2, threshold = 2, sort = TRUE)
 #'
 #'   pca <- principal_components(mtcars[, 1:5], n = 2, rotation = "varimax")
-#'   pca  # Print loadings
-#'   summary(pca)  # Print information about the factors
-#'   predict(pca, names=c("Component1", "Component2"))  # Back-predict scores
+#'   pca # Print loadings
+#'   summary(pca) # Print information about the factors
+#'   predict(pca, names = c("Component1", "Component2")) # Back-predict scores
 #'
 #'   # which variables from the original data belong to which extracted component?
 #'   closest_component(pca)
-#'
-#' \donttest{
-#'   # Automated number of components
-#'   principal_components(mtcars[, 1:4], n = "auto")
 #' }
+#'
+#' # Automated number of components
+#' principal_components(mtcars[, 1:4], n = "auto")
 #' }
 #' @return A data frame of loadings.
 #' @references \itemize{
@@ -89,9 +95,14 @@
 #'   \item Pettersson, E., & Turkheimer, E. (2010). Item selection, evaluation, and simple structure in personality data. Journal of research in personality, 44(4), 407-420, \doi{10.1016/j.jrp.2010.03.002}
 #'   \item Tabachnick, B. G., and Fidell, L. S. (2013). Using multivariate statistics (6th ed.). Boston: Pearson Education.
 #' }
-#' @importFrom stats prcomp
 #' @export
-principal_components <- function(x, n = "auto", rotation = "none", sort = FALSE, threshold = NULL, standardize = TRUE, ...) {
+principal_components <- function(x,
+                                 n = "auto",
+                                 rotation = "none",
+                                 sort = FALSE,
+                                 threshold = NULL,
+                                 standardize = TRUE,
+                                 ...) {
   UseMethod("principal_components")
 }
 
@@ -103,9 +114,41 @@ closest_component <- function(x) {
 
 
 
-#' @importFrom stats prcomp na.omit setNames
+#' @rdname principal_components
 #' @export
-principal_components.data.frame <- function(x, n = "auto", rotation = "none", sort = FALSE, threshold = NULL, standardize = TRUE, ...) {
+rotated_data <- function(x) {
+  original_data <- attributes(x)$data_set
+  rotated_matrix <- as.data.frame(attributes(x)$model$x)
+  out <- NULL
+
+  if (!is.null(original_data) && !is.null(rotated_matrix)) {
+    compl_cases <- attributes(x)$complete_cases
+    if (is.null(compl_cases) && nrow(original_data) != nrow(rotated_matrix)) {
+      warning("Could not retrieve information about missing data.", call. = FALSE)
+      return(NULL)
+    }
+    original_data$.parameters_merge_id <- 1:nrow(original_data)
+    rotated_matrix$.parameters_merge_id <- (1:nrow(original_data))[compl_cases]
+    out <- merge(original_data, rotated_matrix, by = ".parameters_merge_id", all = TRUE, sort = FALSE)
+    out$.parameters_merge_id <- NULL
+  } else {
+    warning("Either the original or the rotated data could not be retrieved.", call. = FALSE)
+    return(NULL)
+  }
+  out
+}
+
+
+
+#' @importFrom stats prcomp na.omit setNames complete.cases
+#' @export
+principal_components.data.frame <- function(x,
+                                            n = "auto",
+                                            rotation = "none",
+                                            sort = FALSE,
+                                            threshold = NULL,
+                                            standardize = TRUE,
+                                            ...) {
   # save name of data set
   data_name <- deparse(substitute(x))
 
@@ -124,8 +167,18 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
 
   # Rotation
   if (rotation != "none") {
-    loadings <- .pca_rotate(x, n, rotation = rotation, sort = sort, threshold = threshold, original_data = original_data, ...)
+    loadings <-
+      .pca_rotate(
+        x,
+        n,
+        rotation = rotation,
+        sort = sort,
+        threshold = threshold,
+        original_data = original_data,
+        ...
+      )
     attr(loadings, "data") <- data_name
+
     return(loadings)
   }
 
@@ -179,6 +232,7 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
   attr(loadings, "n") <- n
   attr(loadings, "type") <- "prcomp"
   attr(loadings, "loadings_columns") <- loading_cols
+  attr(loadings, "complete_cases") <- stats::complete.cases(original_data)
 
   # Sorting
   if (isTRUE(sort)) {
@@ -195,8 +249,11 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
   # here we match the original columns in the data set with the assigned components
   # for each variable, so we know which column in the original data set belongs
   # to which extracted component...
-  attr(loadings, "closest_component") <- .closest_component(loadings, loadings_columns = loading_cols, variable_names = colnames(x))
+
+  attr(loadings, "closest_component") <-
+    .closest_component(loadings, loadings_columns = loading_cols, variable_names = colnames(x))
   attr(loadings, "data") <- data_name
+
   attr(loadings, "data_set") <- original_data
 
   # add class-attribute for printing
@@ -226,7 +283,7 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
 
 
 
-
+#' @importFrom stats complete.cases
 #' @keywords internal
 .pca_rotate <- function(x, n, rotation, sort = FALSE, threshold = NULL, original_data = NULL, ...) {
   if (!(rotation %in% c("varimax", "quartimax", "promax", "oblimin", "simplimax", "cluster", "none"))) {
@@ -253,6 +310,7 @@ principal_components.data.frame <- function(x, n = "auto", rotation = "none", so
   out <- model_parameters(pca, sort = sort, threshold = threshold)
 
   attr(out, "data_set") <- original_data
+  attr(out, "complete_cases") <- stats::complete.cases(original_data)
   out
 }
 

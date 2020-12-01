@@ -20,14 +20,14 @@ A data frame of indices related to the model's parameters.
 \description{
 Compute and extract model parameters. See the documentation for your object's class:
 \itemize{
- \item{\link[=model_parameters.htest]{Correlations and t-tests}}
- \item{\link[=model_parameters.aov]{ANOVAs}}
+ \item{\link[=model_parameters.htest]{Correlations, t-tests, ...} (\code{htest}, \code{pairwise.htest})}
+ \item{\link[=model_parameters.aov]{ANOVAs} (\code{aov}, \code{anova}, \pkg{afex}, ...)}
  \item{\link[=model_parameters.default]{Regression models} (\code{lm}, \code{glm}, \pkg{survey}, ...)}
  \item{\link[=model_parameters.gam]{Additive models} (\code{gam}, \code{gamm}, ...)}
  \item{\link[=model_parameters.zeroinfl]{Zero-inflated models} (\code{hurdle}, \code{zeroinfl}, \code{zerocount})}
  \item{\link[=model_parameters.mlm]{Multinomial, ordinal and cumulative link models} (\code{bracl}, \code{multinom}, \code{mlm}, ...)}
  \item{\link[=model_parameters.averaging]{Other special models} (\code{model.avg}, \code{betareg}, \code{glmx}, ...)}
- \item{\link[=model_parameters.merMod]{Mixed models} (\pkg{lme4}, \pkg{nlme}, \pkg{glmmTMB}, ...)}
+ \item{\link[=model_parameters.merMod]{Mixed models} (\pkg{lme4}, \pkg{nlme}, \pkg{glmmTMB}, \pkg{afex}, ...)}
  \item{\link[=model_parameters.BFBayesFactor]{Bayesian tests} (\pkg{BayesFactor})}
  \item{\link[=model_parameters.stanreg]{Bayesian models} (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, ...)}
  \item{\link[=model_parameters.principal]{PCA and FA} (\pkg{psych})}
@@ -45,8 +45,37 @@ Standardization is based on \code{\link[effectsize:standardize_parameters]{stand
   standard errors and confidence intervals refer to the standardized coefficient.
 }
 \note{
-The \code{\link[=print.parameters_model]{print()}} method has several arguments to tweak the output. There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+The \code{\link[=print.parameters_model]{print()}} method has several arguments to tweak the output. There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}, and a dedicated method for use inside rmarkdown files, \code{\link[=print_md.parameters_model]{print_md()}}.
 }
+\section{Labeling the Degrees of Freedom}{
+
+Throughout the \pkg{parameters} package, we decided to label the residual
+degrees of freedom \emph{df_error}. The reason for this is that these degrees
+of freedom not always refer to the residuals. For certain models, they refer
+to the estimate error - in a linear model these are the same, but in - for
+instance - any mixed effects model, this isn't strictly true. Hence, we
+think that \code{df_error} is the most generic label for these degrees of
+freedom.
+}
+
+\section{Interpretation of Interaction Terms}{
+
+Note that the \emph{interpretation} of interaction terms depends on many
+characteristics of the model. The number of parameters, and overall
+performance of the model, can differ \emph{or not} between \code{a * b}
+\code{a : b}, and \code{a / b}, suggesting that sometimes interaction terms
+give different parameterizations of the same model, but other times it gives
+completely different models (depending on \code{a} or \code{b} being factors
+of covariates, included as main effects or not, etc.). Their interpretation
+depends of the full context of the model, which should not be inferred
+from the parameters table alone - rather, we recommend to use packages
+that calculate estimated marginal means or marginal effects, such as
+\CRANpkg{modelbased}, \CRANpkg{emmeans} or \CRANpkg{ggeffects}. To raise
+awareness for this issue, you may use \code{print(...,show_formula=TRUE)}
+to add the model-specification to the output of the
+\code{\link[=print.parameters_model]{print()}} method for \code{model_parameters()}.
+}
+
 \seealso{
 \code{\link[insight:standardize_names]{standardize_names()}} to rename
   columns into a consistent, standardized naming scheme.

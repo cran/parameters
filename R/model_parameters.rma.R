@@ -2,6 +2,8 @@
 #'
 #' Extract and compute indices and measures to describe parameters of meta-analysis models.
 #'
+#' @param include_studies Logical, if \code{TRUE} (default), includes parameters
+#'   for all studies. Else, only parameters for overall-effects are shown.
 #' @inheritParams model_parameters.default
 #'
 #' @examples
@@ -14,7 +16,6 @@
 #'   model <- rma(yi = effectsize, sei = stderr, method = "REML", data = mydat)
 #'   model_parameters(model)
 #' }
-#'
 #' \dontrun{
 #' # with subgroups
 #' if (require("metafor")) {
@@ -28,7 +29,7 @@
 #'     data = dat.bcg
 #'   )
 #'   dat$alloc <- ifelse(dat$alloc == "random", "random", "other")
-#'   model <- rma(yi, vi, mods = ~ alloc, data = dat, digits = 3, slab = author)
+#'   model <- rma(yi, vi, mods = ~alloc, data = dat, digits = 3, slab = author)
 #'   model_parameters(model)
 #' }
 #'
@@ -36,21 +37,32 @@
 #'   data(towels)
 #'   m <- meta_random(logOR, SE, study, data = towels)
 #'   model_parameters(m)
-#' }}
+#' }
+#' }
+#'
 #' @return A data frame of indices related to the model's parameters.
 #' @importFrom stats qt pt setNames
 #' @export
-model_parameters.rma <- function(model, ci = .95, bootstrap = FALSE, iterations = 1000, standardize = NULL, exponentiate = FALSE, ...) {
-  meta_analysis_overall <- .model_parameters_generic(
-    model = model,
-    ci = ci,
-    bootstrap = bootstrap,
-    iterations = iterations,
-    merge_by = "Parameter",
-    standardize = standardize,
-    exponentiate = exponentiate,
-    ...
-  )
+model_parameters.rma <- function(model,
+                                 ci = .95,
+                                 bootstrap = FALSE,
+                                 iterations = 1000,
+                                 standardize = NULL,
+                                 exponentiate = FALSE,
+                                 include_studies = TRUE,
+                                 verbose = TRUE,
+                                 ...) {
+  meta_analysis_overall <-
+    .model_parameters_generic(
+      model = model,
+      ci = ci,
+      bootstrap = bootstrap,
+      iterations = iterations,
+      merge_by = "Parameter",
+      standardize = standardize,
+      exponentiate = exponentiate,
+      ...
+    )
 
   subgroups <- NULL
   group_variable <- NULL
@@ -64,7 +76,7 @@ model_parameters.rma <- function(model, ci = .95, bootstrap = FALSE, iterations 
     }
   }
 
-  if (nrow(meta_analysis_overall) > 1 && !is.null(subgroups))  {
+  if (nrow(meta_analysis_overall) > 1 && !is.null(subgroups)) {
     meta_analysis_overall$Subgroup <- subgroups
     meta_analysis_overall$Parameter <- "(Intercept)"
   }
@@ -108,6 +120,11 @@ model_parameters.rma <- function(model, ci = .95, bootstrap = FALSE, iterations 
   # fix intercept name
   out$Parameter[out$Parameter == "(Intercept)"] <- "Overall"
 
+  # filter studies?
+  if (!isTRUE(include_studies)) {
+    out <- out[out$Parameter == "Overall", ]
+  }
+
   original_attributes$names <- names(out)
   original_attributes$row.names <- 1:nrow(out)
   original_attributes$pretty_names <- stats::setNames(out$Parameter, out$Parameter)
@@ -126,17 +143,26 @@ model_parameters.rma <- function(model, ci = .95, bootstrap = FALSE, iterations 
 
 
 #' @export
-model_parameters.metaplus <- function(model, ci = .95, bootstrap = FALSE, iterations = 1000, standardize = NULL, exponentiate = FALSE, ...) {
-  meta_analysis_overall <- suppressWarnings(.model_parameters_generic(
-    model = model,
-    ci = ci,
-    bootstrap = bootstrap,
-    iterations = iterations,
-    merge_by = "Parameter",
-    standardize = standardize,
-    exponentiate = exponentiate,
-    ...
-  ))
+model_parameters.metaplus <- function(model,
+                                      ci = .95,
+                                      bootstrap = FALSE,
+                                      iterations = 1000,
+                                      standardize = NULL,
+                                      exponentiate = FALSE,
+                                      include_studies = TRUE,
+                                      verbose = TRUE,
+                                      ...) {
+  meta_analysis_overall <-
+    suppressWarnings(.model_parameters_generic(
+      model = model,
+      ci = ci,
+      bootstrap = bootstrap,
+      iterations = iterations,
+      merge_by = "Parameter",
+      standardize = standardize,
+      exponentiate = exponentiate,
+      ...
+    ))
 
   rma_parameters <- if (!is.null(model$slab) && !is.numeric(model$slab)) {
     sprintf("%s", model$slab)
@@ -175,7 +201,12 @@ model_parameters.metaplus <- function(model, ci = .95, bootstrap = FALSE, iterat
 
   # fix intercept name
   out$Parameter[out$Parameter == "(Intercept)"] <- "Overall"
-  out <- out[out$Parameter != "tau2", ]
+  out <- out[!(out$Parameter %in% c("tau2", "vinv")), ]
+
+  # filter studies?
+  if (!isTRUE(include_studies)) {
+    out <- out[out$Parameter == "Overall", ]
+  }
 
   original_attributes$names <- names(out)
   original_attributes$row.names <- 1:nrow(out)
@@ -192,8 +223,16 @@ model_parameters.metaplus <- function(model, ci = .95, bootstrap = FALSE, iterat
 
 
 
+#' @importFrom insight get_priors
 #' @export
-model_parameters.meta_random <- function(model, ci = .95, ci_method = "hdi", exponentiate = FALSE, ...) {
+model_parameters.meta_random <- function(model,
+                                         ci = .95,
+                                         ci_method = "hdi",
+                                         exponentiate = FALSE,
+                                         include_studies = TRUE,
+                                         verbose = TRUE,
+                                         ...) {
+
   # process arguments
   params <- as.data.frame(model$estimates)
   ci_method <- match.arg(ci_method, choices = c("hdi", "eti"))
@@ -213,6 +252,9 @@ model_parameters.meta_random <- function(model, ci = .95, ci_method = "hdi", exp
     Rhat = NA,
     ESS = NA,
     Component = "studies",
+    Prior_Distribution = NA,
+    Prior_Location = NA,
+    Prior_Scale = NA,
     stringsAsFactors = FALSE
   )
 
@@ -235,6 +277,13 @@ model_parameters.meta_random <- function(model, ci = .95, ci_method = "hdi", exp
     stringsAsFactors = FALSE
   )
 
+  # add prior information
+  priors <- insight::get_priors(model)
+
+  out$Prior_Distribution <- priors$Distribution
+  out$Prior_Location <- priors$Location
+  out$Prior_Scale <- priors$Scale
+
   # fix intercept name
   out$Parameter[out$Parameter == "d"] <- "Overall"
 
@@ -244,8 +293,22 @@ model_parameters.meta_random <- function(model, ci = .95, ci_method = "hdi", exp
   # merge
   out <- rbind(out_study, out)
 
+  # filter studies?
+  if (!isTRUE(include_studies)) {
+    out <- out[out$Parameter %in% c("Overall", "tau"), ]
+  }
+
   if (exponentiate) out <- .exponentiate_parameters(out)
-  out <- .add_model_parameters_attributes(params = out, model = model, ci = ci, exponentiate = exponentiate, ci_method = ci_method, ...)
+  out <-
+    .add_model_parameters_attributes(
+      params = out,
+      model = model,
+      ci = ci,
+      exponentiate = exponentiate,
+      ci_method = ci_method,
+      verbose = verbose,
+      ...
+    )
 
   # final atributes
   attr(out, "measure") <- "Estimate"
@@ -264,7 +327,14 @@ model_parameters.meta_fixed <- model_parameters.meta_random
 
 
 #' @export
-model_parameters.meta_bma <- function(model, ci = .95, ci_method = "hdi", exponentiate = FALSE, ...) {
+model_parameters.meta_bma <- function(model,
+                                      ci = .95,
+                                      ci_method = "hdi",
+                                      exponentiate = FALSE,
+                                      include_studies = TRUE,
+                                      verbose = TRUE,
+                                      ...) {
+
   # process arguments
   params <- as.data.frame(model$estimates)
   ci_method <- match.arg(ci_method, choices = c("hdi", "eti"))
@@ -311,8 +381,22 @@ model_parameters.meta_bma <- function(model, ci = .95, ci_method = "hdi", expone
   # merge
   out <- rbind(out_study, out)
 
+  # filter studies?
+  if (!isTRUE(include_studies)) {
+    out <- out[out$Parameter %in% c("averaged", "fixed", "random"), ]
+  }
+
   if (exponentiate) out <- .exponentiate_parameters(out)
-  out <- .add_model_parameters_attributes(params = out, model = model, ci = ci, exponentiate = exponentiate, ci_method = ci_method, ...)
+  out <-
+    .add_model_parameters_attributes(
+      params = out,
+      model = model,
+      ci = ci,
+      exponentiate = exponentiate,
+      ci_method = ci_method,
+      verbose = verbose,
+      ...
+    )
 
   # final attributes
   attr(out, "measure") <- "Estimate"

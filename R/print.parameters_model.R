@@ -1,5 +1,5 @@
 #' @title Print model parameters
-#' @name print
+#' @name print.parameters_model
 #'
 #' @description A \code{print()}-method for objects from \code{\link[=model_parameters]{model_parameters()}}.
 #'
@@ -12,10 +12,17 @@
 #'   be printed. If \code{NULL} (default), all columns are printed. The shortcut
 #'   \code{select = "minimal"} prints coefficient, confidence intervals and p-values,
 #'   while \code{select = "short"} prints coefficient, standard errors and p-values.
-#' @param show_sigma Logical, if \code{FALSE}, adds information about the residual
+#' @param show_sigma Logical, if \code{TRUE}, adds information about the residual
 #'   standard deviation.
-#' @inheritParams parameters_table
-#' @return \code{NULL}
+#' @param show_formula Logical, if \code{TRUE}, adds the model formula to the output.
+#' @inheritParams insight::parameters_table
+#'
+#' @inheritSection format_parameters Interpretation of Interaction Terms
+#' @inheritSection model_parameters Labeling the Degrees of Freedom
+#'
+#' @return Invisibly returns the original input object.
+#'
+#' @seealso There is a dedicated method to use inside rmarkdown files, \code{\link[=print_md.parameters_model]{print_md()}}.
 #'
 #' @examples
 #' \donttest{
@@ -38,100 +45,49 @@
 #'   print(mp, select = "minimal")
 #' }
 #' }
-#' @importFrom insight format_table
+#'
+#' @importFrom insight export_table parameters_table
 #' @export
-print.parameters_model <- function(x, pretty_names = TRUE, split_components = TRUE, select = NULL, digits = 2, ci_digits = 2, p_digits = 3, show_sigma = FALSE, ...) {
+print.parameters_model <- function(x,
+                                   pretty_names = TRUE,
+                                   split_components = TRUE,
+                                   select = NULL,
+                                   digits = 2,
+                                   ci_digits = 2,
+                                   p_digits = 3,
+                                   show_sigma = FALSE,
+                                   show_formula = FALSE,
+                                   ...) {
   # save original input
   orig_x <- x
 
-  # save attributes
+  # get attributes
   res <- attributes(x)$details
-  coef_name <- attributes(x)$coefficient_name
-  sigma <- attributes(x)$sigma
-  s_value <- attributes(x)$s_value
+  p_adjust <- attributes(x)$p_adjust
+  model_formula <- attributes(x)$model_formula
   ci_method <- .additional_arguments(x, "bayes_ci_method", NULL)
+  verbose <- .additional_arguments(x, "verbose", TRUE)
 
-  # check if user supplied digits attributes
-  if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
-  if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
-  if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
-
-  # minor fix for nested Anovas
-  if ("Group" %in% colnames(x) && sum(x$Parameter == "Residuals") > 1) {
-    colnames(x)[which(colnames(x) == "Group")] <- "Subgroup"
-  }
-
-  if (!is.null(select)) {
-    if (all(select == "minimal")) {
-      select <- c("Parameter", "Coefficient", "CI", "CI_low", "CI_high", "p")
-    } else if (all(select == "short")) {
-      select <- c("Parameter", "Coefficient", "SE", "p")
-    } else if (is.numeric(select)) {
-      select <- colnames(x)[select]
-    }
-    select <- union(select, c("Parameter", "Component", "Effects", "Response", "Subgroup"))
-    # for emmGrid objects, we save specific parameter names as attribute
-    parameter_names <- attributes(x)$parameter_names
-    if (!is.null(parameter_names)) {
-      select <- c(parameter_names, select)
-    }
-    to_remove <- setdiff(colnames(x), select)
-    x[to_remove] <- NULL
-  }
-
-  # remove columns that have only NA or Inf
-  to_remove <- sapply(x, function(col) all(is.na(col) | is.infinite(col)))
-  if (any(to_remove)) x[to_remove] <- NULL
-
+  # print header
   if (!is.null(attributes(x)$title)) {
     insight::print_color(paste0("# ", attributes(x)$title, "\n\n"), "blue")
   } else if (!is.null(res)) {
     insight::print_color("# Fixed Effects\n\n", "blue")
   }
 
-  # For Bayesian models, we need to prettify parameter names here...
-
-  mc <- attributes(x)$model_class
-  cp <- attributes(x)$cleaned_parameters
-  if (!is.null(mc) && !is.null(cp) && mc %in% c("stanreg", "stanmvreg", "brmsfit")) {
-    if (length(cp) == length(x$Parameter)) {
-      x$Parameter <- cp
-    }
-    pretty_names <- FALSE
-  }
-
-  # for bayesian meta, remove ROPE_CI
-  if (isTRUE(attributes(x)$is_bayes_meta)) {
-    x$CI <- NULL
-    x$ROPE_CI <- NULL
-    x$ROPE_low <- NULL
-    x$ROPE_high <- NULL
-  }
-
-  split_by <- ""
-  split_by <- c(split_by, ifelse("Component" %in% names(x) && .n_unique(x$Component) > 1, "Component", ""))
-  split_by <- c(split_by, ifelse("Effects" %in% names(x) && .n_unique(x$Effects) > 1, "Effects", ""))
-  split_by <- c(split_by, ifelse("Response" %in% names(x) && .n_unique(x$Response) > 1, "Response", ""))
-  split_by <- c(split_by, ifelse("Subgroup" %in% names(x) && .n_unique(x$Subgroup) > 1, "Subgroup", ""))
-
-  split_by <- split_by[nchar(split_by) > 0]
-
-  if (!is.null(coef_name)) {
-    colnames(x)[which(colnames(x) == "Coefficient")] <- coef_name
-    colnames(x)[which(colnames(x) == "Std_Coefficient")] <- paste0("Std_", coef_name)
-  }
-
-  if (isTRUE(s_value) && "p" %in% colnames(x)) {
-    colnames(x)[colnames(x) == "p"] <- "s"
-    x[["s"]] <- log2(1 / x[["s"]])
-  }
-
-  if (split_components && !is.null(split_by) && length(split_by)) {
-    .print_model_parms_components(x, pretty_names, split_column = split_by, digits = digits, ci_digits = ci_digits, p_digits = p_digits, coef_column = coef_name, ...)
-  } else {
-    formatted_table <- parameters_table(x, pretty_names = pretty_names, digits = digits, ci_digits = ci_digits, p_digits = p_digits, ...)
-    cat(insight::format_table(formatted_table))
-  }
+  formatted_table <- format(
+    x,
+    pretty_names = pretty_names,
+    split_components = split_components,
+    select = select,
+    digits = digits,
+    ci_digits = ci_digits,
+    p_digits = p_digits,
+    ci_width = "auto",
+    ci_brackets = TRUE,
+    format = "text"
+  )
+  cat(insight::export_table(formatted_table, format = "text"))
 
   # print residual standard deviation
   if (!is.null(sigma) && isTRUE(show_sigma)) {
@@ -139,8 +95,31 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
     insight::print_color(sprintf("Residual standard deviation: %.*f", digits, sigma), "blue")
   }
 
+  # print p-adjustment
+  if (!is.null(p_adjust) && p_adjust != "none" && "p" %in% colnames(x) && isTRUE(verbose)) {
+    p_adj_string <- switch(
+      p_adjust,
+      "holm" = "Holm (1979)",
+      "hochberg" = "Hochberg (1988)",
+      "homnmel" = "Hochberg (1988)",
+      "bonferroni" = "Bonferroni",
+      "fdr" = ,
+      "BH" = "Benjamini & Hochberg (1995)",
+      "BY" = " Benjamini & Yekutieli (2001)",
+      p_adjust
+    )
+    cat("\n")
+    insight::print_color(paste0("p-value adjustment method: ", p_adj_string), "blue")
+  }
+
+  # print residual standard deviation
+  if (!is.null(model_formula) && isTRUE(show_formula)) {
+    cat("\n")
+    insight::print_color(paste("Model:", model_formula), "blue")
+  }
+
   # for Bayesian models
-  if (!is.null(ci_method)) {
+  if (!is.null(ci_method) && isTRUE(verbose)) {
     ci_method <- switch(
       toupper(ci_method),
       "HDI" = "highest density intervals",
@@ -148,7 +127,7 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
       "SI" = "support intervals",
       "uncertainty intervals"
     )
-    message(paste0("Using ", ci_method, " as credible intervals."))
+    message(paste0("\nUsing ", ci_method, " as credible intervals."))
   }
 
   # print summary for random effects
@@ -163,8 +142,17 @@ print.parameters_model <- function(x, pretty_names = TRUE, split_components = TR
   invisible(orig_x)
 }
 
+#' @export
+print.parameters_simulate <- print.parameters_model
+
+#' @export
+print.parameters_brms_meta <- print.parameters_model
 
 
+
+
+
+# Random effects ------------------
 
 #' @export
 print.parameters_random <- function(x, digits = 2, ...) {
@@ -175,6 +163,49 @@ print.parameters_random <- function(x, digits = 2, ...) {
 
 
 
+
+# Stan models ------------------
+
+#' @export
+print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...) {
+  orig_x <- x
+  ci_method <- .additional_arguments(x, "bayes_ci_method", NULL)
+  verbose <- .additional_arguments(x, "verbose", TRUE)
+
+  formatted_table <- format(
+    x,
+    split_components = split_components,
+    select = select,
+    format = "text",
+    ci_width = "auto",
+    ci_brackets = TRUE,
+    ...
+  )
+  cat(insight::export_table(formatted_table, format = "text"))
+
+  if (!is.null(ci_method) && isTRUE(verbose)) {
+    ci_method <- switch(
+      toupper(ci_method),
+      "HDI" = "highest density intervals",
+      "ETI" = "equal-tailed intervals",
+      "SI" = "support intervals",
+      "uncertainty intervals"
+    )
+    message(paste0("\nUsing ", ci_method, " as credible intervals."))
+  }
+
+  invisible(orig_x)
+}
+
+
+
+
+
+
+# helper --------------------
+
+
+#' @importFrom insight print_color
 #' @keywords internal
 .print_random_parameters <- function(random_params, digits = 2) {
   insight::print_color("# Random Effects\n\n", "blue")
@@ -230,247 +261,3 @@ print.parameters_random <- function(x, digits = 2, ...) {
     }
   }
 }
-
-
-
-
-
-#' @keywords internal
-.print_model_parms_components <- function(x, pretty_names, split_column = "Component", digits = 2, ci_digits = 2, p_digits = 3, coef_column = NULL, ...) {
-
-  # check if user supplied digits attributes
-  is_ordinal_model <- attributes(x)$ordinal_model
-  if (is.null(is_ordinal_model)) is_ordinal_model <- FALSE
-
-  # zero-inflated stuff
-  is_zero_inflated <- (!is.null(x$Component) & "zero_inflated" %in% x$Component)
-  zi_coef_name <- attributes(x)$zi_coefficient_name
-
-  # make sure we have correct order of levels from split-factor
-  x[split_column] <- lapply(x[split_column], function(i) {
-    if (!is.factor(i)) i <- factor(i, levels = unique(i))
-    i
-  })
-
-  # fix column output
-  if (inherits(attributes(x)$model, c("lavaan", "blavaan")) && "Label" %in% colnames(x)) {
-    x$From <- ifelse(x$Label == "" | x$Label == x$To, x$From, paste0(x$From, " (", x$Label, ")"))
-    x$Label <- NULL
-  }
-
-  # set up split-factor
-  if (length(split_column) > 1) {
-    split_by <- lapply(split_column, function(i) x[[i]])
-  } else {
-    split_by <- list(x[[split_column]])
-  }
-  names(split_by) <- split_column
-
-  # make sure we have correct sorting here...
-  tables <- split(x, f = split_by)
-
-  # sanity check - only preserve tables with any data in data frames
-  tables <- tables[sapply(tables, nrow) > 0]
-
-  for (type in names(tables)) {
-
-    # Don't print Component column
-    for (i in split_column) {
-      tables[[type]][[i]] <- NULL
-    }
-
-    # Smooth terms statistics
-    if ("t / F" %in% names(tables[[type]])) {
-      if (type == "smooth_terms") {
-        names(tables[[type]])[names(tables[[type]]) == "t / F"] <- "F"
-      }
-      if (type == "conditional") {
-        names(tables[[type]])[names(tables[[type]]) == "t / F"] <- "t"
-      }
-    } else if (type == "smooth_terms" && "t" %in% names(tables[[type]])) {
-      names(tables[[type]])[names(tables[[type]]) == "t"] <- "F"
-    }
-
-
-    if ("z / Chi2" %in% names(tables[[type]])) {
-      if (type == "smooth_terms") {
-        names(tables[[type]])[names(tables[[type]]) == "z / Chi2"] <- "Chi2"
-      }
-      if (type == "conditional") {
-        names(tables[[type]])[names(tables[[type]]) == "z / Chi2"] <- "z"
-      }
-    }
-
-    # Don't print se and ci if all are missing
-    if (all(is.na(tables[[type]]$SE))) tables[[type]]$SE <- NULL
-    if (all(is.na(tables[[type]]$CI_low))) tables[[type]]$CI_low <- NULL
-    if (all(is.na(tables[[type]]$CI_high))) tables[[type]]$CI_high <- NULL
-
-    # Don't print if empty col
-    tables[[type]][sapply(tables[[type]], function(x) {
-      all(x == "") | all(is.na(x))
-    })] <- NULL
-
-    attr(tables[[type]], "digits") <- digits
-    attr(tables[[type]], "ci_digits") <- ci_digits
-    attr(tables[[type]], "p_digits") <- p_digits
-
-    # rename columns for zero-inflation part
-    if (grepl("^zero", type) && !is.null(zi_coef_name) && !is.null(coef_column)) {
-      colnames(tables[[type]])[which(colnames(tables[[type]]) == coef_column)] <- zi_coef_name
-      colnames(tables[[type]])[which(colnames(tables[[type]]) == paste0("Std_", coef_column))] <- paste0("Std_", zi_coef_name)
-    }
-
-    formatted_table <- parameters_table(tables[[type]], pretty_names = pretty_names, ...)
-
-    component_name <- switch(
-      type,
-      "mu" = ,
-      "fixed" = ,
-      "conditional" = "Fixed Effects",
-      "random" = "Random Effects",
-      "conditional.fixed" = ifelse(is_zero_inflated, "Fixed Effects (Count Model)", "Fixed Effects"),
-      "conditional.random" = ifelse(is_zero_inflated, "Random Effects (Count Model)", "Random Effects"),
-      "zero_inflated" = "Zero-Inflated",
-      "zero_inflated.fixed" = "Fixed Effects (Zero-Inflated Model)",
-      "zero_inflated.random" = "Random Effects (Zero-Inflated Model)",
-      "dispersion" = "Dispersion",
-      "marginal" = "Marginal Effects",
-      "emmeans" = "Estimated Marginal Means",
-      "contrasts" = "Contrasts",
-      "simplex.fixed" = ,
-      "simplex" = "Monotonic Effects",
-      "smooth_sd" = "Smooth Terms (SD)",
-      "smooth_terms" = "Smooth Terms",
-      "sigma.fixed" = ,
-      "sigma" = "Sigma",
-      "Correlation" = "Correlation",
-      "SD/Cor" = "SD / Correlation",
-      "Loading" = "Loading",
-      "scale" = ,
-      "scale.fixed" = "Scale Parameters",
-      "extra" = ,
-      "extra.fixed" = "Extra Parameters",
-      "nu" = "Nu",
-      "tau" = "Tau",
-      "meta" = "Meta-Parameters",
-      "studies" = "Studies",
-      "within" = "Within-Effects",
-      "between" = "Between-Effects",
-      "interactions" = "(Cross-Level) Interactions",
-      "precision" = ,
-      "precision." = "Precision",
-      type
-    )
-
-
-    # tweaking of sub headers
-
-    if ("DirichletRegModel" %in% attributes(x)$model_class) {
-      if (grepl("^conditional\\.", component_name) || split_column == "Response") {
-        s1 <- "Response level:"
-        s2 <- gsub("^conditional\\.(.*)", "\\1", component_name)
-      } else {
-        s1 <- component_name
-        s2 <- ""
-      }
-    } else if (length(split_column) > 1) {
-      s1 <- component_name
-      s2 <- ""
-    } else if (split_column == "Response" && is_ordinal_model) {
-      s1 <- "Response level:"
-      s2 <- component_name
-    } else if (split_column == "Subgroup") {
-      s1 <- component_name
-      s2 <- ""
-    } else if (component_name %in% c("Within-Effects", "Between-Effects", "(Cross-Level) Interactions")) {
-      s1 <- component_name
-      s2 <- ""
-    } else if (grepl(tolower(split_column), tolower(component_name), fixed = TRUE)) {
-      s1 <- component_name
-      s2 <- ""
-    } else if (split_column == "Type") {
-      s1 <- component_name
-      s2 <- ""
-    } else {
-      s1 <- component_name
-      s2 <- ifelse(tolower(split_column) == "component", "", split_column)
-    }
-
-
-    # Print
-    if (component_name != "rewb-contextual") {
-      insight::print_color(sprintf("# %s %s\n\n", s1, tolower(s2)), "blue")
-    }
-    cat(insight::format_table(formatted_table))
-    cat("\n")
-  }
-}
-
-
-
-#' @export
-print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...) {
-  orig_x <- x
-  cp <- attributes(x)$parameter_info
-
-  # check if user supplied digits attributes
-  ci <- .additional_arguments(x, "ci", .95)
-  ci_method <- .additional_arguments(x, "bayes_ci_method", NULL)
-  digits <- .additional_arguments(x, "digits", 2)
-  ci_digits <- .additional_arguments(x, "ci_digits", 2)
-  p_digits <- .additional_arguments(x, "p_digits", 3)
-
-  if (!split_components || is.null(cp)) {
-    NextMethod()
-  } else {
-    if (!is.null(select)) {
-      if (is.numeric(select)) select <- colnames(x)[select]
-      select <- union(select, c("Parameter", "Component", "Effects", "Response", "Subgroup", "Function"))
-      to_remove <- setdiff(colnames(x), select)
-      x[to_remove] <- NULL
-    }
-
-    out <- insight::print_parameters(cp, x)
-
-    for (i in out) {
-      insight::print_color(paste0("# ", attr(i, "main_title")), "blue")
-      cat(" ")
-      insight::print_color(gsub("  ", " ", attr(i, "sub_title"), fixed = TRUE), "red")
-      cat("\n\n")
-
-      rem <- which(colnames(i) %in% c("Parameter", "Component", "Effects", "Group", "Response", "Subgroup", "Function"))
-      i <- i[, -rem]
-
-      colnames(i)[1] <- "Parameter"
-      attr(i, "ci") <- ci
-      attr(i, "digits") <- digits
-      attr(i, "ci_digits") <- ci_digits
-      attr(i, "p_digits") <- p_digits
-
-      formatted_table <- parameters_table(i, pretty_names = FALSE, ...)
-      cat(insight::format_table(formatted_table))
-      cat("\n")
-    }
-  }
-
-  if (!is.null(ci_method)) {
-    ci_method <- switch(
-      toupper(ci_method),
-      "HDI" = "highest density intervals",
-      "ETI" = "equal-tailed intervals",
-      "SI" = "support intervals",
-      "uncertainty intervals"
-    )
-    message(paste0("Using ", ci_method, " as credible intervals."))
-  }
-
-  invisible(orig_x)
-}
-
-
-#' @export
-print.parameters_simulate <- print.parameters_model
-
-#' @export
-print.parameters_brms_meta <- print.parameters_model

@@ -4,10 +4,12 @@
 \alias{model_parameters.Mclust}
 \title{Parameters from Mixture Models}
 \usage{
-\method{model_parameters}{Mclust}(model, ...)
+\method{model_parameters}{Mclust}(model, verbose = TRUE, ...)
 }
 \arguments{
 \item{model}{Mixture model.}
+
+\item{verbose}{Toggle warnings and messages.}
 
 \item{...}{Arguments passed to or from other methods.}
 }

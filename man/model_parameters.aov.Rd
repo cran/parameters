@@ -11,21 +11,27 @@
   epsilon_squared = NULL,
   df_error = NULL,
   type = NULL,
+  ci = NULL,
+  verbose = TRUE,
   ...
 )
 }
 \arguments{
-\item{model}{Object of class \link{aov}, \link{anova} or \code{aovlist}.}
+\item{model}{Object of class \code{\link{aov}}, \code{\link{anova}} or \code{aovlist}.}
 
-\item{omega_squared}{Compute omega squared as index of effect size. Can be \code{"partial"} (adjusted for effect size) or \code{"raw"}.}
+\item{omega_squared}{Compute omega squared as index of effect size. Can be \code{"partial"} (the default, adjusted for effect size) or \code{"raw"}.}
 
-\item{eta_squared}{Compute eta squared as index of effect size. Can be \code{"partial"} (adjusted for effect size), \code{"raw"}  or \code{"adjusted"} (the latter option only for anova-tables from mixed models).}
+\item{eta_squared}{Compute eta squared as index of effect size. Can be \code{"partial"} (the default, adjusted for effect size), \code{"raw"}  or \code{"adjusted"} (the latter option only for ANOVA-tables from mixed models).}
 
-\item{epsilon_squared}{Compute epsilon squared as index of effect size. Can be \code{"partial"} (adjusted for effect size) or \code{"raw"}.}
+\item{epsilon_squared}{Compute epsilon squared as index of effect size. Can be \code{"partial"} (the default, adjusted for effect size) or \code{"raw"}.}
 
-\item{df_error}{Denominator degrees of freedom (or degrees of freedom of the error estimate, i.e., the residuals). This is used to compute effect sizes for anova tables from mixed models. See 'Examples'.}
+\item{df_error}{Denominator degrees of freedom (or degrees of freedom of the error estimate, i.e., the residuals). This is used to compute effect sizes for ANOVA-tables from mixed models. See 'Examples'. (Ignored for \code{afex_aov}.)}
 
-\item{type}{Numeric, type of sums of squares. May be 1, 2 or 3. If 2 or 3, anova-tables using \code{car::Anova()} will be returned.}
+\item{type}{Numeric, type of sums of squares. May be 1, 2 or 3. If 2 or 3, ANOVA-tables using \code{car::Anova()} will be returned. (Ignored for \code{afex_aov}.)}
+
+\item{ci}{Confidence Interval (CI) level for effect sizes \code{omega_squared}, \code{eta_squared} etc. The default, \code{NULL}, will compute no confidence intervals. \code{ci} should be a scalar between 0 and 1.}
+
+\item{verbose}{Toggle warnings and messages.}
 
 \item{...}{Arguments passed to or from other methods.}
 }
@@ -36,7 +42,7 @@ A data frame of indices related to the model's parameters.
 Parameters from ANOVAs.
 }
 \note{
-For anova-tables from mixed models (i.e. \code{anova(lmer())}), only partial or adjusted effect sizes can be computed.
+For ANOVA-tables from mixed models (i.e. \code{anova(lmer())}), only partial or adjusted effect sizes can be computed.
 }
 \examples{
 if (requireNamespace("effectsize", quietly = TRUE)) {
@@ -49,6 +55,13 @@ if (requireNamespace("effectsize", quietly = TRUE)) {
     omega_squared = "partial",
     eta_squared = "partial",
     epsilon_squared = "partial"
+  )
+
+  model_parameters(
+    model,
+    omega_squared = "partial",
+    eta_squared = "partial",
+    ci = .9
   )
 
   model <- anova(lm(Sepal.Length ~ Sepal.Big, data = df))
@@ -65,7 +78,8 @@ if (requireNamespace("effectsize", quietly = TRUE)) {
 
   if (require("lme4")) {
     mm <- lmer(Sepal.Length ~ Sepal.Big + Petal.Width + (1 | Species),
-               data = df)
+      data = df
+    )
     model <- anova(mm)
 
     # simple parameters table
@@ -75,6 +89,7 @@ if (requireNamespace("effectsize", quietly = TRUE)) {
     model_parameters(
       model,
       eta_squared = "partial",
+      ci = .9,
       df_error = dof_satterthwaite(mm)
     )
   }

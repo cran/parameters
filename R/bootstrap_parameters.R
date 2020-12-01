@@ -25,11 +25,23 @@
 #' model <- lm(Sepal.Length ~ Species * Petal.Width, data = iris)
 #' bootstrap_parameters(model)
 #' }
-#' @importFrom tools toTitleCase
 #' @export
-bootstrap_parameters <- function(model, iterations = 1000, centrality = "median", ci = .95, ci_method = "quantile", test = "p-value", ...) {
+bootstrap_parameters <- function(model,
+                                 iterations = 1000,
+                                 centrality = "median",
+                                 ci = .95,
+                                 ci_method = "quantile",
+                                 test = "p-value",
+                                 ...) {
   data <- bootstrap_model(model, iterations = iterations, ...)
-  .summary_bootstrap(data = data, test = test, centrality = centrality, ci = ci, ci_method = ci_method, ...)
+  .summary_bootstrap(
+    data = data,
+    test = test,
+    centrality = centrality,
+    ci = ci,
+    ci_method = ci_method,
+    ...
+  )
 }
 
 
@@ -47,7 +59,14 @@ bootstrap_parameters <- function(model, iterations = 1000, centrality = "median"
     p_value <- FALSE
   }
 
-  parameters <- bayestestR::describe_posterior(data, centrality = centrality, ci = ci, ci_method = ci_method, test = test, ...)
+  parameters <- bayestestR::describe_posterior(
+    data,
+    centrality = centrality,
+    ci = ci,
+    ci_method = ci_method,
+    test = test,
+    ...
+  )
 
   # Remove unnecessary columns
   if ("CI" %in% names(parameters) && .n_unique(parameters$CI) == 1) {
@@ -56,7 +75,7 @@ bootstrap_parameters <- function(model, iterations = 1000, centrality = "median"
 
   # Coef
   if (length(c(centrality)) == 1) {
-    names(parameters)[names(parameters) == tools::toTitleCase(centrality)] <- "Coefficient"
+    names(parameters)[names(parameters) == .capitalize(centrality)] <- "Coefficient"
   }
 
   # p-value

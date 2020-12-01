@@ -29,9 +29,19 @@
 #' @return A data frame of indices related to the model's parameters.
 #' @importFrom stats na.omit
 #' @importFrom bayestestR bayesfactor_models
+#' @importFrom insight get_priors
 #' @export
-model_parameters.BFBayesFactor <- function(model, centrality = "median", dispersion = FALSE, ci = 0.89, ci_method = "hdi", test = c("pd", "rope"), rope_range = "default", rope_ci = 0.89, priors = TRUE, verbose = TRUE, ...) {
-
+model_parameters.BFBayesFactor <- function(model,
+                                           centrality = "median",
+                                           dispersion = FALSE,
+                                           ci = 0.89,
+                                           ci_method = "hdi",
+                                           test = c("pd", "rope"),
+                                           rope_range = "default",
+                                           rope_ci = 0.89,
+                                           priors = TRUE,
+                                           verbose = TRUE,
+                                           ...) {
   if (any(grepl("^Null", names(model@numerator)))) {
     if (isTRUE(verbose)) {
       insight::print_color("Nothing to compute for point-null models.\nSee github.com/easystats/parameters/issues/226\n", "red")
@@ -40,16 +50,30 @@ model_parameters.BFBayesFactor <- function(model, centrality = "median", dispers
   }
 
   if (.classify_BFBayesFactor(model)[1] == "xtable") {
-    out <- data.frame(BF = NA)
+    out <- insight::get_priors(model)
+    colnames(out)[which(colnames(out) != "Parameter")] <- paste0("Prior_", colnames(out)[which(colnames(out) != "Parameter")])
   } else {
-    if (is.null(insight::get_parameters(model))) {
+    if (is.null(insight::get_parameters(model, verbose = verbose))) {
       if (isTRUE(verbose)) {
         insight::print_color("Can't extract model parameters.\n", "red")
       }
       return(NULL)
     }
 
-    out <- bayestestR::describe_posterior(model, centrality = centrality, dispersion = dispersion, ci = ci, ci_method = ci_method, test = test, rope_range = rope_range, rope_ci = rope_ci, priors = priors, ...)
+    out <-
+      bayestestR::describe_posterior(
+        model,
+        centrality = centrality,
+        dispersion = dispersion,
+        ci = ci,
+        ci_method = ci_method,
+        test = test,
+        rope_range = rope_range,
+        rope_ci = rope_ci,
+        priors = priors,
+        verbose = verbose,
+        ...
+      )
 
     # Add components and effects columns
     tryCatch(
@@ -84,6 +108,11 @@ model_parameters.BFBayesFactor <- function(model, centrality = "median", dispers
     out$ROPE_low <- NULL
     out$ROPE_high <- NULL
   }
+
+  # ==== remove Component column if not needed
+
+  if (.n_unique(out$Component) == 1) out$Component <- NULL
+  if (.n_unique(out$Effects) == 1) out$Effects <- NULL
 
   attr(out, "ci") <- ci
   attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)

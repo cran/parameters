@@ -160,12 +160,14 @@ p_value.tobit <- function(model, ...) {
 p_value.speedlm <- function(model, ...) {
   p <- p_value.default(model, ...)
   if (!is.numeric(p$p)) {
-    p$p <- tryCatch({
-      as.numeric(as.character(p$p))
-    },
-    error = function(e) {
-      p$p
-    })
+    p$p <- tryCatch(
+      {
+        as.numeric(as.character(p$p))
+      },
+      error = function(e) {
+        p$p
+      }
+    )
   }
   p
 }
@@ -429,6 +431,33 @@ p_value.flexsurvreg <- function(model, ...) {
 
 
 #' @export
+p_value.mediate <- function(model, ...) {
+  info <- model_info(model$model.y)
+  if (info$is_linear && !model$INT) {
+    out <- data.frame(
+      Parameter = c("ACME", "ADE", "Total Effect", "Prop. Mediated"),
+      p = c(model$d0.p, model$z0.p, model$tau.p, model$n0.p),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    out <- data.frame(
+      Parameter = c(
+        "ACME (control)", "ACME (treated)", "ADE (control)", "ADE (treated)",
+        "Total Effect", "Prop. Mediated (control)", "Prop. Mediated (treated)",
+        "ACME (average)", "ADE (average)", "Prop. Mediated (average)"
+      ),
+      p = c(
+        model$d0.p, model$d1.p, model$z0.p, model$z1.p, model$tau.p, model$n0.p,
+        model$n1.p, model$d.avg.p, model$z.avg.p, model$n.avg.p
+      ),
+      stringsAsFactors = FALSE
+    )
+  }
+  out
+}
+
+
+#' @export
 p_value.margins <- function(model, ...) {
   params <- insight::get_parameters(model)
   .data_frame(
@@ -458,7 +487,7 @@ p_value.mipo <- function(model, ...) {
 
 
 #' @export
-p_value.mira <- function(model,...) {
+p_value.mira <- function(model, ...) {
   if (!requireNamespace("mice", quietly = TRUE)) {
     stop("Package 'mice' needed for this function to work. Please install it.")
   }
@@ -934,12 +963,14 @@ p_value.htest <- function(model, ...) {
 p_value.multinom <- function(model, ...) {
   stat <- insight::get_statistic(model)
   p <- 2 * stats::pnorm(abs(stat$Statistic), lower.tail = FALSE)
-
-  .data_frame(
+  out <- .data_frame(
     Parameter = stat$Parameter,
-    p = as.vector(p),
-    Response = stat$Response
+    p = as.vector(p)
   )
+  if (!is.null(stat$Response)) {
+    out$Response <- stat$Response
+  }
+  out
 }
 
 #' @export
@@ -1189,7 +1220,9 @@ p_value.list <- function(model, verbose = TRUE, ...) {
       cs <- suppressWarnings(stats::coef(summary(model)))
       cs[, "Pr(>|t|)"]
     },
-    error = function(e) { NULL }
+    error = function(e) {
+      NULL
+    }
   )
 
   if (is.null(p)) {
@@ -1200,7 +1233,9 @@ p_value.list <- function(model, verbose = TRUE, ...) {
           cs = suppressWarnings(stats::coef(summary(model, covariance = TRUE)))
         )
       },
-      error = function(e) { NULL }
+      error = function(e) {
+        NULL
+      }
     )
   }
 
@@ -1220,7 +1255,9 @@ p_value.list <- function(model, verbose = TRUE, ...) {
           p <- stats::setNames(unname(sc$coefficients[, 6]), names(sc$coefficients[, 6]))
         }
       },
-      error = function(e) { NULL }
+      error = function(e) {
+        NULL
+      }
     )
   }
 

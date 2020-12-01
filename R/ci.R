@@ -1,10 +1,11 @@
-#' Confidence Intervals (CI)
+#' @title Confidence Intervals (CI)
+#' @name ci.merMod
 #'
-#' Compute confidence intervals (CI) for frequentist models.
+#' @description Compute confidence intervals (CI) for frequentist models.
 #'
 #' @param x A statistical model.
 #' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%).
-#' @param method For mixed models, can be \code{\link[=ci_wald]{"wald"}} (default), \code{\link[=ci_ml1]{"ml1"}} or \code{\link[=ci_betwithin]{"betwithin"}}. For linear mixed model, can also be \code{\link[=ci_satterthwaite]{"satterthwaite"}}, \code{\link[=ci_kenward]{"kenward"}} or \code{"boot"} and \code{lme4::confint.merMod}). For (generalized) linear models, can be \code{"robust"} to compute confidence intervals based on robust covariance matrix estimation, and for generalized linear models, may also be \code{"profile"} (default) or \code{"wald"}.
+#' @param method For mixed models, can be \code{\link[=p_value_wald]{"wald"}} (default), \code{\link[=p_value_ml1]{"ml1"}} or \code{\link[=p_value_betwithin]{"betwithin"}}. For linear mixed model, can also be \code{\link[=p_value_satterthwaite]{"satterthwaite"}}, \code{\link[=p_value_kenward]{"kenward"}} or \code{"boot"} and \code{lme4::confint.merMod}). For (generalized) linear models, can be \code{"robust"} to compute confidence intervals based on robust covariance matrix estimation, and for generalized linear models, may also be \code{"profile"} (default) or \code{"wald"}.
 #' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.
 #' @inheritParams simulate_model
 #' @inheritParams standard_error
@@ -33,7 +34,10 @@
 #' }
 #' }
 #' @export
-ci.merMod <- function(x, ci = 0.95, method = c("wald", "ml1", "betwithin", "satterthwaite", "kenward", "boot"), ...) {
+ci.merMod <- function(x,
+                      ci = 0.95,
+                      method = c("wald", "ml1", "betwithin", "satterthwaite", "kenward", "boot"),
+                      ...) {
   method <- tolower(method)
   method <- match.arg(method)
 
@@ -450,7 +454,11 @@ ci.DirichletRegModel <- function(x, ci = .95, component = c("all", "conditional"
 
 #' @rdname ci.merMod
 #' @export
-ci.HLfit <- function(x, ci = 0.95, method = c("wald", "ml1", "betwithin", "profile", "boot"), iterations = 100, ...) {
+ci.HLfit <- function(x,
+                     ci = 0.95,
+                     method = c("wald", "ml1", "betwithin", "profile", "boot"),
+                     iterations = 100,
+                     ...) {
   method <- tolower(method)
   method <- match.arg(method)
 
@@ -501,7 +509,12 @@ ci.HLfit <- function(x, ci = 0.95, method = c("wald", "ml1", "betwithin", "profi
 
 #' @rdname ci.merMod
 #' @export
-ci.glmmTMB <- function(x, ci = .95, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), method = c("wald", "ml1", "betwithin", "robust"), verbose = TRUE, ...) {
+ci.glmmTMB <- function(x,
+                       ci = .95,
+                       component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
+                       method = c("wald", "ml1", "betwithin", "robust"),
+                       verbose = TRUE,
+                       ...) {
   method <- tolower(method)
   method <- match.arg(method)
   component <- match.arg(component)
@@ -535,7 +548,11 @@ ci.zerocount <- ci.glmmTMB
 
 #' @rdname ci.merMod
 #' @export
-ci.MixMod <- function(x, ci = .95, component = c("all", "conditional", "zi", "zero_inflated"), verbose = TRUE, ...) {
+ci.MixMod <- function(x,
+                      ci = .95,
+                      component = c("all", "conditional", "zi", "zero_inflated"),
+                      verbose = TRUE,
+                      ...) {
   component <- match.arg(component)
   if (is.null(.check_component(x, component, verbose = verbose))) {
     return(NULL)
@@ -614,6 +631,71 @@ ci.betamfx <- function(x, ci = .95, component = c("all", "conditional", "precisi
 # ci.emmGrid
 # - implamented in bayestestR
 
+
+
+
+#' @importFrom insight get_parameters model_info
+#' @importFrom stats quantile
+#' @export
+ci.mediate <- function(x, ci = .95, ...) {
+  info <- insight::model_info(x$model.y)
+  alpha <- (1 + ci) / 2
+  if (info$is_linear && !x$INT) {
+    out <- data.frame(
+      Parameter = c("ACME", "ADE", "Total Effect", "Prop. Mediated"),
+      CI = 100 * ci,
+      CI_low = c(
+        stats::quantile(x$d0.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$z0.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$tau.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$n0.sims, probs = 1 - alpha, names = FALSE)
+      ),
+      CI_high = c(
+        stats::quantile(x$d0.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$z0.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$tau.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$n0.sims, probs = alpha, names = FALSE)
+      ),
+      stringsAsFactors = FALSE
+    )
+  } else {
+    out <- data.frame(
+      Parameter = c(
+        "ACME (control)", "ACME (treated)", "ADE (control)",
+        "ADE (treated)", "Total Effect", "Prop. Mediated (control)",
+        "Prop. Mediated (treated)", "ACME (average)", "ADE (average)",
+        "Prop. Mediated (average)"
+      ),
+      CI = 100 * ci,
+      CI_low = c(
+        stats::quantile(x$d0.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$d1.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$z0.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$z1.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$tau.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$n0.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$n1.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$d.avg.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$z.avg.sims, probs = 1 - alpha, names = FALSE),
+        stats::quantile(x$n.avg.sims, probs = 1 - alpha, names = FALSE)
+      ),
+      CI_high = c(
+        stats::quantile(x$d0.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$d1.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$z0.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$z1.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$tau.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$n0.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$n1.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$d.avg.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$z.avg.sims, probs = alpha, names = FALSE),
+        stats::quantile(x$n.avg.sims, probs = alpha, names = FALSE)
+      ),
+      stringsAsFactors = FALSE
+    )
+  }
+  out
+}
 
 
 #' @export
@@ -745,7 +827,14 @@ ci.lme <- function(x, ci = .95, method = c("wald", "betwithin", "ml1", "satterth
       ci_wald(model = x, ci = ci)
     } else {
       out <- lapply(ci, function(i) {
-        ci_list <- nlme::intervals(x, level = i, ...)
+        ci_list <- tryCatch(
+          {
+            nlme::intervals(x, level = i, ...)
+          },
+          error = function(e) {
+            nlme::intervals(x, level = i, which = "fixed", ...)
+          }
+        )
         .data_frame(
           Parameter = rownames(ci_list$fixed),
           CI = i * 100,
@@ -826,16 +915,38 @@ ci.effectsize_table <- ci.effectsize_std_params
 #' @export
 ci.rma <- function(x, ci = .95, ...) {
   params <- insight::get_parameters(x)
-  out <- lapply(ci, function(i) {
-    model <- stats::update(x, level = i)
-    .data_frame(
-      Parameter = params[[1]],
-      CI = i * 100,
-      CI_low = as.vector(model$ci.lb),
-      CI_high = as.vector(model$ci.ub)
-    )
-  })
-  .remove_backticks_from_parameter_names(do.call(rbind, out))
+  out <- tryCatch(
+    {
+      tmp <- lapply(ci, function(i) {
+        model <- stats::update(x, level = i)
+        .data_frame(
+          Parameter = params$Parameter,
+          CI = i * 100,
+          CI_low = as.vector(model$ci.lb),
+          CI_high = as.vector(model$ci.ub)
+        )
+      })
+      .remove_backticks_from_parameter_names(do.call(rbind, tmp))
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+  if (is.null(out)) {
+    se <- standard_error(x)
+    out <- lapply(ci, function(i) {
+      alpha <- (1 + i) / 2
+      fac <- stats::qnorm(alpha)
+      .data_frame(
+        Parameter = params$Parameter,
+        CI = i * 100,
+        CI_low = params$Estimate - as.vector(se$SE) * fac,
+        CI_high = params$Estimate + as.vector(se$SE) * fac
+      )
+    })
+    out <- .remove_backticks_from_parameter_names(do.call(rbind, out))
+  }
+  out
 }
 
 

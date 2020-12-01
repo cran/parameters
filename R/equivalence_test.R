@@ -134,10 +134,19 @@ bayestestR::equivalence_test
 #'   plot(result)
 #' }
 #' @export
-equivalence_test.lm <- function(x, range = "default", ci = .95, rule = "bayes", p_values = FALSE, verbose = TRUE, ...) {
+equivalence_test.lm <- function(x,
+                                range = "default",
+                                ci = .95,
+                                rule = "bayes",
+                                p_values = FALSE,
+                                verbose = TRUE,
+                                ...) {
   rule <- match.arg(tolower(rule), choices = c("bayes", "classic", "cet"))
   out <- .equivalence_test_frequentist(x, range, ci, rule, p_values, verbose, ...)
 
+  if (is.null(attr(out, "pretty_names", exact = TRUE))) {
+    attr(out, "pretty_names") <- format_parameters(x)
+  }
   attr(out, "object_name") <- .safe_deparse(substitute(x))
   attr(out, "rule") <- rule
   class(out) <- c("equivalence_test_lm", "see_equivalence_test_lm", class(out))
@@ -189,7 +198,14 @@ equivalence_test.rma <- equivalence_test.lm
 
 #' @rdname equivalence_test.lm
 #' @export
-equivalence_test.merMod <- function(x, range = "default", ci = .95, rule = "bayes", effects = c("fixed", "random"), p_values = FALSE, verbose = TRUE, ...) {
+equivalence_test.merMod <- function(x,
+                                    range = "default",
+                                    ci = .95,
+                                    rule = "bayes",
+                                    effects = c("fixed", "random"),
+                                    p_values = FALSE,
+                                    verbose = TRUE,
+                                    ...) {
 
   # ==== argument matching ====
 
@@ -208,6 +224,9 @@ equivalence_test.merMod <- function(x, range = "default", ci = .95, rule = "baye
 
   # ==== result ====
 
+  if (is.null(attr(out, "pretty_names", exact = TRUE))) {
+    attr(out, "pretty_names") <- format_parameters(x)
+  }
   attr(out, "object_name") <- .safe_deparse(substitute(x))
   attr(out, "rule") <- rule
   class(out) <- c("equivalence_test_lm", "see_equivalence_test_lm", class(out))
@@ -231,7 +250,11 @@ equivalence_test.MixMod <- equivalence_test.merMod
 
 #' @importFrom bayestestR rope_range
 #' @export
-equivalence_test.parameters_simulate_model <- function(x, range = "default", ci = .95, verbose = TRUE, ...) {
+equivalence_test.parameters_simulate_model <- function(x,
+                                                       range = "default",
+                                                       ci = .95,
+                                                       verbose = TRUE,
+                                                       ...) {
 
   # ==== retrieve model, to define rope range for simulated model parameters ====
 
@@ -248,6 +271,9 @@ equivalence_test.parameters_simulate_model <- function(x, range = "default", ci 
 
   out <- equivalence_test(as.data.frame(x), range = range, ci = ci, verbose = verbose, ...)
 
+  if (is.null(attr(out, "pretty_names", exact = TRUE))) {
+    attr(out, "pretty_names") <- format_parameters(x)
+  }
   attr(out, "object_name") <- attr(x, "object_name")
   attr(out, "data") <- x
   class(out) <- unique(c("equivalence_test", "see_equivalence_test", "equivalence_test_simulate_model", class(out)))
@@ -264,7 +290,13 @@ equivalence_test.parameters_simulate_model <- function(x, range = "default", ci 
 
 #' @importFrom bayestestR equivalence_test rope_range
 #' @keywords internal
-.equivalence_test_frequentist <- function(x, range = "default", ci = .95, rule = "bayes", p_values = FALSE, verbose = TRUE, ...) {
+.equivalence_test_frequentist <- function(x,
+                                          range = "default",
+                                          ci = .95,
+                                          rule = "bayes",
+                                          p_values = FALSE,
+                                          verbose = TRUE,
+                                          ...) {
 
   # ==== define rope range ====
 
@@ -301,7 +333,8 @@ equivalence_test.parameters_simulate_model <- function(x, range = "default", ci 
   l <- mapply(
     function(ci_wide, ci_narrow) {
       .equivalence_test_numeric(ci_wide, ci_narrow, range_rope = range, rule = rule, verbose = verbose)
-    }, conf_int, conf_int2, SIMPLIFY = FALSE
+    }, conf_int, conf_int2,
+    SIMPLIFY = FALSE
   )
 
   dat <- do.call(rbind, l)
@@ -329,7 +362,12 @@ equivalence_test.parameters_simulate_model <- function(x, range = "default", ci 
 #' @importFrom insight get_parameters
 #' @importFrom bayestestR rope_range
 #' @keywords internal
-.equivalence_test_frequentist_random <- function(x, range = "default", ci = .95, rule = "bayes", verbose = TRUE, ...) {
+.equivalence_test_frequentist_random <- function(x,
+                                                 range = "default",
+                                                 ci = .95,
+                                                 rule = "bayes",
+                                                 verbose = TRUE,
+                                                 ...) {
   if (all(range == "default")) {
     range <- bayestestR::rope_range(x)
   } else if (!all(is.numeric(range)) | length(range) != 2) {
@@ -376,7 +414,8 @@ equivalence_test.parameters_simulate_model <- function(x, range = "default", ci 
     l <- mapply(
       function(ci_wide, ci_narrow) {
         .equivalence_test_numeric(ci_wide, ci_narrow, range_rope = range, rule = rule, verbose = verbose)
-      }, conf_int, conf_int2, SIMPLIFY = FALSE
+      }, conf_int, conf_int2,
+      SIMPLIFY = FALSE
     )
 
     dat <- do.call(rbind, l)
@@ -392,7 +431,6 @@ equivalence_test.parameters_simulate_model <- function(x, range = "default", ci 
 
 #' @keywords internal
 .equivalence_test_numeric <- function(ci_wide, ci_narrow, range_rope, rule, verbose) {
-
   final_ci <- NULL
 
   # ==== HDI+ROPE decision rule, by Kruschke ====
@@ -490,7 +528,6 @@ equivalence_test.parameters_simulate_model <- function(x, range = "default", ci 
   } else if (max(ci) <= max(rope) && min(ci) < min(rope)) {
     diff_in_rope <- max(ci) - min(rope)
     coverage <- diff_in_rope / diff_ci
-
   }
 
   coverage
@@ -500,23 +537,25 @@ equivalence_test.parameters_simulate_model <- function(x, range = "default", ci 
 
 #' @importFrom stats pt p.adjust
 .add_p_to_equitest <- function(model, ci, range, decision) {
-  tryCatch({
-    df <- degrees_of_freedom(model, method = "any")
-    fac <- stats::qt((1 + ci) / 2, df = df)
-    interval <- ci_wald(model, ci = ci)
-    se <- abs((interval$CI_high - interval$CI_low) / (2 * fac))
-    est <- insight::get_parameters(model)$Estimate
-    r <- range[2]
-    if (any(decision == "Undecided")) se[decision == "Undecided"] <- se[decision == "Undecided"] + (r / fac)
-    if (any(decision == "Rejected")) est[decision == "Rejected"] <- ifelse(est[decision == "Rejected"] < 0, est[decision == "Rejected"] + r, est[decision == "Rejected"] - r)
-    stat <- abs(est / se)
-    out <- stats::p.adjust(2 * stats::pt(stat, df = df, lower.tail = FALSE), method = "fdr")
-    if (any(decision == "Accepted")) out[decision == "Accepted"] <- 1
-    out
-  },
-  error = function(e) {
-    NULL
-  })
+  tryCatch(
+    {
+      df <- degrees_of_freedom(model, method = "any")
+      fac <- stats::qt((1 + ci) / 2, df = df)
+      interval <- ci_wald(model, ci = ci)
+      se <- abs((interval$CI_high - interval$CI_low) / (2 * fac))
+      est <- insight::get_parameters(model)$Estimate
+      r <- range[2]
+      if (any(decision == "Undecided")) se[decision == "Undecided"] <- se[decision == "Undecided"] + (r / fac)
+      if (any(decision == "Rejected")) est[decision == "Rejected"] <- ifelse(est[decision == "Rejected"] < 0, est[decision == "Rejected"] + r, est[decision == "Rejected"] - r)
+      stat <- abs(est / se)
+      out <- stats::p.adjust(2 * stats::pt(stat, df = df, lower.tail = FALSE), method = "fdr")
+      if (any(decision == "Accepted")) out[decision == "Accepted"] <- 1
+      out
+    },
+    error = function(e) {
+      NULL
+    }
+  )
 }
 
 
@@ -547,6 +586,20 @@ print.equivalence_test_lm <- function(x, digits = 2, ...) {
 
   .rope <- attr(x, "rope", exact = TRUE)
   cat(sprintf("  ROPE: [%.*f %.*f]\n\n", digits, .rope[1], digits, .rope[2]))
+
+  # set pretty names
+  x <- tryCatch(
+    {
+      pretty_names <- attr(x, "pretty_names", exact = TRUE)
+      if (!is.null(pretty_names)) {
+        x$Parameter[match(names(pretty_names), x$Parameter)] <- pretty_names
+      }
+      x
+    },
+    error = function(e) {
+      x
+    }
+  )
 
   if ("Component" %in% colnames(x)) {
     x <- x[x$Component %in% c("conditional", "count"), ]

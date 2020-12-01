@@ -83,20 +83,29 @@ center.numeric <- function(x, weights = NULL, robust = FALSE, verbose = TRUE, ..
 
 
 #' @export
-center.factor <- function(x, weights = NULL, robust = FALSE, verbose= TRUE, ...) {
+center.factor <- function(x, weights = NULL, robust = FALSE, verbose = TRUE, ...) {
   center(.factor_to_numeric(x), weights = weights, robust = robust, verbose = verbose, ...)
 }
 
 
 #' @export
-center.character <- function(x, weights = NULL, robust = FALSE, verbose= TRUE, ...) {
+center.character <- function(x, weights = NULL, robust = FALSE, verbose = TRUE, ...) {
   center(.factor_to_numeric(x), weights = weights, robust = robust, verbose = verbose, ...)
 }
 
 
 #' @rdname center
 #' @export
-center.data.frame <- function(x, select = NULL, exclude = NULL, weights = NULL, robust = FALSE, force = FALSE, append = FALSE, suffix = "_c", verbose = TRUE, ...) {
+center.data.frame <- function(x,
+                              select = NULL,
+                              exclude = NULL,
+                              weights = NULL,
+                              robust = FALSE,
+                              force = FALSE,
+                              append = FALSE,
+                              suffix = "_c",
+                              verbose = TRUE,
+                              ...) {
   # check for formula notation, convert to character vector
   if (inherits(select, "formula")) {
     select <- all.vars(select)
@@ -107,7 +116,7 @@ center.data.frame <- function(x, select = NULL, exclude = NULL, weights = NULL, 
 
   if (!is.null(weights) && is.character(weights)) {
     if (weights %in% colnames(x)) {
-      exclude <- c(exclude,weights)
+      exclude <- c(exclude, weights)
     } else {
       warning("Could not find weighting column '", weights, "'. Weighting not carried out.")
       weights <- NULL

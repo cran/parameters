@@ -1,7 +1,7 @@
 if (require("testthat") &&
-    require("parameters") &&
-    require("tripack") &&
-    require("quantreg")) {
+  require("parameters") &&
+  require("tripack") &&
+  require("quantreg")) {
 
   # rqss ---------
 
@@ -10,7 +10,7 @@ if (require("testthat") &&
   CobarOre$w <- rnorm(nrow(CobarOre))
   m1 <- rqss(z ~ w + qss(cbind(x, y), lambda = .08), data = CobarOre)
 
-  mp <- model_parameters(m1)
+  mp <- suppressWarnings(model_parameters(m1))
   test_that("mp_rqss", {
     expect_identical(mp$Parameter, c("(Intercept)", "w"))
     expect_equal(mp$Coefficient, c(17.63057, 1.12506), tolerance = 1e-3)
@@ -23,7 +23,7 @@ if (require("testthat") &&
   data(stackloss)
   m1 <- rq(stack.loss ~ Air.Flow + Water.Temp, data = stackloss, tau = .25)
 
-  mp <- model_parameters(m1)
+  mp <- suppressWarnings(model_parameters(m1))
   test_that("mp_rq", {
     expect_identical(mp$Parameter, c("(Intercept)", "Air.Flow", "Water.Temp"))
     expect_equal(mp$Coefficient, c(-36, 0.5, 1), tolerance = 1e-3)
@@ -41,7 +41,7 @@ if (require("testthat") &&
   d <- (y > c)
 
   dat <- data.frame(y, x, c, d)
-  m1 <- crq(survival::Surv(pmax(y,c), d, type = "left") ~ x, method = "Portnoy", data = dat)
+  m1 <- crq(survival::Surv(pmax(y, c), d, type = "left") ~ x, method = "Portnoy", data = dat)
 
   mp <- model_parameters(m1)
   test_that("mp_rq", {

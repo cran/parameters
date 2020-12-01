@@ -1,6 +1,7 @@
-#' Robust estimation
+#' @title Robust estimation
+#' @name standard_error_robust
 #'
-#' \code{standard_error_robust()}, \code{ci_robust()} and \code{p_value_robust()}
+#' @description \code{standard_error_robust()}, \code{ci_robust()} and \code{p_value_robust()}
 #' attempt to return indices based on robust estimation of the variance-covariance
 #' matrix, using the packages \pkg{sandwich} and \pkg{clubSandwich}.
 #'
@@ -137,12 +138,10 @@ ci_robust <- function(model,
 
   # check if required package is available
   if (vcov_fun == "vcovCR") {
-    warning("Support for the 'clubSandwich' package was temporarily disabled, due to removal of that package from CRAN.", call. = FALSE)
-    ## TODO enable when clubSandwich back on CRAN
-    # if (!requireNamespace("clubSandwich", quietly = TRUE)) {
-    #   stop("Package `clubSandwich` needed for this function. Please install and try again.")
-    # }
-    # .vcov <- do.call(clubSandwich::vcovCR, c(list(obj = x, type = vcov_type), vcov_args))
+    if (!requireNamespace("clubSandwich", quietly = TRUE)) {
+      stop("Package `clubSandwich` needed for this function. Please install and try again.")
+    }
+    .vcov <- do.call(clubSandwich::vcovCR, c(list(obj = x, type = vcov_type), vcov_args))
   } else {
     if (!requireNamespace("sandwich", quietly = TRUE)) {
       stop("Package `sandwich` needed for this function. Please install and try again.")

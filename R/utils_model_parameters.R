@@ -1,10 +1,10 @@
 #' @importFrom utils packageVersion
 #' @keywords internal
-.add_model_parameters_attributes <- function(params, model, ci, exponentiate = FALSE, bootstrap = FALSE, iterations = 1000, df_method = NULL, ci_method = NULL, ...) {
+.add_model_parameters_attributes <- function(params, model, ci, exponentiate = FALSE, bootstrap = FALSE, iterations = 1000, df_method = NULL, ci_method = NULL, verbose = TRUE, ...) {
   dot.arguments <- lapply(match.call(expand.dots = FALSE)$`...`, function(x) x)
   info <- tryCatch(
     {
-      insight::model_info(model, verbose = FALSE)
+      suppressWarnings(insight::model_info(model, verbose = FALSE))
     },
     error = function(e) {
       NULL
@@ -21,12 +21,23 @@
   }
   attr(params, "ci") <- ci
   attr(params, "bayes_ci_method") <- ci_method
+  attr(params, "verbose") <- verbose
   attr(params, "exponentiate") <- exponentiate
   attr(params, "ordinal_model") <- isTRUE(info$is_ordinal) | isTRUE(info$is_multinomial)
   attr(params, "model_class") <- class(model)
   attr(params, "bootstrap") <- bootstrap
   attr(params, "iterations") <- iterations
   attr(params, "df_method") <- df_method
+
+  model_formula <- tryCatch(
+    {
+      .safe_deparse(insight::find_formula(model)$conditional)
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+  attr(params, "model_formula") <- model_formula
 
   # column name for coefficients
   coef_col <- .find_coefficient_type(info, exponentiate)
@@ -35,13 +46,29 @@
 
 
   if (inherits(model, c("rma", "rma.uni"))) {
-    attr(params, "data") <- insight::get_data(model)
+    rma_data <- tryCatch(
+      {
+        insight::get_data(model)
+      },
+      error = function(e) {
+        NULL
+      }
+    )
+    attr(params, "data") <- rma_data
     attr(params, "study_weights") <- 1 / model$vi
   }
 
   if (utils::packageVersion("insight") > "0.10.0") {
     if (inherits(model, c("meta_random", "meta_fixed", "meta_bma"))) {
-      attr(params, "data") <- insight::get_data(model)
+      rma_data <- tryCatch(
+        {
+          insight::get_data(model)
+        },
+        error = function(e) {
+          NULL
+        }
+      )
+      attr(params, "data") <- rma_data
       attr(params, "study_weights") <- 1 / params$SE^2
     }
   }
@@ -116,24 +143,65 @@
 
 
 #' @importFrom insight clean_parameters
-.add_pretty_names <- function(params, model, effects = NULL, component = NULL) {
+.add_pretty_names <- function(params, model) {
   attr(params, "model_class") <- class(model)
-  clean_params <- insight::clean_parameters(model)
-
-  if (is.null(effects)) {
-    effects <- "fixed"
-  } else if (effects == "all") {
-    effects <- c("fixed", "random")
-  }
-
-  if (is.null(component)) {
-    component <- "conditional"
-  } else if (component == "all") {
-    component <- c("conditional", "zi", "zero_inflated", "dispersion")
-  }
-
-  clean_params <- clean_params[clean_params$Component %in% component & clean_params$Effects %in% effects, ]
-  attr(params, "cleaned_parameters") <- clean_params$Cleaned_Parameter
+  cp <- insight::clean_parameters(model)
+  clean_params <- cp[cp$Parameter %in% params$Parameter, ]
+  attr(params, "cleaned_parameters") <- setNames(clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)], params$Parameter)
+  attr(params, "pretty_names") <- setNames(clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)], params$Parameter)
 
   params
+}
+
+
+
+
+#' @keywords internal
+.add_anova_attributes <- function(params, model, ci, ...) {
+  dot.arguments <- lapply(match.call(expand.dots = FALSE)$`...`, function(x) x)
+
+  attr(params, "ci") <- ci
+  attr(params, "model_class") <- class(model)
+
+  if ("digits" %in% names(dot.arguments)) {
+    attr(params, "digits") <- eval(dot.arguments[["digits"]])
+  } else {
+    attr(params, "digits") <- 2
+  }
+
+  if ("ci_digits" %in% names(dot.arguments)) {
+    attr(params, "ci_digits") <- eval(dot.arguments[["ci_digits"]])
+  } else {
+    attr(params, "ci_digits") <- 2
+  }
+
+  if ("p_digits" %in% names(dot.arguments)) {
+    attr(params, "p_digits") <- eval(dot.arguments[["p_digits"]])
+  } else {
+    attr(params, "p_digits") <- 3
+  }
+
+  if ("s_value" %in% names(dot.arguments)) {
+    attr(params, "s_value") <- eval(dot.arguments[["s_value"]])
+  }
+
+  params
+}
+
+
+
+.additional_arguments <- function(x, value, default) {
+  args <- attributes(x)$additional_arguments
+
+  if (length(args) > 0 && value %in% names(args)) {
+    out <- args[[value]]
+  } else {
+    out <- attributes(x)[[value]]
+  }
+
+  if (is.null(out)) {
+    out <- default
+  }
+
+  out
 }

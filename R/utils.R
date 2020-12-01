@@ -195,10 +195,11 @@
 #' @keywords internal
 .remove_columns <- function(data, variables) {
   to_remove <- which(colnames(data) %in% variables)
-  if (length(to_remove))
+  if (length(to_remove)) {
     data[, -to_remove, drop = FALSE]
-  else
+  } else {
     data
+  }
 }
 
 
@@ -207,12 +208,14 @@
 #' @keywords internal
 .is_empty_object <- function(x) {
   if (is.list(x)) {
-    x <- tryCatch({
-      .compact_list(x)
-    },
-    error = function(x) {
-      x
-    })
+    x <- tryCatch(
+      {
+        .compact_list(x)
+      },
+      error = function(x) {
+        x
+      }
+    )
   }
   # this is an ugly fix because of ugly tibbles
   if (inherits(x, c("tbl_df", "tbl"))) x <- as.data.frame(x)
@@ -238,17 +241,23 @@
   obj_name <- attr(x, attribute_name, exact = TRUE)
   model <- NULL
   if (!is.null(obj_name)) {
-    model <- tryCatch({
-      get(obj_name, envir = parent.frame())
-    }, error = function(e) {
-      NULL
-    })
-    if (is.null(model)) {
-      model <- tryCatch({
-        get(obj_name, envir = globalenv())
-      }, error = function(e) {
+    model <- tryCatch(
+      {
+        get(obj_name, envir = parent.frame())
+      },
+      error = function(e) {
         NULL
-      })
+      }
+    )
+    if (is.null(model)) {
+      model <- tryCatch(
+        {
+          get(obj_name, envir = globalenv())
+        },
+        error = function(e) {
+          NULL
+        }
+      )
     }
   }
   model
@@ -259,4 +268,13 @@
 
 .is_semLme <- function(x) {
   all(inherits(x, c("sem", "lme")))
+}
+
+
+
+# capitalizes the first letter in a string
+.capitalize <- function(x) {
+  capped <- grep("^[A-Z]", x, invert = TRUE)
+  substr(x[capped], 1, 1) <- toupper(substr(x[capped], 1, 1))
+  x
 }

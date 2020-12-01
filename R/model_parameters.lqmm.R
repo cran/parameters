@@ -1,5 +1,12 @@
 #' @export
-model_parameters.lqmm <- function(model, ci = .95, bootstrap = FALSE, iterations = 1000, p_adjust = NULL, ...) {
+model_parameters.lqmm <- function(model,
+                                  ci = .95,
+                                  bootstrap = FALSE,
+                                  iterations = 1000,
+                                  p_adjust = NULL,
+                                  verbose = TRUE,
+                                  ...) {
+
   # Processing
   if (bootstrap) {
     parameters <- bootstrap_parameters(model, iterations = iterations, ci = ci, ...)
@@ -7,7 +14,7 @@ model_parameters.lqmm <- function(model, ci = .95, bootstrap = FALSE, iterations
     parameters <- .extract_parameters_lqmm(model, ci = ci, p_adjust = p_adjust, ...)
   }
 
-  parameters <- .add_model_parameters_attributes(parameters, model, ci, exponentiate = FALSE, ...)
+  parameters <- .add_model_parameters_attributes(parameters, model, ci, exponentiate = FALSE, verbose = verbose, ...)
   attr(parameters, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   class(parameters) <- c("parameters_model", "see_parameters_model", class(parameters))
 
@@ -38,7 +45,18 @@ model_parameters.lqm <- model_parameters.lqmm
 
   # ==== DF and Conf Int
 
-  parameters$df <- attr(cs$B, "R") - 1
+  parameters$df <- tryCatch(
+    {
+      if (!is.null(cs$rdf)) {
+        cs$rdf
+      } else {
+        attr(cs$B, "R") - 1
+      }
+    },
+    error = function(e) {
+      Inf
+    }
+  )
   parameters$CI_low <- parameters$Coefficient - stats::qt((1 + ci) / 2, df = parameters$df) * parameters$SE
   parameters$CI_high <- parameters$Coefficient + stats::qt((1 + ci) / 2, df = parameters$df) * parameters$SE
 

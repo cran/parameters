@@ -1,14 +1,31 @@
-#' Parameter names formatting
+#' @title Parameter names formatting
+#' @name format_parameters
+#'
+#' @description This functions formats the names of model parameters (coefficients)
+#'   to make them more human-readable.
 #'
 #' @param model A statistical model.
+#' @param brackets A character vector of length two, indicating the opening and closing brackets.
+#' @param ... Currently not used.
+#'
+#' @section Interpretation of Interaction Terms:
+#' Note that the \emph{interpretation} of interaction terms depends on many
+#' characteristics of the model. The number of parameters, and overall
+#' performance of the model, can differ \emph{or not} between \code{a * b}
+#' \code{a : b}, and \code{a / b}, suggesting that sometimes interaction terms
+#' give different parameterizations of the same model, but other times it gives
+#' completely different models (depending on \code{a} or \code{b} being factors
+#' of covariates, included as main effects or not, etc.). Their interpretation
+#' depends of the full context of the model, which should not be inferred
+#' from the parameters table alone - rather, we recommend to use packages
+#' that calculate estimated marginal means or marginal effects, such as
+#' \CRANpkg{modelbased}, \CRANpkg{emmeans} or \CRANpkg{ggeffects}. To raise
+#' awareness for this issue, you may use \code{print(...,show_formula=TRUE)}
+#' to add the model-specification to the output of the
+#' \code{\link[=print.parameters_model]{print()}} method for \code{model_parameters()}.
 #'
 #' @examples
-#' library(parameters)
-#'
 #' model <- lm(Sepal.Length ~ Species * Sepal.Width, data = iris)
-#' format_parameters(model)
-#'
-#' model <- lm(Sepal.Length ~ Species / Petal.Length, data = iris)
 #' format_parameters(model)
 #'
 #' model <- lm(Sepal.Length ~ Petal.Length + (Species / Sepal.Width), data = iris)
@@ -19,40 +36,37 @@
 #'
 #' model <- lm(Sepal.Length ~ Species + poly(Sepal.Width, 2, raw = TRUE), data = iris)
 #' format_parameters(model)
-#' @return The formatted parameter names.
+#' @return A (names) character vector with formatted parameter names. The value names refer to the original names of the coefficients.
 #' @importFrom utils tail head
 #' @export
-format_parameters <- function(model) {
+format_parameters <- function(model, ...) {
   UseMethod("format_parameters")
 }
 
 
+#' @rdname format_parameters
 #' @export
-format_parameters.default <- function(model) {
-  .format_parameter_default(model)
+format_parameters.default <- function(model, brackets = c("[", "]"), ...) {
+  tryCatch(
+    {
+      .format_parameter_default(model, brackets = brackets)
+    },
+    error = function(e) {
+      NULL
+    }
+  )
 }
 
 
 #' @export
-format_parameters.glmm <- function(model) {
-  .format_parameter_default(model, effects = "all")
+format_parameters.glmm <- function(model, brackets = c("[", "]"), ...) {
+  .format_parameter_default(model, effects = "all", brackets = brackets)
 }
 
 
-#' @export
-format_parameters.emm_list <- function(model) {
-  NULL
-}
-
 
 #' @export
-format_parameters.margins <- function(model) {
-  NULL
-}
-
-
-#' @export
-format_parameters.rma <- function(model) {
+format_parameters.rma <- function(model, ...) {
   params <- insight::find_parameters(model, flatten = TRUE)
   names(params) <- params
   params
@@ -60,13 +74,22 @@ format_parameters.rma <- function(model) {
 
 
 #' @export
-format_parameters.meta_random <- function(model) {
-  # params <- insight::find_parameters(model, flatten = TRUE)
-  # names(params) <- params
-  # params
+format_parameters.mediate <- function(model, ...) {
+  params <- insight::find_parameters(model, flatten = TRUE)
+  params <- trimws(gsub("(.*)\\((.*)\\)$", "\\1", params))
+  names(params) <- params
+  params[params == "ACME"] <- "Indirect Effect (ACME)"
+  params[params == "ADE"] <- "Direct Effect (ADE)"
+  params
+}
 
-  ## TODO enable once insight 0.11.0 is on CRAN
-  NULL
+
+#' @importFrom utils packageVersion
+#' @export
+format_parameters.meta_random <- function(model, ...) {
+  params <- insight::find_parameters(model, flatten = TRUE)
+  names(params) <- params
+  params
 }
 
 #' @export
@@ -78,8 +101,8 @@ format_parameters.meta_bma <- format_parameters.meta_random
 
 
 #' @export
-format_parameters.merModList <- function(model) {
-  .format_parameter_default(model[[1]])
+format_parameters.merModList <- function(model, brackets = c("[", "]"), ...) {
+  .format_parameter_default(model[[1]], brackets = brackets)
 }
 
 
@@ -88,7 +111,7 @@ format_parameters.mira <- format_parameters.rma
 
 
 #' @export
-format_parameters.parameters_model <- function(model) {
+format_parameters.parameters_model <- function(model, ...) {
   if (!is.null(attributes(model)$pretty_names)) {
     model$Parameter <- attributes(model)$pretty_names[model$Parameter]
   }
@@ -99,11 +122,38 @@ format_parameters.parameters_model <- function(model) {
 
 
 
+
+
+# not supported -------------------------------
+
+
+#' @export
+format_parameters.emm_list <- function(model, ...) {
+  NULL
+}
+
+
+#' @export
+format_parameters.margins <- function(model, ...) {
+  NULL
+}
+
+
+#' @export
+format_parameters.mle2 <- function(model, ...) {
+  NULL
+}
+
+
+
+
+
+
 # Utilities ---------------------------------------------------------------
 
 
 
-.format_parameter_default <- function(model, effects = "fixed") {
+.format_parameter_default <- function(model, effects = "fixed", brackets = c("[", "]")) {
   original_names <- names <- insight::find_parameters(model, effects = effects, flatten = TRUE)
   info <- insight::model_info(model, verbose = FALSE)
 
@@ -175,14 +225,15 @@ format_parameters.parameters_model <- function(model) {
     name <- types$Parameter[i]
 
     # No interaction
-    if (!types$Type[i] %in% c("interaction", "nested")) {
+    if (!types$Type[i] %in% c("interaction", "nested", "simple")) {
       type <- types[i, ]
-      names[i] <- .format_parameter(name, variable = type$Variable, type = type$Type, level = type$Level)
+      names[i] <- .format_parameter(name, variable = type$Variable, type = type$Type, level = type$Level, brackets = brackets)
 
       # Interaction or nesting
     } else {
       components <- unlist(strsplit(name, ":", fixed = TRUE))
-      is_nested <- types$Type[i] %in% "nested"
+      is_nested <- types$Type[i] == "nested"
+      is_simple <- types$Type[i] == "simple"
       for (j in 1:length(components)) {
         if (components[j] %in% types$Parameter) {
           type <- types[types$Parameter == components[j], ]
@@ -195,13 +246,13 @@ format_parameters.parameters_model <- function(model) {
 
           if (nrow(type) > 1) type <- type[1, ]
 
-          components[j] <- .format_parameter(components[j], variable = type$Variable, type = type$Type, level = type$Level)
+          components[j] <- .format_parameter(components[j], variable = type$Variable, type = type$Type, level = type$Level, brackets = brackets)
         } else if (components[j] %in% types$Secondary_Parameter) {
           type <- types[!is.na(types$Secondary_Parameter) & types$Secondary_Parameter == components[j], ]
-          components[j] <- .format_parameter(components[j], variable = type[1, ]$Secondary_Variable, type = type[1, ]$Secondary_Type, level = type[1, ]$Secondary_Level)
+          components[j] <- .format_parameter(components[j], variable = type[1, ]$Secondary_Variable, type = type[1, ]$Secondary_Type, level = type[1, ]$Secondary_Level, brackets = brackets)
         }
       }
-      names[i] <- .format_interaction(components, type = types[i, "Type"], is_nested = is_nested)
+      names[i] <- .format_interaction(components, type = types[i, "Type"], is_nested = is_nested, is_simple = is_simple)
     }
   }
 
@@ -218,36 +269,36 @@ format_parameters.parameters_model <- function(model) {
 
 
 #' @keywords internal
-.format_parameter <- function(name, variable, type, level) {
+.format_parameter <- function(name, variable, type, level, brackets = brackets) {
 
   # Factors
   if (type == "factor") {
-    name <- .format_factor(name = name, variable = variable)
+    name <- .format_factor(name = name, variable = variable, brackets = brackets)
   }
 
   # Polynomials
   if (type %in% c("poly", "poly_raw")) {
-    name <- .format_poly(name = name, variable = variable, type = type, degree = level)
+    name <- .format_poly(name = name, variable = variable, type = type, degree = level, brackets = brackets)
   }
 
   # Splines
   if (type == "spline") {
-    name <- .format_poly(name = name, variable = variable, type = type, degree = level)
+    name <- .format_poly(name = name, variable = variable, type = type, degree = level, brackets = brackets)
   }
 
   # log-transformation
   if (type == "logarithm") {
-    name <- .format_log(name = name, variable = variable, type = type)
+    name <- .format_log(name = name, variable = variable, type = type, brackets = brackets)
   }
 
   # exp-transformation
   if (type == "exponentiation") {
-    name <- .format_log(name = name, variable = variable, type = type)
+    name <- .format_log(name = name, variable = variable, type = type, brackets = brackets)
   }
 
   # log-transformation
   if (type == "squareroot") {
-    name <- .format_log(name = name, variable = variable, type = type)
+    name <- .format_log(name = name, variable = variable, type = type, brackets = brackets)
   }
 
   # As Is
@@ -272,8 +323,11 @@ format_parameters.parameters_model <- function(model) {
 
 #' @importFrom utils tail head
 #' @keywords internal
-.format_interaction <- function(components, type, is_nested = FALSE) {
-  sep <- ifelse(is_nested, " : ", " * ")
+.format_interaction <- function(components, type, is_nested = FALSE, is_simple = FALSE) {
+  # sep <- ifelse(is_nested | is_simple, " : ", " * ")
+  # sep <- ifelse(is_nested, " / ", " * ")
+  # sep <- ifelse(is_simple, " : ", ifelse(is_nested, " / ", " * "))
+  sep <- " * "
 
   if (length(components) > 2) {
     if (type == "interaction") {
@@ -289,28 +343,40 @@ format_parameters.parameters_model <- function(model) {
 
 
 #' @keywords internal
-.format_factor <- function(name, variable) {
+.format_factor <- function(name, variable, brackets = c("[", "]")) {
   level <- sub(variable, "", name)
-  paste0(variable, " [", level, "]")
+  # special handling for "cut()"
+  pattern_cut_right <- "^\\((.*),(.*)\\]$"
+  pattern_cut_left <- "^\\[(.*),(.*)\\)$"
+  if (all(grepl(pattern_cut_right, level))) {
+    lower_bounds <- gsub(pattern_cut_right, "\\1", level)
+    upper_bounds <- gsub(pattern_cut_right, "\\2", level)
+    level <- paste0(as.numeric(lower_bounds) + 1, "-", upper_bounds)
+  } else if (all(grepl(pattern_cut_left, level))) {
+    lower_bounds <- gsub(pattern_cut_left, "\\1", level)
+    upper_bounds <- gsub(pattern_cut_left, "\\2", level)
+    level <- paste0(lower_bounds, "-", as.numeric(upper_bounds) - 1)
+  }
+  paste0(variable, " ", brackets[1], level, brackets[2])
 }
 
 #' @keywords internal
-.format_poly <- function(name, variable, type, degree) {
-  paste0(variable, " [", format_order(as.numeric(degree), textual = FALSE), " degree]")
+.format_poly <- function(name, variable, type, degree, brackets = c("[", "]")) {
+  paste0(variable, " ", brackets[1], format_order(as.numeric(degree), textual = FALSE), " degree", brackets[2])
 }
 
 #' @keywords internal
-.format_log <- function(name, variable, type) {
-  paste0(variable, " [", gsub("(.*)\\((.*)\\)", "\\1", name), "]")
+.format_log <- function(name, variable, type, brackets = c("[", "]")) {
+  paste0(variable, " ", brackets[1], gsub("(.*)\\((.*)\\)", "\\1", name), brackets[2])
 }
 
 #' @keywords internal
-.format_ordered <- function(degree) {
+.format_ordered <- function(degree, brackets = c("[", "]")) {
   switch(
     degree,
-    ".L" = "[linear]",
-    ".Q" = "[quadratic]",
-    ".C" = "[cubic]",
-    paste0("[", parameters::format_order(as.numeric(gsub("^", "", degree, fixed = TRUE)), textual = FALSE), " degree]")
+    ".L" = paste0(brackets[1], "linear", brackets[2]),
+    ".Q" = paste0(brackets[1], "quadratic", brackets[2]),
+    ".C" = paste0(brackets[1], "cubic", brackets[2]),
+    paste0(brackets[1], parameters::format_order(as.numeric(gsub("^", "", degree, fixed = TRUE)), textual = FALSE), " degree", brackets[2])
   )
 }

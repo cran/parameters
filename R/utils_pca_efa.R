@@ -1,6 +1,28 @@
+# model parameters -----------------------------------------------------------------
+
+
+#' @export
+model_parameters.parameters_efa <- function(model, ...) {
+  x <- attributes(model)$summary
+
+  if ("parameters_efa" %in% class(model)) {
+    class(x) <- c("parameters_efa_summary", class(model))
+  } else {
+    class(x) <- c("parameters_pca_summary", class(model))
+  }
+  x
+}
+
+
+#' @export
+model_parameters.parameters_pca <- model_parameters.parameters_efa
+
+
+
+
+
+
 # summary -----------------------------------------------------------------
-
-
 
 
 #' @export
@@ -26,29 +48,9 @@ summary.parameters_efa <- function(object, ...) {
   x
 }
 
+
 #' @export
 summary.parameters_pca <- summary.parameters_efa
-
-
-
-#' @export
-model_parameters.parameters_efa <- function(model, ...) {
-  x <- attributes(model)$summary
-
-  if ("parameters_efa" %in% class(model)) {
-    class(x) <- c("parameters_efa_summary", class(model))
-  } else {
-    class(x) <- c("parameters_pca_summary", class(model))
-  }
-  x
-}
-
-#' @export
-model_parameters.parameters_pca <- model_parameters.parameters_efa
-
-
-
-
 
 
 #' @export
@@ -58,16 +60,26 @@ summary.parameters_omega <- function(object, ...) {
   table_var
 }
 
+
+
+
+
+
+
 # predict -----------------------------------------------------------------
 
 
-
+#' @rdname principal_components
+#' @importFrom stats predict
 #' @export
-predict.parameters_efa <- function(object, newdata = NULL, names = NULL, ...) {
+predict.parameters_efa <- function(object, newdata = NULL, names = NULL, keep_na = TRUE, ...) {
   if (is.null(newdata)) {
     out <- as.data.frame(attributes(object)$scores)
+    if (isTRUE(keep_na)) {
+      out <- .merge_na(object, out)
+    }
   } else {
-    out <- as.data.frame(predict(attributes(object)$model, newdata = newdata, ...))
+    out <- as.data.frame(stats::predict(attributes(object)$model, newdata = newdata, ...))
   }
   if (!is.null(names)) {
     names(out)[1:length(c(names))] <- names
@@ -82,46 +94,92 @@ predict.parameters_pca <- predict.parameters_efa
 
 
 
+.merge_na <- function(object, out) {
+  compl_cases <- attributes(object)$complete_cases
+  if (is.null(compl_cases)) {
+    warning("Could not retrieve information about missing data. Returning only complete cases.", call. = FALSE)
+  } else {
+    original_data <- data.frame(.parameters_merge_id = 1:length(compl_cases))
+    out$.parameters_merge_id <- (1:nrow(original_data))[compl_cases]
+    out <- merge(original_data, out, by = ".parameters_merge_id", all = TRUE, sort = TRUE)
+    out$.parameters_merge_id <- NULL
+  }
+  out
+}
+
+
+
 
 
 
 # print -------------------------------------------------------------------
 
 
-#' @importFrom insight format_table
+#' @importFrom insight export_table
 #' @export
 print.parameters_efa_summary <- function(x, digits = 3, ...) {
-  insight::print_color("# (Explained) Variance of Components\n\n", "blue")
-
   if ("Parameter" %in% names(x)) {
     x$Parameter <- c("Eigenvalues", "Variance Explained", "Variance Explained (Cumulative)", "Variance Explained (Proportion)")
   } else if ("Component" %in% names(x)) {
-    names(x) <- c("Copmponent", "Eigenvalues", "Variance Explained", "Variance Explained (Cumulative)", "Variance Explained (Proportion)")
+    names(x) <- c("Component", "Eigenvalues", "Variance Explained", "Variance Explained (Cumulative)", "Variance Explained (Proportion)")
   }
 
-  cat(insight::format_table(x, digits = digits, ...))
-
+  cat(insight::export_table(x, digits = digits, caption = c("# (Explained) Variance of Components", "blue"), format = "text", ...))
   invisible(x)
 }
+
 
 #' @export
 print.parameters_pca_summary <- print.parameters_efa_summary
 
 
-
-
-
 #' @importFrom insight print_color print_colour
 #' @export
 print.parameters_efa <- function(x, digits = 2, sort = FALSE, threshold = NULL, labels = NULL, ...) {
+  cat(.print_parameters_cfa_efa(x, threshold = threshold, sort = sort, format = "text", digits = digits, labels = labels, ...))
+  invisible(x)
+}
 
+
+#' @export
+print.parameters_pca <- print.parameters_efa
+
+
+#' @export
+print.parameters_omega <- function(x, ...) {
   orig_x <- x
+  names(x) <- c("Composite", "Omega (total)", "Omega (hierarchical)", "Omega (group)")
+  cat(insight::export_table(x))
+  invisible(orig_x)
+}
 
+
+#' @export
+print.parameters_omega_summary <- function(x, ...) {
+  orig_x <- x
+  names(x) <- c("Composite", "Total Variance (%)", "Variance due to General Factor (%)", "Variance due to Group Factor (%)")
+  cat(insight::export_table(x))
+  invisible(orig_x)
+}
+
+
+
+
+
+
+# print-helper ----------------------
+
+
+.print_parameters_cfa_efa <- function(x, threshold, sort, format, digits, labels, ...) {
+  # Method
   if (inherits(x, "parameters_pca")) {
     method <- "Principal Component Analysis"
   } else {
     method <- "Factor Analysis"
   }
+
+  # Rotation
+  rotation_name <- attr(x, "rotation", exact = TRUE)
 
   # Labels
   if (!is.null(labels)) {
@@ -139,52 +197,35 @@ print.parameters_efa <- function(x, digits = 2, sort = FALSE, threshold = NULL, 
     x <- .filter_loadings(x, threshold = threshold)
   }
 
-
-  rotation_name <- attr(x, "rotation", exact = TRUE)
-
+  # table caption
   if (is.null(rotation_name) || rotation_name == "none") {
-    insight::print_color(sprintf("# Loadings from %s (no rotation)\n\n", method), "blue")
+    if (format == "markdown") {
+      table_caption <- sprintf("Loadings from %s (no rotation)", method)
+    } else {
+      table_caption <- c(sprintf("# Loadings from %s (no rotation)", method), "blue")
+    }
   } else {
-    insight::print_color(sprintf("# Rotated loadings from %s (%s-rotation)\n\n", method, rotation_name), "blue")
+    if (format == "markdown") {
+      table_caption <- sprintf("Rotated loadings from %s (%s-rotation)", method, rotation_name)
+    } else {
+      table_caption <- c(sprintf("# Rotated loadings from %s (%s-rotation)", method, rotation_name), "blue")
+    }
   }
 
-  cat(insight::format_table(x, digits = digits, ...))
-
+  # footer
   if (!is.null(attributes(x)$type)) {
-    cat("\n")
-    insight::print_colour(.text_components_variance(x), "yellow")
-    cat("\n")
+    footer <- c(.text_components_variance(x, sep = ifelse(format == "markdown", "", "\n")), "yellow")
+  } else {
+    footer <- NULL
   }
 
-  invisible(orig_x)
-}
-
-#' @export
-print.parameters_pca <- print.parameters_efa
-
-
-
-#' @export
-print.parameters_omega <- function(x, ...) {
-  orig_x <- x
-  names(x) <- c("Composite", "Omega (total)", "Omega (hierarchical)", "Omega (group)")
-  cat(insight::format_table(x))
-  invisible(orig_x)
-}
-
-
-#' @export
-print.parameters_omega_summary <- function(x, ...) {
-  orig_x <- x
-  names(x) <- c("Composite", "Total Variance (%)", "Variance due to General Factor (%)", "Variance due to Group Factor (%)")
-  cat(insight::format_table(x))
-  invisible(orig_x)
+  insight::export_table(x, digits = digits, format = format, caption = table_caption, footer = footer, align = "firstleft", ...)
 }
 
 
 
 #' @keywords internal
-.text_components_variance <- function(x) {
+.text_components_variance <- function(x, sep = "") {
   type <- attributes(x)$type
   if (type %in% c("prcomp", "principal", "pca")) {
     type <- "principal component"
@@ -230,16 +271,17 @@ print.parameters_omega_summary <- function(x, ...) {
       text,
       " (",
       paste0(summary$Component,
-             " = ",
-             sprintf("%.2f", summary$Variance * 100),
-             "%",
-             collapse = ", "
+        " = ",
+        sprintf("%.2f", summary$Variance * 100),
+        "%",
+        collapse = ", "
       ),
       ")."
     )
   }
-  text
+  paste0(sep, text)
 }
+
 
 
 
@@ -253,10 +295,9 @@ sort.parameters_efa <- function(x, ...) {
   .sort_loadings(x)
 }
 
+
 #' @export
 sort.parameters_pca <- sort.parameters_efa
-
-
 
 
 #' @keywords internal
@@ -293,7 +334,7 @@ sort.parameters_pca <- sort.parameters_efa
       loads[first:last, 1] <- item[ord$ix + first - 1]
       rownames(x)[first:last] <- rownames(x)[ord$ix + first - 1]
 
-      total.ord[first:last] <- total.ord[ord$ix + first - 1 ]
+      total.ord[first:last] <- total.ord[ord$ix + first - 1]
       first <- first + items[i]
     }
   }
@@ -304,6 +345,10 @@ sort.parameters_pca <- sort.parameters_efa
 
   loadings
 }
+
+
+
+
 
 # Filter --------------------------------------------------------------------
 

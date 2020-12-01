@@ -1,5 +1,9 @@
 #' @export
-model_parameters.emmGrid <- function(model, ci = .95, p_adjust = NULL, ...) {
+model_parameters.emmGrid <- function(model,
+                                     ci = .95,
+                                     p_adjust = NULL,
+                                     verbose = TRUE,
+                                     ...) {
   if (is.null(p_adjust)) {
     p_adjust <- "none"
   }
@@ -45,7 +49,7 @@ model_parameters.emmGrid <- function(model, ci = .95, p_adjust = NULL, ...) {
   # rename
   names(params) <- gsub("Estimate", "Coefficient", names(params))
 
-  params <- suppressWarnings(.add_model_parameters_attributes(params, model, ci, exponentiate = FALSE, ...))
+  params <- suppressWarnings(.add_model_parameters_attributes(params, model, ci, exponentiate = FALSE, verbose = verbose, ...))
   attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   attr(params, "parameter_names") <- parameter_names
 
@@ -55,10 +59,13 @@ model_parameters.emmGrid <- function(model, ci = .95, p_adjust = NULL, ...) {
 
 
 
-
-
 #' @export
-model_parameters.emm_list <- function(model, ci = .95, exponentiate = FALSE, p_adjust = NULL, ...) {
+model_parameters.emm_list <- function(model,
+                                      ci = .95,
+                                      exponentiate = FALSE,
+                                      p_adjust = NULL,
+                                      verbose = TRUE,
+                                      ...) {
   params <-
     suppressMessages(suppressWarnings(
       .extract_parameters_generic(
@@ -76,7 +83,7 @@ model_parameters.emm_list <- function(model, ci = .95, exponentiate = FALSE, p_a
     ))
 
   if (exponentiate) params <- .exponentiate_parameters(params)
-  params <- .add_model_parameters_attributes(params, model, ci, exponentiate, ...)
+  params <- .add_model_parameters_attributes(params, model, ci, exponentiate, verbose = verbose, ...)
 
   attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   class(params) <- c("parameters_model", "see_parameters_model", class(params))

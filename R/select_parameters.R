@@ -35,23 +35,27 @@
 #'     data = iris
 #'   )
 #'   select_parameters(model)
-#' }}
+#' }
+#' }
 #'
 #' \dontrun{
 #' # rstanarm -------------------------------------------
 #' if (require("rstanarm") && require("projpred")) {
 #'   model <- stan_glm(
-#'     mpg ~ ., data = mtcars,
+#'     mpg ~ .,
+#'     data = mtcars,
 #'     iter = 500, refresh = 0, verbose = FALSE
 #'   )
 #'   select_parameters(model, cross_validation = TRUE)
 #'
 #'   model <- stan_glm(
-#'     mpg ~ cyl * disp * hp, data = mtcars,
+#'     mpg ~ cyl * disp * hp,
+#'     data = mtcars,
 #'     iter = 500, refresh = 0, verbose = FALSE
 #'   )
 #'   select_parameters(model, cross_validation = FALSE)
 #' }}
+#'
 #' @return The model refitted with optimal number of parameters.
 #' @export
 select_parameters <- function(model, ...) {
@@ -74,11 +78,6 @@ select_parameters.lm <- function(model, direction = "both", steps = 1000, k = 2,
 
   best
 }
-
-
-
-
-
 
 
 

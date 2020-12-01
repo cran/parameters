@@ -1,9 +1,8 @@
 if (require("testthat") &&
   require("parameters") &&
   require("mice")) {
-
   data("nhanes2")
-  imp <- mice(nhanes2)
+  imp <- mice(nhanes2, printFlag = FALSE)
   fit <- with(data = imp, exp = lm(bmi ~ age + hyp + chl))
 
   mp1 <- model_parameters(fit)

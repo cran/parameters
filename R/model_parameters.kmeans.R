@@ -3,6 +3,7 @@
 #' Format cluster models obtained for example by \code{\link{kmeans}}.
 #'
 #' @param model Cluster model.
+#' @inheritParams model_parameters.default
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @examples
@@ -11,7 +12,7 @@
 #' model <- kmeans(iris[1:4], centers = 3)
 #' model_parameters(model)
 #' @export
-model_parameters.kmeans <- function(model, ...) {
+model_parameters.kmeans <- function(model, verbose = TRUE, ...) {
   params <- cbind(
     data.frame(
       Cluster = row.names(model$centers),
@@ -38,7 +39,7 @@ model_parameters.kmeans <- function(model, ...) {
 }
 
 
-#' @importFrom insight format_table
+#' @importFrom insight export_table
 #' @export
 print.parameters_clusters <- function(x, digits = 2, ...) {
   insight::print_color("# K-means Cluster Means", "blue")
@@ -47,7 +48,7 @@ print.parameters_clusters <- function(x, digits = 2, ...) {
   insight::print_colour(.text_components_variance(x), "yellow")
   cat("\n\n")
 
-  cat(insight::format_table(x, digits = digits, ...))
+  cat(insight::export_table(x, digits = digits, ...))
 
   invisible(x)
 }

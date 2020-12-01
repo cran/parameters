@@ -7,11 +7,25 @@
 \alias{model_parameters.omega}
 \title{Parameters from Structural Models (PCA, EFA, ...)}
 \usage{
-\method{model_parameters}{PCA}(model, sort = FALSE, threshold = NULL, labels = NULL, ...)
+\method{model_parameters}{PCA}(
+  model,
+  sort = FALSE,
+  threshold = NULL,
+  labels = NULL,
+  verbose = TRUE,
+  ...
+)
 
-\method{model_parameters}{principal}(model, sort = FALSE, threshold = NULL, labels = NULL, ...)
+\method{model_parameters}{principal}(
+  model,
+  sort = FALSE,
+  threshold = NULL,
+  labels = NULL,
+  verbose = TRUE,
+  ...
+)
 
-\method{model_parameters}{omega}(model, ...)
+\method{model_parameters}{omega}(model, verbose = TRUE, ...)
 }
 \arguments{
 \item{model}{PCA or FA created by the \pkg{psych} or \pkg{FactoMineR} packages (e.g. through \code{psych::principal},  \code{psych::fa} or \code{psych::omega}).}
@@ -21,6 +35,8 @@
 \item{threshold}{A value between 0 and 1 indicates which (absolute) values from the loadings should be removed. An integer higher than 1 indicates the n strongest loadings to retain. Can also be \code{"max"}, in which case it will only display the maximum loading per variable (the most simple structure).}
 
 \item{labels}{A character vector containing labels to be added to the loadings data. Usually, the question related to the item.}
+
+\item{verbose}{Toggle warnings and messages.}
 
 \item{...}{Arguments passed to or from other methods.}
 }
@@ -39,6 +55,7 @@ For the structural models obtained with \pkg{psych}, the following indices are p
 }
 }
 \examples{
+\donttest{
 library(parameters)
 if (require("psych")) {
   # Principal Component Analysis (PCA) ---------
@@ -50,11 +67,11 @@ if (require("psych")) {
 
   principal_components(attitude, n = 3, sort = TRUE, threshold = 0.2)
 
-\donttest{
+
   # Exploratory Factor Analysis (EFA) ---------
   efa <- psych::fa(attitude, nfactors = 3)
   model_parameters(efa, threshold = "max", sort = TRUE, labels = as.character(1:ncol(attitude)))
-}
+
 
   # Omega ---------
   omega <- psych::omega(mtcars, nfactors = 3)
@@ -64,16 +81,14 @@ if (require("psych")) {
 }
 
 # FactoMineR ---------
-\dontrun{
-if( require("FactoMineR")) {
+if (require("FactoMineR")) {
   model <- FactoMineR::PCA(iris[, 1:4], ncp = 2)
   model_parameters(model)
   attributes(model_parameters(model))$scores
 
   model <- FactoMineR::FAMD(iris, ncp = 2)
   model_parameters(model)
-}
-}
+}}
 }
 \references{
 \itemize{

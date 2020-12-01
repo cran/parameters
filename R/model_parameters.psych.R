@@ -16,6 +16,7 @@
 #' }
 #'
 #' @examples
+#' \donttest{
 #' library(parameters)
 #' if (require("psych")) {
 #'   # Principal Component Analysis (PCA) ---------
@@ -27,11 +28,11 @@
 #'
 #'   principal_components(attitude, n = 3, sort = TRUE, threshold = 0.2)
 #'
-#' \donttest{
+#'
 #'   # Exploratory Factor Analysis (EFA) ---------
 #'   efa <- psych::fa(attitude, nfactors = 3)
 #'   model_parameters(efa, threshold = "max", sort = TRUE, labels = as.character(1:ncol(attitude)))
-#' }
+#'
 #'
 #'   # Omega ---------
 #'   omega <- psych::omega(mtcars, nfactors = 3)
@@ -41,16 +42,14 @@
 #' }
 #'
 #' # FactoMineR ---------
-#' \dontrun{
-#' if( require("FactoMineR")) {
+#' if (require("FactoMineR")) {
 #'   model <- FactoMineR::PCA(iris[, 1:4], ncp = 2)
 #'   model_parameters(model)
 #'   attributes(model_parameters(model))$scores
 #'
 #'   model <- FactoMineR::FAMD(iris, ncp = 2)
 #'   model_parameters(model)
-#' }
-#' }
+#' }}
 #' @return A data frame of loadings.
 #' @references \itemize{
 #'   \item Kaiser, H.F. and Rice. J. (1974). Little jiffy, mark iv. Educational and Psychological Measurement, 34(1):111–117
@@ -59,7 +58,12 @@
 #'   \item Tabachnick, B. G., and Fidell, L. S. (2013). Using multivariate statistics (6th ed.). Boston: Pearson Education.
 #' }
 #' @export
-model_parameters.principal <- function(model, sort = FALSE, threshold = NULL, labels = NULL, ...) {
+model_parameters.principal <- function(model,
+                                       sort = FALSE,
+                                       threshold = NULL,
+                                       labels = NULL,
+                                       verbose = TRUE,
+                                       ...) {
 
   # n
   n <- model$factors
@@ -153,7 +157,7 @@ model_parameters.fa <- model_parameters.principal
 
 #' @rdname model_parameters.principal
 #' @export
-model_parameters.omega <- function(model, ...) {
+model_parameters.omega <- function(model, verbose = TRUE, ...) {
 
   # Table of omega coefficients
   table_om <- model$omega.group

@@ -219,7 +219,10 @@
 
   # ==== Reorder
 
-  col_order <- c("Parameter", coef_col, "SE", ci_cols, "t", "z", "t / F", "z / Chisq", "z / Chi2", "F", "Chi2", "chisq", "chi-squared", "Statistic", "df", "df_error", "p", "Component", "Response", "Effects")
+  col_order <- c("Parameter", coef_col, "SE", ci_cols, "t", "z", "t / F", "t/F",
+                 "z / Chisq", "z/Chisq", "z / Chi2", "z/Chi2", "F", "Chi2",
+                 "chisq", "chi-squared", "Statistic", "df", "df_error", "p",
+                 "Component", "Response", "Effects")
   parameters <- parameters[col_order[col_order %in% names(parameters)]]
 
 
@@ -230,7 +233,9 @@
       {
         suppressWarnings(insight::get_sigma(model))
       },
-      error = function(e) { NULL }
+      error = function(e) {
+        NULL
+      }
     )
     attr(parameters, "sigma") <- as.numeric(sig)
   }
@@ -417,7 +422,7 @@
 
 
   # Reorder
-  order <- c("Parameter", coef_col, "SE", ci_cols, "t", "z", "df", "df_error", "p")
+  order <- c("Parameter", coef_col, "SE", ci_cols, "t", "z", "df", "df_error", "p", "Component")
   parameters <- parameters[order[order %in% names(parameters)]]
 
 
@@ -427,7 +432,9 @@
       {
         suppressWarnings(insight::get_sigma(model))
       },
-      error = function(e) { NULL }
+      error = function(e) {
+        NULL
+      }
     )
     attr(parameters, "sigma") <- as.numeric(sig)
   }
@@ -666,96 +673,7 @@
 
 
 
-
-
-#' @keywords internal
-.extract_parameters_htest <- function(model) {
-  if (insight::model_info(model)$is_correlation) {
-    names <- unlist(strsplit(model$data.name, " and "))
-    out <- data.frame(
-      "Parameter1" = names[1],
-      "Parameter2" = names[2]
-    )
-
-    if (model$method == "Pearson's Chi-squared test") {
-      out$Chi2 <- model$statistic
-      out$df <- model$parameter
-      out$p <- model$p.value
-      out$Method <- "Pearson"
-    } else if (grepl("Pearson", model$method)) {
-      out$r <- model$estimate
-      out$t <- model$statistic
-      out$df <- model$parameter
-      out$p <- model$p.value
-      out$CI_low <- model$conf.int[1]
-      out$CI_high <- model$conf.int[2]
-      out$Method <- "Pearson"
-    } else if (grepl("Spearman", model$method)) {
-      out$rho <- model$estimate
-      out$S <- model$statistic
-      out$df <- model$parameter
-      out$p <- model$p.value
-      out$Method <- "Spearman"
-    } else {
-      out$tau <- model$estimate
-      out$z <- model$statistic
-      out$df <- model$parameter
-      out$p <- model$p.value
-      out$Method <- "Kendall"
-    }
-  } else if (insight::model_info(model)$is_ttest) {
-    if (grepl(" and ", model$data.name)) {
-      names <- unlist(strsplit(model$data.name, " and "))
-      out <- data.frame(
-        "Parameter1" = names[1],
-        "Parameter2" = names[2],
-        "Mean_Parameter1" = model$estimate[1],
-        "Mean_Parameter2" = model$estimate[2],
-        "Difference" = model$estimate[1] - model$estimate[2],
-        "t" = model$statistic,
-        "df" = model$parameter,
-        "p" = model$p.value,
-        "CI_low" = model$conf.int[1],
-        "CI_high" = model$conf.int[2],
-        "Method" = model$method
-      )
-    } else if (grepl(" by ", model$data.name)) {
-      names <- unlist(strsplit(model$data.name, " by "))
-      out <- data.frame(
-        "Parameter" = names[1],
-        "Group" = names[2],
-        "Mean_Group1" = model$estimate[1],
-        "Mean_Group2" = model$estimate[2],
-        "Difference" = model$estimate[2] - model$estimate[1],
-        "t" = model$statistic,
-        "df" = model$parameter,
-        "p" = model$p.value,
-        "CI_low" = model$conf.int[1],
-        "CI_high" = model$conf.int[2],
-        "Method" = model$method
-      )
-    } else {
-      out <- data.frame(
-        "Parameter" = model$data.name,
-        "Mean" = model$estimate,
-        "mu" = model$null.value,
-        "Difference" = model$estimate - model$null.value,
-        "t" = model$statistic,
-        "df" = model$parameter,
-        "p" = model$p.value,
-        "CI_low" = model$conf.int[1],
-        "CI_high" = model$conf.int[2],
-        "Method" = model$method
-      )
-    }
-  } else {
-    stop("model_parameters not implemented for such h-tests yet.")
-  }
-
-  row.names(out) <- NULL
-  out
-}
-
+# tools -------------------------
 
 
 .check_rank_deficiency <- function(p, verbose = TRUE) {

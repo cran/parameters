@@ -80,7 +80,7 @@ parameters_type <- function(model, ...) {
 
 
   data <- insight::get_data(model)
-  if (is.null(data)) {
+  if (is.null(data) || inherits(data, "ts") || nrow(data) == 0) {
     return(NULL)
   }
   reference <- .list_factors_numerics(data, model)
@@ -98,6 +98,12 @@ parameters_type <- function(model, ...) {
     interac <- out[paste0(out$Variable, out$Secondary_Variable) == i, ]
     if (!all(interac$Term %in% out$Parameter)) {
       out[paste0(out$Variable, out$Secondary_Variable) == i, "Type"] <- "nested"
+    }
+    if (all(interac$Term %in% out$Parameter)) {
+      interac_sec_term <- interac$Secondary_Term[!is.na(interac$Secondary_Term)]
+      if (length(interac_sec_term) && !all(interac_sec_term %in% out$Parameter)) {
+        out[paste0(out$Variable, out$Secondary_Variable) == i, "Type"] <- "simple"
+      }
     }
   }
   for (i in unique(out$Secondary_Parameter)) {
@@ -156,7 +162,7 @@ parameters_type <- function(model, ...) {
 
 #' @importFrom utils tail head
 #' @keywords internal
-.parameters_type_basic <- function(name, data, reference) {
+.parameters_type_basic <- function(name, data, reference, brackets = c("[", "]")) {
   if (is.na(name)) {
     return(c(NA, NA, NA, NA, NA, NA))
   }
@@ -185,7 +191,7 @@ parameters_type <- function(model, ...) {
       "Association",
       name,
       fac,
-      .format_ordered(gsub(fac, "", name, fixed = TRUE)),
+      .format_ordered(gsub(fac, "", name, fixed = TRUE), brackets = brackets),
       NA
     ))
 

@@ -18,7 +18,12 @@
 #' n_clusters(iris[, 1:4], package = c("NbClust", "mclust", "cluster"))
 #' }
 #' @export
-n_clusters <- function(x, standardize = TRUE, force = FALSE, package = c("NbClust", "mclust", "cluster", "M3C"), fast = TRUE, ...) {
+n_clusters <- function(x,
+                       standardize = TRUE,
+                       force = FALSE,
+                       package = c("NbClust", "mclust", "cluster", "M3C"),
+                       fast = TRUE,
+                       ...) {
   if (all(package == "all")) {
     package <- c("NbClust", "mclust", "cluster", "M3C")
   }
@@ -154,13 +159,13 @@ n_clusters <- function(x, standardize = TRUE, force = FALSE, package = c("NbClus
 
 
 #' @keywords internal
-.n_clusters_M3C <- function(x, fast=TRUE, ...) {
+.n_clusters_M3C <- function(x, fast = TRUE, ...) {
   if (!requireNamespace("M3C", quietly = TRUE)) {
-    stop("Package 'M3C' required for this function to work. Please install it from Bioconductor by first running `install.packages(\"BiocManager\")`, then `BiocManager::install(\"M3C\")`.")  # Not on CRAN (but on github and bioconductor)
+    stop("Package 'M3C' required for this function to work. Please install it from Bioconductor by first running `install.packages(\"BiocManager\")`, then `BiocManager::install(\"M3C\")`.") # Not on CRAN (but on github and bioconductor)
   }
 
   data <- data.frame(t(x))
-  colnames(data) <- paste0('x', seq(1, ncol(data)))  # Add columns names as required by the package
+  colnames(data) <- paste0("x", seq(1, ncol(data))) # Add columns names as required by the package
 
   suppressMessages(out <- M3C::M3C(data, method = 2))
   out <- data.frame(n_Clusters = which.max(out$scores$PCSI), Method = "Consensus clustering algorithm (penalty term)", Package = "M3C")

@@ -1,4 +1,4 @@
-#' Compute Skewness and Kurtosis
+#' Compute Skewness and (Excess) Kurtosis
 #'
 #' @param x A numeric vector or data.frame.
 #' @param na.rm Remove missing values.
@@ -6,6 +6,7 @@
 #' @param iterations The number of bootstrap replicates for computing standard errors. If \code{NULL} (default), parametric standard errors are computed. See 'Details'.
 #' @param test Logical, if \code{TRUE}, tests if skewness or kurtosis is significantly different from zero.
 #' @param digits Number of decimal places.
+#' @param object An object returned by \code{skewness()} or \code{kurtosis()}.
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @details \subsection{Skewness}{
@@ -108,8 +109,10 @@ skewness.numeric <- function(x, na.rm = TRUE, type = "2", iterations = NULL, ...
     }
   }
 
-  .skewness <- data.frame(Skewness = .skewness,
-                          SE = out_se)
+  .skewness <- data.frame(
+    Skewness = .skewness,
+    SE = out_se
+  )
   class(.skewness) <- unique(c("parameters_skewness", class(.skewness)))
   .skewness
 }
@@ -179,7 +182,7 @@ kurtosis.numeric <- function(x, na.rm = TRUE, type = "2", iterations = NULL, ...
   .kurtosis <- switch(
     type,
     "1" = out - 3,
-    "2" = ((n + 1) * (out - 3) + 6) * (n - 1)/((n - 2) * (n - 3)),
+    "2" = ((n + 1) * (out - 3) + 6) * (n - 1) / ((n - 2) * (n - 3)),
     "3" = out * (1 - 1 / n)^2 - 3
   )
 
@@ -192,7 +195,7 @@ kurtosis.numeric <- function(x, na.rm = TRUE, type = "2", iterations = NULL, ...
     "3" = out_se * ((n - 1) / n)^2
   )
 
-  if (!is.null(iterations )) {
+  if (!is.null(iterations)) {
     if (!requireNamespace("boot", quietly = TRUE)) {
       warning("Package 'boot' needed for bootstrapping SEs.", call. = FALSE)
     } else {
@@ -201,8 +204,10 @@ kurtosis.numeric <- function(x, na.rm = TRUE, type = "2", iterations = NULL, ...
     }
   }
 
-  .kurtosis <- data.frame(Kurtosis = .kurtosis,
-                          SE = out_se)
+  .kurtosis <- data.frame(
+    Kurtosis = .kurtosis,
+    SE = out_se
+  )
   class(.kurtosis) <- unique(c("parameters_kurtosis", class(.kurtosis)))
   .kurtosis
 }
@@ -263,17 +268,35 @@ as.double.parameters_skewness <- as.numeric.parameters_skewness
 #' @rdname skewness
 #' @export
 print.parameters_kurtosis <- function(x, digits = 3, test = FALSE, ...) {
-  .print_skew_kurt(x, val = "Kurtosis", digits = digits, test = test, ...)
+  out <- summary(x, test = test)
+  cat(insight::export_table(out, digits = digits))
   invisible(x)
 }
 
 #' @rdname skewness
 #' @export
-print.parameters_skewness <- function(x, digits = 3, test = FALSE, ...) {
-  .print_skew_kurt(x, val = "Skewness", digits = digits, test = test, ...)
-  invisible(x)
+print.parameters_skewness <- print.parameters_kurtosis
+
+#' @importFrom stats pnorm
+#' @rdname skewness
+#' @export
+summary.parameters_skewness <- function(object, test = FALSE, ...) {
+  if (test) {
+    object$z <- object$Skewness / object$SE
+    object$p <- 2 * (1 - stats::pnorm(abs(object$z)))
+  }
+  object
 }
 
+#' @rdname skewness
+#' @export
+summary.parameters_kurtosis <- function(object, test = FALSE, ...) {
+  if (test) {
+    object$z <- object$Kurtosis / object$SE
+    object$p <- 2 * (1 - stats::pnorm(abs(object$z)))
+  }
+  object
+}
 
 
 
@@ -307,33 +330,22 @@ print.parameters_skewness <- function(x, digits = 3, test = FALSE, ...) {
 }
 
 
-.print_skew_kurt <- function(x, val, digits = 3, test = FALSE, ...) {
-  if (test) {
-    x$z <- x[[val]] / x$SE
-    x$p <- 2 * (1 - stats::pnorm(abs(x$z)))
-  }
-
-  attr(x, "digits") <- digits
-  out <- parameters_table(x)
-
-  cat(insight::format_table(out, digits = digits))
-}
-
-
 
 # bootstrapping -----------------------------------
 
 .boot_skewness <- function(data, indices, na.rm, type) {
   parameters::skewness(data[indices],
-                       na.rm = na.rm,
-                       type = type,
-                       iterations = NULL)$Skewness
+    na.rm = na.rm,
+    type = type,
+    iterations = NULL
+  )$Skewness
 }
 
 
 .boot_kurtosis <- function(data, indices, na.rm, type) {
   parameters::kurtosis(data[indices],
-                       na.rm = na.rm,
-                       type = type,
-                       iterations = NULL)$Kurtosis
+    na.rm = na.rm,
+    type = type,
+    iterations = NULL
+  )$Kurtosis
 }

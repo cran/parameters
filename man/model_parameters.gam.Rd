@@ -15,6 +15,7 @@
   exponentiate = FALSE,
   robust = FALSE,
   p_adjust = NULL,
+  verbose = TRUE,
   ...
 )
 
@@ -26,6 +27,7 @@
   component = c("conditional", "smooth_terms", "all"),
   standardize = NULL,
   exponentiate = FALSE,
+  verbose = TRUE,
   ...
 )
 
@@ -37,6 +39,7 @@
   component = c("conditional", "smooth_terms", "all"),
   standardize = NULL,
   exponentiate = FALSE,
+  verbose = TRUE,
   ...
 )
 }
@@ -49,13 +52,15 @@
 
 \item{iterations}{The number of bootstrap replicates. This only apply in the case of bootstrapped frequentist models.}
 
-\item{standardize}{The method used for standardizing the parameters. Can be \code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"} or \code{NULL} (default) for no standardization. See 'Details' in \code{\link[effectsize]{standardize_parameters}}. Note that robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only works when \code{standardize="refit"}.}
+\item{standardize}{The method used for standardizing the parameters. Can be \code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"}, \code{"pseudo"} or \code{NULL} (default) for no standardization. See 'Details' in \code{\link[effectsize]{standardize_parameters}}. Note that robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only works when \code{standardize="refit"}.}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the the coefficients (and related confidence intervals). This is typical for, say, logistic regressions, or more generally speaking: for models with log or logit link. \strong{Note:} standard errors are also transformed (by multiplying the standard errors with the exponentiated coefficients), to mimic behaviour of other software packages, such as Stata.}
 
 \item{robust}{Logical, if \code{TRUE}, robust standard errors are calculated (if possible), and confidence intervals and p-values are based on these robust standard errors. Additional arguments like \code{vcov_estimation} or \code{vcov_type} are passed down to other methods, see \code{\link[=standard_error_robust]{standard_error_robust()}} for details.}
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to adjust p-values. See \code{\link[stats]{p.adjust}} for details.}
+
+\item{verbose}{Toggle warnings and messages.}
 
 \item{...}{Arguments passed to or from other methods. For instance, when \code{bootstrap = TRUE}, arguments like \code{ci_method} are passed down to \code{\link[bayestestR]{describe_posterior}}.}
 
@@ -66,6 +71,18 @@ A data frame of indices related to the model's parameters.
 }
 \description{
 Extract and compute indices and measures to describe parameters of generalized additive models (GAM(M)s).
+}
+\details{
+The reporting of degrees of freedom \emph{for the spline terms}
+slightly differs from the output of \code{summary(model)}, for example in the
+case of \code{mgcv::gam()}. The \emph{estimated degrees of freedom}, column
+\code{edf} in the summary-output, is named \code{df} in the returned data
+frame, while the column \code{df_error} in the returned data frame refers to
+the residual degrees of freedom that are returned by \code{df.residual()}.
+Hence, the values in the the column \code{df_error} differ from the column
+\code{Ref.df} from the summary, which is intentional, as these reference
+degrees of freedom \dQuote{is not very interpretable}
+(\href{https://r.789695.n4.nabble.com/ref-df-in-mgcv-gam-tp4756194p4756195.html}{web}).
 }
 \examples{
 library(parameters)

@@ -12,6 +12,7 @@
   component = c("conditional", "full"),
   exponentiate = FALSE,
   p_adjust = NULL,
+  verbose = TRUE,
   ...
 )
 
@@ -24,6 +25,7 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  verbose = TRUE,
   ...
 )
 
@@ -36,6 +38,7 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  verbose = TRUE,
   ...
 )
 }
@@ -50,13 +53,15 @@
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to adjust p-values. See \code{\link[stats]{p.adjust}} for details.}
 
+\item{verbose}{Toggle warnings and messages.}
+
 \item{...}{Arguments passed to or from other methods. For instance, when \code{bootstrap = TRUE}, arguments like \code{ci_method} are passed down to \code{\link[bayestestR]{describe_posterior}}.}
 
 \item{bootstrap}{Should estimates be based on bootstrapped model? If \code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian regressions} apply (see also \code{\link[=bootstrap_parameters]{bootstrap_parameters()}}).}
 
 \item{iterations}{The number of bootstrap replicates. This only apply in the case of bootstrapped frequentist models.}
 
-\item{standardize}{The method used for standardizing the parameters. Can be \code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"} or \code{NULL} (default) for no standardization. See 'Details' in \code{\link[effectsize]{standardize_parameters}}. Note that robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only works when \code{standardize="refit"}.}
+\item{standardize}{The method used for standardizing the parameters. Can be \code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"}, \code{"pseudo"} or \code{NULL} (default) for no standardization. See 'Details' in \code{\link[effectsize]{standardize_parameters}}. Note that robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only works when \code{standardize="refit"}.}
 }
 \value{
 A data frame of indices related to the model's parameters.
