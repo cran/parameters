@@ -63,10 +63,22 @@ print.parameters_model <- function(x,
 
   # get attributes
   res <- attributes(x)$details
+  sigma <- attributes(x)$sigma
   p_adjust <- attributes(x)$p_adjust
   model_formula <- attributes(x)$model_formula
   ci_method <- .additional_arguments(x, "bayes_ci_method", NULL)
   verbose <- .additional_arguments(x, "verbose", TRUE)
+
+  # set defaults, if necessary
+  if (is.null(sigma)) {
+    show_sigma <- FALSE
+  }
+
+  # check if user supplied digits attributes
+  if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
+  if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
+  if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
+
 
   # print header
   if (!is.null(attributes(x)$title)) {
@@ -87,47 +99,35 @@ print.parameters_model <- function(x,
     ci_brackets = TRUE,
     format = "text"
   )
-  cat(insight::export_table(formatted_table, format = "text"))
 
-  # print residual standard deviation
-  if (!is.null(sigma) && isTRUE(show_sigma)) {
-    cat("\n")
-    insight::print_color(sprintf("Residual standard deviation: %.*f", digits, sigma), "blue")
+  # prepare footer
+  footer <- NULL
+
+  # footer: residual standard deviation
+  if (isTRUE(show_sigma)) {
+    footer <- .add_footer_sigma(footer, digits, sigma)
   }
 
-  # print p-adjustment
-  if (!is.null(p_adjust) && p_adjust != "none" && "p" %in% colnames(x) && isTRUE(verbose)) {
-    p_adj_string <- switch(
-      p_adjust,
-      "holm" = "Holm (1979)",
-      "hochberg" = "Hochberg (1988)",
-      "homnmel" = "Hochberg (1988)",
-      "bonferroni" = "Bonferroni",
-      "fdr" = ,
-      "BH" = "Benjamini & Hochberg (1995)",
-      "BY" = " Benjamini & Yekutieli (2001)",
-      p_adjust
-    )
-    cat("\n")
-    insight::print_color(paste0("p-value adjustment method: ", p_adj_string), "blue")
+  # footer: p-adjustment
+  if ("p" %in% colnames(x) && isTRUE(verbose)) {
+    footer <- .add_footer_padjust(footer, p_adjust)
   }
 
-  # print residual standard deviation
-  if (!is.null(model_formula) && isTRUE(show_formula)) {
-    cat("\n")
-    insight::print_color(paste("Model:", model_formula), "blue")
+  # footer: model formula
+  if (isTRUE(show_formula)) {
+    footer <- .add_footer_formula(footer, model_formula)
   }
+
+  # add color code, if we have a footer
+  if (!is.null(footer)) {
+    footer <- c(footer, "blue")
+  }
+
+  cat(insight::export_table(formatted_table, format = "text", footer = footer))
 
   # for Bayesian models
-  if (!is.null(ci_method) && isTRUE(verbose)) {
-    ci_method <- switch(
-      toupper(ci_method),
-      "HDI" = "highest density intervals",
-      "ETI" = "equal-tailed intervals",
-      "SI" = "support intervals",
-      "uncertainty intervals"
-    )
-    message(paste0("\nUsing ", ci_method, " as credible intervals."))
+  if (isTRUE(verbose)) {
+    .print_footer_cimethod(ci_method)
   }
 
   # print summary for random effects
@@ -167,15 +167,30 @@ print.parameters_random <- function(x, digits = 2, ...) {
 # Stan models ------------------
 
 #' @export
-print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...) {
+print.parameters_stan <- function(x,
+                                  split_components = TRUE,
+                                  select = NULL,
+                                  digits = 2,
+                                  ci_digits = 2,
+                                  p_digits = 3,
+                                  ...) {
   orig_x <- x
   ci_method <- .additional_arguments(x, "bayes_ci_method", NULL)
   verbose <- .additional_arguments(x, "verbose", TRUE)
+
+  # check if user supplied digits attributes
+  if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
+  if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
+  if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
+
 
   formatted_table <- format(
     x,
     split_components = split_components,
     select = select,
+    digits = digits,
+    ci_digits = ci_digits,
+    p_digits = p_digits,
     format = "text",
     ci_width = "auto",
     ci_brackets = TRUE,
@@ -183,15 +198,8 @@ print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...
   )
   cat(insight::export_table(formatted_table, format = "text"))
 
-  if (!is.null(ci_method) && isTRUE(verbose)) {
-    ci_method <- switch(
-      toupper(ci_method),
-      "HDI" = "highest density intervals",
-      "ETI" = "equal-tailed intervals",
-      "SI" = "support intervals",
-      "uncertainty intervals"
-    )
-    message(paste0("\nUsing ", ci_method, " as credible intervals."))
+  if (isTRUE(verbose)) {
+    .print_footer_cimethod(ci_method)
   }
 
   invisible(orig_x)
@@ -259,5 +267,53 @@ print.parameters_stan <- function(x, split_components = TRUE, select = NULL, ...
       insight::print_color(format("Observations", width = max_len), color = "blue")
       cat(sprintf("%s\n", i$Value))
     }
+  }
+}
+
+
+
+
+
+# footer functions ------------------
+
+
+# footer: residual standard deviation
+.add_footer_sigma <- function(footer = NULL, digits, sigma) {
+  if (!is.null(sigma)) {
+    footer <- paste0(footer, sprintf("\nResidual standard deviation: %.*f", digits, sigma))
+  }
+  footer
+}
+
+
+# footer: p-adjustment
+.add_footer_padjust <- function(footer = NULL, p_adjust) {
+  if (!is.null(p_adjust) && p_adjust != "none") {
+    footer <- paste0(footer, "\np-value adjustment method: ", format_p_adjust(p_adjust))
+  }
+  footer
+}
+
+
+# footer: model formula
+.add_footer_formula <- function(footer = NULL, model_formula) {
+  if (!is.null(model_formula)) {
+    footer <- paste0(footer, "\nModel: ", model_formula)
+  }
+  footer
+}
+
+
+# footer: type of uncertainty interval
+.print_footer_cimethod <- function(ci_method = NULL) {
+  if (!is.null(ci_method)) {
+    ci_method <- switch(
+      toupper(ci_method),
+      "HDI" = "highest density intervals",
+      "ETI" = "equal-tailed intervals",
+      "SI" = "support intervals",
+      "uncertainty intervals"
+    )
+    message(paste0("\nUsing ", ci_method, " as credible intervals."))
   }
 }

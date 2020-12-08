@@ -1,3 +1,21 @@
+# parameters 0.10.1
+
+## New functions
+
+* `format_p_adjust()`, to create pretty names for p-adjustment methods.
+
+## Bug fixes
+
+* Fixed breaking code / failing tests due to latest _effectsize_ update.
+
+* Fixed issue with `model_parameters()` for models of class `mlm`.
+
+* Undocumented arguments `digits`, `ci_digits` and `p_digits` worked for 
+  `print()`, but not when directly called inside `model_parameters()`. Now,
+  `model_parameters(model, digits = 5, ci_digits = 8)` works again.
+
+* Fixed some minor printing-issues.
+
 # parameters 0.10.0
 
 ## Breaking changes

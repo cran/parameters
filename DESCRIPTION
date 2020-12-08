@@ -1,14 +1,14 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.10.0
+Version: 0.10.1
 Authors@R: 
   c(
     person("Daniel", 
            "Lüdecke", 
            role = c("aut", "cre"), 
            email = "d.luedecke@uke.de", 
-           comment = c(ORCID = "0000-0002-8895-3206")),
+           comment = c(ORCID = "0000-0002-8895-3206", Twitter = "@strengejacke")),
     person("Dominique", 
            "Makowski", 
            email = "dom.makowski@gmail.com",
@@ -44,16 +44,16 @@ Description: Utilities for processing the parameters of various
 License: GPL-3
 URL: https://easystats.github.io/parameters/
 BugReports: https://github.com/easystats/parameters/issues
-Depends: R (>= 3.2)
+Depends: R (>= 3.5)
 Imports: bayestestR (>= 0.7.5), insight (>= 0.11.0), methods, stats,
         utils
 Suggests: AER, afex, aod, BayesFactor, BayesFM, bbmle, betareg, blme,
         boot, brglm2, brms, broom, cAIC4, car, clubSandwich, cluster,
-        covr, cplm, dplyr, DRR, effectsize (>= 0.4.0), EGAnet (>= 0.7),
+        covr, cplm, dplyr, DRR, effectsize (>= 0.4.1), EGAnet (>= 0.7),
         FactoMineR, fastICA, gam, gamlss, gee, geepack, ggplot2,
-        GLMMadaptive, glmmTMB, GPArotation, lavaan, lavaSearch2, lfe,
-        lme4, lmerTest, logspline, knitr, MASS, magrittr, Matrix,
-        mclust, MCMCglmm, mediation, metaBMA, metafor, mice, mfx, mgcv,
+        GLMMadaptive, glmmTMB, GPArotation, lavaan, lavaSearch2, lme4,
+        lmerTest, logspline, knitr, MASS, magrittr, Matrix, mclust,
+        MCMCglmm, mediation, metaBMA, metafor, mice, mfx, mgcv,
         multcomp, multimode, MuMIn, M3C, NbClust, nFactors, nlme,
         performance (>= 0.5.1), plm, projpred, pscl, psych, quantreg,
         randomForest, rmarkdown, rstanarm, sandwich, see, sjstats,
@@ -67,8 +67,9 @@ Config/testthat/edition: 3
 Config/testthat/parallel: true
 Config/testthat/start-first: watcher, parallel*
 NeedsCompilation: no
-Packaged: 2020-12-01 15:33:13 UTC; mail
-Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
+Packaged: 2020-12-07 20:02:20 UTC; Daniel
+Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
+    @strengejacke),
   Dominique Makowski [aut] (<https://orcid.org/0000-0001-5375-9967>),
   Mattan S. Ben-Shachar [aut] (<https://orcid.org/0000-0002-4287-4801>),
   Indrajeet Patil [aut] (<https://orcid.org/0000-0003-1995-6531>,
@@ -77,4 +78,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
   Zen J. Lau [ctb]
 Maintainer: Daniel Lüdecke <d.luedecke@uke.de>
 Repository: CRAN
-Date/Publication: 2020-12-01 17:30:07 UTC
+Date/Publication: 2020-12-08 08:10:06 UTC

@@ -12,13 +12,11 @@ knitr::opts_chunk$set(
 if (!requireNamespace("lme4", quietly = TRUE) ||
     !requireNamespace("dplyr", quietly = TRUE) ||
     !requireNamespace("ggplot2", quietly = TRUE) ||
-    !requireNamespace("see", quietly = TRUE) ||
-    !requireNamespace("lfe", quietly = TRUE)) {
+    !requireNamespace("see", quietly = TRUE)) {
   knitr::opts_chunk$set(eval = FALSE)
 } else {
   library(parameters)
   library(lme4)
-  library(lfe)
 }
 
 set.seed(333)
@@ -53,15 +51,6 @@ fe_model2 <- lm(
    data = qol_cancer
 )
 model_parameters(fe_model2)[2:3, ]
-
-
-# we compare the results with those from the "lfe"-package for panel data
-library(lfe)
-fe_model3 <- felm(
-  QoL ~ time + phq4 | ID,
-   data = qol_cancer
-)
-model_parameters(fe_model3)
 
 ## -----------------------------------------------------------------------------
 library(lme4)
