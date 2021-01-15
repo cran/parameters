@@ -20,6 +20,15 @@
 #' }
 #' For models with z-statistic, the returned degrees of freedom for model parameters is \code{Inf} (unless \code{method = "ml1"} or \code{method = "betwithin"}), because there is only one distribution for the related test statistic.
 #'
+#' @note In many cases, \code{degrees_of_freedom} returns the same as
+#' \code{df.residuals}, or \code{n-k} (number of observations minus number of
+#' parameters). However, \code{degrees_of_freedom} refers to the model's
+#' \emph{parameters} degrees of freedom of the distribution for the related test
+#' statistic. Thus, for models with z-statistic, results from \code{degrees_of_freedom}
+#' and \code{df.residuals} differ. Furthermore, for other approximation methods
+#' like \code{"kenward"} or \code{"satterthwaite"}, each model parameter can have
+#' a different degree of freedom.
+#'
 #' @examples
 #' model <- lm(Sepal.Length ~ Petal.Length * Species, data = iris)
 #' dof(model)
@@ -53,9 +62,9 @@ degrees_of_freedom <- function(model, ...) {
 #' @export
 degrees_of_freedom.default <- function(model, method = "analytical", ...) {
   method <- tolower(method)
-  method <- match.arg(method, c("analytical", "any", "fit", "ml1", "betwithin", "satterthwaite", "kenward", "nokr", "wald", "profile"))
+  method <- match.arg(method, c("analytical", "any", "fit", "ml1", "betwithin", "satterthwaite", "kenward", "nokr", "wald", "profile", "boot", "uniroot"))
 
-  if (!.dof_method_ok(model, method) || method == "profile") {
+  if (!.dof_method_ok(model, method) || method %in% c("profile", "boot", "uniroot")) {
     method <- "any"
   }
 
@@ -100,105 +109,6 @@ degrees_of_freedom.default <- function(model, method = "analytical", ...) {
 dof <- degrees_of_freedom
 
 
-#' @export
-degrees_of_freedom.merModList <- function(model, ...) {
-  s <- suppressWarnings(summary(model))
-  s$fe$df
-}
-
-
-#' @export
-degrees_of_freedom.emmGrid <- function(model, ...) {
-  summary(model)$df
-}
-
-#' @export
-degrees_of_freedom.emm_list <- function(model, ...) {
-  s <- summary(model)
-  unname(unlist(lapply(s, function(i) {
-    if (is.null(i$df)) {
-      Inf
-    } else {
-      i$df
-    }
-  })))
-}
-
-#' @export
-degrees_of_freedom.glht <- function(model, ...) {
-  model$df
-}
-
-#' @export
-degrees_of_freedom.lqmm <- function(model, ...) {
-  out <- model_parameters(model, ...)
-  out$df
-}
-
-#' @export
-degrees_of_freedom.lqm <- degrees_of_freedom.lqmm
-
-#' @export
-degrees_of_freedom.mipo <- function(model, ...) {
-  as.vector(summary(model)$df)
-}
-
-#' @export
-degrees_of_freedom.mira <- function(model, ...) {
-  if (!requireNamespace("mice", quietly = TRUE)) {
-    stop("Package 'mice' needed for this function to work. Please install it.")
-  }
-  degrees_of_freedom(mice::pool(model), ...)
-}
-
-#' @export
-degrees_of_freedom.vgam <- function(model, ...) {
-  params <- insight::get_parameters(model)
-  out <- setNames(rep(NA, nrow(params)), params$Parameter)
-  out[names(model@nl.df)] <- model@nl.df
-  out
-}
-
-#' @export
-degrees_of_freedom.mediate <- function(model, ...) {
-  NULL
-}
-
-#' @export
-degrees_of_freedom.logitor <- function(model, ...) {
-  degrees_of_freedom.default(model$fit, ...)
-}
-
-#' @export
-degrees_of_freedom.poissonirr <- degrees_of_freedom.logitor
-
-#' @export
-degrees_of_freedom.negbinirr <- degrees_of_freedom.logitor
-
-#' @export
-degrees_of_freedom.poissonmfx <- degrees_of_freedom.logitor
-
-#' @export
-degrees_of_freedom.logitmfx <- degrees_of_freedom.logitor
-
-#' @export
-degrees_of_freedom.negbinmfx <- degrees_of_freedom.logitor
-
-#' @export
-degrees_of_freedom.probitmfx <- degrees_of_freedom.logitor
-
-#' @export
-degrees_of_freedom.betaor <- degrees_of_freedom.logitor
-
-#' @export
-degrees_of_freedom.betamfx <- degrees_of_freedom.logitor
-
-
-
-
-
-
-
 # Analytical approach ------------------------------
 
 
@@ -219,11 +129,6 @@ degrees_of_freedom.betamfx <- degrees_of_freedom.logitor
 
   dof
 }
-
-
-
-
-
 
 
 # Model approach (Residual df) ------------------------------
@@ -284,11 +189,6 @@ degrees_of_freedom.betamfx <- degrees_of_freedom.logitor
 }
 
 
-
-
-
-
-
 # Helper, check args ------------------------------
 
 .dof_method_ok <- function(model, method) {
@@ -311,8 +211,8 @@ degrees_of_freedom.betamfx <- degrees_of_freedom.logitor
     return(FALSE)
   }
 
-  if (!(method %in% c("analytical", "any", "fit", "satterthwaite", "betwithin", "kenward", "kr", "nokr", "wald", "ml1"))) {
-    warning("'df_method' must be one of 'wald', 'kenward', 'satterthwaite', 'betwithin' or 'ml1'. Using 'wald' now.", call. = FALSE)
+  if (!(method %in% c("analytical", "any", "fit", "satterthwaite", "betwithin", "kenward", "kr", "nokr", "wald", "ml1", "profile", "boot", "uniroot"))) {
+    warning("'df_method' must be one of 'wald', 'profile', 'boot', 'uniroot', 'kenward', 'satterthwaite', 'betwithin' or 'ml1'. Using 'wald' now.", call. = FALSE)
     return(FALSE)
   }
 

@@ -15,7 +15,7 @@
 #' @param show_sigma Logical, if \code{TRUE}, adds information about the residual
 #'   standard deviation.
 #' @param show_formula Logical, if \code{TRUE}, adds the model formula to the output.
-#' @inheritParams insight::parameters_table
+#' @inheritParams insight::format_table
 #'
 #' @inheritSection format_parameters Interpretation of Interaction Terms
 #' @inheritSection model_parameters Labeling the Degrees of Freedom
@@ -46,7 +46,7 @@
 #' }
 #' }
 #'
-#' @importFrom insight export_table parameters_table
+#' @importFrom insight export_table
 #' @export
 print.parameters_model <- function(x,
                                    pretty_names = TRUE,
@@ -64,8 +64,6 @@ print.parameters_model <- function(x,
   # get attributes
   res <- attributes(x)$details
   sigma <- attributes(x)$sigma
-  p_adjust <- attributes(x)$p_adjust
-  model_formula <- attributes(x)$model_formula
   ci_method <- .additional_arguments(x, "bayes_ci_method", NULL)
   verbose <- .additional_arguments(x, "verbose", TRUE)
 
@@ -100,29 +98,7 @@ print.parameters_model <- function(x,
     format = "text"
   )
 
-  # prepare footer
-  footer <- NULL
-
-  # footer: residual standard deviation
-  if (isTRUE(show_sigma)) {
-    footer <- .add_footer_sigma(footer, digits, sigma)
-  }
-
-  # footer: p-adjustment
-  if ("p" %in% colnames(x) && isTRUE(verbose)) {
-    footer <- .add_footer_padjust(footer, p_adjust)
-  }
-
-  # footer: model formula
-  if (isTRUE(show_formula)) {
-    footer <- .add_footer_formula(footer, model_formula)
-  }
-
-  # add color code, if we have a footer
-  if (!is.null(footer)) {
-    footer <- c(footer, "blue")
-  }
-
+  footer <- .format_footer(x, digits = digits, verbose = verbose, show_sigma = show_sigma, show_formula = show_formula)
   cat(insight::export_table(formatted_table, format = "text", footer = footer))
 
   # for Bayesian models
@@ -267,53 +243,5 @@ print.parameters_stan <- function(x,
       insight::print_color(format("Observations", width = max_len), color = "blue")
       cat(sprintf("%s\n", i$Value))
     }
-  }
-}
-
-
-
-
-
-# footer functions ------------------
-
-
-# footer: residual standard deviation
-.add_footer_sigma <- function(footer = NULL, digits, sigma) {
-  if (!is.null(sigma)) {
-    footer <- paste0(footer, sprintf("\nResidual standard deviation: %.*f", digits, sigma))
-  }
-  footer
-}
-
-
-# footer: p-adjustment
-.add_footer_padjust <- function(footer = NULL, p_adjust) {
-  if (!is.null(p_adjust) && p_adjust != "none") {
-    footer <- paste0(footer, "\np-value adjustment method: ", format_p_adjust(p_adjust))
-  }
-  footer
-}
-
-
-# footer: model formula
-.add_footer_formula <- function(footer = NULL, model_formula) {
-  if (!is.null(model_formula)) {
-    footer <- paste0(footer, "\nModel: ", model_formula)
-  }
-  footer
-}
-
-
-# footer: type of uncertainty interval
-.print_footer_cimethod <- function(ci_method = NULL) {
-  if (!is.null(ci_method)) {
-    ci_method <- switch(
-      toupper(ci_method),
-      "HDI" = "highest density intervals",
-      "ETI" = "equal-tailed intervals",
-      "SI" = "support intervals",
-      "uncertainty intervals"
-    )
-    message(paste0("\nUsing ", ci_method, " as credible intervals."))
   }
 }

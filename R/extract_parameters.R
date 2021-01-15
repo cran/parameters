@@ -243,7 +243,7 @@
 
   # ==== Std Coefficients for other methods than "refit"
 
-  if (!is.null(standardize)) {
+  if (!is.null(standardize) && !isFALSE(standardize)) {
     # give minimal attributes required for standardization
     temp_pars <- parameters
     class(temp_pars) <- c("parameters_model", class(temp_pars))
@@ -402,7 +402,8 @@
       names(parameters)[grepl("Pr(>|z|)", names(parameters), fixed = TRUE)] <- "p"
     } else if (df_method %in% special_df_methods) {
       # special handling for KR-p, which we already have computed from dof
-      parameters <- merge(parameters, .p_value_dof_kr(model, params = parameters, dof = df_error), by = "Parameter")
+      # parameters <- merge(parameters, .p_value_dof_kr(model, params = parameters, dof = df_error), by = "Parameter")
+      parameters <- merge(parameters, .p_value_dof(model, dof = df_error$df_error, method = df_method, se = df_error$SE), by = "Parameter")
     } else {
       parameters <- merge(parameters, p_value(model, dof = df, effects = "fixed"), by = "Parameter")
     }
@@ -410,7 +411,7 @@
 
 
   # adjust standard errors and test-statistic as well
-  if (!isTRUE(robust) && df_method %in% special_df_methods) {
+  if (isFALSE(robust) && df_method %in% special_df_methods) {
     parameters$Statistic <- parameters$Estimate / parameters$SE
   } else {
     parameters <- merge(parameters, statistic, by = "Parameter")

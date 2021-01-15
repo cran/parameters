@@ -8,10 +8,13 @@
 #'   \code{\link[=simulate_parameters]{simulate_parameters()}},
 #'   \code{\link[=equivalence_test.lm]{equivalence_test()}} or
 #'   \code{\link[=principal_components]{principal_components()}}.
-#' @param format String, indicating the output format. Currently, only
-#'   \code{"markdown"} is supported.
+#' @param format String, indicating the output format. Can be \code{"markdown"}
+#'   or \code{"html"}.
+#' @param align Only applies to HTML tables. May be one of \code{"left"},
+#'   \code{"right"} or \code{"center"}.
 #' @inheritParams print.parameters_model
-#' @inheritParams insight::parameters_table
+#' @inheritParams insight::format_table
+#' @inheritParams insight::export_table
 #'
 #' @return A character vector. If \code{format = "markdown"}, the return value
 #'   will be a character vector in markdown-table format.
@@ -28,8 +31,25 @@
 #' mp <- model_parameters(model)
 #' display(mp)
 #' @export
-display.parameters_model <- function(object, format = "markdown", pretty_names = TRUE, split_components = TRUE, select = NULL, digits = 2, ci_digits = 2, p_digits = 3, ...) {
-  print_md(x = object, pretty_names = pretty_names, split_components = split_components, select = select, digits = digits, ci_digits = ci_digits, p_digits = p_digits, ...)
+display.parameters_model <- function(object,
+                                     format = "markdown",
+                                     pretty_names = TRUE,
+                                     split_components = TRUE,
+                                     select = NULL,
+                                     caption = NULL,
+                                     subtitle = NULL,
+                                     footer = NULL,
+                                     align = NULL,
+                                     digits = 2,
+                                     ci_digits = 2,
+                                     p_digits = 3,
+                                     ci_brackets = c("(", ")"),
+                                     ...) {
+  if (identical(format, "html")) {
+    print_html(x = object, pretty_names = pretty_names, split_components = split_components, select = select, digits = digits, caption = caption, subtitle = subtitle, footer = footer, ci_digits = ci_digits, p_digits = p_digits, align = align, ci_brackets = ci_brackets, ...)
+  } else {
+    print_md(x = object, pretty_names = pretty_names, split_components = split_components, select = select, digits = digits, caption = caption, subtitle = subtitle, footer = footer, ci_digits = ci_digits, p_digits = p_digits, ci_brackets = ci_brackets, ...)
+  }
 }
 
 #' @export
@@ -58,8 +78,14 @@ display.parameters_stan <- function(object, split_components = TRUE, select = NU
 
 #' @rdname display.parameters_model
 #' @export
-display.parameters_sem <- function(object, format = "markdown", digits = 2, ci_digits = 2, p_digits = 3, ...) {
-  print_md(x = object, digits = digits, ci_digits = ci_digits, p_digits = p_digits, ...)
+display.parameters_sem <- function(object,
+                                   format = "markdown",
+                                   digits = 2,
+                                   ci_digits = 2,
+                                   p_digits = 3,
+                                   ci_brackets = c("(", ")"),
+                                   ...) {
+    print_md(x = object, digits = digits, ci_digits = ci_digits, p_digits = p_digits, ci_brackets = ci_brackets, ...)
 }
 
 

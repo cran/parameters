@@ -1,4 +1,4 @@
-#' @importFrom utils packageVersion
+#' @importFrom insight is_multivariate model_info find_formula get_data
 #' @keywords internal
 .add_model_parameters_attributes <- function(params,
                                              model,
@@ -24,6 +24,10 @@
   ## TODO remove is.list() when insight 0.8.3 on CRAN
   if (is.null(info) || !is.list(info)) {
     info <- list(family = "unknown", link_function = "unknown")
+  }
+
+  if (!is.null(info) && insight::is_multivariate(model) && !"is_zero_inflated" %in% names(info)) {
+    info <- info[[1]]
   }
 
   if (is.null(attr(params, "pretty_names", exact = TRUE))) {
@@ -69,19 +73,17 @@
     attr(params, "study_weights") <- 1 / model$vi
   }
 
-  if (utils::packageVersion("insight") > "0.10.0") {
-    if (inherits(model, c("meta_random", "meta_fixed", "meta_bma"))) {
-      rma_data <- tryCatch(
-        {
-          insight::get_data(model)
-        },
-        error = function(e) {
-          NULL
-        }
-      )
-      attr(params, "data") <- rma_data
-      attr(params, "study_weights") <- 1 / params$SE^2
-    }
+  if (inherits(model, c("meta_random", "meta_fixed", "meta_bma"))) {
+    rma_data <- tryCatch(
+      {
+        insight::get_data(model)
+      },
+      error = function(e) {
+        NULL
+      }
+    )
+    attr(params, "data") <- rma_data
+    attr(params, "study_weights") <- 1 / params$SE^2
   }
 
   if ("digits" %in% names(dot.arguments)) {
@@ -168,11 +170,15 @@
 
 
 #' @keywords internal
-.add_anova_attributes <- function(params, model, ci, ...) {
+.add_anova_attributes <- function(params, model, ci, test = NULL, ...) {
   dot.arguments <- lapply(match.call(expand.dots = FALSE)$`...`, function(x) x)
 
   attr(params, "ci") <- ci
   attr(params, "model_class") <- class(model)
+
+  if (inherits(model, "Anova.mlm") && !identical(test, "univariate")) {
+    attr(params, "anova_test") <- model$test
+  }
 
   if ("digits" %in% names(dot.arguments)) {
     attr(params, "digits") <- eval(dot.arguments[["digits"]])

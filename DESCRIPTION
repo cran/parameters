@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.10.1
+Version: 0.11.0
 Authors@R: 
   c(
     person("Daniel", 
@@ -31,7 +31,12 @@ Authors@R:
     person(given = "Zen J.",
            family = "Lau",
            role = c("ctb"),
-           email = "zenjuen.lau@ntu.edu.sg")
+           email = "zenjuen.lau@ntu.edu.sg"),
+    person(given = "Vincent",
+           family = "Arel-Bundock",
+           role = c("ctb"),
+           email = "vincent.arel-bundock@umontreal.ca",
+           comment = c(ORCID = "0000-0003-1995-6531", Twitter = "@vincentab"))
   )
 Description: Utilities for processing the parameters of various
     statistical models. Beyond computing p values, CIs, and other indices
@@ -44,30 +49,29 @@ Description: Utilities for processing the parameters of various
 License: GPL-3
 URL: https://easystats.github.io/parameters/
 BugReports: https://github.com/easystats/parameters/issues
-Depends: R (>= 3.5)
+Depends: R (>= 3.6)
 Imports: bayestestR (>= 0.7.5), insight (>= 0.11.0), methods, stats,
         utils
 Suggests: AER, afex, aod, BayesFactor, BayesFM, bbmle, betareg, blme,
         boot, brglm2, brms, broom, cAIC4, car, clubSandwich, cluster,
         covr, cplm, dplyr, DRR, effectsize (>= 0.4.1), EGAnet (>= 0.7),
         FactoMineR, fastICA, gam, gamlss, gee, geepack, ggplot2,
-        GLMMadaptive, glmmTMB, GPArotation, lavaan, lavaSearch2, lme4,
-        lmerTest, logspline, knitr, MASS, magrittr, Matrix, mclust,
-        MCMCglmm, mediation, metaBMA, metafor, mice, mfx, mgcv,
+        GLMMadaptive, glmmTMB, GPArotation, gt, lavaan, lavaSearch2,
+        lme4, lmerTest, logspline, knitr, MASS, magrittr, Matrix,
+        mclust, MCMCglmm, mediation, metaBMA, metafor, mice, mfx, mgcv,
         multcomp, multimode, MuMIn, M3C, NbClust, nFactors, nlme,
-        performance (>= 0.5.1), plm, projpred, pscl, psych, quantreg,
-        randomForest, rmarkdown, rstanarm, sandwich, see, sjstats,
-        spelling, survey, survival, testthat, TMB, tripack, truncreg,
-        VGAM
+        performance (>= 0.5.1), plm, PMCMRplus, projpred, pscl, psych,
+        quantreg, randomForest, rmarkdown, rstanarm, sandwich, see,
+        sjstats, spelling, survey, survival, testthat, TMB, tripack,
+        truncreg, VGAM, WRS2
 Encoding: UTF-8
 Language: en-US
 RoxygenNote: 7.1.1
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/testthat/parallel: true
-Config/testthat/start-first: watcher, parallel*
 NeedsCompilation: no
-Packaged: 2020-12-07 20:02:20 UTC; Daniel
+Packaged: 2021-01-15 10:23:01 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut] (<https://orcid.org/0000-0001-5375-9967>),
@@ -75,7 +79,9 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
   Indrajeet Patil [aut] (<https://orcid.org/0000-0003-1995-6531>,
     @patilindrajeets),
   Søren Højsgaard [aut],
-  Zen J. Lau [ctb]
+  Zen J. Lau [ctb],
+  Vincent Arel-Bundock [ctb] (<https://orcid.org/0000-0003-1995-6531>,
+    @vincentab)
 Maintainer: Daniel Lüdecke <d.luedecke@uke.de>
 Repository: CRAN
-Date/Publication: 2020-12-08 08:10:06 UTC
+Date/Publication: 2021-01-15 13:10:02 UTC

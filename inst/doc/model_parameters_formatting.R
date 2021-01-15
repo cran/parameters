@@ -5,11 +5,13 @@ options(digits = 2)
 knitr::opts_chunk$set(comment = "#>", tidy.opts = list(width.cutoff = 100))
 
 if (!requireNamespace("broom", quietly = TRUE) ||
+    !requireNamespace("gt", quietly = TRUE) ||
     !requireNamespace("magrittr", quietly = TRUE)) {
   knitr::opts_chunk$set(eval = FALSE)
 } else {
   library(parameters)
   library(broom)
+  library(gt)
   library(magrittr)
   library(insight)
 }
@@ -60,12 +62,12 @@ tidy(model, conf.int = TRUE)
 ## -----------------------------------------------------------------------------
 model %>% 
   tidy(conf.int = TRUE) %>% 
-  parameters_table()
+  format_table()
 
 ## -----------------------------------------------------------------------------
 model %>% 
   model_parameters() %>% 
-  parameters_table()
+  format_table()
 
 ## -----------------------------------------------------------------------------
 data(mtcars)
@@ -74,7 +76,7 @@ cat(export_table(mtcars[1:8, 1:5]))
 ## -----------------------------------------------------------------------------
 model %>% 
   tidy(conf.int = TRUE) %>% 
-  parameters_table() %>% 
+  format_table() %>% 
   export_table() %>% 
   cat()
 
@@ -85,9 +87,15 @@ model_parameters(model)
 model %>% 
   tidy(conf.int = TRUE) %>% 
   # parenthesis look better in markdown-tables, so we use "brackets" here
-  parameters_table(brackets = c("(", ")")) %>% 
+  format_table(ci_brackets = c("(", ")")) %>% 
   export_table(format = "markdown", caption = "My Table", align = "lcccrr")
 
 ## -----------------------------------------------------------------------------
 model_parameters(model) %>% print_md()
+
+## -----------------------------------------------------------------------------
+model_parameters(model) %>% print_html()
+
+## -----------------------------------------------------------------------------
+model_parameters(model) %>% display(format = "html")
 

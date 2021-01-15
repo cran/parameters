@@ -1,3 +1,54 @@
+# parameters 0.10.2
+
+## New supported model classes
+
+* `coxr` (*coxrobust*), `coeftest` (*lmtest*), `ivfixed` (*ivfixed*), 
+  `ivprobit` (*ivprobit*), `riskRegression` (*riskRegression*),
+  `fitdistr` (*MASS*), `yuen`, `t1way`, `onesampb`, `mcp1` and `mcp2` (*WRS2*),
+  `Anova.mlm` (*car*), `rqs` (*quantreg*), `lmodel2` (*lmodel2*),
+  `summary.lm`, `PMCMR`, `osrt` and `trendPMCMR` (*PMCMRplus*), `bamlss`
+  (*bamlss*).
+
+## New functions
+
+### Printing and table Formatting
+
+* `print_html()` as an alias for `display(format = "html")`. This allows to
+  print tabular outputs from data frames (as returned by most functions in
+  _parameters_) into nicely rendered HTML markdown tables.
+
+## Changes to functions
+
+* Added more effect size measures to `model_parameters()` for `htest` objects.
+
+* `model_parameters()` for anova objects gains a `power` argument, to calculate
+  the power for each parameter.
+
+* `ci()` for models from *lme4* and *glmmTMB* can now computed profiled confidence
+  intervals, using `method = "profile"`. Consequently, `model_parameters()` with
+  `df_method = "profile"` also computes profiled confidence intervals. For
+  models of class `glmmTMB`, option `"uniroot"` is also available.
+
+## Bug fixes
+
+* `model_parameters()` for t-tests when `standardize_d = TRUE`, did not return
+  columns for the group-specific means.
+
+* Fixed issue in `p_value()` for `fixest::feols()`.
+
+* Fixed issue in `model_parameters()` for `glmer()` models with p-values that
+  were calculated with `df_method = "ml1"` or `df_method = "betwithin"`.
+
+* Fixed issue in `model_parameters()` for multinomial models when response
+  was a character vector (and no factor).
+
+* Fixed issue in `print_md()` for model-parameters objects from Bayesian models.
+
+* Fixed issues with printing of model parameters for multivariate response 
+  models from *brms*.
+  
+* Fixed issue with paired t-tests and `model_parameters()`.
+
 # parameters 0.10.1
 
 ## New functions
@@ -23,6 +74,10 @@
 * The default-method for effect sizes in `model_parameters()` for Anova-models
   (i.e. when arguments `omega_squared`, `eta_squared` or `epsilon_squared` are
   set to `TRUE`) is now `"partial"`, as initially intended.
+
+* Column names for degrees of freedom were revised. `"df_residual"` was replaced
+  by the more generic `"df_error"`. Moreover, models of class `htest` now also
+  have the column name `"df_error"` and no longer `"df"` (where applicable).
 
 * Some re-exports for functions that were moved to *insight* longer ago, were
   now removed.

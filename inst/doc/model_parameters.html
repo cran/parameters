@@ -638,30 +638,39 @@ body {
 <h3 id="frequentist">Frequentist</h3>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">cor.test</span>(iris<span class="op">$</span>Sepal.Length, iris<span class="op">$</span>Sepal.Width) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb1-2" title="2"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>#&gt; Parameter1        |       Parameter2 |     r | t(148) |     p |        95% CI |  Method
-#&gt; ---------------------------------------------------------------------------------------
-#&gt; iris$Sepal.Length | iris$Sepal.Width | -0.12 |  -1.44 | 0.152 | [-0.27, 0.04] | Pearson
+<pre><code>#&gt; # Pearson&#39;s product-moment correlation
+#&gt; 
+#&gt; Parameter1        |       Parameter2 |     r | t(148) |     p |        95% CI
+#&gt; -----------------------------------------------------------------------------
+#&gt; iris$Sepal.Length | iris$Sepal.Width | -0.12 |  -1.44 | 0.152 | [-0.27, 0.04]
 </code></pre>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">t.test</span>(mpg <span class="op">~</span><span class="st"> </span>vs, <span class="dt">data =</span> mtcars) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb3-2" title="2"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>#&gt; Parameter | Group | Mean_Group1 | Mean_Group2 | Difference | t(22.72) |      p |          95% CI |                  Method
-#&gt; --------------------------------------------------------------------------------------------------------------------------
-#&gt; mpg       |    vs |       16.62 |       24.56 |       7.94 |    -4.67 | &lt; .001 | [-11.46, -4.42] | Welch Two Sample t-test
+<pre><code>#&gt; # Welch Two Sample t-test
+#&gt; 
+#&gt; Parameter | Group | Mean_Group1 | Mean_Group2 | Difference |          95% CI | t(22.72) |      p
+#&gt; ------------------------------------------------------------------------------------------------
+#&gt; mpg       |    vs |       16.62 |       24.56 |       7.94 | [-11.46, -4.42] |    -4.67 | &lt; .001
 </code></pre>
 <h3 id="bayesian">Bayesian</h3>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1"><span class="kw">library</span>(BayesFactor)</a>
 <a class="sourceLine" id="cb5-2" title="2"></a>
 <a class="sourceLine" id="cb5-3" title="3">BayesFactor<span class="op">::</span><span class="kw">correlationBF</span>(iris<span class="op">$</span>Sepal.Length, iris<span class="op">$</span>Sepal.Width) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb5-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>#&gt; Parameter | Median |        89% CI |     pd | % in ROPE |              Prior |    BF
-#&gt; ------------------------------------------------------------------------------------
-#&gt; rho       |  -0.11 | [-0.23, 0.02] | 92.25% |    44.23% | Cauchy (0 +- 0.33) | 0.509
+<pre><code>#&gt; # Bayesian correlation analysis
+#&gt; 
+#&gt; Parameter | Median |        89% CI |     pd | % in ROPE |              Prior |    BF |                        Method
+#&gt; --------------------------------------------------------------------------------------------------------------------
+#&gt; rho       |  -0.11 | [-0.23, 0.02] | 92.25% |    44.23% | Cauchy (0 +- 0.33) | 0.509 | Bayesian correlation analysis
 </code></pre>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">BayesFactor<span class="op">::</span><span class="kw">ttestBF</span>(<span class="dt">formula =</span> mpg <span class="op">~</span><span class="st"> </span>vs, <span class="dt">data =</span> mtcars) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb7-2" title="2"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
-<pre><code>#&gt; Parameter  | Median |        89% CI |     pd | % in ROPE |              Prior |     BF
-#&gt; --------------------------------------------------------------------------------------
-#&gt; Difference |   7.31 | [4.50, 10.12] | 99.98% |        0% | Cauchy (0 +- 0.71) | 529.27
+<pre><code>#&gt; # Bayesian t-test
+#&gt; 
+#&gt; Parameter  | Median |         89% CI |     pd | % in ROPE |              Prior |     BF |          Method
+#&gt; ---------------------------------------------------------------------------------------------------------
+#&gt; Difference |   7.31 | [ 4.50, 10.12] | 99.98% |        0% | Cauchy (0 +- 0.71) | 529.27 | Bayesian t-test
+#&gt; Cohen&#39;s D  |  -1.57 | [-2.21, -0.84] | 99.98% |        0% |                    |        | Bayesian t-test
 </code></pre>
 <h2 id="anovas">ANOVAs</h2>
 <p>Indices of effect size for ANOVAs, such as partial and non-partial versions of <code>eta_squared()</code>, <code>epsilon_sqared()</code> or <code>omega_squared()</code> are powered by the <a href="https://easystats.github.io/effectsize/"><strong>effectsize</strong>-package</a>. However, <strong>parameters</strong> uses these function to compute such indices for parameters summaries, including confidence intervals</p>
@@ -802,7 +811,7 @@ body {
 <a class="sourceLine" id="cb25-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
 <pre><code>#&gt; # Fixed effects
 #&gt; 
-#&gt; Parameter   | Median |              CI |     pd | % in ROPE |  Rhat | ESS |                   Prior
+#&gt; Parameter   | Median |          89% CI |     pd | % in ROPE |  Rhat | ESS |                   Prior
 #&gt; ---------------------------------------------------------------------------------------------------
 #&gt; (Intercept) |  51.90 | [ 42.20, 60.03] |   100% |        0% | 1.023 | 130 | Normal (20.09 +- 15.07)
 #&gt; wt          |  -7.69 | [-10.62, -3.73] | 99.80% |        0% | 1.027 | 128 |  Normal (0.00 +- 15.40)
@@ -899,19 +908,19 @@ body {
 <a class="sourceLine" id="cb29-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
 <pre><code>#&gt; # Rotated loadings from Principal Component Analysis (varimax-rotation)
 #&gt; 
-#&gt; Variable |   RC2 |   RC3 |   RC1 | Complexity | Uniqueness
+#&gt; Variable |  RC2  |  RC3  |  RC1  | Complexity | Uniqueness
 #&gt; ----------------------------------------------------------
-#&gt; mpg      |  0.66 | -0.41 | -0.54 |       2.63 |       0.10
-#&gt; cyl      | -0.62 |  0.67 |  0.34 |       2.49 |       0.05
-#&gt; disp     | -0.72 |  0.52 |  0.35 |       2.33 |       0.10
-#&gt; hp       | -0.30 |  0.64 |  0.63 |       2.40 |       0.10
-#&gt; drat     |  0.85 | -0.26 | -0.05 |       1.19 |       0.21
-#&gt; wt       | -0.78 |  0.21 |  0.51 |       1.90 |       0.08
-#&gt; qsec     | -0.18 | -0.91 | -0.28 |       1.28 |       0.06
-#&gt; vs       |  0.28 | -0.86 | -0.23 |       1.36 |       0.12
-#&gt; am       |  0.92 |  0.14 | -0.11 |       1.08 |       0.12
-#&gt; gear     |  0.91 | -0.02 |  0.26 |       1.16 |       0.10
-#&gt; carb     |  0.11 |  0.44 |  0.85 |       1.53 |       0.07
+#&gt; mpg      | 0.66  | -0.41 | -0.54 |    2.63    |    0.10   
+#&gt; cyl      | -0.62 | 0.67  | 0.34  |    2.49    |    0.05   
+#&gt; disp     | -0.72 | 0.52  | 0.35  |    2.33    |    0.10   
+#&gt; hp       | -0.30 | 0.64  | 0.63  |    2.40    |    0.10   
+#&gt; drat     | 0.85  | -0.26 | -0.05 |    1.19    |    0.21   
+#&gt; wt       | -0.78 | 0.21  | 0.51  |    1.90    |    0.08   
+#&gt; qsec     | -0.18 | -0.91 | -0.28 |    1.28    |    0.06   
+#&gt; vs       | 0.28  | -0.86 | -0.23 |    1.36    |    0.12   
+#&gt; am       | 0.92  | 0.14  | -0.11 |    1.08    |    0.12   
+#&gt; gear     | 0.91  | -0.02 | 0.26  |    1.16    |    0.10   
+#&gt; carb     | 0.11  | 0.44  | 0.85  |    1.53    |    0.07   
 #&gt; 
 #&gt; The 3 principal components (varimax rotation) accounted for 89.87% of the total variance of the original data (RC2 = 41.43%, RC3 = 29.06%, RC1 = 19.39%).
 </code></pre>
@@ -921,13 +930,13 @@ body {
 <a class="sourceLine" id="cb31-4" title="4"><span class="st">  </span><span class="kw">parameters</span>()</a></code></pre></div>
 <pre><code>#&gt; # Loadings from Factor Analysis (no rotation)
 #&gt; 
-#&gt; Variable     | Dim.1 |    Dim.2 |    Dim.3 | Complexity
+#&gt; Variable     | Dim.1 |  Dim.2   |  Dim.3   | Complexity
 #&gt; -------------------------------------------------------
-#&gt; Sepal.Length |  0.75 |     0.07 |     0.10 |       1.05
-#&gt; Sepal.Width  |  0.23 |     0.51 |     0.23 |       1.86
-#&gt; Petal.Length |  0.98 | 1.32e-03 | 1.99e-03 |       1.00
-#&gt; Petal.Width  |  0.94 |     0.01 | 2.82e-05 |       1.00
-#&gt; Species      |  0.96 |     0.75 |     0.26 |       2.05
+#&gt; Sepal.Length | 0.75  |   0.07   |   0.10   |    1.05   
+#&gt; Sepal.Width  | 0.23  |   0.51   |   0.23   |    1.86   
+#&gt; Petal.Length | 0.98  | 1.32e-03 | 1.99e-03 |    1.00   
+#&gt; Petal.Width  | 0.94  |   0.01   | 2.82e-05 |    1.00   
+#&gt; Species      | 0.96  |   0.75   |   0.26   |    2.05   
 #&gt; 
 #&gt; The 3 latent factors accounted for 96.73% of the total variance of the original data (Dim.1 = 64.50%, Dim.2 = 22.37%, Dim.3 = 9.86%).
 </code></pre>
@@ -976,13 +985,15 @@ body {
 <a class="sourceLine" id="cb35-7" title="7"></a>
 <a class="sourceLine" id="cb35-8" title="8"><span class="kw">rma</span>(<span class="dt">yi =</span> effectsize, <span class="dt">sei =</span> standarderror, <span class="dt">method =</span> <span class="st">&quot;REML&quot;</span>, <span class="dt">data =</span> mydat) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb35-9" title="9"><span class="st">  </span><span class="kw">model_parameters</span>()</a></code></pre></div>
-<pre><code>#&gt; Parameter | Coefficient |   SE |         95% CI |     z |      p | Weight
-#&gt; -------------------------------------------------------------------------
-#&gt; Study 1   |       -0.39 | 0.32 | [-1.01,  0.23] | -1.24 | 0.215  |   9.95
-#&gt; Study 2   |        0.68 | 0.32 | [ 0.05,  1.30] |  2.13 | 0.033  |   9.95
-#&gt; Study 3   |        0.28 | 0.13 | [ 0.03,  0.54] |  2.17 | 0.030  |  59.17
-#&gt; Study 4   |       -1.40 | 0.36 | [-2.10, -0.69] | -3.88 | &lt; .001 |   7.72
-#&gt; Overall   |       -0.18 | 0.44 | [-1.05,  0.68] | -0.42 | 0.676  |
+<pre><code>#&gt; # Meta-analysis using &#39;metafor&#39;
+#&gt; 
+#&gt; Parameter | Coefficient |   SE |         95% CI |     z |      p | Weight |                        Method
+#&gt; ---------------------------------------------------------------------------------------------------------
+#&gt; Study 1   |       -0.39 | 0.32 | [-1.01,  0.23] | -1.24 | 0.215  |   9.95 | Meta-analysis using &#39;metafor&#39;
+#&gt; Study 2   |        0.68 | 0.32 | [ 0.05,  1.30] |  2.13 | 0.033  |   9.95 | Meta-analysis using &#39;metafor&#39;
+#&gt; Study 3   |        0.28 | 0.13 | [ 0.03,  0.54] |  2.17 | 0.030  |  59.17 | Meta-analysis using &#39;metafor&#39;
+#&gt; Study 4   |       -1.40 | 0.36 | [-2.10, -0.69] | -3.88 | &lt; .001 |   7.72 | Meta-analysis using &#39;metafor&#39;
+#&gt; Overall   |       -0.18 | 0.44 | [-1.05,  0.68] | -0.42 | 0.676  |        | Meta-analysis using &#39;metafor&#39;
 </code></pre>
 <h2 id="plotting-model-parameters">Plotting Model Parameters</h2>
 <p>There is a <code>plot()</code>-method implemented in the <a href="https://easystats.github.io/see/"><strong>see</strong>-package</a>. Several examples are shown <a href="https://easystats.github.io/see/articles/parameters.html">in this vignette</a>.</p>

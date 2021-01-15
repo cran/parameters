@@ -6,9 +6,8 @@ if (require("testthat") &&
 
   if (.runThisTest) {
     test_that("model_parameters.BFBayesFactor", {
-      skip_on_cran()
       model <- BayesFactor::ttestBF(iris$Sepal.Width, iris$Petal.Length, paired = TRUE)
-      testthat::expect_equal(parameters::model_parameters(model)$BF, 492.770, tolerance = 2)
+      testthat::expect_equal(parameters::model_parameters(model)$BF, c(492.77057, NA), tolerance = 1e-2)
     })
   }
 
@@ -29,16 +28,15 @@ if (require("testthat") &&
 
   if (.runThisTest) {
     test_that("model_parameters.BFBayesFactor", {
-      skip_on_cran()
       model <- BayesFactor::ttestBF(formula = mpg ~ am, data = df)
-      expect_equal(model_parameters(model)$BF, 86, tolerance = 2)
+      expect_equal(model_parameters(model)$BF, c(86.58973, NA), tolerance = 1)
     })
   }
 
   test_that("model_parameters.BFBayesFactor", {
     set.seed(123)
-    model <- BayesFactor::anovaBF(mpg ~ gear * am, data = df, )
-    expect_equal(model_parameters(model)$Median, c(20.69277, -3.24014, 3.24014, 25.28076, 0.79331), tolerance = 2)
+    model <- BayesFactor::anovaBF(mpg ~ gear * am, data = df)
+    expect_equal(model_parameters(model)$Median, c(20.660577, -3.244485, 3.244485, 25.128301, 0.778598, NA, NA, NA), tolerance = 1L)
   })
 
   if (.runThisTest) {
@@ -47,7 +45,8 @@ if (require("testthat") &&
     mp <- model_parameters(bf)
 
     test_that("model_parameters.BFBayesFactor", {
-      expect_equal(colnames(mp), c("Parameter", "Prior_Distribution", "Prior_Location", "Prior_Scale", "BF"))
+      expect_equal(colnames(mp), c("Parameter", "Median", "CI_low", "CI_high", "pd", "ROPE_Percentage",
+                                   "Prior_Distribution", "Prior_Location", "Prior_Scale", "BF", "Method"))
     })
 
     data(puzzles)
@@ -58,7 +57,7 @@ if (require("testthat") &&
     test_that("model_parameters.BFBayesFactor", {
       expect_equal(colnames(mp), c("Parameter", "Median", "CI_low", "CI_high", "pd", "ROPE_Percentage",
                                    "Prior_Distribution", "Prior_Location", "Prior_Scale", "Effects",
-                                   "Component", "BF"))
+                                   "Component", "BF", "Method"))
       expect_equal(mp$Effects, c("fixed", "fixed", "fixed", "fixed", "fixed", "random", "random",
                                  "random", "random", "random", "random", "random", "random", "random",
                                  "random", "random", "random", "fixed", "fixed", "fixed", "fixed"))
