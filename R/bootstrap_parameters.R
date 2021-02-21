@@ -7,7 +7,9 @@
 #' @inheritParams bootstrap_model
 #' @inheritParams bayestestR::describe_posterior
 #'
-#' @return Bootstrapped parameters.
+#' @return A data frame summarizing the bootstrapped parameters.
+#'
+#' @inheritSection bootstrap_model Using with \code{emmeans}
 #'
 #' @references Davison, A. C., & Hinkley, D. V. (1997). Bootstrap methods and their application (Vol. 1). Cambridge university press.
 #'
@@ -17,12 +19,25 @@
 #'   bootstrapped coefficients. The resulting replicated for each coefficient
 #'   are treated as "distribution", and is passed to \code{\link[bayestestR:describe_posterior]{describe_posterior()}}
 #'   to calculate the related indices defined in the \code{"test"} argument.
+#'   \cr\cr
+#'   Note that that p-values returned here are estimated under the assumption of
+#'   \emph{translation equivariance}: that shape of the sampling distribution is
+#'   unaffected by the null being true or not. If this assumption does not hold,
+#'   p-values can be biased, and it is suggested to use proper permutation tests
+#'   to obtain non-parametric p-values.
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' if (require("boot")) {
+#'   set.seed(2)
 #'   model <- lm(Sepal.Length ~ Species * Petal.Width, data = iris)
-#'   bootstrap_parameters(model)
+#'   b <- bootstrap_parameters(model)
+#'   print(b)
+#'
+#'   if (require("emmeans")) {
+#'     est <- emmeans(b, trt.vs.ctrl ~ Species)
+#'     print(model_parameters(est))
+#'   }
 #' }
 #' }
 #' @export
@@ -34,7 +49,7 @@ bootstrap_parameters <- function(model,
                                  test = "p-value",
                                  ...) {
   data <- bootstrap_model(model, iterations = iterations, ...)
-  .summary_bootstrap(
+  out <- .summary_bootstrap(
     data = data,
     test = test,
     centrality = centrality,
@@ -42,6 +57,10 @@ bootstrap_parameters <- function(model,
     ci_method = ci_method,
     ...
   )
+
+  class(out) <- c("bootstrap_parameters", "parameters_model", class(out))
+  attr(out, "boot_samples") <- data
+  out
 }
 
 
@@ -71,6 +90,8 @@ bootstrap_parameters <- function(model,
   # Remove unnecessary columns
   if ("CI" %in% names(parameters) && .n_unique(parameters$CI) == 1) {
     parameters$CI <- NULL
+  } else if ("CI" %in% names(parameters) && .n_unique(parameters$CI) > 1) {
+    parameters <- bayestestR::reshape_ci(parameters)
   }
 
   # Coef
@@ -88,5 +109,6 @@ bootstrap_parameters <- function(model,
   }
 
   rownames(parameters) <- NULL
+  attr(parameters, "ci") <- ci
   parameters
 }

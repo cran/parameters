@@ -16,8 +16,9 @@
 #' @inheritParams insight::format_table
 #' @inheritParams insight::export_table
 #'
-#' @return A character vector. If \code{format = "markdown"}, the return value
-#'   will be a character vector in markdown-table format.
+#' @return If \code{format = "markdown"}, the return value will be a character
+#'   vector in markdown-table format. If \code{format = "html"}, an object of
+#'   class \code{gt_tbl}.
 #'
 #' @details \code{display()} is useful when the table-output from functions,
 #'   which is usually printed as formatted text-table to console, should
@@ -58,6 +59,21 @@ display.parameters_simulate <- display.parameters_model
 #' @export
 display.parameters_brms_meta <- display.parameters_model
 
+#' @export
+display.compare_parameters <- function(object,
+                                       format = "markdown",
+                                       digits = 2,
+                                       ci_digits = 2,
+                                       p_digits = 3,
+                                       style = NULL,
+                                       ...) {
+  if (identical(format, "html")) {
+    print_html(x = object, digits = digits, ci_digits = ci_digits, p_digits = p_digits, style = style, ...)
+  } else {
+    print_md(x = object, digits = digits, ci_digits = ci_digits, p_digits = p_digits, style = style, ...)
+  }
+}
+
 
 
 
@@ -85,7 +101,7 @@ display.parameters_sem <- function(object,
                                    p_digits = 3,
                                    ci_brackets = c("(", ")"),
                                    ...) {
-    print_md(x = object, digits = digits, ci_digits = ci_digits, p_digits = p_digits, ci_brackets = ci_brackets, ...)
+  print_md(x = object, digits = digits, ci_digits = ci_digits, p_digits = p_digits, ci_brackets = ci_brackets, ...)
 }
 
 

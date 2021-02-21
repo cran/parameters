@@ -3,23 +3,33 @@
 #' Parameters from Bayesian models.
 #'
 #' @param model Bayesian model. May also be a data frame with posterior samples.
-#' @param ci Credible Interval (CI) level. Default to 0.89 (89\%). See \code{\link[bayestestR]{ci}} for further details.
-#' @param group_level Logical, for multilevel models (i.e. models with random effects) and when \code{effects = "all"} or \code{effects = "random"}, include the parameters for each group level from random effects. If \code{group_level = FALSE} (the default), only information on SD and COR are shown.
+#' @param ci Credible Interval (CI) level. Default to 0.89 (89\%). See
+#'   \code{\link[bayestestR]{ci}} for further details.
+#' @param group_level Logical, for multilevel models (i.e. models with random
+#'   effects) and when \code{effects = "all"} or \code{effects = "random"},
+#'   include the parameters for each group level from random effects. If
+#'   \code{group_level = FALSE} (the default), only information on SD and COR
+#'   are shown.
 #' @inheritParams model_parameters.default
 #' @inheritParams bayestestR::describe_posterior
+#' @inheritParams insight::get_parameters
 #'
-#' @seealso \code{\link[insight:standardize_names]{standardize_names()}} to rename
-#'   columns into a consistent, standardized naming scheme.
+#' @seealso \code{\link[insight:standardize_names]{standardize_names()}} to
+#'   rename columns into a consistent, standardized naming scheme.
 #'
-#' @note When \code{standardize = "refit"}, columns \code{diagnostic}, \code{bf_prior} and \code{priors} refer to the \emph{original} \code{model}.
-#' If \code{model} is a data frame, arguments \code{diagnostic}, \code{bf_prior} and \code{priors} are ignored.
-#' \cr \cr
-#' There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#' @note When \code{standardize = "refit"}, columns \code{diagnostic},
+#'   \code{bf_prior} and \code{priors} refer to the \emph{original}
+#'   \code{model}. If \code{model} is a data frame, arguments \code{diagnostic},
+#'   \code{bf_prior} and \code{priors} are ignored. \cr \cr There is also a
+#'   \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method}
+#'   implemented in the
+#'   \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 #'
-#' @details Currently supported models are \code{brmsfit}, \code{stanreg}, \code{stanmvreg}, \code{MCMCglmm}, \code{mcmc} and \code{bcplm}.
+#' @details Currently supported models are \code{brmsfit}, \code{stanreg},
+#'   \code{stanmvreg}, \code{MCMCglmm}, \code{mcmc} and \code{bcplm}.
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' library(parameters)
 #' if (require("rstanarm")) {
 #'   model <- stan_glm(
@@ -31,7 +41,6 @@
 #' }
 #' @return A data frame of indices related to the model's parameters.
 #' @importFrom insight get_priors
-#' @inheritParams insight::get_parameters
 #' @export
 model_parameters.stanreg <- function(model,
                                      centrality = "median",
@@ -76,7 +85,9 @@ model_parameters.stanreg <- function(model,
   }
 
   params <- .add_pretty_names(params, model)
-  if (exponentiate) params <- .exponentiate_parameters(params)
+  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
+    params <- .exponentiate_parameters(params, model, exponentiate)
+  }
 
   params <- .add_model_parameters_attributes(
     params,

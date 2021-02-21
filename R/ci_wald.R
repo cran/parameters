@@ -42,8 +42,7 @@ ci_wald <- function(model, ci = .95, dof = NULL, effects = c("fixed", "random", 
     stderror <- if (isTRUE(robust)) {
       standard_error_robust(model, ...)
     } else {
-      switch(
-        method,
+      switch(method,
         "wald" = standard_error(model, component = component),
         "kenward" = ,
         "kr" = se_kenward(model),
@@ -85,7 +84,7 @@ ci_wald <- function(model, ci = .95, dof = NULL, effects = c("fixed", "random", 
   )
 
   out <- as.data.frame(out)
-  out$CI <- ci * 100
+  out$CI <- ci
   out$Parameter <- params$Parameter
 
   out <- out[c("Parameter", "CI", "CI_low", "CI_high")]

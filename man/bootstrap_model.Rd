@@ -16,16 +16,37 @@ bootstrap_model(model, iterations = 1000, verbose = FALSE, ...)
 \item{...}{Arguments passed to or from other methods.}
 }
 \value{
-A data frame.
+A data frame of bootstrapped estimates.
 }
 \description{
 Bootstrap a statistical model n times to return a data frame of estimates.
 }
+\section{Using with \code{emmeans}}{
+
+The output can be passed directly to the various functions from the
+\code{emmeans} package, to obtain bootstrapped estimates, contrasts, simple
+slopes, etc, and their confidence intervals. These can then be passed to
+\code{model_parameter()} to obtain standard errors, p-values, etc (see
+example).
+\cr\cr
+Note that that p-values returned here are estimated under the assumption of
+\emph{translation equivariance}: that shape of the sampling distribution is
+unaffected by the null being true or not. If this assumption does not hold,
+p-values can be biased, and it is suggested to use proper permutation tests
+to obtain non-parametric p-values.
+}
+
 \examples{
-\donttest{
+\dontrun{
 if (require("boot")) {
-  model <- lm(mpg ~ wt + cyl, data = mtcars)
-  head(bootstrap_model(model))
+  model <- lm(mpg ~ wt + factor(cyl), data = mtcars)
+  b <- bootstrap_model(model)
+  print(head(b))
+
+  if (require("emmeans")) {
+    est <- emmeans(b, consec ~ cyl)
+    print(model_parameters(est))
+  }
 }
 }
 }

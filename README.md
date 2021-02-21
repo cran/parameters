@@ -2,8 +2,8 @@
 # parameters <img src='man/figures/logo.png' align="right" height="139" />
 
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.02445/status.svg)](https://doi.org/10.21105/joss.02445)
-[![CRAN](http://www.r-pkg.org/badges/version/parameters)](https://cran.r-project.org/package=parameters)
 [![downloads](http://cranlogs.r-pkg.org/badges/parameters)](https://cran.r-project.org/package=parameters)
+[![total](https://cranlogs.r-pkg.org/badges/grand-total/parameters)](https://cranlogs.r-pkg.org/)
 
 ***Describe and understand your model’s parameters\!***
 
@@ -26,14 +26,23 @@ of (model) objects from many different packages.
 
 ## Installation
 
-Run the following:
+[![CRAN](http://www.r-pkg.org/badges/version/parameters)](https://cran.r-project.org/package=parameters)
+[![R-check](https://github.com/easystats/parameters/workflows/R-check/badge.svg?branch=main)](https://github.com/easystats/parameters/actions)
+[![Codecov test
+coverage](https://codecov.io/gh/easystats/parameters/branch/main/graph/badge.svg)](https://codecov.io/gh/easystats/parameters?branch=main)
+
+Run the following to install the stable release of **parameters** from
+CRAN:
 
 ``` r
 install.packages("parameters")
 ```
 
+Or this one to install the latest development version:
+
 ``` r
-library("parameters")
+install.packages("remotes")
+remotes::install_github("easystats/parameters")
 ```
 
 ## Documentation
@@ -167,15 +176,15 @@ model <- psych::fa(attitude, nfactors = 3)
 model_parameters(model)
 #> # Rotated loadings from Factor Analysis (oblimin-rotation)
 #> 
-#> Variable   |   MR1 |   MR2 |   MR3 | Complexity | Uniqueness
+#> Variable   |  MR1  |  MR2  |  MR3  | Complexity | Uniqueness
 #> ------------------------------------------------------------
-#> rating     |  0.90 | -0.07 | -0.05 |       1.02 |       0.23
-#> complaints |  0.97 | -0.06 |  0.04 |       1.01 |       0.10
-#> privileges |  0.44 |  0.25 | -0.05 |       1.64 |       0.65
-#> learning   |  0.47 |  0.54 | -0.28 |       2.51 |       0.24
-#> raises     |  0.55 |  0.43 |  0.25 |       2.35 |       0.23
-#> critical   |  0.16 |  0.17 |  0.48 |       1.46 |       0.67
-#> advance    | -0.11 |  0.91 |  0.07 |       1.04 |       0.22
+#> rating     | 0.90  | -0.07 | -0.05 |    1.02    |    0.23   
+#> complaints | 0.97  | -0.06 | 0.04  |    1.01    |    0.10   
+#> privileges | 0.44  | 0.25  | -0.05 |    1.64    |    0.65   
+#> learning   | 0.47  | 0.54  | -0.28 |    2.51    |    0.24   
+#> raises     | 0.55  | 0.43  | 0.25  |    2.35    |    0.23   
+#> critical   | 0.16  | 0.17  | 0.48  |    1.46    |    0.67   
+#> advance    | -0.11 | 0.91  | 0.07  |    1.04    |    0.22   
 #> 
 #> The 3 latent factors (oblimin rotation) accounted for 66.60% of the total variance of the original data (MR1 = 38.19%, MR2 = 22.69%, MR3 = 5.72%).
 ```

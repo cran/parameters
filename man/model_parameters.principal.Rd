@@ -31,7 +31,11 @@
 
 \item{sort}{Sort the loadings.}
 
-\item{threshold}{A value between 0 and 1 indicates which (absolute) values from the loadings should be removed. An integer higher than 1 indicates the n strongest loadings to retain. Can also be \code{"max"}, in which case it will only display the maximum loading per variable (the most simple structure).}
+\item{threshold}{A value between 0 and 1 indicates which (absolute) values
+from the loadings should be removed. An integer higher than 1 indicates the
+n strongest loadings to retain. Can also be \code{"max"}, in which case it
+will only display the maximum loading per variable (the most simple
+structure).}
 
 \item{labels}{A character vector containing labels to be added to the loadings data. Usually, the question related to the item.}
 
@@ -87,7 +91,9 @@ if (require("FactoMineR")) {
 
   model <- FactoMineR::FAMD(iris, ncp = 2)
   model_parameters(model)
-}}
+}
+}
+
 }
 \references{
 \itemize{

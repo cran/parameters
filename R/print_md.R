@@ -50,6 +50,36 @@ print_md.parameters_brms_meta <- print_md.parameters_model
 #' @export
 print_md.parameters_simulate <- print_md.parameters_model
 
+#' @export
+print_md.compare_parameters <- function(x,
+                                        digits = 2,
+                                        ci_digits = 2,
+                                        p_digits = 3,
+                                        style = NULL,
+                                        ...) {
+  # save original input
+  orig_x <- x
+
+  # get attributes
+  if (missing(style)) {
+    style <- attributes(x)$output_style
+  }
+
+  formatted_table <- format(
+    x,
+    style,
+    split_components = TRUE,
+    digits = digits,
+    ci_digits = ci_digits,
+    p_digits = p_digits,
+    ci_width = NULL,
+    ci_brackets = c("(", ")"),
+    format = "md"
+  )
+
+  insight::export_table(formatted_table, format = "md", footer = NULL)
+}
+
 
 
 
@@ -63,7 +93,7 @@ print_md.parameters_sem <- function(x,
                                     p_digits = 3,
                                     ci_brackets = c("(", ")"),
                                     ...) {
-    # check if user supplied digits attributes
+  # check if user supplied digits attributes
   if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
   if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
   if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
@@ -171,7 +201,7 @@ print_md.equivalence_test_lm <- function(x, digits = 2, ci_brackets = c("(", ")"
 
 #' @export
 print_md.parameters_distribution <- function(x, digits = 2, ci_brackets = c("(", ")"), ...) {
-  formatted_table <- format(x = x, digits = digits, format = "markdown",  ci_width = NULL, ci_brackets = ci_brackets, ...)
+  formatted_table <- format(x = x, digits = digits, format = "markdown", ci_width = NULL, ci_brackets = ci_brackets, ...)
   insight::export_table(formatted_table, format = "markdown", align = "firstleft", ...)
 }
 

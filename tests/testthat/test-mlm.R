@@ -1,4 +1,4 @@
-if (require("testthat") && require("parameters")) {
+if (require("testthat") && require("parameters") && getRversion() >= "3.6.0") {
   set.seed(123)
   mod <- lm(formula = cbind(mpg, disp) ~ wt, data = mtcars)
   mp <- model_parameters(mod)
@@ -11,8 +11,10 @@ if (require("testthat") && require("parameters")) {
     )
     expect_equal(
       colnames(mp),
-      c("Parameter", "Coefficient", "SE", "CI_low", "CI_high", "t",
-        "df_error", "p", "Response")
+      c(
+        "Parameter", "Coefficient", "SE", "CI", "CI_low", "CI_high", "t",
+        "df_error", "p", "Response"
+      )
     )
     expect_equal(mp$Response, c("mpg", "mpg", "disp", "disp"))
   })

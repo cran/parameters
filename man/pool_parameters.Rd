@@ -18,9 +18,20 @@ pool_parameters(
 \code{\link{model_parameters}}, or a list of model-objects that is
 supported by \code{model_parameters()}.}
 
-\item{exponentiate}{Logical, indicating whether or not to exponentiate the the coefficients (and related confidence intervals). This is typical for, say, logistic regressions, or more generally speaking: for models with log or logit link. \strong{Note:} standard errors are also transformed (by multiplying the standard errors with the exponentiated coefficients), to mimic behaviour of other software packages, such as Stata.}
+\item{exponentiate}{Logical, indicating whether or not to exponentiate the
+the coefficients (and related confidence intervals). This is typical for,
+say, logistic regressions, or more generally speaking: for models with log
+or logit link. \strong{Note:} standard errors are also transformed (by
+multiplying the standard errors with the exponentiated coefficients), to
+mimic behaviour of other software packages, such as Stata. For
+\code{compare_parameters()}, \code{exponentiate = "nongaussian"} will only
+exponentiate coefficients for all models except those from Gaussian family.}
 
-\item{component}{Model component for which parameters should be shown. May be one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}), \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}), \code{"marginal"} (\pkg{mfx}), \code{"conditional"} or \code{"full"} (for \code{MuMIn::model.avg()}) or \code{"all"}.}
+\item{component}{Model component for which parameters should be shown. May be
+one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}),
+\code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}),
+\code{"marginal"} (\pkg{mfx}), \code{"conditional"} or \code{"full"} (for
+\code{MuMIn::model.avg()}) or \code{"all"}.}
 
 \item{details}{Logical, if \code{TRUE}, a summary of the random effects is included. See \code{\link{random_parameters}} for details.}
 
@@ -32,7 +43,10 @@ supported by \code{model_parameters()}.}
 A data frame of indices related to the model's parameters.
 }
 \description{
-This function "pools" (i.e. combines) model parameters in a similar fashion as \code{mice::pool()}. However, this function pools parameters from \code{parameters_model} objects, as returned by \code{\link{model_parameters}}.
+This function "pools" (i.e. combines) model parameters in a similar fashion
+as \code{mice::pool()}. However, this function pools parameters from
+\code{parameters_model} objects, as returned by
+\code{\link{model_parameters}}.
 }
 \details{
 Averaging of parameters follows Rubin's rules (\cite{Rubin, 1987, p. 76}).
@@ -64,6 +78,7 @@ if (require("mice")) {
 }
 }
 \references{
-Barnard, J. and Rubin, D.B. (1999). Small sample degrees of freedom with multiple imputation. Biometrika, 86, 948-955.
-Rubin, D.B. (1987). Multiple Imputation for Nonresponse in Surveys. New York: John Wiley and Sons.
+Barnard, J. and Rubin, D.B. (1999). Small sample degrees of freedom with
+multiple imputation. Biometrika, 86, 948-955. Rubin, D.B. (1987). Multiple
+Imputation for Nonresponse in Surveys. New York: John Wiley and Sons.
 }

@@ -7,15 +7,34 @@
 #' @param ... Arguments passed to or from other methods.
 #' @inheritParams p_value
 #'
-#' @return A data frame.
+#' @return A data frame of bootstrapped estimates.
+#'
+#' @section Using with \code{emmeans}:
+#' The output can be passed directly to the various functions from the
+#' \code{emmeans} package, to obtain bootstrapped estimates, contrasts, simple
+#' slopes, etc, and their confidence intervals. These can then be passed to
+#' \code{model_parameter()} to obtain standard errors, p-values, etc (see
+#' example).
+#' \cr\cr
+#' Note that that p-values returned here are estimated under the assumption of
+#' \emph{translation equivariance}: that shape of the sampling distribution is
+#' unaffected by the null being true or not. If this assumption does not hold,
+#' p-values can be biased, and it is suggested to use proper permutation tests
+#' to obtain non-parametric p-values.
 #'
 #' @seealso \code{\link{bootstrap_parameters}}, \code{\link{simulate_model}}, \code{\link{simulate_parameters}}
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' if (require("boot")) {
-#'   model <- lm(mpg ~ wt + cyl, data = mtcars)
-#'   head(bootstrap_model(model))
+#'   model <- lm(mpg ~ wt + factor(cyl), data = mtcars)
+#'   b <- bootstrap_model(model)
+#'   print(head(b))
+#'
+#'   if (require("emmeans")) {
+#'     est <- emmeans(b, consec ~ cyl)
+#'     print(model_parameters(est))
+#'   }
 #' }
 #' }
 #' @export
@@ -28,7 +47,7 @@ bootstrap_model <- function(model, iterations = 1000, verbose = FALSE, ...) {
 
 
 
-#' @importFrom stats coef update setNames
+#' @importFrom stats coef update setNames complete.cases
 #' @importFrom insight get_data find_parameters get_parameters
 #' @export
 bootstrap_model.default <- function(model, iterations = 1000, verbose = FALSE, ...) {
@@ -52,16 +71,26 @@ bootstrap_model.default <- function(model, iterations = 1000, verbose = FALSE, .
     }
 
     params <- insight::get_parameters(fit)
-    params <- stats::setNames(params$Estimate, params$Parameter) # Transform to named vector
+    n_params <- insight::n_parameters(model)
+
+    if (nrow(params) != n_params) {
+      params <- stats::setNames(rep.int(NA, n_params), params$Parameter)
+    } else {
+      params <- stats::setNames(params$Estimate, params$Parameter) # Transform to named vector
+    }
+
     return(params)
   }
 
   results <- boot::boot(data = data, statistic = boot_function, R = iterations, model = model)
 
   out <- as.data.frame(results$t)
+  out <- out[stats::complete.cases(out), ]
+
   names(out) <- insight::get_parameters(model)$Parameter
 
   class(out) <- unique(c("bootstrap_model", "see_bootstrap_model", class(out)))
+  attr(out, "original_model") <- model
   out
 }
 
@@ -75,7 +104,13 @@ bootstrap_model.merMod <- function(model, iterations = 1000, verbose = FALSE, ..
 
   boot_function <- function(model) {
     params <- insight::get_parameters(model)
-    params <- stats::setNames(params$Estimate, params$Parameter) # Transform to named vector
+    n_params <- insight::n_parameters(model)
+
+    if (nrow(params) != n_params) {
+      params <- stats::setNames(rep.int(NA, n_params), params$Parameter)
+    } else {
+      params <- stats::setNames(params$Estimate, params$Parameter) # Transform to named vector
+    }
     return(params)
   }
 
@@ -86,9 +121,11 @@ bootstrap_model.merMod <- function(model, iterations = 1000, verbose = FALSE, ..
   }
 
   out <- as.data.frame(results$t)
-  names(out) <- insight::find_parameters(model, effects = "fixed")$conditional
+  out <- out[stats::complete.cases(out), ]
 
+  names(out) <- insight::find_parameters(model, effects = "fixed")$conditional
   class(out) <- unique(c("bootstrap_model", "see_bootstrap_model", class(out)))
+  attr(out, "original_model") <- model
   out
 }
 
@@ -130,18 +167,33 @@ bootstrap_model.merMod <- function(model, iterations = 1000, verbose = FALSE, ..
 
 
 #' @export
-as.data.frame.lm <- function(x, row.names = NULL, optional = FALSE, iterations = 1000, verbose = FALSE, ...) {
+as.data.frame.lm <- function(x,
+                             row.names = NULL,
+                             optional = FALSE,
+                             iterations = 1000,
+                             verbose = FALSE,
+                             ...) {
   bootstrap_model(x, iterations = iterations, verbose = verbose, ...)
 }
 
 
 #' @export
-as.data.frame.merMod <- function(x, row.names = NULL, optional = FALSE, iterations = 1000, verbose = FALSE, ...) {
+as.data.frame.merMod <- function(x,
+                                 row.names = NULL,
+                                 optional = FALSE,
+                                 iterations = 1000,
+                                 verbose = FALSE,
+                                 ...) {
   bootstrap_model(x, iterations = iterations, verbose = verbose, ...)
 }
 
 
 #' @export
-as.data.frame.glmmTMB <- function(x, row.names = NULL, optional = FALSE, iterations = 1000, verbose = FALSE, ...) {
+as.data.frame.glmmTMB <- function(x,
+                                  row.names = NULL,
+                                  optional = FALSE,
+                                  iterations = 1000,
+                                  verbose = FALSE,
+                                  ...) {
   bootstrap_model(x, iterations = iterations, verbose = verbose, ...)
 }

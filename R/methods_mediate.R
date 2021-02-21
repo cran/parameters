@@ -16,7 +16,9 @@ model_parameters.mediate <- function(model, ci = .95, exponentiate = FALSE, verb
     params$Component <- gsub("(.*)\\((.*)\\)$", "\\2", params$Parameter)
   }
 
-  if (exponentiate) params <- .exponentiate_parameters(params)
+  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
+    params <- .exponentiate_parameters(params, model, exponentiate)
+  }
   attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   params <- .add_model_parameters_attributes(params, model, ci, exponentiate, verbose = verbose, ...)
   class(params) <- c("parameters_model", "see_parameters_model", class(params))
@@ -34,7 +36,7 @@ ci.mediate <- function(x, ci = .95, ...) {
   if (info$is_linear && !x$INT) {
     out <- data.frame(
       Parameter = c("ACME", "ADE", "Total Effect", "Prop. Mediated"),
-      CI = 100 * ci,
+      CI = ci,
       CI_low = c(
         stats::quantile(x$d0.sims, probs = 1 - alpha, names = FALSE),
         stats::quantile(x$z0.sims, probs = 1 - alpha, names = FALSE),
@@ -57,7 +59,7 @@ ci.mediate <- function(x, ci = .95, ...) {
         "Prop. Mediated (treated)", "ACME (average)", "ADE (average)",
         "Prop. Mediated (average)"
       ),
-      CI = 100 * ci,
+      CI = ci,
       CI_low = c(
         stats::quantile(x$d0.sims, probs = 1 - alpha, names = FALSE),
         stats::quantile(x$d1.sims, probs = 1 - alpha, names = FALSE),

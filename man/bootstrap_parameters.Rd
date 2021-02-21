@@ -34,7 +34,7 @@ to be estimated. Default to \code{.89} (89\%) for Bayesian models and \code{.95}
 \item{...}{Arguments passed to or from other methods.}
 }
 \value{
-Bootstrapped parameters.
+A data frame summarizing the bootstrapped parameters.
 }
 \description{
 Compute bootstrapped parameters and their related indices such as Confidence Intervals (CI) and p-values.
@@ -44,12 +44,40 @@ This function first calls \code{\link{bootstrap_model}} to generate
   bootstrapped coefficients. The resulting replicated for each coefficient
   are treated as "distribution", and is passed to \code{\link[bayestestR:describe_posterior]{describe_posterior()}}
   to calculate the related indices defined in the \code{"test"} argument.
+  \cr\cr
+  Note that that p-values returned here are estimated under the assumption of
+  \emph{translation equivariance}: that shape of the sampling distribution is
+  unaffected by the null being true or not. If this assumption does not hold,
+  p-values can be biased, and it is suggested to use proper permutation tests
+  to obtain non-parametric p-values.
 }
+\section{Using with \code{emmeans}}{
+
+The output can be passed directly to the various functions from the
+\code{emmeans} package, to obtain bootstrapped estimates, contrasts, simple
+slopes, etc, and their confidence intervals. These can then be passed to
+\code{model_parameter()} to obtain standard errors, p-values, etc (see
+example).
+\cr\cr
+Note that that p-values returned here are estimated under the assumption of
+\emph{translation equivariance}: that shape of the sampling distribution is
+unaffected by the null being true or not. If this assumption does not hold,
+p-values can be biased, and it is suggested to use proper permutation tests
+to obtain non-parametric p-values.
+}
+
 \examples{
-\donttest{
+\dontrun{
 if (require("boot")) {
+  set.seed(2)
   model <- lm(Sepal.Length ~ Species * Petal.Width, data = iris)
-  bootstrap_parameters(model)
+  b <- bootstrap_parameters(model)
+  print(b)
+
+  if (require("emmeans")) {
+    est <- emmeans(b, trt.vs.ctrl ~ Species)
+    print(model_parameters(est))
+  }
 }
 }
 }

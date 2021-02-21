@@ -1,6 +1,7 @@
 #' Parameters from \code{WRS2} objects
 #'
-#' @param model Object of class \code{t1way}, \code{yuen}, \code{mcp1} or \code{mcp2}.
+#' @param model Object of class \code{t1way}, \code{yuen}, \code{mcp1} or
+#'   \code{mcp2}.
 #' @param ... Arguments passed to or from other methods.
 #' @inheritParams model_parameters.default
 #'
@@ -31,6 +32,7 @@ model_parameters.t1way <- function(model, verbose = TRUE, ...) {
       "df_error" = model$df2,
       "p" = model$p.value,
       "Estimate" = model$effsize,
+      "CI" = .95,
       "CI_low" =  model$effsize_ci[1],
       "CI_high" = model$effsize_ci[2],
       "Effectsize" = "Explanatory measure of effect size",
@@ -67,6 +69,7 @@ model_parameters.yuen <- function(model, verbose = TRUE, ...) {
   if (grepl("^(yuen\\(|WRS2::yuen\\()", fcall)) {
     data.frame(
       "Difference" = model$diff,
+      "CI" = .95,
       "Difference_CI_low" =  model$conf.int[1],
       "Difference_CI_high" =  model$conf.int[2],
       "t" = model$test,
@@ -80,6 +83,7 @@ model_parameters.yuen <- function(model, verbose = TRUE, ...) {
   } else if (grepl("^(yuend|WRS2::yuend)", fcall)) {
     data.frame(
       "Difference" = model$diff,
+      "CI" = .95,
       "Difference_CI_low" =  model$conf.int[1],
       "Difference_CI_high" =  model$conf.int[2],
       "t" = model$test,
@@ -120,6 +124,14 @@ model_parameters.mcp2 <- model_parameters.mcp1
   out$Group1 <- model$fnames[model$comp[, 1]]
   out$Group2 <- model$fnames[model$comp[, 2]]
 
+  # CI column
+  out$CI <- .95
+
+  # reorder
+  col_order <- c("Group1", "Group2", "Psihat", "CI", "CI_low", "CI_high", "p.value", "p.crit")
+  out <- out[col_order[col_order %in% names(out)]]
+  out
+
   out
 }
 
@@ -138,6 +150,7 @@ model_parameters.onesampb <- function(model, verbose = TRUE, ...) {
 .extract_wrs2_onesampb <- function(model) {
   data.frame(
     "Estimate" = model$estimate,
+    "CI" = .95,
     "CI_low" =  model$ci[1],
     "CI_high" =  model$ci[2],
     "p" = model$p.value,

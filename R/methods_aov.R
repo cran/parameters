@@ -54,22 +54,24 @@
 #'   model <- aov(Sepal.Length ~ Sepal.Big + Error(Species), data = df)
 #'   model_parameters(model)
 #'
-#'   if (require("lme4")) {
-#'     mm <- lmer(Sepal.Length ~ Sepal.Big + Petal.Width + (1 | Species),
-#'       data = df
-#'     )
-#'     model <- anova(mm)
+#'   \dontrun{
+#'     if (require("lme4")) {
+#'       mm <- lmer(Sepal.Length ~ Sepal.Big + Petal.Width + (1 | Species),
+#'         data = df
+#'       )
+#'       model <- anova(mm)
 #'
-#'     # simple parameters table
-#'     model_parameters(model)
+#'       # simple parameters table
+#'       model_parameters(model)
 #'
-#'     # parameters table including effect sizes
-#'     model_parameters(
-#'       model,
-#'       eta_squared = "partial",
-#'       ci = .9,
-#'       df_error = dof_satterthwaite(mm)
-#'     )
+#'       # parameters table including effect sizes
+#'       model_parameters(
+#'         model,
+#'         eta_squared = "partial",
+#'         ci = .9,
+#'         df_error = dof_satterthwaite(mm)[2:3]
+#'       )
+#'     }
 #'   }
 #' }
 #' @export
@@ -92,11 +94,16 @@ model_parameters.aov <- function(model,
     }
   }
 
+  # exceptions
+  if (.is_levenetest(model)) {
+    return(model_parameters.htest(model, ...))
+  }
+
   # extract standard parameters
   parameters <- .extract_parameters_anova(model, test)
 
   # add effect sizes, if available
-  parameters <- .effectsizes_for_aov(model, parameters, omega_squared, eta_squared, epsilon_squared, ci, verbose = verbose)
+  parameters <- .effectsizes_for_aov(model, parameters, omega_squared, eta_squared, epsilon_squared, df_error, ci, verbose = verbose)
 
   # add power, if possible
   if (isTRUE(power)) {
@@ -226,6 +233,7 @@ model_parameters.afex_aov <- function(model,
     omega_squared = omega_squared,
     eta_squared = eta_squared,
     epsilon_squared = epsilon_squared,
+    df_error = df_error,
     verbose = verbose,
     ...
   )
@@ -245,7 +253,7 @@ model_parameters.afex_aov <- function(model,
 # helper ------------------------------
 
 
-.effectsizes_for_aov <- function(model, parameters, omega_squared, eta_squared, epsilon_squared, ci = NULL, verbose = TRUE) {
+.effectsizes_for_aov <- function(model, parameters, omega_squared, eta_squared, epsilon_squared, df_error = NULL, ci = NULL, verbose = TRUE) {
   # user actually does not want to compute effect sizes
   if (is.null(omega_squared) && is.null(eta_squared) && is.null(epsilon_squared)) {
     return(parameters)
@@ -255,13 +263,14 @@ model_parameters.afex_aov <- function(model,
     stop("Package 'effectsize' required for this function to work. Please install it.")
   }
 
-  # Sanity checks
-  if (!is.null(omega_squared) | !is.null(eta_squared) | !is.null(epsilon_squared)) {
-    if (!"Residuals" %in% parameters$Parameter & !inherits(model, "afex_aov")) {
-      warning("No residuals data found. Effect size cannot be computed.", call. = FALSE)
-      return(parameters)
+  # set error-df, when provided.
+  if (!is.null(df_error) && is.data.frame(model) && !any(c("DenDF", "den Df", "denDF", "df_error") %in% colnames(model))) {
+    if (length(df_error) > nrow(model)) {
+      stop("Number of degrees of freedom in argument 'df_error' is larger than number of parameters.")
     }
+    model$df_error <- df_error
   }
+
 
   # set defaults
   if (isTRUE(omega_squared)) {
@@ -341,6 +350,9 @@ model_parameters.afex_aov <- function(model,
 # data frame, automatically detecting the effect size name
 .add_effectsize_to_parameters <- function(fx, params) {
   fx_params <- fx$Parameter
+  if (is.null(fx_params)) {
+    fx_params <- params$Parameter
+  }
   fx$Parameter <- NULL
   fx$Response <- NULL
   fx$Group <- NULL
@@ -356,4 +368,9 @@ model_parameters.afex_aov <- function(model,
   }
 
   params
+}
+
+
+.is_levenetest <- function(x) {
+  inherits(x, "anova") && !is.null(attributes(x)$heading) && all(isTRUE(grepl("Levene's Test", attributes(x)$heading, fixed = TRUE)))
 }

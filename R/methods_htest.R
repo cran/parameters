@@ -91,6 +91,7 @@ model_parameters.htest <- function(model,
 
 #' @export
 standard_error.htest <- function(model, ...) {
+  NULL
 }
 
 
@@ -147,28 +148,31 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
 
   if (m_info$is_correlation) {
     out <- .extract_htest_correlation(model)
+  } else if (.is_levenetest(model)) {
+    out <- .extract_htest_levenetest(model)
   } else if (m_info$is_ttest) {
     out <- .extract_htest_ttest(model)
     out <- .add_effectsize_ttest(model,
-                            out,
-                            standardized_d,
-                            hedges_g,
-                            ci = ci,
-                            verbose = verbose,
-                            ...)
+      out,
+      standardized_d,
+      hedges_g,
+      ci = ci,
+      verbose = verbose,
+      ...
+    )
   } else if (m_info$is_ranktest) {
     out <- .extract_htest_ranktest(model)
   } else if (m_info$is_onewaytest) {
     out <- .extract_htest_oneway(model)
     out <- .add_effectsize_oneway(
-        model,
-        out,
-        omega_squared,
-        eta_squared,
-        epsilon_squared,
-        ci = ci,
-        verbose = verbose
-      )
+      model,
+      out,
+      omega_squared,
+      eta_squared,
+      epsilon_squared,
+      ci = ci,
+      verbose = verbose
+    )
   } else if (m_info$is_chi2test) {
     out <- .extract_htest_chi2(model)
     if (grepl("^McNemar", model$method)) {
@@ -224,7 +228,16 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
     out$df_error <- model$parameter
     out$p <- model$p.value
   }
+
   out$Method <- model$method
+
+  # reorder
+  col_order <- c(
+    "Parameter1", "Parameter2", "Parameter", "r", "rho", "tau", "CI_low", "CI_high",
+    "t", "z", "S", "df_error", "p", "Method", "method"
+  )
+
+  out <- out[col_order[col_order %in% names(out)]]
   out
 }
 
@@ -260,6 +273,23 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
   }
   out$Method <- model$method
   out
+}
+
+
+
+
+# extract htest leveneTest ----------------------
+
+
+.extract_htest_levenetest <- function(model) {
+  data.frame(
+    "df" = model$Df[1],
+    "df_error" = model$Df[2],
+    `F` = model$`F value`[1],
+    p = model$`Pr(>F)`[1],
+    Method = "Levene's Test for Homogeneity of Variance",
+    stringsAsFactors = FALSE
+  )
 }
 
 
@@ -637,6 +667,7 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
 # ==== add attributes ====
 
 
+#' @importFrom utils modifyList
 .add_htest_parameters_attributes <- function(params, model, ci = 0.95, ...) {
   attr(params, "title") <- unique(params$Method)
   attr(params, "model_class") <- class(model)
@@ -662,6 +693,21 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
 
   attr(params, "ci") <- ci
   attr(params, "ci_test") <- attributes(model$conf.int)$conf.level
+
+  # add CI, and reorder
+  if (!"CI" %in% colnames(params) && length(ci) == 1) {
+    ci_pos <- grep("CI_low", colnames(params), fixed = TRUE)
+    if (length(ci_pos)) {
+      if (length(ci_pos) > 1) {
+        ci_pos <- ci_pos[1]
+      }
+      params$CI <- ci
+      a <- attributes(params)
+      params <- params[c(1:(ci_pos - 1), ncol(params), ci_pos:(ncol(params) - 1))]
+      attributes(params) <- utils::modifyList(a, attributes(params))
+    }
+  }
+
   params
 }
 

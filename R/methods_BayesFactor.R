@@ -12,9 +12,17 @@
 #' @details
 #' The meaning of the extracted parameters:
 #' \itemize{
-#'   \item For \code{\link[BayesFactor]{ttestBF}}: \code{Difference} is the raw difference between the means.
-#'   \item For \code{\link[BayesFactor]{correlationBF}}: \code{rho} is the linear correlation estimate (equivalent to Pearson's \emph{r}).
-#'   \item For \code{\link[BayesFactor]{lmBF}} / \code{\link[BayesFactor]{generalTestBF}} / \code{\link[BayesFactor]{regressionBF}} / \code{\link[BayesFactor]{anovaBF}}: in addition to parameters of the fixed and random effects, there are: \code{mu} is the (mean-centered) intercept; \code{sig2} is the model's sigma; \code{g} / \code{g_*} are the \emph{g} parameters; See the \emph{Bayes Factors for ANOVAs} paper (\doi{10.1016/j.jmp.2012.08.001}).
+#'   \item For \code{\link[BayesFactor]{ttestBF}}: \code{Difference} is the raw
+#'   difference between the means. \item For
+#'   \code{\link[BayesFactor]{correlationBF}}: \code{rho} is the linear
+#'   correlation estimate (equivalent to Pearson's \emph{r}). \item For
+#'   \code{\link[BayesFactor]{lmBF}} / \code{\link[BayesFactor]{generalTestBF}}
+#'   / \code{\link[BayesFactor]{regressionBF}} /
+#'   \code{\link[BayesFactor]{anovaBF}}: in addition to parameters of the fixed
+#'   and random effects, there are: \code{mu} is the (mean-centered) intercept;
+#'   \code{sig2} is the model's sigma; \code{g} / \code{g_*} are the \emph{g}
+#'   parameters; See the \emph{Bayes Factors for ANOVAs} paper
+#'   (\doi{10.1016/j.jmp.2012.08.001}).
 #' }
 #'
 #' @examples
@@ -111,10 +119,10 @@ model_parameters.BFBayesFactor <- function(model,
 
 
 
-  # Remove unnecessary columns
-  if ("CI" %in% names(out) && length(stats::na.omit(unique(out$CI))) == 1) {
-    out$CI <- NULL
-  }
+  # # Remove unnecessary columns
+  # if ("CI" %in% names(out) && length(stats::na.omit(unique(out$CI))) == 1) {
+  #   out$CI <- NULL
+  # }
   if ("ROPE_CI" %in% names(out) && length(stats::na.omit(unique(out$ROPE_CI))) == 1) {
     out$ROPE_CI <- NULL
   }
@@ -125,8 +133,8 @@ model_parameters.BFBayesFactor <- function(model,
 
   # ==== remove Component column if not needed
 
-  if (.n_unique(out$Component) == 1) out$Component <- NULL
-  if (.n_unique(out$Effects) == 1) out$Effects <- NULL
+  if (!is.null(out$Component) && .n_unique(out$Component) == 1) out$Component <- NULL
+  if (!is.null(out$Effects) && .n_unique(out$Effects) == 1) out$Effects <- NULL
 
 
   # ==== pretty parameter names
@@ -148,9 +156,13 @@ model_parameters.BFBayesFactor <- function(model,
   }
 
   attr(out, "title") <- unique(out$Method)
-  attr(out, "ci") <- ci
   attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   attr(out, "pretty_names") <- pretty_names
+  out <- .add_model_parameters_attributes(params = out,
+                                          model = model,
+                                          ci = ci,
+                                          ci_method = ci_method,
+                                          verbose = verbose)
   class(out) <- c("parameters_model", "see_parameters_model", class(out))
 
   out
@@ -226,7 +238,7 @@ p_value.BFBayesFactor <- function(model, ...) {
   } else if (any(class(x@denominator) %in% c("BFlinearModel"))) {
     "Bayes factors for linear models"
   } else if (any(class(x@denominator) %in% c("BFcontingencyTable"))) {
-    "Bayesian contingency tabs analysis"
+    "Bayesian contingency table analysis"
   } else if (any(class(x@denominator) %in% c("BFproportion"))) {
     "Bayesian proportion test"
   } else {

@@ -31,18 +31,31 @@
   }
 
   if (is.null(attr(params, "pretty_names", exact = TRUE))) {
-    attr(params, "pretty_names") <- format_parameters(model)
+    attr(params, "pretty_names") <- suppressWarnings(format_parameters(model))
   }
   attr(params, "ci") <- ci
   attr(params, "bayes_ci_method") <- ci_method
   attr(params, "verbose") <- verbose
   attr(params, "exponentiate") <- exponentiate
   attr(params, "ordinal_model") <- isTRUE(info$is_ordinal) | isTRUE(info$is_multinomial)
+  attr(params, "linear_model") <- isTRUE(info$is_linear)
+  attr(params, "n_obs") <- info$n_obs
   attr(params, "model_class") <- class(model)
   attr(params, "bootstrap") <- bootstrap
   attr(params, "iterations") <- iterations
   attr(params, "df_method") <- df_method
   attr(params, "p_adjust") <- p_adjust
+
+  weighted_nobs <- tryCatch(
+    {
+      w <- insight::get_weights(model, na_rm = TRUE, null_as_ones = TRUE)
+      round(sum(w))
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+  attr(params, "weighted_nobs") <- weighted_nobs
 
   model_formula <- tryCatch(
     {
@@ -108,6 +121,20 @@
     attr(params, "s_value") <- eval(dot.arguments[["s_value"]])
   }
 
+  # add CI, and reorder
+  if (!"CI" %in% colnames(params) && length(ci) == 1) {
+    params$CI <- ci
+    ci_pos <- grep("CI_low", colnames(params))
+    if (length(ci_pos)) {
+      if (length(ci_pos) > 1) {
+        ci_pos <- ci_pos[1]
+      }
+      a <- attributes(params)
+      params <- params[c(1:(ci_pos - 1), ncol(params), ci_pos:(ncol(params) - 1))]
+      attributes(params) <- utils::modifyList(a, attributes(params))
+    }
+  }
+
   params
 }
 
@@ -140,8 +167,12 @@
 
 
 
+#' @importFrom insight model_info
 #' @keywords internal
-.exponentiate_parameters <- function(params) {
+.exponentiate_parameters <- function(params, model = NULL, exponentiate = TRUE) {
+  if (!is.null(model) && insight::model_info(model)$is_linear && identical(exponentiate, "nongaussian")) {
+    return(params)
+  }
   columns <- grepl(pattern = "^(Coefficient|Mean|Median|MAP|Std_Coefficient|CI_|Std_CI)", colnames(params))
   if (any(columns)) {
     params[columns] <- exp(params[columns])

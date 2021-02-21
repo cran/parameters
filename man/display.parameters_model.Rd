@@ -131,11 +131,13 @@ be printed. If \code{NULL} (default), all columns are printed. The shortcut
 \code{select = "minimal"} prints coefficient, confidence intervals and p-values,
 while \code{select = "short"} prints coefficient, standard errors and p-values.}
 
-\item{caption}{Table caption and subtitle, as string. If \code{NULL},
-no caption or subtitle is printed.}
+\item{caption}{Table title (same as caption) and subtitle, as strings. If \code{NULL},
+no title or subtitle is printed, unless it is stored as attributes (\code{table_title},
+or its alias \code{table_caption}, and \code{table_subtitle}).}
 
-\item{subtitle}{Table caption and subtitle, as string. If \code{NULL},
-no caption or subtitle is printed.}
+\item{subtitle}{Table title (same as caption) and subtitle, as strings. If \code{NULL},
+no title or subtitle is printed, unless it is stored as attributes (\code{table_title},
+or its alias \code{table_caption}, and \code{table_subtitle}).}
 
 \item{footer}{Table footer, as string. For markdown-formatted tables, table
 footers, due to the limitation in markdown rendering, are actually just a
@@ -156,7 +158,11 @@ new text line under the table.}
 
 \item{sort}{Sort the loadings.}
 
-\item{threshold}{A value between 0 and 1 indicates which (absolute) values from the loadings should be removed. An integer higher than 1 indicates the n strongest loadings to retain. Can also be \code{"max"}, in which case it will only display the maximum loading per variable (the most simple structure).}
+\item{threshold}{A value between 0 and 1 indicates which (absolute) values
+from the loadings should be removed. An integer higher than 1 indicates the
+n strongest loadings to retain. Can also be \code{"max"}, in which case it
+will only display the maximum loading per variable (the most simple
+structure).}
 
 \item{labels}{A character vector containing labels to be added to the loadings data. Usually, the question related to the item.}
 
@@ -172,8 +178,9 @@ standard deviation.}
 \item{verbose}{Toggle warnings and messages.}
 }
 \value{
-A character vector. If \code{format = "markdown"}, the return value
-  will be a character vector in markdown-table format.
+If \code{format = "markdown"}, the return value will be a character
+  vector in markdown-table format. If \code{format = "html"}, an object of
+  class \code{gt_tbl}.
 }
 \description{
 Prints tables (i.e. data frame) in different output formats.

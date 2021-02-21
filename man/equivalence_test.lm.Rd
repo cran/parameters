@@ -9,7 +9,7 @@
   x,
   range = "default",
   ci = 0.95,
-  rule = "bayes",
+  rule = "classic",
   p_values = FALSE,
   verbose = TRUE,
   ...
@@ -19,7 +19,7 @@
   x,
   range = "default",
   ci = 0.95,
-  rule = "bayes",
+  rule = "classic",
   effects = c("fixed", "random"),
   p_values = FALSE,
   verbose = TRUE,
@@ -32,7 +32,7 @@
 \item{range}{The range of practical equivalence of an effect. May be \code{"default"},
 to automatically define this range based on properties of the model's data.}
 
-\item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
+\item{ci}{Confidence Interval (CI+) level. Default to 0.95 (95\%).}
 
 \item{rule}{Character, indicating the rules when testing for practical equivalence. Can be \code{"bayes"}, \code{"classic"} or \code{"cet"}. See 'Details'.}
 
@@ -42,7 +42,7 @@ to automatically define this range based on properties of the model's data.}
 
 \item{...}{Arguments passed to or from other methods.}
 
-\item{effects}{Should parameters for fixed effects, random effects or both be returned? Only applies to mixed models. May be abbreviated.}
+\item{effects}{Should parameters for fixed effects (\code{"fixed"}), random effects (\code{"random"}) or both (\code{"all"}) be returned? Only applies to mixed models. May be abbreviated.}
 }
 \value{
 A data frame.

@@ -35,7 +35,9 @@ model_parameters.bamlss <- function(model,
   )
 
   params <- .add_pretty_names(params, model)
-  if (exponentiate) params <- .exponentiate_parameters(params)
+  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
+    params <- .exponentiate_parameters(params, model, exponentiate)
+  }
   params <- .add_model_parameters_attributes(params, model, ci, exponentiate, ci_method = ci_method, verbose = verbose, ...)
 
   attr(params, "parameter_info") <- insight::clean_parameters(model)
@@ -49,7 +51,7 @@ model_parameters.bamlss <- function(model,
 #' @export
 standard_error.bamlss <- function(model,
                                   component = c("all", "conditional", "location", "distributional", "auxilliary"),
-                                   ...) {
+                                  ...) {
   component <- match.arg(component)
   params <- insight::get_parameters(model, component = component, ...)
 

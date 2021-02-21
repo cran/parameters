@@ -1,4 +1,56 @@
-# parameters 0.10.2
+# parameters 0.12.0
+
+## General
+
+* Roll-back R dependency to R >= 3.4.
+
+* Bootstrapped estimates (from `bootstrap_model()` or `bootstrap_parameters()`) 
+  can be passed to `emmeans` to obtain bootstrapped estimates, contrasts, 
+  simple slopes (etc) and their CIs.
+
+  * These can then be passed to `model_parameters()` and related functions to 
+    obtain standard errors, p-values, etc.
+
+## Breaking changes
+
+* `model_parameters()` now always returns the confidence level for as additional
+  `CI` column.
+
+* The `rule` argument in `equivalenct_test()` defaults to `"classic"`.
+
+## New supported model classes
+
+* `crr` (*cmprsk*), `leveneTest()` (*car*), `varest` (*vars*), `ergm` (*ergm*),
+  `btergm` (*btergm*), `Rchoice` (*Rchoice*), `garch` (*tseries*)
+
+## New functions
+
+* `compare_parameters()` (and its alias `compare_models()`) to show / print
+  parameters of multiple models in one table.
+
+## Changes to functions
+
+* Estimation of bootstrapped *p*-values has been re-written to be more accurate.
+
+* `model_parameters()` for mixed models gains an `effects`-argument, to
+  return fixed, random or both fixed and random effects parameters.
+
+* Revised printing for `model_parameters()` for *metafor* models.
+
+* `model_parameters()` for *metafor* models now recognized confidence levels
+  specified in the function call (via argument `level`).
+
+* Improved support for effect sizes in `model_parameters()` from *anova* objects.
+
+## Bug fixes
+
+* Fixed edge case when formatting parameters from polynomial terms with many 
+  degrees.
+  
+* Fixed issue with random sampling and dropped factor levels in 
+  `bootstrap_model()`.
+
+# parameters 0.11.0
 
 ## New supported model classes
 
