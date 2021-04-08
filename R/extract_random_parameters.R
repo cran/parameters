@@ -41,11 +41,9 @@
   out$df_error <- NA
   out$p <- NA
 
-  # out <- out[c("Parameter", "Coefficient", "SE", ci_cols, stat_column, "df_error", "p", "Effects")]
   out <- out[c("Parameter", "Level", "Coefficient", "SE", ci_cols, stat_column, "df_error", "p", "Effects", "Group")]
 
   if (effects == "random") {
-    # out[c(stat_column, "df_error", "p", "Effects")] <- NULL
     out[c(stat_column, "df_error", "p")] <- NULL
   }
   out
@@ -62,10 +60,11 @@
 
   # filter component
   out <- switch(component,
-                "zi" = ,
-                "zero_inflated" = out[out$Component == "zi", ],
-                "conditional" = out[out$Component == "cond", ],
-                out)
+    "zi" = ,
+    "zero_inflated" = out[out$Component == "zi", ],
+    "conditional" = out[out$Component == "cond", ],
+    out
+  )
 
   # coerce to character
   out$Parameter <- as.character(out$Parameter)
@@ -101,12 +100,15 @@
   out$df_error <- NA
   out$p <- NA
 
-  # out <- out[c("Parameter", "Coefficient", "SE", ci_cols, stat_column, "df_error", "p", "Component", "Effects")]
   out <- out[c("Parameter", "Level", "Coefficient", "SE", ci_cols, stat_column, "df_error", "p", "Component", "Effects", "Group")]
 
   if (effects == "random") {
-    # out[c(stat_column, "df_error", "p", "Effects")] <- NULL
     out[c(stat_column, "df_error", "p")] <- NULL
   }
   out
+}
+
+
+.extract_random_parameters.MixMod <- function(model, ...) {
+  NULL
 }

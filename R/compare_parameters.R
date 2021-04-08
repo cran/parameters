@@ -11,6 +11,9 @@
 #'   documentation for related model class in \code{\link{model_parameters}}.
 #' @param column_names Character vector with strings that should be used as
 #'   column headers. Must be of same length as number of models in \code{...}.
+#' @param df_method Method for computing degrees of freedom for p values,
+#'   standard errors and confidence intervals (CI). See documentation for
+#'   related model class in \code{\link{model_parameters}}.
 #' @param style String, indicating which style of output is requested. Following
 #'   templates are possible:
 #'   \itemize{
@@ -51,7 +54,17 @@
 #' }
 #' @importFrom insight is_model_supported
 #' @export
-compare_parameters <- function(..., ci = .95, effects = "fixed", component = "conditional", standardize = NULL, exponentiate = FALSE, df_method = "wald", p_adjust = NULL, style = NULL, column_names = NULL, verbose = TRUE) {
+compare_parameters <- function(...,
+                               ci = .95,
+                               effects = "fixed",
+                               component = "conditional",
+                               standardize = NULL,
+                               exponentiate = FALSE,
+                               df_method = "wald",
+                               p_adjust = NULL,
+                               style = NULL,
+                               column_names = NULL,
+                               verbose = TRUE) {
   models <- list(...)
   model_names <- match.call(expand.dots = FALSE)$`...`
 
@@ -87,7 +100,17 @@ compare_parameters <- function(..., ci = .95, effects = "fixed", component = "co
     if (inherits(model, "parameters_model")) {
       dat <- model
     } else {
-      dat <- model_parameters(model, ci = ci, effects = effects, component = component, standardize = standardize, exponentiate = exponentiate, df_method = df_method, p_adjust = p_adjust, verbose = verbose)
+      dat <- model_parameters(
+        model,
+        ci = ci,
+        effects = effects,
+        component = component,
+        standardize = standardize,
+        exponentiate = exponentiate,
+        df_method = df_method,
+        p_adjust = p_adjust,
+        verbose = verbose
+      )
     }
     # set specific names for coefficient column
     coef_name <- attributes(dat)$coefficient_name
@@ -170,6 +193,9 @@ compare_models <- compare_parameters
       }
     }
   }
-  x$Parameter <- gsub("]", ")", gsub("[", "(", x$Parameter, fixed = TRUE), fixed = TRUE)
+
+  if (!is.null(x$Parameter)) {
+    x$Parameter <- gsub("]", ")", gsub("[", "(", x$Parameter, fixed = TRUE), fixed = TRUE)
+  }
   x
 }

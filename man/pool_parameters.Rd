@@ -7,8 +7,8 @@
 pool_parameters(
   x,
   exponentiate = FALSE,
+  effects = "fixed",
   component = "conditional",
-  details = FALSE,
   verbose = TRUE,
   ...
 )
@@ -27,13 +27,15 @@ mimic behaviour of other software packages, such as Stata. For
 \code{compare_parameters()}, \code{exponentiate = "nongaussian"} will only
 exponentiate coefficients for all models except those from Gaussian family.}
 
+\item{effects}{Should parameters for fixed effects (\code{"fixed"}), random
+effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
+to mixed models. May be abbreviated.}
+
 \item{component}{Model component for which parameters should be shown. May be
 one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}),
 \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}),
 \code{"marginal"} (\pkg{mfx}), \code{"conditional"} or \code{"full"} (for
 \code{MuMIn::model.avg()}) or \code{"all"}.}
-
-\item{details}{Logical, if \code{TRUE}, a summary of the random effects is included. See \code{\link{random_parameters}} for details.}
 
 \item{verbose}{Toggle warnings and messages.}
 

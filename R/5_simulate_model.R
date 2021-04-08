@@ -6,7 +6,8 @@
 #' @param component Should all parameters, parameters for the conditional model,
 #'   or for the zero-inflated part of the model be returned? Applies to models
 #'   with zero-inflated component. \code{component} may be one of \code{"conditional"},
-#'   \code{"zi"}, \code{"zero-inflated"} or \code{"all"} (default). May be abbreviated.
+#'   \code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or \code{"all"}
+#'   (default). May be abbreviated.
 #' @inheritParams bootstrap_model
 #' @inheritParams p_value
 #'
@@ -36,7 +37,7 @@
 #' model <- lm(Sepal.Length ~ Species * Petal.Width + Petal.Length, data = iris)
 #' head(simulate_model(model))
 #' \donttest{
-#' if (require("glmmTMB")) {
+#' if (require("glmmTMB", quietly = TRUE)) {
 #'   model <- glmmTMB(
 #'     count ~ spp + mined + (1 | site),
 #'     ziformula = ~mined,
@@ -212,6 +213,8 @@ simulate_model.brmultinom <- simulate_model.default
 
 #' @export
 simulate_model.bracl <- simulate_model.default
+
+
 
 
 

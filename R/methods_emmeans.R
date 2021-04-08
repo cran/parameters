@@ -10,25 +10,44 @@ model_parameters.emmGrid <- function(model,
                                      p_adjust = NULL,
                                      verbose = TRUE,
                                      ...) {
-  if (is.null(p_adjust)) {
-    p_adjust <- "none"
+
+  # set default for p-adjust
+  emm_padjust <- tryCatch(
+    {
+      adj <- model@misc$adjust
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+  if (!is.null(emm_padjust) && is.null(p_adjust)) {
+    p_adjust <- emm_padjust
   }
 
-  s <- summary(model, level = ci, adjust = p_adjust)
+
+  s <- summary(model, level = ci, adjust = "none")
   params <- as.data.frame(s)
 
   # get statistic, se and p
-  statistic <- insight::get_statistic(model, ci = ci, adjust = p_adjust)
+  statistic <- insight::get_statistic(model, ci = ci, adjust = "none")
   SE <- standard_error(model)
-  p <- p_value(model, ci = ci, adjust = p_adjust)
+  p <- p_value(model, ci = ci, adjust = "none")
 
   params$Statistic <- statistic$Statistic
   params$SE <- SE$SE
   params$p <- p$p
 
+  # ==== adjust p-values?
+
+  if (!is.null(p_adjust)) {
+    params <- .p_adjust(params, p_adjust, model, verbose)
+  }
+
+
   # Renaming
-  if (!is.null(statistic))
+  if (!is.null(statistic)) {
     names(params) <- gsub("Statistic", gsub("-statistic", "", attr(statistic, "statistic", exact = TRUE), fixed = TRUE), names(params))
+  }
   names(params) <- gsub("Std. Error", "SE", names(params))
   names(params) <- gsub(model@misc$estName, "Estimate", names(params))
   names(params) <- gsub("lower.CL", "CI_low", names(params))
@@ -51,10 +70,15 @@ model_parameters.emmGrid <- function(model,
     params$CI_high <- params$Estimate + fac * params$SE
   }
 
+  # rename if necessary
+  if ("df" %in% colnames(params)) {
+    colnames(params)[colnames(params) == "df"] <- "df_error"
+  }
+
   # Reorder
   estimate_pos <- which(colnames(s) == model@misc$estName)
   parameter_names <- colnames(params)[1:(estimate_pos - 1)]
-  order <- c(parameter_names, "Estimate", "SE", "CI_low", "CI_high", "t", "z", "df", "df_error", "p")
+  order <- c(parameter_names, "Estimate", "SE", "CI_low", "CI_high", "F", "t", "z", "df", "df_error", "p")
   params <- params[order[order %in% names(params)]]
 
   # rename
@@ -82,13 +106,21 @@ model_parameters.emm_list <- function(model,
                                       ...) {
   s <- summary(model)
   params <- lapply(seq_along(s), function(i) {
-    pars <- model_parameters(model[[i]])
+    pars <- model_parameters(
+      model[[i]],
+      ci = ci,
+      exponentiate = exponentiate,
+      p_adjust = p_adjust,
+      verbose = verbose
+    )
     estimate_pos <- which(colnames(pars) == "Coefficient")
     pars[1:(estimate_pos - 1)] <- NULL
-    cbind(Parameter = .pretty_emmeans_Parameter_names(model[[i]]),
-          pars)
+    cbind(
+      Parameter = .pretty_emmeans_Parameter_names(model[[i]]),
+      pars
+    )
   })
-  params <- do.call(rbind,params)
+  params <- do.call(rbind, params)
   params$Component <- .pretty_emmeans_Component_names(s)
 
   if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
@@ -110,8 +142,9 @@ model_parameters.emm_list <- function(model,
 
 #' @export
 standard_error.emmGrid <- function(model, ...) {
-  if (!is.null(model@misc$is_boot) && model@misc$is_boot)
+  if (!is.null(model@misc$is_boot) && model@misc$is_boot) {
     return(boot_em_standard_error(model))
+  }
 
   s <- summary(model)
   estimate_pos <- which(colnames(s) == model@misc$estName)
@@ -130,8 +163,9 @@ standard_error.emmGrid <- function(model, ...) {
 
 #' @export
 standard_error.emm_list <- function(model, ...) {
-  if (!is.null(model[[1]]@misc$is_boot) && model[[1]]@misc$is_boot)
+  if (!is.null(model[[1]]@misc$is_boot) && model[[1]]@misc$is_boot) {
     return(boot_em_standard_error(model))
+  }
 
   params <- insight::get_parameters(model)
   s <- summary(model)
@@ -176,8 +210,9 @@ boot_em_standard_error <- function(model) {
 
 #' @export
 degrees_of_freedom.emmGrid <- function(model, ...) {
-  if (!is.null(model@misc$is_boot) && model@misc$is_boot)
+  if (!is.null(model@misc$is_boot) && model@misc$is_boot) {
     return(boot_em_df(model))
+  }
 
   summary(model)$df
 }
@@ -185,8 +220,9 @@ degrees_of_freedom.emmGrid <- function(model, ...) {
 
 #' @export
 degrees_of_freedom.emm_list <- function(model, ...) {
-  if (!is.null(model[[1]]@misc$is_boot) && model[[1]]@misc$is_boot)
+  if (!is.null(model[[1]]@misc$is_boot) && model[[1]]@misc$is_boot) {
     return(boot_em_df(model))
+  }
 
   s <- summary(model)
   unname(unlist(lapply(s, function(i) {
@@ -210,8 +246,9 @@ boot_em_df <- function(model) {
 #' @rdname p_value
 #' @export
 p_value.emmGrid <- function(model, ci = .95, adjust = "none", ...) {
-  if (!is.null(model@misc$is_boot) && model@misc$is_boot)
+  if (!is.null(model@misc$is_boot) && model@misc$is_boot) {
     return(boot_em_pval(model, adjust))
+  }
 
 
   s <- summary(model, level = ci, adjust = adjust)
@@ -233,8 +270,9 @@ p_value.emmGrid <- function(model, ci = .95, adjust = "none", ...) {
 
 #' @export
 p_value.emm_list <- function(model, adjust = "none", ...) {
-  if (!is.null(model[[1]]@misc$is_boot) && model[[1]]@misc$is_boot)
+  if (!is.null(model[[1]]@misc$is_boot) && model[[1]]@misc$is_boot) {
     return(boot_em_pval(model, adjust))
+  }
 
 
   params <- insight::get_parameters(model)

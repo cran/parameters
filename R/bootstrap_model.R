@@ -9,6 +9,12 @@
 #'
 #' @return A data frame of bootstrapped estimates.
 #'
+#' @details By default, \code{boot::boot()} is used to generate bootstraps from
+#' the model data, which are then used to \code{update()} the model, i.e. refit
+#' the model with the bootstrapped samples. For \code{merMod} objects (\pkg{lme4})
+#' the \code{lme4::bootMer()} function is used to obtain bootstrapped samples.
+#' \code{bootstrap_parameters()} summarizes the bootstrapped model estimates.
+#'
 #' @section Using with \code{emmeans}:
 #' The output can be passed directly to the various functions from the
 #' \code{emmeans} package, to obtain bootstrapped estimates, contrasts, simple
@@ -26,7 +32,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' if (require("boot")) {
+#' if (require("boot", quietly = TRUE)) {
 #'   model <- lm(mpg ~ wt + factor(cyl), data = mtcars)
 #'   b <- bootstrap_model(model)
 #'   print(head(b))
@@ -38,7 +44,10 @@
 #' }
 #' }
 #' @export
-bootstrap_model <- function(model, iterations = 1000, verbose = FALSE, ...) {
+bootstrap_model <- function(model,
+                            iterations = 1000,
+                            verbose = FALSE,
+                            ...) {
   UseMethod("bootstrap_model")
 }
 
@@ -50,7 +59,10 @@ bootstrap_model <- function(model, iterations = 1000, verbose = FALSE, ...) {
 #' @importFrom stats coef update setNames complete.cases
 #' @importFrom insight get_data find_parameters get_parameters
 #' @export
-bootstrap_model.default <- function(model, iterations = 1000, verbose = FALSE, ...) {
+bootstrap_model.default <- function(model,
+                                    iterations = 1000,
+                                    verbose = FALSE,
+                                    ...) {
   if (!requireNamespace("boot", quietly = TRUE)) {
     stop("Package 'boot' needed for this function to work. Please install it.")
   }
@@ -82,7 +94,12 @@ bootstrap_model.default <- function(model, iterations = 1000, verbose = FALSE, .
     return(params)
   }
 
-  results <- boot::boot(data = data, statistic = boot_function, R = iterations, model = model)
+  results <- boot::boot(
+    data = data,
+    statistic = boot_function,
+    R = iterations,
+    model = model
+  )
 
   out <- as.data.frame(results$t)
   out <- out[stats::complete.cases(out), ]
@@ -115,9 +132,18 @@ bootstrap_model.merMod <- function(model, iterations = 1000, verbose = FALSE, ..
   }
 
   if (verbose) {
-    results <- suppressMessages(lme4::bootMer(model, boot_function, nsim = iterations, verbose = FALSE))
+    results <- lme4::bootMer(
+      model,
+      boot_function,
+      nsim = iterations
+    )
   } else {
-    results <- lme4::bootMer(model, boot_function, nsim = iterations)
+    results <- suppressMessages(lme4::bootMer(
+      model,
+      boot_function,
+      nsim = iterations,
+      verbose = FALSE
+    ))
   }
 
   out <- as.data.frame(results$t)

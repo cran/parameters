@@ -3,12 +3,26 @@
 #' @inheritParams print.parameters_model
 #' @rdname display.parameters_model
 #' @export
-format.parameters_model <- function(x, pretty_names = TRUE, split_components = TRUE, select = NULL, digits = 2, ci_digits = 2, p_digits = 3, ci_width = NULL, ci_brackets = NULL, format = NULL, ...) {
+format.parameters_model <- function(x,
+                                    pretty_names = TRUE,
+                                    split_components = TRUE,
+                                    select = NULL,
+                                    digits = 2,
+                                    ci_digits = 2,
+                                    p_digits = 3,
+                                    ci_width = NULL,
+                                    ci_brackets = NULL,
+                                    zap_small = FALSE,
+                                    format = NULL,
+                                    ...) {
   # save attributes
-  res <- attributes(x)$details
   coef_name <- attributes(x)$coefficient_name
   s_value <- attributes(x)$s_value
   m_class <- attributes(x)$model_class
+  htest_type <- attributes(x)$htest_type
+  mixed_model <- attributes(x)$mixed_model
+  random_variances <- isTRUE(attributes(x)$ran_pars)
+  mean_group_values <- attributes(x)$mean_group_values
 
   if (identical(format, "html")) {
     coef_name <- NULL
@@ -21,11 +35,37 @@ format.parameters_model <- function(x, pretty_names = TRUE, split_components = T
     x$Method <- NULL
   }
 
+  # remove response for mvord
+  if (!is.null(m_class) && any(m_class == "mvord")) {
+    x$Response <- NULL
+  }
+
+  # rename columns for t-tests
+  if (!is.null(htest_type) && htest_type == "ttest" && !is.null(mean_group_values)) {
+    if (all(c("Mean_Group1", "Mean_Group2") %in% colnames(x))) {
+      colnames(x)[which(colnames(x) == "Mean_Group1")] <- paste0(x$Group, " = ", mean_group_values[1])
+      colnames(x)[which(colnames(x) == "Mean_Group2")] <- paste0(x$Group, " = ", mean_group_values[2])
+    }
+  }
+
   # Special print for mcp from WRS2
   if (!is.null(m_class) && any(m_class %in% c("mcp1", "mcp2"))) {
     x$Group1 <- paste(x$Group1, x$Group2, sep = " vs. ")
     x$Group2 <- NULL
     colnames(x)[1] <- "Group"
+  }
+
+  # check if we have mixed models with random variance parameters
+  # in such cases, we don't need the group-column, but we rather
+  # merge it with the parameter column
+  if (isTRUE(random_variances)) {
+    if (!is.null(x$Group) && !is.null(x$Effects)) {
+      ran_pars <- which(x$Effects == "random")
+      stddevs <- grepl("^SD \\(", x$Parameter[ran_pars])
+      x$Parameter[ran_pars[stddevs]] <- paste0(gsub("(.*)\\)", "\\1", x$Parameter[ran_pars[stddevs]]), ": ", x$Group[ran_pars[stddevs]], ")")
+      x$Parameter[x$Parameter == "SD (Observations: Residual)"] <- "SD (Residual)"
+      x$Group <- NULL
+    }
   }
 
   # prepare output, to have in shape for printing
@@ -36,20 +76,49 @@ format.parameters_model <- function(x, pretty_names = TRUE, split_components = T
 
   # print everything now...
   if (split_components && !is.null(split_by) && length(split_by)) {
-    formatted_table <- .print_model_parms_components(x, pretty_names, split_column = split_by, digits = digits, ci_digits = ci_digits, p_digits = p_digits, coef_column = coef_name, format = format, ci_width = ci_width, ci_brackets = ci_brackets, ...)
+    formatted_table <- .print_model_parms_components(x, pretty_names, split_column = split_by, digits = digits, ci_digits = ci_digits, p_digits = p_digits, coef_column = coef_name, format = format, ci_width = ci_width, ci_brackets = ci_brackets, zap_small = zap_small, ...)
   } else {
-    formatted_table <- insight::format_table(x, pretty_names = pretty_names, digits = digits, ci_width = ci_width, ci_brackets = ci_brackets, ci_digits = ci_digits, p_digits = p_digits, ...)
+    formatted_table <- .format_columns_single_component(x, pretty_names = pretty_names, digits = digits, ci_width = ci_width, ci_brackets = ci_brackets, ci_digits = ci_digits, p_digits = p_digits, format = format, coef_name = coef_name, zap_small = zap_small, ...)
   }
 
   # remove unique columns
   if (.n_unique(formatted_table$Component) == 1) formatted_table$Component <- NULL
   if (.n_unique(formatted_table$Effects) == 1) formatted_table$Effects <- NULL
+  if (.n_unique(formatted_table$Group) == 1 && isTRUE(mixed_model)) formatted_table$Group <- NULL
 
   # no column with CI-level in output
-  formatted_table$CI <- NULL
+  if (!is.null(formatted_table$CI) && .n_unique(formatted_table$CI) == 1) {
+    formatted_table$CI <- NULL
+  }
 
   formatted_table
 }
+
+
+.format_columns_single_component <- function(x, pretty_names, digits = 2, ci_digits = 2, p_digits = 3, ci_width = "auto", ci_brackets = TRUE, format = NULL, coef_name = NULL, zap_small = FALSE, ...) {
+  # default brackets are parenthesis for HTML / MD
+  if ((is.null(ci_brackets) || isTRUE(ci_brackets)) && (identical(format, "html") || identical(format, "markdown"))) {
+    brackets <- c("(", ")")
+  } else if (is.null(ci_brackets) || isTRUE(ci_brackets)) {
+    brackets <- c("[", "]")
+  } else {
+    brackets <- ci_brackets
+  }
+
+  # fix coefficient column name for random effects
+  if (!is.null(x$Effects) && all(x$Effects == "random") && any(colnames(x) %in% .all_coefficient_types())) {
+    colnames(x)[colnames(x) %in% .all_coefficient_types()] <- "Coefficient"
+  }
+
+  # random pars with level? combine into parameter column
+  if (all(c("Parameter", "Level") %in% colnames(x))) {
+    x$Parameter <- paste0(x$Parameter, " ", brackets[1], x$Level, brackets[2])
+    x$Level <- NULL
+  }
+
+  insight::format_table(x, pretty_names = pretty_names, digits = digits, ci_width = ci_width, ci_brackets = ci_brackets, ci_digits = ci_digits, p_digits = p_digits, zap_small = zap_small, ...)
+}
+
 
 #' @export
 format.parameters_simulate <- format.parameters_model
@@ -57,11 +126,18 @@ format.parameters_simulate <- format.parameters_model
 #' @export
 format.parameters_brms_meta <- format.parameters_model
 
+
 #' @importFrom insight format_p format_table
 #' @inheritParams print.parameters_model
 #' @export
-format.compare_parameters <- function(x, style = NULL, split_components = TRUE, digits = 2, ci_digits = 2, p_digits = 3, ci_width = NULL, ci_brackets = NULL, format = NULL, ...) {
+format.compare_parameters <- function(x, style = NULL, split_components = TRUE, digits = 2, ci_digits = 2, p_digits = 3, ci_width = NULL, ci_brackets = NULL, zap_small = FALSE, format = NULL, ...) {
+  m_class <- attributes(x)$model_class
   x$Method <- NULL
+
+  # remove response for mvord
+  if (!is.null(m_class) && any(m_class == "mvord")) {
+    x$Response <- NULL
+  }
 
   out <- data.frame(
     Parameter = x$Parameter,
@@ -85,7 +161,7 @@ format.compare_parameters <- function(x, style = NULL, split_components = TRUE, 
     colnames(cols) <- gsub(pattern, "", colnames(cols))
     # save p-stars in extra column
     cols$p_stars <- insight::format_p(cols$p, stars = TRUE, stars_only = TRUE)
-    cols <- insight::format_table(cols, digits = digits, ci_width = ci_width, ci_brackets = ci_brackets, ci_digits = ci_digits, p_digits = p_digits)
+    cols <- insight::format_table(cols, digits = digits, ci_width = ci_width, ci_brackets = ci_brackets, ci_digits = ci_digits, p_digits = p_digits, zap_small = zap_small)
     out <- cbind(out, .format_output_style(cols, style, format, i))
   }
 
@@ -123,6 +199,7 @@ format.compare_parameters <- function(x, style = NULL, split_components = TRUE, 
 
 
 
+
 # output-format helper  -------------------------
 
 # this function does the main composition of columns for the output
@@ -134,13 +211,13 @@ format.compare_parameters <- function(x, style = NULL, split_components = TRUE, 
   }
 
   if (style == "minimal") {
-    ci_col <- colnames(x)[grepl(" CI$", colnames(x))]
+    ci_col <- colnames(x)[grepl(" CI$", colnames(x)) | colnames(x) == "CI"]
     param_col <- colnames(x)[1]
     x[[param_col]] <- trimws(paste0(x[[param_col]], linesep, x[[ci_col]]))
     x <- x[c(param_col, "p")]
     colnames(x) <- paste0(colnames(x), " (", modelname, ")")
   } else if (style %in% c("ci_p", "ci")) {
-    ci_col <- colnames(x)[grepl(" CI$", colnames(x))]
+    ci_col <- colnames(x)[grepl(" CI$", colnames(x)) | colnames(x) == "CI"]
     param_col <- colnames(x)[1]
     x[[param_col]] <- trimws(paste0(x[[param_col]], x$p_stars, linesep, x[[ci_col]]))
     x <- x[param_col]
@@ -151,7 +228,7 @@ format.compare_parameters <- function(x, style = NULL, split_components = TRUE, 
     x <- x[param_col]
     colnames(x) <- modelname
   } else if (style %in% c("ci_p2")) {
-    ci_col <- colnames(x)[grepl(" CI$", colnames(x))]
+    ci_col <- colnames(x)[grepl(" CI$", colnames(x)) | colnames(x) == "CI"]
     param_col <- colnames(x)[1]
     x[[param_col]] <- trimws(paste0(x[[param_col]], linesep, x[[ci_col]]))
     x <- x[c(param_col, "p")]
@@ -219,15 +296,10 @@ format.compare_parameters <- function(x, style = NULL, split_components = TRUE, 
 #' @importFrom utils modifyList
 #' @importFrom insight print_parameters format_table
 #' @export
-format.parameters_stan <- function(x, split_components = TRUE, select = NULL, ci_width = NULL, ci_brackets = NULL, format = NULL, ...) {
+format.parameters_stan <- function(x, split_components = TRUE, select = NULL, ci_width = NULL, ci_brackets = NULL, zap_small = FALSE, format = NULL, ...) {
   cp <- attributes(x)$parameter_info
   att <- attributes(x)
   final_table <- list()
-
-  # round ESS
-  if (!is.null(x$ESS)) {
-    x$ESS <- round(x$ESS)
-  }
 
   if (!split_components || is.null(cp)) {
     NextMethod()
@@ -246,7 +318,7 @@ format.parameters_stan <- function(x, split_components = TRUE, select = NULL, ci
         attr(i, "table_caption") <- attributes(i)$main_title
       }
       attributes(i) <- utils::modifyList(att, attributes(i))
-      param_table <- insight::format_table(i, ci_width = ci_width, ci_brackets = ci_brackets, preserve_attributes = TRUE)
+      param_table <- insight::format_table(i, ci_width = ci_width, ci_brackets = ci_brackets, zap_small = zap_small, preserve_attributes = TRUE)
       param_table$Group <- NULL
       param_table$Response <- NULL
       param_table$Function <- NULL
@@ -267,8 +339,7 @@ format.parameters_sem <- function(x, digits = 2, ci_digits = 2, p_digits = 3, fo
   if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
   if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
   if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
-
-  .print_model_parms_components(x, pretty_names = TRUE, split_column = "Type", digits = digits, ci_digits = ci_digits, p_digits = p_digits, format = format, ci_width = ci_width, ci_brackets = ci_brackets, ...)
+  .print_model_parms_components(x, pretty_names = TRUE, split_column = "Component", digits = digits, ci_digits = ci_digits, p_digits = p_digits, format = format, ci_width = ci_width, ci_brackets = ci_brackets, ...)
 }
 
 
@@ -282,6 +353,12 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
     x$Min <- insight::format_ci(x$Min, x$Max, ci = NULL, digits = digits, width = ci_width, brackets = ci_brackets)
     x$Max <- NULL
     colnames(x)[which(colnames(x) == "Min")] <- "Range"
+  }
+
+  if (all(c("Q1", "Q3") %in% names(x))) {
+    x$Q1 <- insight::format_ci(x$Q1, x$Q3, ci = NULL, digits = digits, width = ci_width, brackets = FALSE)
+    x$Q3 <- NULL
+    colnames(x)[which(colnames(x) == "Q1")] <- "Quartiles"
   }
 
   if (all(c("CI_low", "CI_high") %in% names(x))) {
@@ -340,18 +417,39 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
 
 # footer functions ------------------
 
-.format_footer <- function(x, digits = 2, verbose = TRUE, show_sigma = FALSE, show_formula = FALSE, type = "text") {
-  # prepare footer
+.format_footer <- function(x,
+                           digits = 3,
+                           verbose = TRUE,
+                           show_sigma = FALSE,
+                           show_formula = FALSE,
+                           show_r2 = FALSE,
+                           format = "text") {
+    # prepare footer
   footer <- NULL
-  type <- tolower(type)
+  type <- tolower(format)
 
+  sigma <- attributes(x)$sigma
+  r2 <- attributes(x)$r2
+  residual_df <- attributes(x)$residual_df
   p_adjust <- attributes(x)$p_adjust
   model_formula <- attributes(x)$model_formula
   anova_test <- attributes(x)$anova_test
+  footer_text <- attributes(x)$footer_text
+  n_obs <- attributes(x)$n_obs
+
+  # footer: model formula
+  if (isTRUE(show_formula)) {
+    footer <- .add_footer_formula(footer, model_formula, n_obs, type)
+  }
 
   # footer: residual standard deviation
   if (isTRUE(show_sigma)) {
-    footer <- .add_footer_sigma(footer, digits, sigma, type)
+    footer <- .add_footer_sigma(footer, digits, sigma, residual_df, type)
+  }
+
+  # footer: r-squared
+  if (isTRUE(show_r2)) {
+    footer <- .add_footer_r2(footer, digits, r2, type)
   }
 
   # footer: p-adjustment
@@ -359,14 +457,14 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
     footer <- .add_footer_padjust(footer, p_adjust, type)
   }
 
-  # footer: model formula
-  if (isTRUE(show_formula)) {
-    footer <- .add_footer_formula(footer, model_formula, type)
-  }
-
   # footer: anova test
   if (!is.null(anova_test)) {
     footer <- .add_footer_anova_test(footer, anova_test, type)
+  }
+
+  # footer: generic text
+  if (!is.null(footer_text)) {
+    footer <- .add_footer_text(footer, footer_text, type)
   }
 
   # add color code, if we have a footer
@@ -374,17 +472,27 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
     footer <- c(footer, "blue")
   }
 
+  # if we have two trailing newlines, remove one
+  if (identical(type, "text") && !is.null(footer) && grepl("\n\n$", footer[1])) {
+    footer[1] <- substr(footer[1], 0, nchar(x) - 1)
+  }
+
   footer
 }
 
 
-# footer: residual standard deviation
-.add_footer_sigma <- function(footer = NULL, digits, sigma, type = "text") {
-  if (!is.null(sigma)) {
+# footer: generic text
+.add_footer_text <- function(footer = NULL, text, type = "text") {
+  if (!is.null(text)) {
     if (type == "text") {
-      footer <- paste0(footer, sprintf("\nResidual standard deviation: %.*f", digits, sigma))
+      if (is.null(footer)) {
+        fill <- "\n"
+      } else {
+        fill <- ""
+      }
+      footer <- paste0(footer, sprintf("%s%s\n", fill, text))
     } else if (type == "html") {
-      footer <- c(footer, sprintf("Residual standard deviation: %.*f", digits, sigma))
+      footer <- c(footer, text)
     }
   }
   footer
@@ -392,12 +500,74 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
 
 
 # footer: residual standard deviation
+.add_footer_sigma <- function(footer = NULL, digits, sigma, residual_df = NULL, type = "text") {
+  if (!is.null(sigma)) {
+
+    # format residual df
+    if (!is.null(residual_df)) {
+      res_df <- paste0(" (df = ", residual_df, ")")
+    } else {
+      res_df <- ""
+    }
+
+    if (type == "text") {
+      if (is.null(footer)) {
+        fill <- "\n"
+      } else {
+        fill <- ""
+      }
+      footer <- paste0(footer, sprintf("%sResidual standard deviation: %.*f%s\n", fill, digits, sigma, res_df))
+    } else if (type == "html") {
+      footer <- c(footer, trimws(sprintf("Residual standard deviation: %.*f%s", digits, sigma, res_df)))
+    }
+  }
+  footer
+}
+
+
+# footer: r-squared
+#' @importFrom insight format_value
+.add_footer_r2 <- function(footer = NULL, digits, r2 = NULL, type = "text") {
+  if (!is.null(r2)) {
+    rsq <- tryCatch(
+      {
+        paste0(unlist(lapply(r2, function(i) {
+          paste0(attributes(i)$names, ": ", insight::format_value(i, digits = digits))
+        })), collapse = "; ")
+      },
+      error = function(e) {
+        NULL
+      }
+    )
+    if (!is.null(rsq)) {
+      if (type == "text") {
+        if (is.null(footer)) {
+          fill <- "\n"
+        } else {
+          fill <- ""
+        }
+        footer <- paste0(footer, fill, rsq, "\n")
+      } else if (type == "html") {
+        footer <- c(footer, rsq)
+      }
+    }
+  }
+  footer
+}
+
+
+# footer: anova test
 .add_footer_anova_test <- function(footer = NULL, test, type = "text") {
   if (!is.null(test)) {
     if (type == "text") {
-      footer <- paste0(footer, sprintf("\n%s test statistic", test))
+      if (is.null(footer)) {
+        fill <- "\n"
+      } else {
+        fill <- ""
+      }
+      footer <- paste0(footer, sprintf("%s%s test statistic\n", fill, test))
     } else if (type == "html") {
-      footer <- c(footer, sprintf("\n%s test statistic", test))
+      footer <- c(footer, sprintf("%s test statistic", test))
     }
   }
   footer
@@ -408,7 +578,12 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
 .add_footer_padjust <- function(footer = NULL, p_adjust, type = "text") {
   if (!is.null(p_adjust) && p_adjust != "none") {
     if (type == "text") {
-      footer <- paste0(footer, "\np-value adjustment method: ", format_p_adjust(p_adjust))
+      if (is.null(footer)) {
+        fill <- "\n"
+      } else {
+        fill <- ""
+      }
+      footer <- paste0(footer, fill, "p-value adjustment method: ", format_p_adjust(p_adjust), "\n")
     } else if (type == "html") {
       footer <- c(footer, paste0("p-value adjustment method: ", format_p_adjust(p_adjust)))
     }
@@ -418,12 +593,25 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
 
 
 # footer: model formula
-.add_footer_formula <- function(footer = NULL, model_formula, type = "text") {
+.add_footer_formula <- function(footer = NULL, model_formula, n_obs = NULL, type = "text") {
   if (!is.null(model_formula)) {
+
+    # format n of observations
+    if (!is.null(n_obs)) {
+      n <- paste0(" (", n_obs, " Observations)")
+    } else {
+      n <- ""
+    }
+
     if (type == "text") {
-      footer <- paste0(footer, "\nModel: ", model_formula)
+      if (is.null(footer)) {
+        fill <- "\n"
+      } else {
+        fill <- ""
+      }
+      footer <- paste0(footer, fill, "Model: ", model_formula, n, "\n")
     } else if (type == "html") {
-      footer <- c(footer, paste0("Model: ", model_formula))
+      footer <- c(footer, trimws(paste0("Model: ", model_formula, n)))
     }
   }
   footer
@@ -433,8 +621,7 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
 # footer: type of uncertainty interval
 .print_footer_cimethod <- function(ci_method = NULL) {
   if (!is.null(ci_method)) {
-    ci_method <- switch(
-      toupper(ci_method),
+    ci_method <- switch(toupper(ci_method),
       "HDI" = "highest density intervals",
       "ETI" = "equal-tailed intervals",
       "SI" = "support intervals",

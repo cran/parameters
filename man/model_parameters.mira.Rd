@@ -28,7 +28,10 @@ mimic behaviour of other software packages, such as Stata. For
 exponentiate coefficients for all models except those from Gaussian family.}
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
-adjust p-values. See \code{\link[stats]{p.adjust}} for details.}
+adjust p-values. See \code{\link[stats]{p.adjust}} for details. Further
+possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
+\code{"sidak"} and \code{"none"} to explicitly disable adjustment for
+\code{emmGrid} objects (from \pkg{emmeans}).}
 
 \item{verbose}{Toggle warnings and messages.}
 
@@ -44,7 +47,7 @@ Format models of class \code{mira}, obtained from \code{mice::width.mids()}.
 }
 \examples{
 library(parameters)
-if (require("mice")) {
+if (require("mice", quietly = TRUE)) {
   data(nhanes2)
   imp <- mice(nhanes2)
   fit <- with(data = imp, exp = lm(bmi ~ age + hyp + chl))
@@ -52,7 +55,7 @@ if (require("mice")) {
 }
 \dontrun{
 # model_parameters() also works for models that have no "tidy"-method in mice
-if (require("mice") && require("gee")) {
+if (require("mice", quietly = TRUE) && require("gee", quietly = TRUE)) {
   data(warpbreaks)
   set.seed(1234)
   warpbreaks$tension[sample(1:nrow(warpbreaks), size = 10)] <- NA

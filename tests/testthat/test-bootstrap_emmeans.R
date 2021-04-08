@@ -9,17 +9,19 @@ if (.runThisTest && require("testthat") && require("parameters")) {
 
     set.seed(7)
     b <- bootstrap_model(model, iterations = 1000)
-    expect_equal(summary(emmeans::emmeans(b, ~ cyl))$emmean,
-                 summary(emmeans::emmeans(model, ~ cyl))$emmean,
-                 tolerance = 0.1)
+    expect_equal(summary(emmeans::emmeans(b, ~cyl))$emmean,
+      summary(emmeans::emmeans(model, ~cyl))$emmean,
+      tolerance = 0.1
+    )
 
     set.seed(7)
     b <- bootstrap_parameters(model, iterations = 1000)
-    expect_equal(summary(emmeans::emmeans(b, ~ cyl))$emmean,
-                 summary(emmeans::emmeans(model, ~ cyl))$emmean,
-                 tolerance = 0.1)
+    expect_equal(summary(emmeans::emmeans(b, ~cyl))$emmean,
+      summary(emmeans::emmeans(model, ~cyl))$emmean,
+      tolerance = 0.1
+    )
 
-    mp <- model_parameters(emmeans::emmeans(b, consec ~ cyl))
+    mp <- model_parameters(emmeans::emmeans(b, consec ~ cyl), verbose = FALSE)
     expect_true("p" %in% colnames(mp))
     expect_true("SE" %in% colnames(mp))
     expect_equal(nrow(mp), 5)
@@ -31,21 +33,23 @@ if (.runThisTest && require("testthat") && require("parameters")) {
     skip_if_not_installed("boot")
     skip_if_not_installed("lme4")
 
-    model <- lme4::lmer(mpg ~ log(wt) + factor(cyl) + (1|gear), data = mtcars)
+    model <- lme4::lmer(mpg ~ log(wt) + factor(cyl) + (1 | gear), data = mtcars)
 
     set.seed(7)
     b <- bootstrap_model(model, iterations = 1000)
-    expect_equal(summary(emmeans::emmeans(b, ~ cyl))$emmean,
-                 summary(emmeans::emmeans(model, ~ cyl))$emmean,
-                 tolerance = 0.1)
+    expect_equal(summary(emmeans::emmeans(b, ~cyl))$emmean,
+      summary(emmeans::emmeans(model, ~cyl))$emmean,
+      tolerance = 0.1
+    )
 
     set.seed(7)
     b <- bootstrap_parameters(model, iterations = 1000)
-    expect_equal(summary(emmeans::emmeans(b, ~ cyl))$emmean,
-                 summary(emmeans::emmeans(model, ~ cyl))$emmean,
-                 tolerance = 0.1)
+    expect_equal(summary(emmeans::emmeans(b, ~cyl))$emmean,
+      summary(emmeans::emmeans(model, ~cyl))$emmean,
+      tolerance = 0.1
+    )
 
-    mp <- model_parameters(emmeans::emmeans(b, consec ~ cyl))
+    mp <- suppressWarnings(model_parameters(emmeans::emmeans(b, consec ~ cyl)))
     expect_true("p" %in% colnames(mp))
     expect_true("SE" %in% colnames(mp))
     expect_equal(nrow(mp), 5)

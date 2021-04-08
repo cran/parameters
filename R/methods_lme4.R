@@ -58,14 +58,34 @@ p_value.lmerMod <- function(model, method = "wald", ...) {
 #' @description Parameters from (linear) mixed models.
 #'
 #' @param model A mixed model.
-#' @param effects Should parameters for fixed effects (\code{"fixed"}), random effects (\code{"random"}) or both (\code{"all"}) be returned? Only applies to mixed models. May be abbreviated.
-#' @param details Logical, if \code{TRUE}, a summary of the random effects is included. See \code{\link{random_parameters}} for details.
-#' @param df_method Method for computing degrees of freedom for p values, standard errors and confidence intervals (CI). May be \code{"wald"} (default, see \code{\link{degrees_of_freedom}}), \code{"ml1"} (see \code{\link{dof_ml1}}), \code{"betwithin"} (see \code{\link{dof_betwithin}}), \code{"satterthwaite"} (see \code{\link{dof_satterthwaite}}) or \code{"kenward"} (see \code{\link{dof_kenward}}). The options \code{df_method = "boot"}, \code{df_method = "profile"} and \code{df_method = "uniroot"} only affect confidence intervals; in this case, bootstrapped resp. profiled confidence intervals are computed. \code{"uniroot"} only applies to models of class \code{glmmTMB}. Note that when \code{df_method} is not \code{"wald"}, robust standard errors etc. cannot be computed.
-#' @param wb_component Logical, if \code{TRUE} and models contains within- and between-effects (see \code{\link{demean}}), the \code{Component} column will indicate which variables belong to the within-effects, between-effects, and cross-level interactions. By default, the \code{Component} column indicates, which parameters belong to the conditional or zero-inflated component of the model.
+#' @param effects Should parameters for fixed effects (\code{"fixed"}), random
+#'   effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
+#'   to mixed models. May be abbreviated.
+#' @param details Logical, if \code{TRUE}, a summary of the random effects is
+#'   included. See \code{\link{random_parameters}} for details.
+#' @param df_method Method for computing degrees of freedom for p values,
+#'   standard errors and confidence intervals (CI). May be \code{"wald"}
+#'   (default, see \code{\link{degrees_of_freedom}}), \code{"ml1"} (see
+#'   \code{\link{dof_ml1}}), \code{"betwithin"} (see
+#'   \code{\link{dof_betwithin}}), \code{"satterthwaite"} (see
+#'   \code{\link{dof_satterthwaite}}) or \code{"kenward"} (see
+#'   \code{\link{dof_kenward}}). The options \code{df_method = "boot"},
+#'   \code{df_method = "profile"} and \code{df_method = "uniroot"} only affect
+#'   confidence intervals; in this case, bootstrapped resp. profiled confidence
+#'   intervals are computed. \code{"uniroot"} only applies to models of class
+#'   \code{glmmTMB}. Note that when \code{df_method} is not \code{"wald"},
+#'   robust standard errors etc. cannot be computed.
+#' @param wb_component Logical, if \code{TRUE} and models contains within- and
+#'   between-effects (see \code{\link{demean}}), the \code{Component} column
+#'   will indicate which variables belong to the within-effects,
+#'   between-effects, and cross-level interactions. By default, the
+#'   \code{Component} column indicates, which parameters belong to the
+#'   conditional or zero-inflated component of the model.
 #' @inheritParams model_parameters.default
+#' @inheritParams model_parameters.stanreg
 #'
-#' @seealso \code{\link[insight:standardize_names]{standardize_names()}} to rename
-#'   columns into a consistent, standardized naming scheme.
+#' @seealso \code{\link[insight:standardize_names]{standardize_names()}} to
+#'   rename columns into a consistent, standardized naming scheme.
 #'
 #' @note There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 #'
@@ -94,6 +114,7 @@ p_value.lmerMod <- function(model, method = "wald", ...) {
 #' }
 #' }
 #' @return A data frame of indices related to the model's parameters.
+#' @importFrom utils modifyList
 #' @export
 model_parameters.merMod <- function(model,
                                     ci = .95,
@@ -101,12 +122,14 @@ model_parameters.merMod <- function(model,
                                     df_method = "wald",
                                     iterations = 1000,
                                     standardize = NULL,
-                                    effects = "fixed",
+                                    effects = "fixed", ## TODO change to "all" after effectsize > 0.4.4-1 on CRAN
+                                    group_level = FALSE,
                                     exponentiate = FALSE,
                                     robust = FALSE,
                                     details = FALSE,
                                     p_adjust = NULL,
                                     wb_component = TRUE,
+                                    summary = FALSE,
                                     verbose = TRUE,
                                     ...) {
 
@@ -116,13 +139,32 @@ model_parameters.merMod <- function(model,
 
   # which component to return?
   effects <- match.arg(effects, choices = c("fixed", "random", "all"))
+  params <- params_random <- params_variance <- NULL
 
-  params <- params_random <- NULL
+  # standardize only works for fixed effects...
+  if (!is.null(standardize)) {
+    effects <- "fixed"
+    ## TODO enable later, when fixed in "effectsize"
+    # if (verbose) {
+    #   warning("Standardizing coefficients only works for fixed effects of the mixed model.", call. = FALSE)
+    # }
+  }
 
-  if (effects != "random") {
+  if (effects %in% c("fixed", "all")) {
     # Processing
     if (bootstrap) {
-      params <- bootstrap_parameters(model, iterations = iterations, ci = ci, ...)
+      params <- bootstrap_parameters(
+        model,
+        iterations = iterations,
+        ci = ci,
+        ...
+      )
+      if (effects != "fixed") {
+        effects <- "fixed"
+        if (verbose) {
+          warning("Bootstrapping only returns fixed effects of the mixed model.", call. = FALSE)
+        }
+      }
     } else {
       params <- .extract_parameters_mixed(
         model,
@@ -132,46 +174,74 @@ model_parameters.merMod <- function(model,
         standardize = standardize,
         p_adjust = p_adjust,
         wb_component = wb_component,
+        verbose = verbose,
         ...
       )
     }
+
+    params$Effects <- "fixed"
 
     if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
       params <- .exponentiate_parameters(params, model, exponentiate)
     }
   }
 
-  if (effects != "fixed") {
+  att <- attributes(params)
+
+  if (effects %in% c("random", "all") && isTRUE(group_level)) {
     params_random <- .extract_random_parameters(model, ci = ci, effects = effects)
   }
 
+  if (effects %in% c("random", "all") && isFALSE(group_level)) {
+    params_variance <- .extract_random_variances(model, ci = ci, effects = effects)
+  }
+
   # merge random and fixed effects, if necessary
-  if (is.null(params)) {
-    params <- params_random
-  } else if (!is.null(params_random)) {
-    params$Effects <- "fixed"
+  if (!is.null(params) && (!is.null(params_random) || !is.null(params_variance))) {
     params$Level <- NA
     params$Group <- ""
-    # reorder
-    params <- params[match(colnames(params_random), colnames(params))]
-    params <- rbind(params, params_random)
+
+    if (!is.null(params_random)) {
+      params <- params[match(colnames(params_random), colnames(params))]
+    } else {
+      params <- params[match(colnames(params_variance), colnames(params))]
+    }
+  }
+
+  params <- rbind(params, params_random, params_variance)
+  # remove empty column
+  if (!is.null(params$Level) && all(is.na(params$Level))) {
+    params$Level <- NULL
+  }
+
+  # due to rbind(), we lose attributes from "extract_parameters()",
+  # so we add those attributes back here...
+  if (!is.null(att)) {
+    attributes(params) <- utils::modifyList(att, attributes(params))
   }
 
   params <- .add_model_parameters_attributes(
     params,
     model,
-    ci,
+    ci = ifelse(effects == "random" && isFALSE(group_level), NA, ci),
     exponentiate,
     bootstrap,
     iterations,
     df_method,
     p_adjust = p_adjust,
     verbose = verbose,
+    summary = summary,
+    group_level = group_level,
     ...
   )
 
+
+  ## TODO remove in a future update
   if (isTRUE(details)) {
     attr(params, "details") <- .randomeffects_summary(model)
+    if (verbose) {
+      message("Argument 'details' is deprecated. Please use 'group_level'.")
+    }
   }
 
   attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
@@ -188,8 +258,19 @@ model_parameters.merMod <- function(model,
 #'
 #' @param x A statistical model.
 #' @param ci Confidence Interval (CI) level. Default to 0.95 (95\%).
-#' @param method For mixed models, can be \code{\link[=p_value_wald]{"wald"}} (default), \code{\link[=p_value_ml1]{"ml1"}} or \code{\link[=p_value_betwithin]{"betwithin"}}. For linear mixed model, can also be \code{\link[=p_value_satterthwaite]{"satterthwaite"}}, \code{\link[=p_value_kenward]{"kenward"}} or \code{"boot"} (see \code{lme4::confint.merMod}). For (generalized) linear models, can be \code{"robust"} to compute confidence intervals based on robust covariance matrix estimation, and for generalized linear models and models from packages \pkg{lme4} or \pkg{glmmTMB}, may also be \code{"profile"}, \code{"uniroot"} or \code{"wald"} (default).
-#' @param ... Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.
+#' @param method For mixed models, can be \code{\link[=p_value_wald]{"wald"}}
+#'   (default), \code{\link[=p_value_ml1]{"ml1"}} or
+#'   \code{\link[=p_value_betwithin]{"betwithin"}}. For linear mixed model, can
+#'   also be \code{\link[=p_value_satterthwaite]{"satterthwaite"}},
+#'   \code{\link[=p_value_kenward]{"kenward"}} or \code{"boot"} (see
+#'   \code{lme4::confint.merMod}). For (generalized) linear models, can be
+#'   \code{"robust"} to compute confidence intervals based on robust covariance
+#'   matrix estimation, and for generalized linear models and models from
+#'   packages \pkg{lme4} or \pkg{glmmTMB}, may also be \code{"profile"},
+#'   \code{"uniroot"} or \code{"wald"} (default).
+#' @param ... Arguments passed down to \code{standard_error_robust()} when
+#'   confidence intervals or p-values based on robust standard errors should be
+#'   computed.
 #' @inheritParams simulate_model
 #' @inheritParams standard_error
 #' @inheritParams p_value
@@ -265,7 +346,10 @@ ci.merMod <- function(x,
 
 #' @rdname standard_error
 #' @export
-standard_error.merMod <- function(model, effects = c("fixed", "random"), method = NULL, ...) {
+standard_error.merMod <- function(model,
+                                  effects = c("fixed", "random"),
+                                  method = NULL,
+                                  ...) {
   effects <- match.arg(effects)
   if (is.null(method)) method <- "wald"
   robust <- !is.null(method) && method == "robust"

@@ -1,3 +1,5 @@
+.runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
+
 if (require("testthat") &&
   require("parameters") &&
   require("lme4") &&
@@ -118,14 +120,55 @@ if (require("testthat") &&
 
   test_that("model_parameters", {
     expect_equal(
-      model_parameters(m1)$Coefficient,
+      model_parameters(m1, effects = "fixed")$Coefficient,
       c(1.14549, -1.17125, 0.76937, -0.08243, 1.33197, -1.12165),
       tolerance = 1e-3
     )
     expect_equal(
-      model_parameters(m2)$Coefficient,
+      model_parameters(m2, effects = "fixed")$Coefficient,
       c(-1.39946, -0.99138, -1.1278, -1.57945),
       tolerance = 1e-3
     )
   })
+
+  if (.runThisTest && require("glmmTMB") && packageVersion("insight") > "0.13.2") {
+    data("Salamanders")
+    model <- mixed_model(
+      count ~ spp + mined,
+      random = ~ DOY | site,
+      zi_fixed = ~ spp + mined,
+      zi_random = ~ DOP | site,
+      family = zi.negative.binomial(),
+      data = Salamanders,
+      control = list(nAGQ = 1)
+    )
+
+    test_that("model_parameters.mixed-ran_pars", {
+      params <- model_parameters(model, effects = "random")
+      expect_equal(c(nrow(params), ncol(params)), c(8, 9))
+      expect_equal(
+        colnames(params),
+        c("Parameter", "Coefficient", "SE", "CI", "CI_low", "CI_high", "Effects", "Group", "Component")
+      )
+      expect_equal(
+        params$Parameter,
+        c(
+          "SD (Intercept)", "SD (DOY)", "Cor (Intercept~site)", "SD (Observations)",
+          "SD (Intercept)", "SD (DOP)", "Cor (Intercept~site)", "SD (Observations)"
+        )
+      )
+      expect_equal(
+        params$Component,
+        c(
+          "conditional", "conditional", "conditional", "conditional",
+          "zero_inflated", "zero_inflated", "zero_inflated", "zero_inflated"
+        )
+      )
+      expect_equal(
+        params$Coefficient,
+        c(0.56552, 0.29951, 0.06307, 1.27254, 1.02233, 0.38209, -0.17162, 1.27254),
+        tolerance = 1e-2
+      )
+    })
+  }
 }

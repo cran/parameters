@@ -9,18 +9,22 @@
   pretty_names = TRUE,
   split_components = TRUE,
   select = NULL,
+  caption = NULL,
   digits = 2,
   ci_digits = 2,
   p_digits = 3,
+  footer_digits = 3,
   show_sigma = FALSE,
   show_formula = FALSE,
+  zap_small = FALSE,
   ...
 )
 }
 \arguments{
 \item{x}{An object returned by \code{\link[=model_parameters]{model_parameters()}}.}
 
-\item{pretty_names}{Return "pretty" (i.e. more human readable) parameter names.}
+\item{pretty_names}{Return "pretty" (i.e. more human readable) parameter
+names.}
 
 \item{split_components}{Logical, if \code{TRUE} (default), For models with
 multiple components (zero-inflation, smooth terms, ...), each component is
@@ -32,16 +36,25 @@ be printed. If \code{NULL} (default), all columns are printed. The shortcut
 \code{select = "minimal"} prints coefficient, confidence intervals and p-values,
 while \code{select = "short"} prints coefficient, standard errors and p-values.}
 
-\item{digits}{Number of decimal places for numeric values (except confidence intervals and p-values).}
+\item{caption}{Table caption as string. If \code{NULL}, no table caption is printed.}
+
+\item{digits}{Number of decimal places for numeric values (except confidence
+intervals and p-values).}
 
 \item{ci_digits}{Number of decimal places for confidence intervals.}
 
 \item{p_digits}{Number of decimal places for p-values. May also be \code{"scientific"} for scientific notation of p-values.}
 
+\item{footer_digits}{Number of decimal places for values in the footer summary.}
+
 \item{show_sigma}{Logical, if \code{TRUE}, adds information about the residual
 standard deviation.}
 
 \item{show_formula}{Logical, if \code{TRUE}, adds the model formula to the output.}
+
+\item{zap_small}{Logical, if \code{TRUE}, small values are rounded after
+\code{digits} decimal places. If \code{FALSE}, values with more decimal
+places than \code{digits} are printed in scientific notation.}
 
 \item{...}{Arguments passed to or from other methods.}
 }
@@ -83,7 +96,7 @@ freedom.
 \examples{
 \donttest{
 library(parameters)
-if (require("glmmTMB")) {
+if (require("glmmTMB", quietly = TRUE)) {
   model <- glmmTMB(
     count ~ spp + mined + (1 | site),
     ziformula = ~mined,
@@ -101,8 +114,8 @@ if (require("glmmTMB")) {
   print(mp, select = "minimal")
 }
 }
-
 }
 \seealso{
-There is a dedicated method to use inside rmarkdown files, \code{\link[=print_md.parameters_model]{print_md()}}.
+There is a dedicated method to use inside rmarkdown files,
+  \code{\link[=print_md.parameters_model]{print_md()}}.
 }

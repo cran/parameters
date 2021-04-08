@@ -15,9 +15,12 @@
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
+  effects = "fixed",
+  group_level = FALSE,
   exponentiate = FALSE,
   details = FALSE,
   df_method = NULL,
+  p_adjust = NULL,
   verbose = TRUE,
   ...
 )
@@ -28,13 +31,15 @@
   bootstrap = FALSE,
   iterations = 1000,
   effects = "fixed",
-  component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
+  component = "all",
+  group_level = FALSE,
   standardize = NULL,
   exponentiate = FALSE,
   df_method = NULL,
   details = FALSE,
   p_adjust = NULL,
   wb_component = TRUE,
+  summary = FALSE,
   verbose = TRUE,
   ...
 )
@@ -47,11 +52,13 @@
   iterations = 1000,
   standardize = NULL,
   effects = "fixed",
+  group_level = FALSE,
   exponentiate = FALSE,
   robust = FALSE,
   details = FALSE,
   p_adjust = NULL,
   wb_component = TRUE,
+  summary = FALSE,
   verbose = TRUE,
   ...
 )
@@ -59,7 +66,7 @@
 \method{model_parameters}{mixor}(
   model,
   ci = 0.95,
-  effects = c("all", "fixed", "random"),
+  effects = "fixed",
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
@@ -75,9 +82,12 @@
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
+  effects = "fixed",
+  group_level = FALSE,
   exponentiate = FALSE,
   details = FALSE,
   df_method = NULL,
+  p_adjust = NULL,
   verbose = TRUE,
   ...
 )
@@ -101,6 +111,16 @@ regressions} apply (see also
 robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
 works when \code{standardize="refit"}.}
 
+\item{effects}{Should parameters for fixed effects (\code{"fixed"}), random
+effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
+to mixed models. May be abbreviated.}
+
+\item{group_level}{Logical, for multilevel models (i.e. models with random
+effects) and when \code{effects = "all"} or \code{effects = "random"},
+include the parameters for each group level from random effects. If
+\code{group_level = FALSE} (the default), only information on SD and COR
+are shown.}
+
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
 the coefficients (and related confidence intervals). This is typical for,
 say, logistic regressions, or more generally speaking: for models with log
@@ -110,31 +130,56 @@ mimic behaviour of other software packages, such as Stata. For
 \code{compare_parameters()}, \code{exponentiate = "nongaussian"} will only
 exponentiate coefficients for all models except those from Gaussian family.}
 
-\item{details}{Logical, if \code{TRUE}, a summary of the random effects is included. See \code{\link{random_parameters}} for details.}
+\item{details}{Logical, if \code{TRUE}, a summary of the random effects is
+included. See \code{\link{random_parameters}} for details.}
 
-\item{df_method}{Method for computing degrees of freedom for p values, standard errors and confidence intervals (CI). May be \code{"wald"} (default, see \code{\link{degrees_of_freedom}}), \code{"ml1"} (see \code{\link{dof_ml1}}), \code{"betwithin"} (see \code{\link{dof_betwithin}}), \code{"satterthwaite"} (see \code{\link{dof_satterthwaite}}) or \code{"kenward"} (see \code{\link{dof_kenward}}). The options \code{df_method = "boot"}, \code{df_method = "profile"} and \code{df_method = "uniroot"} only affect confidence intervals; in this case, bootstrapped resp. profiled confidence intervals are computed. \code{"uniroot"} only applies to models of class \code{glmmTMB}. Note that when \code{df_method} is not \code{"wald"}, robust standard errors etc. cannot be computed.}
+\item{df_method}{Method for computing degrees of freedom for p values,
+standard errors and confidence intervals (CI). May be \code{"wald"}
+(default, see \code{\link{degrees_of_freedom}}), \code{"ml1"} (see
+\code{\link{dof_ml1}}), \code{"betwithin"} (see
+\code{\link{dof_betwithin}}), \code{"satterthwaite"} (see
+\code{\link{dof_satterthwaite}}) or \code{"kenward"} (see
+\code{\link{dof_kenward}}). The options \code{df_method = "boot"},
+\code{df_method = "profile"} and \code{df_method = "uniroot"} only affect
+confidence intervals; in this case, bootstrapped resp. profiled confidence
+intervals are computed. \code{"uniroot"} only applies to models of class
+\code{glmmTMB}. Note that when \code{df_method} is not \code{"wald"},
+robust standard errors etc. cannot be computed.}
+
+\item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
+adjust p-values. See \code{\link[stats]{p.adjust}} for details. Further
+possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
+\code{"sidak"} and \code{"none"} to explicitly disable adjustment for
+\code{emmGrid} objects (from \pkg{emmeans}).}
 
 \item{verbose}{Toggle warnings and messages.}
 
 \item{...}{Arguments passed to or from other methods.}
 
-\item{effects}{Should parameters for fixed effects (\code{"fixed"}), random effects (\code{"random"}) or both (\code{"all"}) be returned? Only applies to mixed models. May be abbreviated.}
-
 \item{component}{Should all parameters, parameters for the conditional model,
 or for the zero-inflated part of the model be returned? Applies to models
 with zero-inflated component. \code{component} may be one of \code{"conditional"},
-\code{"zi"}, \code{"zero-inflated"} or \code{"all"} (default). May be abbreviated.}
+\code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or \code{"all"}
+(default). May be abbreviated.}
 
-\item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
-adjust p-values. See \code{\link[stats]{p.adjust}} for details.}
+\item{wb_component}{Logical, if \code{TRUE} and models contains within- and
+between-effects (see \code{\link{demean}}), the \code{Component} column
+will indicate which variables belong to the within-effects,
+between-effects, and cross-level interactions. By default, the
+\code{Component} column indicates, which parameters belong to the
+conditional or zero-inflated component of the model.}
 
-\item{wb_component}{Logical, if \code{TRUE} and models contains within- and between-effects (see \code{\link{demean}}), the \code{Component} column will indicate which variables belong to the within-effects, between-effects, and cross-level interactions. By default, the \code{Component} column indicates, which parameters belong to the conditional or zero-inflated component of the model.}
+\item{summary}{Logical, if \code{TRUE}, prints summary information about the
+model (model formula, number of observations, residual standard deviation
+and more).}
 
 \item{robust}{Logical, if \code{TRUE}, robust standard errors are calculated
 (if possible), and confidence intervals and p-values are based on these
 robust standard errors. Additional arguments like \code{vcov_estimation} or
 \code{vcov_type} are passed down to other methods, see
-\code{\link[=standard_error_robust]{standard_error_robust()}} for details.}
+\code{\link[=standard_error_robust]{standard_error_robust()}} for details
+and \href{https://easystats.github.io/parameters/articles/model_parameters_robust.html}{this vignette}
+for working examples.}
 }
 \value{
 A data frame of indices related to the model's parameters.
@@ -171,6 +216,6 @@ if (require("lme4")) {
 }
 }
 \seealso{
-\code{\link[insight:standardize_names]{standardize_names()}} to rename
-  columns into a consistent, standardized naming scheme.
+\code{\link[insight:standardize_names]{standardize_names()}} to
+  rename columns into a consistent, standardized naming scheme.
 }

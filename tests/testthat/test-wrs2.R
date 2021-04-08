@@ -142,14 +142,17 @@ if (require("testthat") && require("parameters") && require("WRS2") && getRversi
     )
   })
 
-  # model_parameters.mcp ---------------------------------------------------
+  # model_parameters.mcp and robtab ---------------------------------------
 
-  test_that("model_parameters.mcp", {
+  test_that("model_parameters.mcp and robtab", {
     set.seed(123)
     df_b <- as.data.frame(model_parameters(lincon(libido ~ dose, data = viagra)))
 
     set.seed(123)
     df_w <- as.data.frame(model_parameters(rmmcp(WineTasting$Taste, WineTasting$Wine, WineTasting$Taster)))
+
+    set.seed(123)
+    df <- as.data.frame(model_parameters(discmcp(libido ~ dose, viagra, nboot = 100)))
 
     # between-subjects
     expect_equal(
@@ -162,7 +165,7 @@ if (require("testthat") && require("parameters") && require("WRS2") && getRversi
           CI = c(.95, .95, .95),
           CI_low = c(-5.3185800135384, -7.3185800135384, -6.3185800135384),
           CI_high = c(3.3185800135384, 1.3185800135384, 2.3185800135384),
-          p.value = c(0.435330942514376, 0.180509539510735, 0.316604846750915)
+          p = c(0.435330942514376, 0.180509539510735, 0.316604846750915)
         ),
         class = "data.frame",
         row.names = c(NA, -3L),
@@ -195,7 +198,7 @@ if (require("testthat") && require("parameters") && require("WRS2") && getRversi
             0.0644939746314331,
             0.207095849170774, 0.155375150036753
           ),
-          p.value = c(
+          p = c(
             0.195004531096295,
             0.00491556623286327, 0.00877739635342234
           ),
@@ -214,7 +217,64 @@ if (require("testthat") && require("parameters") && require("WRS2") && getRversi
       ),
       tolerance = 0.001
     )
+
+    expect_equal(
+      df,
+      structure(
+        list(
+          Group1 = c("placebo", "placebo", "low"),
+          Group2 = c("low", "high", "high"),
+          p = c(0.811881188118812, 0.851485148514851, 0.861386138613861),
+          p.crit = c(0.0166666666666667, 0.025, 0.05)
+        ),
+        row.names = c(NA, -3L),
+        class = "data.frame",
+        model_class = "robtab",
+        digits = 2,
+        ci_digits = 2,
+        p_digits = 3,
+        ci = 0.95
+      ),
+      tolerance = 0.001
+    )
   })
+
+  # model_parameters.akp.effect -----------------------------------------------
+
+  test_that("model_parameters.AKP", {
+    set.seed(123)
+    mod <-
+      WRS2::akp.effect(
+        formula = wt ~ am,
+        data = mtcars,
+        EQVAR = FALSE
+      )
+
+    expect_equal(
+      as.data.frame(model_parameters(mod)),
+      structure(
+        list(
+          Estimate = 2.48169367327709,
+          CI = 0.95,
+          CI_low = 0.791129191725663,
+          CI_high = 5.09573917444489,
+          Effectsize = "Algina-Keselman-Penfield robust standardized difference"
+        ),
+        class = "data.frame",
+        row.names = c(
+          NA,
+          -1L
+        ),
+        model_class = "AKP",
+        digits = 2,
+        ci_digits = 2,
+        p_digits = 3,
+        ci = 0.95
+      ),
+      tolerance = 0.002
+    )
+  })
+
 
   # model_parameters.onesampb ---------------------------------------------------
 

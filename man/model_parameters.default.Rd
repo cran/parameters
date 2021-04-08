@@ -17,6 +17,7 @@
   exponentiate = FALSE,
   robust = FALSE,
   p_adjust = NULL,
+  summary = FALSE,
   verbose = TRUE,
   ...
 )
@@ -109,10 +110,19 @@ exponentiate coefficients for all models except those from Gaussian family.}
 (if possible), and confidence intervals and p-values are based on these
 robust standard errors. Additional arguments like \code{vcov_estimation} or
 \code{vcov_type} are passed down to other methods, see
-\code{\link[=standard_error_robust]{standard_error_robust()}} for details.}
+\code{\link[=standard_error_robust]{standard_error_robust()}} for details
+and \href{https://easystats.github.io/parameters/articles/model_parameters_robust.html}{this vignette}
+for working examples.}
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
-adjust p-values. See \code{\link[stats]{p.adjust}} for details.}
+adjust p-values. See \code{\link[stats]{p.adjust}} for details. Further
+possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
+\code{"sidak"} and \code{"none"} to explicitly disable adjustment for
+\code{emmGrid} objects (from \pkg{emmeans}).}
+
+\item{summary}{Logical, if \code{TRUE}, prints summary information about the
+model (model formula, number of observations, residual standard deviation
+and more).}
 
 \item{verbose}{Toggle warnings and messages.}
 

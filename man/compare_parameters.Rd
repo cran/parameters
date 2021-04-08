@@ -40,7 +40,9 @@ types.}
 
 \item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
 
-\item{effects}{Should parameters for fixed effects (\code{"fixed"}), random effects (\code{"random"}) or both (\code{"all"}) be returned? Only applies to mixed models. May be abbreviated.}
+\item{effects}{Should parameters for fixed effects (\code{"fixed"}), random
+effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
+to mixed models. May be abbreviated.}
 
 \item{component}{Model component for which parameters should be shown. See
 documentation for related model class in \code{\link{model_parameters}}.}
@@ -61,12 +63,15 @@ mimic behaviour of other software packages, such as Stata. For
 \code{compare_parameters()}, \code{exponentiate = "nongaussian"} will only
 exponentiate coefficients for all models except those from Gaussian family.}
 
-\item{df_method}{Method for computing degrees of freedom for confidence
-intervals (CI). Only applies to models of class \code{glm} or \code{polr}.
-May be \code{"profile"} or \code{"wald"}.}
+\item{df_method}{Method for computing degrees of freedom for p values,
+standard errors and confidence intervals (CI). See documentation for
+related model class in \code{\link{model_parameters}}.}
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
-adjust p-values. See \code{\link[stats]{p.adjust}} for details.}
+adjust p-values. See \code{\link[stats]{p.adjust}} for details. Further
+possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
+\code{"sidak"} and \code{"none"} to explicitly disable adjustment for
+\code{emmGrid} objects (from \pkg{emmeans}).}
 
 \item{style}{String, indicating which style of output is requested. Following
 templates are possible:

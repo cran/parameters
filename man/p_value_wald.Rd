@@ -37,13 +37,16 @@ returned.}
 \item{component}{Should all parameters, parameters for the conditional model,
 or for the zero-inflated part of the model be returned? Applies to models
 with zero-inflated component. \code{component} may be one of \code{"conditional"},
-\code{"zi"}, \code{"zero-inflated"} or \code{"all"} (default). May be abbreviated.}
+\code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or \code{"all"}
+(default). May be abbreviated.}
 
 \item{robust}{Logical, if \code{TRUE}, robust standard errors are calculated
 (if possible), and confidence intervals and p-values are based on these
 robust standard errors. Additional arguments like \code{vcov_estimation} or
 \code{vcov_type} are passed down to other methods, see
-\code{\link[=standard_error_robust]{standard_error_robust()}} for details.}
+\code{\link[=standard_error_robust]{standard_error_robust()}} for details
+and \href{https://easystats.github.io/parameters/articles/model_parameters_robust.html}{this vignette}
+for working examples.}
 
 \item{...}{Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed.}
 }

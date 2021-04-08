@@ -21,7 +21,8 @@
 \item{component}{Should all parameters, parameters for the conditional model,
 or for the zero-inflated part of the model be returned? Applies to models
 with zero-inflated component. \code{component} may be one of \code{"conditional"},
-\code{"zi"}, \code{"zero-inflated"} or \code{"all"} (default). May be abbreviated.}
+\code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or \code{"all"}
+(default). May be abbreviated.}
 
 \item{...}{Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed. Only available for models where \code{method = "robust"} is supported.}
 
@@ -30,13 +31,15 @@ with zero-inflated component. \code{component} may be one of \code{"conditional"
 \item{verbose}{Toggle warnings and messages.}
 }
 \value{
-A data frame with at least two columns: the parameter names and the p-values. Depending on the model, may also include columns for model components etc.
+A data frame with at least two columns: the parameter names and the
+  p-values. Depending on the model, may also include columns for model
+  components etc.
 }
 \description{
 This function attempts to return, or compute, p-values of hurdle and zero-inflated models.
 }
 \examples{
-if (require("pscl")) {
+if (require("pscl", quietly = TRUE)) {
   data("bioChemists")
   model <- zeroinfl(art ~ fem + mar + kid5 | kid5 + phd, data = bioChemists)
   p_value(model)

@@ -120,10 +120,12 @@ standard_error.zcpglm <- function(model, component = c("all", "conditional", "zi
 #' @inheritParams standard_error
 #' @inheritParams ci.merMod
 #'
-#' @return A data frame with at least two columns: the parameter names and the p-values. Depending on the model, may also include columns for model components etc.
+#' @return A data frame with at least two columns: the parameter names and the
+#'   p-values. Depending on the model, may also include columns for model
+#'   components etc.
 #'
 #' @examples
-#' if (require("pscl")) {
+#' if (require("pscl", quietly = TRUE)) {
 #'   data("bioChemists")
 #'   model <- zeroinfl(art ~ fem + mar + kid5 | kid5 + phd, data = bioChemists)
 #'   p_value(model)
@@ -225,36 +227,48 @@ model_parameters.cpglmm <- function(model,
                                     bootstrap = FALSE,
                                     iterations = 1000,
                                     standardize = NULL,
+                                    effects = "fixed", ## TODO change to "all" after effectsize > 0.4.4-1 on CRAN
+                                    group_level = FALSE,
                                     exponentiate = FALSE,
                                     details = FALSE,
                                     df_method = NULL,
+                                    p_adjust = NULL,
                                     verbose = TRUE,
                                     ...) {
 
   # p-values, CI and se might be based on different df-methods
   df_method <- .check_df_method(df_method)
+  effects <- match.arg(effects, choices = c("fixed", "random", "all"))
 
-  out <- .model_parameters_generic(
-    model = model,
-    ci = ci,
-    bootstrap = bootstrap,
-    iterations = iterations,
-    merge_by = "Parameter",
-    standardize = standardize,
-    exponentiate = exponentiate,
-    effects = "fixed",
-    robust = FALSE,
-    df_method = df_method,
-    ...
-  )
-
-  attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
-
-  if (isTRUE(details)) {
-    attr(out, "details") <- .randomeffects_summary(model)
+  # standardize only works for fixed effects...
+  if (!is.null(standardize)) {
+    effects <- "fixed"
+    ## TODO enable later, when fixed in "effectsize"
+    # if (verbose) {
+    #   warning("Standardizing coefficients only works for fixed effects of the mixed model.", call. = FALSE)
+    # }
   }
 
-  out
+  params <- .mixed_model_parameters_generic(
+    model = model, ci = ci, bootstrap = bootstrap, iterations = iterations,
+    merge_by = "Parameter", standardize = standardize,
+    exponentiate = exponentiate, effects = effects, robust = FALSE,
+    p_adjust = p_adjust, group_level = group_level, df_method = df_method, ...
+  )
+
+  attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  class(params) <- c("parameters_model", "see_parameters_model", "data.frame")
+
+
+  ## TODO remove in a future update
+  if (isTRUE(details)) {
+    attr(params, "details") <- .randomeffects_summary(model)
+    if (verbose) {
+      message("Argument 'details' is deprecated. Please use 'group_level'.")
+    }
+  }
+
+  params
 }
 
 

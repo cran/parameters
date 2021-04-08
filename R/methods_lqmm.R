@@ -9,9 +9,20 @@ model_parameters.lqmm <- function(model,
 
   # Processing
   if (bootstrap) {
-    parameters <- bootstrap_parameters(model, iterations = iterations, ci = ci, ...)
+    parameters <- bootstrap_parameters(
+      model,
+      iterations = iterations,
+      ci = ci,
+      ...
+    )
   } else {
-    parameters <- .extract_parameters_lqmm(model, ci = ci, p_adjust = p_adjust, ...)
+    parameters <- .extract_parameters_lqmm(
+      model,
+      ci = ci,
+      p_adjust = p_adjust,
+      verbose = verbose,
+      ...
+    )
   }
 
   parameters <- .add_model_parameters_attributes(
@@ -23,6 +34,7 @@ model_parameters.lqmm <- function(model,
     verbose = verbose,
     ...
   )
+
   attr(parameters, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   class(parameters) <- c("parameters_model", "see_parameters_model", class(parameters))
 
@@ -59,7 +71,7 @@ standard_error.lqm <- standard_error.lqmm
 #' @export
 degrees_of_freedom.lqmm <- function(model, ...) {
   out <- model_parameters(model, ...)
-  out$df
+  out$df_error
 }
 
 
@@ -83,7 +95,7 @@ p_value.lqm <- p_value.lqmm
 # helper ------------------
 
 
-.extract_parameters_lqmm <- function(model, ci, p_adjust, ...) {
+.extract_parameters_lqmm <- function(model, ci, p_adjust, verbose = TRUE, ...) {
   cs <- summary(model)
   parameters <- insight::get_parameters(model)
 
@@ -100,9 +112,9 @@ p_value.lqm <- p_value.lqmm
   parameters$SE <- summary_table[, 2]
   parameters$t <- parameters$Estimate / parameters$SE
 
-  # ==== DF and Conf Int
+  # ==== DF
 
-  parameters$df <- tryCatch(
+  parameters$df_error <- tryCatch(
     {
       if (!is.null(cs$rdf)) {
         cs$rdf
@@ -114,19 +126,21 @@ p_value.lqm <- p_value.lqmm
       Inf
     }
   )
-  parameters$CI_low <- parameters$Coefficient - stats::qt((1 + ci) / 2, df = parameters$df) * parameters$SE
-  parameters$CI_high <- parameters$Coefficient + stats::qt((1 + ci) / 2, df = parameters$df) * parameters$SE
+
+  # ==== Conf Int
+  parameters$CI_low <- parameters$Coefficient - stats::qt((1 + ci) / 2, df = parameters$df_error) * parameters$SE
+  parameters$CI_high <- parameters$Coefficient + stats::qt((1 + ci) / 2, df = parameters$df_error) * parameters$SE
 
   # ==== p-value
 
   parameters$p <- summary_table[, 5]
 
-  if (!is.null(p_adjust) && tolower(p_adjust) %in% stats::p.adjust.methods && "p" %in% colnames(parameters)) {
-    parameters$p <- stats::p.adjust(parameters$p, method = p_adjust)
+  if (!is.null(p_adjust)) {
+    parameters <- .p_adjust(parameters, p_adjust, model, verbose)
   }
 
   # ==== Reorder
 
-  col_order <- c("Parameter", "Coefficient", "SE", "CI_low", "CI_high", "t", "df", "p", "Component")
+  col_order <- c("Parameter", "Coefficient", "SE", "CI_low", "CI_high", "t", "df_error", "p", "Component")
   parameters[col_order[col_order %in% names(parameters)]]
 }

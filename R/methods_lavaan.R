@@ -1,54 +1,15 @@
-
-#' @export
-ci.lavaan <- function(x, ci = .95, ...) {
-  out <- .extract_parameters_lavaan(model = x, ci = ci, ...)
-  out$CI <- ci
-  out[out$Operator != "~1", c("To", "Operator", "From", "CI", "CI_low", "CI_high")]
-}
+# Packages lavaan, blavaan
 
 
-#' @export
-ci.blavaan <- function(x, ci = .95, ...) {
-  out <- .extract_parameters_lavaan(model = x, ci = ci, ...)
-  out$CI <- ci
-  out[out$Operator != "~1", c("To", "Operator", "From", "CI", "CI_low", "CI_high")]
-}
-
-
-#' @export
-standard_error.lavaan <- function(model, ...) {
-  out <- .extract_parameters_lavaan(model, ...)
-  out[out$Operator != "~1", c("To", "Operator", "From", "SE")]
-}
-
-
-#' @export
-standard_error.blavaan <- function(model, ...) {
-  out <- .extract_parameters_lavaan(model, ...)
-  out[out$Operator != "~1", c("To", "Operator", "From", "SE")]
-}
-
-
-#' @export
-p_value.lavaan <- function(model, ...) {
-  out <- .extract_parameters_lavaan(model, ...)
-  out[out$Operator != "~1", c("To", "Operator", "From", "p")]
-}
-
-
-#' @export
-p_value.blavaan <- function(model, ...) {
-  out <- .extract_parameters_lavaan(model, ...)
-  out[out$Operator != "~1", c("To", "Operator", "From", "p")]
-}
+# model parameters ---------------------------
 
 
 #' Parameters from CFA/SEM models
 #'
-#' Format CFA/SEM objects from the (b)lavaan package (Rosseel, 2012; Merkle and Rosseel 2018).
+#' Format CFA/SEM objects from the lavaan package (Rosseel, 2012; Merkle and Rosseel 2018).
 #'
 #' @param model CFA or SEM created by the \code{lavaan::cfa} or \code{lavaan::sem}
-#'   functions (or from \pkg{blavaan}).
+#'   functions.
 #' @param standardize Return standardized parameters (standardized coefficients).
 #'   Can be \code{TRUE} (or \code{"all"} or \code{"std.all"}) for standardized
 #'   estimates based on both the variances of observed and latent variables;
@@ -58,7 +19,7 @@ p_value.blavaan <- function(model, ...) {
 #'   variances of observed and latent variables, but not the variances of
 #'   exogenous covariates. See \code{lavaan::standardizedsolution} for details.
 #' @inheritParams model_parameters.default
-#' @param type What type of links to return. Can be \code{"all"} or some of \code{c("regression", "correlation", "loading", "variance", "mean")}.
+#' @param component,type What type of links to return. Can be \code{"all"} or some of \code{c("regression", "correlation", "loading", "variance", "mean")}.
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @note There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
@@ -67,7 +28,7 @@ p_value.blavaan <- function(model, ...) {
 #' library(parameters)
 #'
 #' # lavaan -------------------------------------
-#' if (require("lavaan")) {
+#' if (require("lavaan", quietly = TRUE)) {
 #'
 #'   # Confirmatory Factor Analysis (CFA) ---------
 #'
@@ -102,23 +63,42 @@ p_value.blavaan <- function(model, ...) {
 #' @return A data frame of indices related to the model's parameters.
 #'
 #' @references \itemize{
-#'   \item Rosseel Y (2012). lavaan: An R Package for Structural Equation Modeling. Journal of Statistical Software, 48(2), 1-36.
-#'   \item Merkle EC , Rosseel Y (2018). blavaan: Bayesian Structural Equation Models via Parameter Expansion. Journal of Statistical Software, 85(4), 1-30. http://www.jstatsoft.org/v85/i04/
+#'   \item Rosseel Y (2012). lavaan: An R Package for Structural Equation
+#'   Modeling. Journal of Statistical Software, 48(2), 1-36.
+#'
+#'   \item Merkle EC , Rosseel Y (2018). blavaan: Bayesian Structural Equation
+#'   Models via Parameter Expansion. Journal of Statistical Software, 85(4),
+#'   1-30. http://www.jstatsoft.org/v85/i04/
 #' }
 #' @export
 model_parameters.lavaan <- function(model,
                                     ci = 0.95,
                                     standardize = FALSE,
-                                    type = c("regression", "correlation", "loading", "defined"),
+                                    component = c("regression", "correlation", "loading", "defined"),
                                     verbose = TRUE,
+                                    type = component,
                                     ...) {
-  params <- .extract_parameters_lavaan(model, ci = ci, standardize = standardize, ...)
+
+  ## TODO remove in a future update
+  if (!missing(type)) {
+    if (verbose) {
+      warning("Argument 'type' is deprecated. Please use 'component' instead.", call. = FALSE)
+    }
+    component <- type
+  }
+
+  params <- .extract_parameters_lavaan(model,
+                                       ci = ci,
+                                       standardize = standardize,
+                                       verbose = verbose,
+                                       ...
+  )
 
   # Filter
-  if (all(type == "all")) {
-    type <- c("regression", "correlation", "loading", "variance", "defined", "mean")
+  if (all(component == "all")) {
+    component <- c("regression", "correlation", "loading", "variance", "defined", "mean")
   }
-  params <- params[tolower(params$Type) %in% type, ]
+  params <- params[tolower(params$Component) %in% component, ]
 
   # add class-attribute for printing
   class(params) <- c("parameters_sem", "see_parameters_sem", class(params))
@@ -130,9 +110,115 @@ model_parameters.lavaan <- function(model,
 
 
 #' @export
-model_parameters.blavaan <- model_parameters.lavaan
+model_parameters.blavaan <- function(model,
+                                     centrality = "median",
+                                     dispersion = FALSE,
+                                     ci = .89,
+                                     ci_method = "hdi",
+                                     test = c("pd", "rope"),
+                                     rope_range = "default",
+                                     rope_ci = 1.0,
+                                     diagnostic = c("ESS", "Rhat"),
+                                     component = "all",
+                                     standardize = NULL,
+                                     verbose = TRUE,
+                                     ...) {
 
 
+  # Processing
+  params <- .extract_parameters_bayesian(
+    model,
+    centrality = centrality,
+    dispersion = dispersion,
+    ci = ci,
+    ci_method = ci_method,
+    test = test,
+    rope_range = rope_range,
+    rope_ci = rope_ci,
+    diagnostic = diagnostic,
+    effects = "all",
+    standardize = standardize,
+    verbose = verbose,
+    ...
+  )
+
+  # Filter
+  if (!all(component == "all")) {
+    params <- params[tolower(params$Component) %in% component, ]
+  }
+
+  params <- .add_model_parameters_attributes(
+    params,
+    model,
+    ci,
+    exponentiate = FALSE,
+    ci_method = ci_method,
+    verbose = verbose,
+    ...
+  )
+
+  attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  class(params) <- c("parameters_sem", "see_parameters_sem", class(params))
+
+  params
+}
+
+
+
+
+# ci ---------------------------
+
+
+#' @export
+ci.lavaan <- function(x, ci = .95, ...) {
+  out <- .extract_parameters_lavaan(model = x, ci = ci, ...)
+  out$CI <- ci
+  out[out$Operator != "~1", c("To", "Operator", "From", "CI", "CI_low", "CI_high")]
+}
+
+
+
+
+# SE ---------------------------
+
+
+#' @export
+standard_error.lavaan <- function(model, ...) {
+  out <- .extract_parameters_lavaan(model, ...)
+  out[out$Operator != "~1", c("To", "Operator", "From", "SE")]
+}
+
+
+#' @export
+standard_error.blavaan <- function(model, ...) {
+  params <- insight::get_parameters(model, ...)
+
+  .data_frame(
+    Parameter = colnames(params),
+    SE = unname(sapply(params, stats::sd, na.rm = TRUE))
+  )
+}
+
+
+
+
+# p-value ---------------------------
+
+
+#' @export
+p_value.lavaan <- function(model, ...) {
+  out <- .extract_parameters_lavaan(model, ...)
+  out[out$Operator != "~1", c("To", "Operator", "From", "p")]
+}
+
+
+#' @export
+p_value.blavaan <- p_value.BFBayesFactor
+
+
+
+
+# print ---------------------------
 
 
 #' @importFrom insight export_table
@@ -143,8 +229,16 @@ print.parameters_sem <- function(x, digits = 2, ci_digits = 2, p_digits = 3, ...
   if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
   if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
 
+  verbose <- .additional_arguments(x, "verbose", TRUE)
+  ci_method <- .additional_arguments(x, "ci_method", NULL)
+
   formatted_table <- format(x = x, digits = digits, ci_digits, p_digits = p_digits, format = "text", ci_brackets = TRUE, ci_width = "auto", ...)
   cat(insight::export_table(formatted_table, format = "text", ...))
+
+  if (isTRUE(verbose)) {
+    .print_footer_cimethod(ci_method)
+  }
+
   invisible(x)
 }
 

@@ -26,7 +26,12 @@
   digits = 2,
   ci_digits = 2,
   p_digits = 3,
+  footer_digits = 3,
   ci_brackets = c("(", ")"),
+  show_sigma = FALSE,
+  show_formula = FALSE,
+  zap_small = FALSE,
+  verbose = TRUE,
   ...
 )
 
@@ -72,6 +77,7 @@
   p_digits = 3,
   ci_width = NULL,
   ci_brackets = NULL,
+  zap_small = FALSE,
   format = NULL,
   ...
 )
@@ -88,9 +94,11 @@
   digits = 2,
   ci_digits = 2,
   p_digits = 3,
+  footer_digits = 3,
   ci_brackets = c("(", ")"),
   show_sigma = FALSE,
   show_formula = FALSE,
+  zap_small = FALSE,
   verbose = TRUE,
   ...
 )
@@ -103,10 +111,16 @@
   caption = NULL,
   subtitle = NULL,
   footer = NULL,
+  align = NULL,
   digits = 2,
   ci_digits = 2,
   p_digits = 3,
+  footer_digits = 3,
   ci_brackets = c("(", ")"),
+  show_sigma = FALSE,
+  show_formula = FALSE,
+  zap_small = FALSE,
+  verbose = TRUE,
   ...
 )
 }
@@ -119,7 +133,8 @@
 \item{format}{String, indicating the output format. Can be \code{"markdown"}
 or \code{"html"}.}
 
-\item{pretty_names}{Return "pretty" (i.e. more human readable) parameter names.}
+\item{pretty_names}{Return "pretty" (i.e. more human readable) parameter
+names.}
 
 \item{split_components}{Logical, if \code{TRUE} (default), For models with
 multiple components (zero-inflation, smooth terms, ...), each component is
@@ -131,9 +146,7 @@ be printed. If \code{NULL} (default), all columns are printed. The shortcut
 \code{select = "minimal"} prints coefficient, confidence intervals and p-values,
 while \code{select = "short"} prints coefficient, standard errors and p-values.}
 
-\item{caption}{Table title (same as caption) and subtitle, as strings. If \code{NULL},
-no title or subtitle is printed, unless it is stored as attributes (\code{table_title},
-or its alias \code{table_caption}, and \code{table_subtitle}).}
+\item{caption}{Table caption as string. If \code{NULL}, no table caption is printed.}
 
 \item{subtitle}{Table title (same as caption) and subtitle, as strings. If \code{NULL},
 no title or subtitle is printed, unless it is stored as attributes (\code{table_title},
@@ -146,13 +159,28 @@ new text line under the table.}
 \item{align}{Only applies to HTML tables. May be one of \code{"left"},
 \code{"right"} or \code{"center"}.}
 
-\item{digits}{Number of decimal places for numeric values (except confidence intervals and p-values).}
+\item{digits}{Number of decimal places for numeric values (except confidence
+intervals and p-values).}
 
 \item{ci_digits}{Number of decimal places for confidence intervals.}
 
 \item{p_digits}{Number of decimal places for p-values. May also be \code{"scientific"} for scientific notation of p-values.}
 
-\item{ci_brackets}{Logical, if \code{TRUE} (default), CI-values are encompassed in square brackets (else in parentheses).}
+\item{footer_digits}{Number of decimal places for values in the footer summary.}
+
+\item{ci_brackets}{Logical, if \code{TRUE} (default), CI-values are
+encompassed in square brackets (else in parentheses).}
+
+\item{show_sigma}{Logical, if \code{TRUE}, adds information about the residual
+standard deviation.}
+
+\item{show_formula}{Logical, if \code{TRUE}, adds the model formula to the output.}
+
+\item{zap_small}{Logical, if \code{TRUE}, small values are rounded after
+\code{digits} decimal places. If \code{FALSE}, values with more decimal
+places than \code{digits} are printed in scientific notation.}
+
+\item{verbose}{Toggle messages and warnings.}
 
 \item{...}{Arguments passed to or from other methods.}
 
@@ -168,14 +196,10 @@ structure).}
 
 \item{x}{An object returned by \code{\link[=model_parameters]{model_parameters()}}.}
 
-\item{ci_width}{Minimum width of the returned string for confidence intervals. If not \code{NULL} and width is larger than the string's length, leading whitespaces are added to the string. If \code{width="auto"}, width will be set to the length of the longest string.}
-
-\item{show_sigma}{Logical, if \code{TRUE}, adds information about the residual
-standard deviation.}
-
-\item{show_formula}{Logical, if \code{TRUE}, adds the model formula to the output.}
-
-\item{verbose}{Toggle warnings and messages.}
+\item{ci_width}{Minimum width of the returned string for confidence
+intervals. If not \code{NULL} and width is larger than the string's length,
+leading whitespaces are added to the string. If \code{width="auto"}, width
+will be set to the length of the longest string.}
 }
 \value{
 If \code{format = "markdown"}, the return value will be a character

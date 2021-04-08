@@ -15,9 +15,9 @@
 #'  \item{\link[=model_parameters.averaging]{Other special models} (\code{model.avg}, \code{betareg}, \code{glmx}, ...)}
 #'  \item{\link[=model_parameters.merMod]{Mixed models} (\pkg{lme4}, \pkg{nlme}, \pkg{glmmTMB}, \pkg{afex}, ...)}
 #'  \item{\link[=model_parameters.BFBayesFactor]{Bayesian tests} (\pkg{BayesFactor})}
-#'  \item{\link[=model_parameters.stanreg]{Bayesian models} (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, ...)}
+#'  \item{\link[=model_parameters.stanreg]{Bayesian models} (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, \pkg{blavaan}, ...)}
 #'  \item{\link[=model_parameters.principal]{PCA and FA} (\pkg{psych})}
-#'  \item{\link[=model_parameters.lavaan]{CFA and SEM} (\pkg{lavaan}, \pkg{blavaan})}
+#'  \item{\link[=model_parameters.lavaan]{CFA and SEM} (\pkg{lavaan})}
 #'  \item{\link[=model_parameters.kmeans]{Cluster models} (k-means, ...)}
 #'  \item{\link[=model_parameters.rma]{Meta-Analysis via linear (mixed) models} (\code{rma}, \code{metaplus}, \pkg{metaBMA}, ...)}
 #'  \item{\link[=model_parameters.glht]{Hypothesis testing} (\code{glht}, \pkg{PMCMRplus})}
@@ -67,6 +67,18 @@ model_parameters <- function(model, ...) {
 }
 
 
+# DF naming convention --------------------
+
+
+# DF column naming
+# F has df, df_error
+# t has df_error
+# z has df_error = Inf
+# Chisq has df
+# https://github.com/easystats/parameters/issues/455
+
+
+
 #' @rdname model_parameters
 #' @export
 parameters <- model_parameters
@@ -103,17 +115,25 @@ parameters <- model_parameters
 #'   (if possible), and confidence intervals and p-values are based on these
 #'   robust standard errors. Additional arguments like \code{vcov_estimation} or
 #'   \code{vcov_type} are passed down to other methods, see
-#'   \code{\link[=standard_error_robust]{standard_error_robust()}} for details.
+#'   \code{\link[=standard_error_robust]{standard_error_robust()}} for details
+#'   and \href{https://easystats.github.io/parameters/articles/model_parameters_robust.html}{this vignette}
+#'   for working examples.
 #' @param component Model component for which parameters should be shown. May be
 #'   one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}),
 #'   \code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}),
 #'   \code{"marginal"} (\pkg{mfx}), \code{"conditional"} or \code{"full"} (for
 #'   \code{MuMIn::model.avg()}) or \code{"all"}.
 #' @param p_adjust Character vector, if not \code{NULL}, indicates the method to
-#'   adjust p-values. See \code{\link[stats]{p.adjust}} for details.
+#'   adjust p-values. See \code{\link[stats]{p.adjust}} for details. Further
+#'   possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
+#'   \code{"sidak"} and \code{"none"} to explicitly disable adjustment for
+#'   \code{emmGrid} objects (from \pkg{emmeans}).
 #' @param df_method Method for computing degrees of freedom for confidence
 #'   intervals (CI). Only applies to models of class \code{glm} or \code{polr}.
 #'   May be \code{"profile"} or \code{"wald"}.
+#' @param summary Logical, if \code{TRUE}, prints summary information about the
+#'   model (model formula, number of observations, residual standard deviation
+#'   and more).
 #' @param verbose Toggle warnings and messages.
 #' @param ... Arguments passed to or from other methods. For instance, when
 #'   \code{bootstrap = TRUE}, arguments like \code{ci_method} are passed down to
@@ -154,21 +174,34 @@ model_parameters.default <- function(model,
                                      exponentiate = FALSE,
                                      robust = FALSE,
                                      p_adjust = NULL,
+                                     summary = FALSE,
                                      verbose = TRUE,
                                      ...) {
-  out <- .model_parameters_generic(
-    model = model,
-    ci = ci,
-    bootstrap = bootstrap,
-    iterations = iterations,
-    merge_by = "Parameter",
-    standardize = standardize,
-    exponentiate = exponentiate,
-    robust = robust,
-    p_adjust = p_adjust,
-    verbose = verbose,
-    ...
+  out <- tryCatch(
+    {
+      .model_parameters_generic(
+        model = model,
+        ci = ci,
+        bootstrap = bootstrap,
+        iterations = iterations,
+        merge_by = "Parameter",
+        standardize = standardize,
+        exponentiate = exponentiate,
+        robust = robust,
+        p_adjust = p_adjust,
+        summary = summary,
+        verbose = verbose,
+        ...
+      )
+    },
+    error = function(e) {
+      NULL
+    }
   )
+
+  if (is.null(out)) {
+    stop(paste0("Sorry, `model_parameters()` does currently not work for objects of class '", class(model)[1], "'."), call. = FALSE)
+  }
 
   attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   out
@@ -187,6 +220,7 @@ model_parameters.default <- function(model,
                                       robust = FALSE,
                                       df_method = NULL,
                                       p_adjust = NULL,
+                                      summary = FALSE,
                                       verbose = TRUE,
                                       ...) {
 
@@ -197,7 +231,12 @@ model_parameters.default <- function(model,
 
   # Processing
   if (bootstrap) {
-    params <- bootstrap_parameters(model, iterations = iterations, ci = ci, ...)
+    params <- bootstrap_parameters(
+      model,
+      iterations = iterations,
+      ci = ci,
+      ...
+    )
   } else {
     params <- .extract_parameters_generic(
       model,
@@ -217,6 +256,7 @@ model_parameters.default <- function(model,
   if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
     params <- .exponentiate_parameters(params, model, exponentiate)
   }
+
   params <- .add_model_parameters_attributes(
     params,
     model,
@@ -226,11 +266,12 @@ model_parameters.default <- function(model,
     iterations,
     df_method = df_method,
     p_adjust = p_adjust,
+    summary = summary,
     verbose = verbose,
     ...
   )
-  class(params) <- c("parameters_model", "see_parameters_model", class(params))
 
+  class(params) <- c("parameters_model", "see_parameters_model", class(params))
   params
 }
 
