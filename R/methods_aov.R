@@ -41,7 +41,11 @@
 #' @return A data frame of indices related to the model's parameters.
 #'
 #' @note For ANOVA-tables from mixed models (i.e. \code{anova(lmer())}), only
-#'   partial or adjusted effect sizes can be computed.
+#'   partial or adjusted effect sizes can be computed. Note that type 3 ANOVAs
+#'   with interactions involved only give sensible and informative results when
+#'   covariates are mean-centred and factors are coded with orthogonal contrasts
+#'   (such as those produced by \code{contr.sum}, \code{contr.poly}, or
+#'   \code{contr.helmert}, but \emph{not} by the default \code{contr.treatment}).
 #'
 #' @examples
 #' if (requireNamespace("effectsize", quietly = TRUE)) {
@@ -105,14 +109,20 @@ model_parameters.aov <- function(model,
                                  ci = NULL,
                                  test = NULL,
                                  power = FALSE,
+                                 parameters = NULL,
                                  verbose = TRUE,
                                  ...) {
   if (inherits(model, "aov") && !is.null(type) && type > 1) {
     if (!requireNamespace("car", quietly = TRUE)) {
-      warning("Package 'car' required for type-2 or type-3 anova. Defaulting to type-1.", call. = FALSE)
+      warning(insight::format_message("Package 'car' required for type-2 or type-3 anova. Defaulting to type-1."), call. = FALSE)
     } else {
       model <- car::Anova(model, type = type)
     }
+  }
+
+  # try to extract type of anova table
+  if (is.null(type)) {
+    type <- .anova_type(model)
   }
 
   # exceptions
@@ -120,31 +130,41 @@ model_parameters.aov <- function(model,
     return(model_parameters.htest(model, ...))
   }
 
+  # check contrasts
+  if (verbose) {
+    .check_anova_contrasts(model, type)
+  }
+
   # extract standard parameters
-  parameters <- .extract_parameters_anova(model, test)
+  params <- .extract_parameters_anova(model, test)
 
   # add effect sizes, if available
-  parameters <- .effectsizes_for_aov(
+  params <- .effectsizes_for_aov(
       model,
-      parameters,
-      omega_squared,
-      eta_squared,
-      epsilon_squared,
-      df_error,
-      ci,
+      parameters = params,
+      omega_squared = omega_squared,
+      eta_squared = eta_squared,
+      epsilon_squared = epsilon_squared,
+      df_error = df_error,
+      ci = ci,
       verbose = verbose
     )
 
   # add power, if possible
   if (isTRUE(power)) {
-    parameters <- .power_for_aov(model, parameters)
+    params <- .power_for_aov(model, params)
+  }
+
+  # filter parameters
+  if (!is.null(parameters)) {
+    params <- .filter_parameters(params, parameters, verbose = verbose)
   }
 
   # add attributes
-  parameters <- .add_anova_attributes(parameters, model, ci, test = test, ...)
+  params <- .add_anova_attributes(params, model, ci, test = test, ...)
 
-  class(parameters) <- c("parameters_model", "see_parameters_model", class(parameters))
-  parameters
+  class(params) <- c("parameters_model", "see_parameters_model", class(params))
+  params
 }
 
 
@@ -245,6 +265,7 @@ model_parameters.afex_aov <- function(model,
                                       epsilon_squared = NULL,
                                       df_error = NULL,
                                       type = NULL,
+                                      parameters = NULL,
                                       verbose = TRUE,
                                       ...) {
   if (inherits(model$Anova, "Anova.mlm")) {
@@ -252,14 +273,14 @@ model_parameters.afex_aov <- function(model,
     with_df_and_p <- summary(model$Anova)$univariate.tests
     params$`Sum Sq` <- with_df_and_p[-1, 1]
     params$`Error SS` <- with_df_and_p[-1, 3]
-    out <- model_parameters(params, df_error = NULL, type = NULL, ...)
+    out <- .extract_parameters_anova(params, test = NULL)
   } else {
-    out <- model_parameters(model$Anova, df_error = NULL, type = attr(model, "type"), ...)
+    out <- .extract_parameters_anova(model$Anova, test = NULL)
   }
 
   out <- .effectsizes_for_aov(
     model,
-    out,
+    parameters = out,
     omega_squared = omega_squared,
     eta_squared = eta_squared,
     epsilon_squared = epsilon_squared,
@@ -268,11 +289,20 @@ model_parameters.afex_aov <- function(model,
     ...
   )
 
+  # add attributes
+  out <- .add_anova_attributes(out, model, ci, test = NULL, ...)
+
+  # filter parameters
+  if (!is.null(parameters)) {
+    out <- .filter_parameters(out, parameters, verbose = verbose)
+  }
+
   if (!"Method" %in% names(out)) {
     out$Method <- "ANOVA estimation for factorial designs using 'afex'"
   }
 
   attr(out, "title") <- unique(out$Method)
+  class(out) <- unique(c("parameters_model", "see_parameters_model", class(out)))
 
   out
 }
@@ -283,7 +313,113 @@ model_parameters.afex_aov <- function(model,
 # helper ------------------------------
 
 
-.effectsizes_for_aov <- function(model, parameters, omega_squared, eta_squared, epsilon_squared, df_error = NULL, ci = NULL, verbose = TRUE) {
+.anova_type <- function(model, type = NULL) {
+  if (is.null(type)) {
+
+    type_to_numeric <- function(type) {
+      if (is.numeric(type)) {
+        return(type)
+      }
+      switch(
+        type,
+        "1" = ,
+        "I" = 1,
+        "2" = ,
+        "II" = 2,
+        "3" = ,
+        "III" = 3,
+        1
+      )
+    }
+
+    # default to 1
+    type <- 1
+
+    if (!is.null(attr(model, "type", exact = TRUE))) {
+      type <- type_to_numeric(attr(model, "type", exact = TRUE))
+    } else if (!is.null(attr(model, "heading"))) {
+      heading <- attr(model, "heading")[1]
+      if (grepl("(.*)Type (.*) Wald(.*)", heading)) {
+        type <- type_to_numeric(trimws(gsub("(.*)Type (.*) Wald(.*)", "\\2", heading)))
+      } else if (grepl("Type (.*) Analysis(.*)", heading)) {
+        type <- type_to_numeric(trimws(gsub("Type (.*) Analysis(.*)", "\\1", heading)))
+      } else if (grepl("(.*)Type (.*) tests(.*)", heading)) {
+        type <- type_to_numeric(trimws(gsub("(.*)Type (.*) tests(.*)", "\\2", heading)))
+      }
+    } else if ("type" %in% names(model) && !is.null(model$type)) {
+      type <- type_to_numeric(model$type)
+    }
+  }
+
+  type
+}
+
+
+.check_anova_contrasts <- function(model, type) {
+  # check only valid for anova tables of type III
+  if (!is.null(type) && type == 3) {
+
+    # check for interaction terms
+    interaction_terms <- tryCatch(
+      {
+        insight::find_interactions(model, flatten = TRUE)
+      },
+      error = function(e) {
+        if (is.data.frame(model)) {
+          if (any(grepl(":", row.names(model), fixed = TRUE))) {
+            TRUE
+          } else {
+            NULL
+          }
+        }
+      }
+    )
+
+    # try to access data of model predictors
+    predictors <- tryCatch(
+      {
+        insight::get_predictors(model)
+      },
+      error = function(e) {
+        NULL
+      }
+    )
+
+    # if data available, check contrasts and mean centering
+    if (!is.null(predictors)) {
+      treatment_contrasts_or_not_centered <- sapply(predictors, function(i) {
+        if (is.factor(i)) {
+          cn <- stats::contrasts(i)
+          if (is.null(cn) || (all(cn %in% c(0, 1)))) {
+            return(TRUE)
+          }
+        } else {
+          if (abs(mean(i, na.rm = TRUE)) > 1e-2) {
+            return(TRUE)
+          }
+        }
+        return(FALSE)
+      })
+    } else {
+      treatment_contrasts_or_not_centered <- FALSE
+    }
+
+    # successfully checked predictors, or if not possible, at least found interactions?
+    if (!is.null(interaction_terms) && (any(treatment_contrasts_or_not_centered) || is.null(predictors))) {
+      message(insight::format_message("Type 3 ANOVAs only give sensible and informative results when covariates are mean-centered and factors are coded with orthogonal contrasts (such as those produced by 'contr.sum', 'contr.poly', or 'contr.helmert', but *not* by the default 'contr.treatment')."))
+    }
+  }
+}
+
+
+.effectsizes_for_aov <- function(model,
+                                 parameters,
+                                 omega_squared,
+                                 eta_squared,
+                                 epsilon_squared,
+                                 df_error = NULL,
+                                 ci = NULL,
+                                 verbose = TRUE) {
   # user actually does not want to compute effect sizes
   if (is.null(omega_squared) && is.null(eta_squared) && is.null(epsilon_squared)) {
     return(parameters)

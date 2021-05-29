@@ -5,7 +5,11 @@
 #'   mixed model and returns the result as a data frame.
 #'
 #' @param model A mixed effects model (including \code{stanreg} models).
-#' @inheritParams simulate_model
+#' @param component Should all parameters, parameters for the conditional model,
+#'   or for the zero-inflated part of the model be returned? Applies to models
+#'   with zero-inflated component. \code{component} may be one of
+#'   \code{"conditional"} (default), \code{"zi"} or \code{"zero-inflated"}.
+#'   May be abbreviated.
 #'
 #' @return A data frame with random effects statistics for the variance components,
 #'   including number of levels per random effect group, as well as complete
@@ -65,8 +69,6 @@ random_parameters <- function(model, component = "conditional") {
 
 
 
-#' @importFrom insight find_random get_variance find_random_slopes n_obs
-#' @importFrom stats setNames
 .randomeffects_summary <- function(model, component = "conditional") {
   out <- list()
 

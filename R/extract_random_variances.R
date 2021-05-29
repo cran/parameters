@@ -4,7 +4,6 @@
 }
 
 
-#' @importFrom insight get_variance get_sigma find_statistic
 .extract_random_variances.default <- function(model,
                                               ci = .95,
                                               effects = "random",
@@ -108,7 +107,7 @@
     )
   )
 
-  ran_sigma <- data.frame(insight::get_sigma(model, verbose = FALSE))
+  ran_sigma <- data.frame(insight::get_sigma(model, ci = NULL, verbose = FALSE))
 
   # random intercept - tau00
   if (nrow(ran_intercept) > 0) {

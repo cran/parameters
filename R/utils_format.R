@@ -1,5 +1,92 @@
 # helper ------------------------
 
+
+.parameter_groups <- function(x, groups) {
+  # only apply to conditional component for now
+  if ("Component" %in% colnames(x) && sum(x$Component == "conditional") == 0) {
+    return(x)
+  }
+  if ("Component" %in% colnames(x)) {
+    row_index <- which(x$Component == "conditional")
+  } else {
+    row_index <- 1:nrow(x)
+  }
+
+  x_other <- x[-row_index, ]
+  x <- x[row_index, ]
+
+  att <- attributes(x)
+  indent_rows <- NULL
+  indent_parameters <- NULL
+
+  if (is.list(groups)) {
+
+    # find parameter names and replace by rowindex
+    group_rows <- lapply(groups, function(i) {
+      if (is.character(i)) {
+        i <- match(i, x$Parameter)
+      }
+      i
+    })
+
+    # sort parameters according to grouping
+    selected_rows <- unlist(group_rows)
+    indent_parameters <- x$Parameter[selected_rows]
+    x <- rbind(x[selected_rows, ], x[-selected_rows, ])
+
+    # set back correct indices
+    groups <- 1
+    for (i in 2:length(group_rows)) {
+      groups <- c(groups, groups[i - 1] + length(group_rows[[i - 1]]))
+    }
+    names(groups) <- names(group_rows)
+
+  } else {
+
+    # find parameter names and replace by rowindex
+    group_names <- names(groups)
+    groups <- match(groups, x$Parameter)
+    names(groups) <- group_names
+
+    # order groups
+    groups <- groups[order(groups)]
+  }
+
+
+  empty_row <- x[1, ]
+  for (i in 1:ncol(empty_row)) {
+    empty_row[[i]] <- NA
+  }
+
+  for (i in length(groups):1) {
+    x[seq(groups[i] + 1, nrow(x) + 1), ] <- x[seq(groups[i], nrow(x)), ]
+    x[groups[i], ] <- empty_row
+    x$Parameter[groups[i]] <- paste0("# ", names(groups[i]))
+  }
+
+  # find row indices of indented parameters
+  if (!is.null(indent_parameters)) {
+    indent_rows <- match(indent_parameters, x$Parameter)
+  }
+
+  # add other rows back
+  if (nrow(x_other) > 0) {
+    x <- rbind(x, x_other)
+  }
+
+  attributes(x) <- utils::modifyList(att, attributes(x))
+  attr(x, "indent_rows") <- indent_rows
+  attr(x, "indent_groups") <- "# "
+  x
+}
+
+
+# .insert_row <- function(x, newrow, r) {
+#   existingDF[seq(r+1,nrow(existingDF)+1),] <- existingDF[seq(r,nrow(existingDF)),]
+#   existingDF[r,] <- newrow
+#   existingDF
+# }
+
 .prepare_x_for_print <- function(x, select, coef_name, s_value) {
   # minor fix for nested Anovas
   if ("Group" %in% colnames(x) && sum(x$Parameter == "Residuals") > 1) {
@@ -8,9 +95,9 @@
 
   if (!is.null(select)) {
     if (all(select == "minimal")) {
-      select <- c("Parameter", "Coefficient", "CI", "CI_low", "CI_high", "p")
+      select <- c("Parameter", "Coefficient", "Std_Coefficient", "CI", "CI_low", "CI_high", "p")
     } else if (all(select == "short")) {
-      select <- c("Parameter", "Coefficient", "SE", "p")
+      select <- c("Parameter", "Coefficient", "Std_Coefficient", "SE", "p")
     } else if (is.numeric(select)) {
       select <- colnames(x)[select]
     }
@@ -84,8 +171,6 @@
 # sophisticated, to ensure nicely outputs even for complicated or complex models,
 # or edge cases...
 
-#' @importFrom insight format_value
-#' @importFrom stats quantile
 #' @keywords internal
 .print_model_parms_components <- function(x,
                                           pretty_names,
@@ -146,6 +231,12 @@
   if (inherits(attributes(x)$model, c("lavaan", "blavaan")) && "Label" %in% colnames(x)) {
     x$From <- ifelse(x$Label == "" | x$Label == x$To, x$From, paste0(x$From, " (", x$Label, ")"))
     x$Label <- NULL
+  }
+
+  if (inherits(attributes(x)$model, c("lavaan", "blavaan")) && "Defined" %in% x$Component) {
+    x$From[x$Component == "Defined"] <- ""
+    x$Operator[x$Component == "Defined"] <- ""
+    x$To <- ifelse(x$Component == "Defined", paste0("(", x$To, ")"), x$To)
   }
 
   # set up split-factor
@@ -243,7 +334,7 @@
       tables[[type]]$CI <- NULL
     }
 
-    # for ggeffects objects, only choose selectes lines, to have
+    # for ggeffects objects, only choose selected lines, to have
     # a more compact output
     if (is_ggeffects && is.numeric(tables[[type]][[1]])) {
       n_rows <- nrow(tables[[type]])
@@ -311,7 +402,6 @@
 # helper to fix unequal number of columns for list of data frames,
 # when used for HTML printing
 
-#' @importFrom utils modifyList
 .fix_nonmatching_columns <- function(final_table) {
   col_len <- sapply(final_table, function(i) length(colnames(i)))
   if (!all(col_len) == max(col_len)) {
@@ -355,6 +445,7 @@
     "zero_inflated.random" = "Random Effects (Zero-Inflated Model)",
     "survival" = ,
     "survival.fixed" = "Survival",
+    "dispersion.fixed" = ,
     "dispersion.fixed." = ,
     "dispersion" = "Dispersion",
     "marginal" = "Marginal Effects",
@@ -392,6 +483,7 @@
     "intercept" = "Intercept",
     "regression" = "Regression",
     "latent" = "Latent",
+    "time_dummies" = "Time Dummies",
     type
   )
 
@@ -425,8 +517,8 @@
 
   # if we show ZI component only, make sure this appears in header
   if (!grepl("(Zero-Inflated Model)", component_name, fixed = TRUE) &&
-      !is.null(formatted_table$Component) &&
-      all(formatted_table$Component == "zero_inflated")) {
+    !is.null(formatted_table$Component) &&
+    all(formatted_table$Component == "zero_inflated")) {
     component_name <- paste0(component_name, " (Zero-Inflated Model)")
   }
 

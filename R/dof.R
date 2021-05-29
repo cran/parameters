@@ -57,7 +57,6 @@ degrees_of_freedom <- function(model, ...) {
 }
 
 
-#' @importFrom insight find_statistic
 #' @rdname degrees_of_freedom
 #' @export
 degrees_of_freedom.default <- function(model, method = "analytical", ...) {
@@ -133,8 +132,6 @@ dof <- degrees_of_freedom
 
 # Model approach (Residual df) ------------------------------
 
-#' @importFrom bayestestR bayesian_as_frequentist
-#' @importFrom stats df.residual
 #' @keywords internal
 .degrees_of_freedom_fit <- function(model, verbose = TRUE) {
   info <- insight::model_info(model, verbose = FALSE)
@@ -198,7 +195,7 @@ dof <- degrees_of_freedom
 
   method <- tolower(method)
   if (inherits(model, c("polr", "glm"))) {
-    if (method %in% c("analytical", "any", "fit", "profile", "wald", "nokr")) {
+    if (method %in% c("analytical", "any", "fit", "profile", "wald", "nokr", "likelihood")) {
       return(TRUE)
     } else {
       warning("'df_method' must be one of 'wald' or 'profile'. Using 'wald' now.", call. = FALSE)
@@ -212,7 +209,7 @@ dof <- degrees_of_freedom
   }
 
   if (!(method %in% c("analytical", "any", "fit", "satterthwaite", "betwithin", "kenward", "kr", "nokr", "wald", "ml1", "profile", "boot", "uniroot"))) {
-    warning("'df_method' must be one of 'wald', 'profile', 'boot', 'uniroot', 'kenward', 'satterthwaite', 'betwithin' or 'ml1'. Using 'wald' now.", call. = FALSE)
+    warning(insight::format_message("'df_method' must be one of 'wald', 'profile', 'boot', 'uniroot', 'kenward', 'satterthwaite', 'betwithin' or 'ml1'. Using 'wald' now."), call. = FALSE)
     return(FALSE)
   }
 

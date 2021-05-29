@@ -16,6 +16,7 @@
   test = c("pd", "rope"),
   rope_range = "default",
   rope_ci = 1,
+  parameters = NULL,
   verbose = TRUE,
   ...
 )
@@ -37,6 +38,7 @@
   exponentiate = FALSE,
   standardize = NULL,
   group_level = FALSE,
+  parameters = NULL,
   verbose = TRUE,
   ...
 )
@@ -57,6 +59,7 @@
   exponentiate = FALSE,
   standardize = NULL,
   group_level = FALSE,
+  parameters = NULL,
   verbose = TRUE,
   ...
 )
@@ -74,8 +77,8 @@ a data frame with posterior samples.}
 
 \item{ci_method}{The type of index used for Credible Interval. Can be
 \code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi}}), \code{"ETI"}
-(see \code{\link[bayestestR:eti]{eti}}) or \code{"SI"}
-(see \code{\link[bayestestR:si]{si}}).}
+(see \code{\link[bayestestR:eti]{eti}}), \code{"BCI"} (see
+\code{bci}) or \code{"SI"} (see \code{\link[bayestestR:si]{si}}).}
 
 \item{test}{The indices of effect existence to compute. Character (vector) or
 list with one or more of these options: \code{"p_direction"} (or \code{"pd"}),
@@ -91,6 +94,20 @@ the bounds are set to \code{x +- 0.1*SD(response)}.}
 
 \item{rope_ci}{The Credible Interval (CI) probability, corresponding to the
 proportion of HDI, to use for the percentage in ROPE.}
+
+\item{parameters}{Character vector of length 1 with a regular expression pattern
+that describes the parameters that should be returned from the data frame, or
+a named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{parameters} is a character vector, every
+parameter in the \emph{"Parameters"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame. Furthermore,
+if \code{parameters} has more than one element, these will be merged into
+a regular expression pattern like this: \code{"(one|two|three)"}. If
+\code{parameters} is a named list of regular expression patterns, the
+names of the list-element should equal the column name where selection
+should be applied. This is useful for model objects where
+\code{model_parameters()} returns multiple columns with parameter components,
+like in \code{\link{model_parameters.lavaan}}.}
 
 \item{verbose}{Toggle messages and warnings.}
 
@@ -112,20 +129,29 @@ one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}),
 \code{MuMIn::model.avg()}) or \code{"all"}.}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
-the coefficients (and related confidence intervals). This is typical for,
-say, logistic regressions, or more generally speaking: for models with log
-or logit link. \strong{Note:} standard errors are also transformed (by
-multiplying the standard errors with the exponentiated coefficients), to
-mimic behaviour of other software packages, such as Stata. For
-\code{compare_parameters()}, \code{exponentiate = "nongaussian"} will only
-exponentiate coefficients for all models except those from Gaussian family.}
+the coefficients (and related confidence intervals). This is typical for
+logistic regression, or more generally speaking, for models with log
+or logit links. \strong{Note:} Delta-method standard errors are also
+computed (by multiplying the standard errors by the transformed
+coefficients). This is to mimic behaviour of other software packages, such
+as Stata, but these standard errors poorly estimate uncertainty for the
+transformed coefficient. The transformed confidence interval more clearly
+captures this uncertainty. For \code{compare_parameters()},
+\code{exponentiate = "nongaussian"} will only exponentiate coefficients
+from non-Gaussian families.}
 
 \item{standardize}{The method used for standardizing the parameters. Can be
 \code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"},
 \code{"pseudo"} or \code{NULL} (default) for no standardization. See
-'Details' in \code{\link[effectsize]{standardize_parameters}}. Note that
-robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
-works when \code{standardize="refit"}.}
+'Details' in \code{\link[effectsize]{standardize_parameters}}.
+\strong{Important:} Categorical predictors (i.e. factors) are \emph{never}
+standardized by default, which may be a different behaviour compared to
+other R packages or other software packages (like SPSS). If standardizing
+categorical predictors is desired, either use \code{standardize="basic"}
+to mimic behaviour of SPSS or packages such as \pkg{lm.beta}, or standardize
+the data with \code{effectsize::standardize(force=TRUE)} before fitting
+the model. Robust estimation (i.e. \code{robust=TRUE}) of standardized
+parameters only works when \code{standardize="refit"}.}
 
 \item{group_level}{Logical, for multilevel models (i.e. models with random
 effects) and when \code{effects = "all"} or \code{effects = "random"},

@@ -27,8 +27,6 @@ model_parameters.mediate <- function(model, ci = .95, exponentiate = FALSE, verb
 }
 
 
-#' @importFrom insight get_parameters model_info
-#' @importFrom stats quantile
 #' @export
 ci.mediate <- function(x, ci = .95, ...) {
   info <- insight::model_info(x$model.y)
@@ -105,7 +103,7 @@ degrees_of_freedom.mediate <- function(model, ...) {
 
 #' @export
 p_value.mediate <- function(model, ...) {
-  info <- model_info(model$model.y)
+  info <- insight::model_info(model$model.y)
   if (info$is_linear && !model$INT) {
     out <- data.frame(
       Parameter = c("ACME", "ADE", "Total Effect", "Prop. Mediated"),

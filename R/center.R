@@ -192,9 +192,9 @@ center.data.frame <- function(x,
   if (length(unique(x)) == 2 && !is.factor(x) && !is.character(x)) {
     if (verbose) {
       if (is.null(name)) {
-        message("The variable contains only two different values. Consider converting it to a factor.")
+        message(insight::format_message("The variable contains only two different values. Consider converting it to a factor."))
       } else {
-        message(paste0("Variable `", name, "` contains only two different values. Consider converting it to a factor."))
+        message(insight::format_message(paste0("Variable `", name, "` contains only two different values. Consider converting it to a factor.")))
       }
     }
   }
@@ -209,7 +209,6 @@ center.data.frame <- function(x,
 
 
 
-#' @importFrom stats na.omit
 .factor_to_numeric <- function(x) {
   if (is.numeric(x)) {
     return(x)
@@ -227,7 +226,6 @@ center.data.frame <- function(x,
 
 
 
-#' @importFrom stats weighted.mean
 .mean <- function(x, weights = NULL, verbose = TRUE) {
   if (!.are_weights(weights)) {
     return(mean(x, na.rm = TRUE))
@@ -245,7 +243,6 @@ center.data.frame <- function(x,
 
 
 
-#' @importFrom stats median
 .median <- function(x, weights = NULL, verbose = TRUE) {
   # From spatstat + wiki
   if (!.are_weights(weights)) {

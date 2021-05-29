@@ -7,7 +7,7 @@ if (.runThisTest &&
   data("WageData")
   wages <- panel_data(WageData, id = id, wave = t)
   m1 <- wbm(lwage ~ lag(union) + wks | blk + fem | blk * lag(union), data = wages)
-  m2 <- wbm(lwage ~ lag(union) + wks | blk + fem | blk * (t | id), data = wages)
+  m2 <- suppressWarnings(wbm(lwage ~ lag(union) + wks | blk + fem | blk * (t | id), data = wages))
 
   test_that("ci", {
     expect_equal(
@@ -56,8 +56,10 @@ if (.runThisTest &&
     )
     expect_equal(
       model_parameters(m1, effects = "all")$Coefficient,
-      c(0.05825, -0.00164, 6.59813, -0.028, 0.00438, -0.22941, -0.44176,
-        -0.12732, 0.35399, 0.48233),
+      c(
+        0.05825, -0.00164, 6.59813, -0.028, 0.00438, -0.22941, -0.44176,
+        -0.12732, 0.35399, 0.48233
+      ),
       tolerance = 1e-3
     )
     expect_equal(

@@ -16,6 +16,7 @@ compare_parameters(
   p_adjust = NULL,
   style = NULL,
   column_names = NULL,
+  groups = NULL,
   verbose = TRUE
 )
 
@@ -30,6 +31,7 @@ compare_models(
   p_adjust = NULL,
   style = NULL,
   column_names = NULL,
+  groups = NULL,
   verbose = TRUE
 )
 }
@@ -50,18 +52,27 @@ documentation for related model class in \code{\link{model_parameters}}.}
 \item{standardize}{The method used for standardizing the parameters. Can be
 \code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"},
 \code{"pseudo"} or \code{NULL} (default) for no standardization. See
-'Details' in \code{\link[effectsize]{standardize_parameters}}. Note that
-robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
-works when \code{standardize="refit"}.}
+'Details' in \code{\link[effectsize]{standardize_parameters}}.
+\strong{Important:} Categorical predictors (i.e. factors) are \emph{never}
+standardized by default, which may be a different behaviour compared to
+other R packages or other software packages (like SPSS). If standardizing
+categorical predictors is desired, either use \code{standardize="basic"}
+to mimic behaviour of SPSS or packages such as \pkg{lm.beta}, or standardize
+the data with \code{effectsize::standardize(force=TRUE)} before fitting
+the model. Robust estimation (i.e. \code{robust=TRUE}) of standardized
+parameters only works when \code{standardize="refit"}.}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
-the coefficients (and related confidence intervals). This is typical for,
-say, logistic regressions, or more generally speaking: for models with log
-or logit link. \strong{Note:} standard errors are also transformed (by
-multiplying the standard errors with the exponentiated coefficients), to
-mimic behaviour of other software packages, such as Stata. For
-\code{compare_parameters()}, \code{exponentiate = "nongaussian"} will only
-exponentiate coefficients for all models except those from Gaussian family.}
+the coefficients (and related confidence intervals). This is typical for
+logistic regression, or more generally speaking, for models with log
+or logit links. \strong{Note:} Delta-method standard errors are also
+computed (by multiplying the standard errors by the transformed
+coefficients). This is to mimic behaviour of other software packages, such
+as Stata, but these standard errors poorly estimate uncertainty for the
+transformed coefficient. The transformed confidence interval more clearly
+captures this uncertainty. For \code{compare_parameters()},
+\code{exponentiate = "nongaussian"} will only exponentiate coefficients
+from non-Gaussian families.}
 
 \item{df_method}{Method for computing degrees of freedom for p values,
 standard errors and confidence intervals (CI). See documentation for
@@ -87,6 +98,16 @@ templates are possible:
 \item{column_names}{Character vector with strings that should be used as
 column headers. Must be of same length as number of models in \code{...}.}
 
+\item{groups}{Named list, can be used to group parameters in the printed output.
+List elements may either be character vectors that match the name of those
+parameters that belong to one group, or list elements can be row numbers
+of those parameter rows that should belong to one group. The names of the
+list elements will be used as group names, which will be inserted as "header
+row". A possible use case might be to emphasize focal predictors and control
+variables, see 'Examples'. Parameters will be re-ordered according to the
+order used in \code{groups}, while all non-matching parameters will be added
+to the end.}
+
 \item{verbose}{Toggle warnings and messages.}
 }
 \value{
@@ -102,22 +123,22 @@ This function is in an early stage and does not yet cope with more
   components.
 }
 \examples{
-if (packageVersion("insight") >= "0.13.0") {
-  data(iris)
-  lm1 <- lm(Sepal.Length ~ Species, data = iris)
-  lm2 <- lm(Sepal.Length ~ Species + Petal.Length, data = iris)
-  lm3 <- lm(Sepal.Length ~ Species * Petal.Length, data = iris)
-  compare_parameters(lm1, lm2, lm3)
+data(iris)
+lm1 <- lm(Sepal.Length ~ Species, data = iris)
+lm2 <- lm(Sepal.Length ~ Species + Petal.Length, data = iris)
+lm3 <- lm(Sepal.Length ~ Species * Petal.Length, data = iris)
+compare_parameters(lm1, lm2, lm3)
 
-  data(mtcars)
-  m1 <- lm(mpg ~ wt, data = mtcars)
-  m2 <- glm(vs ~ wt + cyl, data = mtcars, family = "binomial")
-  compare_parameters(m1, m2)
+data(mtcars)
+m1 <- lm(mpg ~ wt, data = mtcars)
+m2 <- glm(vs ~ wt + cyl, data = mtcars, family = "binomial")
+compare_parameters(m1, m2)
 
-  # exponentiate coefficients, but not for lm
-  compare_parameters(m1, m2, exponentiate = "nongaussian")
+\dontrun{
+# exponentiate coefficients, but not for lm
+compare_parameters(m1, m2, exponentiate = "nongaussian")
 
-  # change column names
-  compare_parameters(m1, m2, column_names = c("linear model", "logistic reg."))
+# change column names
+compare_parameters(m1, m2, column_names = c("linear model", "logistic reg."))
 }
 }

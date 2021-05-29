@@ -33,9 +33,6 @@
 #' }
 #' }
 #' @return A data frame of indices related to the model's parameters.
-#' @importFrom stats na.omit setNames
-#' @importFrom bayestestR bayesfactor_models
-#' @importFrom insight get_priors
 #' @export
 model_parameters.BFBayesFactor <- function(model,
                                            centrality = "median",
@@ -93,7 +90,12 @@ model_parameters.BFBayesFactor <- function(model,
   # Extract BF
   tryCatch(
     {
-      out$BF <- as.data.frame(bayestestR::bayesfactor_models(model)[-1, ])$BF
+      bfm <- as.data.frame(bayestestR::bayesfactor_models(model)[-1, ])
+      if (!is.null(bfm$log_BF)) {
+        out$BF <- exp(bfm$log_BF)
+      } else {
+        out$BF <- bfm$BF
+      }
     },
     error = function(e) {
       NULL
@@ -187,7 +189,6 @@ model_parameters.BFBayesFactor <- function(model,
 #' data(iris)
 #' model <- lm(Petal.Length ~ Sepal.Length + Species, data = iris)
 #' p_value(model)
-#' @importFrom bayestestR p_direction convert_pd_to_p
 #' @export
 p_value.BFBayesFactor <- function(model, ...) {
   p <- bayestestR::p_direction(model)

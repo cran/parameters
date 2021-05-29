@@ -38,7 +38,6 @@
 #' }
 #' }
 #' @return A data frame of indices related to the model's parameters.
-#' @importFrom insight get_priors
 #' @export
 model_parameters.stanreg <- function(model,
                                      centrality = "median",
@@ -55,6 +54,7 @@ model_parameters.stanreg <- function(model,
                                      exponentiate = FALSE,
                                      standardize = NULL,
                                      group_level = FALSE,
+                                     parameters = NULL,
                                      verbose = TRUE,
                                      ...) {
 
@@ -74,6 +74,7 @@ model_parameters.stanreg <- function(model,
     priors = priors,
     effects = effects,
     standardize = standardize,
+    filter_parameters = parameters,
     verbose = verbose,
     ...
   )
@@ -120,6 +121,7 @@ model_parameters.stanmvreg <- function(model,
                                        priors = TRUE,
                                        effects = "fixed",
                                        standardize = NULL,
+                                       parameters = NULL,
                                        verbose = TRUE,
                                        ...) {
 
@@ -139,6 +141,7 @@ model_parameters.stanmvreg <- function(model,
     priors = priors,
     effects = effects,
     standardize = standardize,
+    filter_parameters = parameters,
     verbose = verbose,
     ...
   )

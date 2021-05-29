@@ -14,6 +14,7 @@ format.parameters_model <- function(x,
                                     ci_brackets = NULL,
                                     zap_small = FALSE,
                                     format = NULL,
+                                    groups = NULL,
                                     ...) {
   # save attributes
   coef_name <- attributes(x)$coefficient_name
@@ -24,6 +25,11 @@ format.parameters_model <- function(x,
   random_variances <- isTRUE(attributes(x)$ran_pars)
   mean_group_values <- attributes(x)$mean_group_values
 
+  # is information about grouped parameters stored as attribute?
+  if (is.null(groups) && !is.null(attributes(x)$coef_groups)) {
+    groups <- attributes(x)$coef_groups
+  }
+
   if (identical(format, "html")) {
     coef_name <- NULL
     attr(x, "coefficient_name") <- NULL
@@ -33,6 +39,7 @@ format.parameters_model <- function(x,
   # remove method for htest
   if (!is.null(m_class) && any(m_class %in% c("BFBayesFactor", "htest", "rma", "t1way", "yuen", "PMCMR", "osrt", "trendPMCMR", "anova"))) {
     x$Method <- NULL
+    x$Alternative <- NULL
   }
 
   # remove response for mvord
@@ -68,6 +75,13 @@ format.parameters_model <- function(x,
     }
   }
 
+  # group parameters
+  if (!is.null(groups)) {
+    x <- .parameter_groups(x, groups)
+  }
+  indent_groups <- attributes(x)$indent_groups
+  indent_rows <- attributes(x)$indent_rows
+
   # prepare output, to have in shape for printing
   x <- .prepare_x_for_print(x, select, coef_name, s_value)
 
@@ -89,6 +103,13 @@ format.parameters_model <- function(x,
   # no column with CI-level in output
   if (!is.null(formatted_table$CI) && .n_unique(formatted_table$CI) == 1) {
     formatted_table$CI <- NULL
+  }
+
+  if (!is.null(indent_rows)) {
+    attr(formatted_table, "indent_rows") <- indent_rows
+    attr(formatted_table, "indent_groups") <- NULL
+  } else if (!is.null(indent_groups)) {
+    attr(formatted_table, "indent_groups") <- indent_groups
   }
 
   formatted_table
@@ -127,10 +148,20 @@ format.parameters_simulate <- format.parameters_model
 format.parameters_brms_meta <- format.parameters_model
 
 
-#' @importFrom insight format_p format_table
 #' @inheritParams print.parameters_model
 #' @export
-format.compare_parameters <- function(x, style = NULL, split_components = TRUE, digits = 2, ci_digits = 2, p_digits = 3, ci_width = NULL, ci_brackets = NULL, zap_small = FALSE, format = NULL, ...) {
+format.compare_parameters <- function(x,
+                                      style = NULL,
+                                      split_components = TRUE,
+                                      digits = 2,
+                                      ci_digits = 2,
+                                      p_digits = 3,
+                                      ci_width = NULL,
+                                      ci_brackets = NULL,
+                                      zap_small = FALSE,
+                                      format = NULL,
+                                      groups = NULL,
+                                      ...) {
   m_class <- attributes(x)$model_class
   x$Method <- NULL
 
@@ -151,6 +182,11 @@ format.compare_parameters <- function(x, style = NULL, split_components = TRUE, 
   # save model parameters attributes
   parameters_attributes <- attributes(x)$all_attributes
 
+  # is information about grouped parameters stored as attribute?
+  if (is.null(groups) && !is.null(parameters_attributes[[1]]$coef_groups)) {
+    groups <- parameters_attributes[[1]]$coef_groups
+  }
+
   for (i in models) {
     # each column is suffixed with ".model_name", so we extract
     # columns for each model separately here
@@ -164,6 +200,14 @@ format.compare_parameters <- function(x, style = NULL, split_components = TRUE, 
     cols <- insight::format_table(cols, digits = digits, ci_width = ci_width, ci_brackets = ci_brackets, ci_digits = ci_digits, p_digits = p_digits, zap_small = zap_small)
     out <- cbind(out, .format_output_style(cols, style, format, i))
   }
+
+  # group parameters
+  if (!is.null(groups)) {
+    out <- .parameter_groups(out, groups)
+  }
+  indent_groups <- attributes(x)$indent_groups
+  indent_rows <- attributes(x)$indent_rows
+
 
   # check whether to split table by certain factors/columns (like component, response...)
   split_by <- split_column <- .prepare_splitby_for_print(x)
@@ -265,7 +309,7 @@ format.compare_parameters <- function(x, style = NULL, split_components = TRUE, 
   # observations differs from "raw" observations
   if (!all(is.na(weighted_observations)) && !all(is.na(observations))) {
     if (!isTRUE(all.equal(as.vector(weighted_observations), as.vector(observations)))) {
-      message("Number of weighted observations differs from number of unweighted observations.")
+      message(insight::format_message("Number of weighted observations differs from number of unweighted observations."))
     }
     observations <- weighted_observations
   }
@@ -293,8 +337,6 @@ format.compare_parameters <- function(x, style = NULL, split_components = TRUE, 
 
 # stan models ----------------------------
 
-#' @importFrom utils modifyList
-#' @importFrom insight print_parameters format_table
 #' @export
 format.parameters_stan <- function(x, split_components = TRUE, select = NULL, ci_width = NULL, ci_brackets = NULL, zap_small = FALSE, format = NULL, ...) {
   cp <- attributes(x)$parameter_info
@@ -305,7 +347,13 @@ format.parameters_stan <- function(x, split_components = TRUE, select = NULL, ci
     NextMethod()
   } else {
     if (!is.null(select)) {
-      if (is.numeric(select)) select <- colnames(x)[select]
+      if (all(select == "minimal")) {
+        select <- c("Parameter", "Coefficient", "Median", "Mean", "CI", "CI_low", "CI_high", "pd")
+      } else if (all(select == "short")) {
+        select <- c("Parameter", "Coefficient", "Median", "Mean", "MAD", "SD", "pd")
+      } else {
+        if (is.numeric(select)) select <- colnames(x)[select]
+      }
       select <- union(select, c("Parameter", "Component", "Effects", "Response", "Subgroup"))
       to_remove <- setdiff(colnames(x), select)
       x[to_remove] <- NULL
@@ -424,7 +472,7 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
                            show_formula = FALSE,
                            show_r2 = FALSE,
                            format = "text") {
-    # prepare footer
+  # prepare footer
   footer <- NULL
   type <- tolower(format)
 
@@ -434,7 +482,9 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
   p_adjust <- attributes(x)$p_adjust
   model_formula <- attributes(x)$model_formula
   anova_test <- attributes(x)$anova_test
+  anova_type <- attributes(x)$anova_type
   footer_text <- attributes(x)$footer_text
+  text_alternative <- attributes(x)$text_alternative
   n_obs <- attributes(x)$n_obs
 
   # footer: model formula
@@ -460,6 +510,16 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
   # footer: anova test
   if (!is.null(anova_test)) {
     footer <- .add_footer_anova_test(footer, anova_test, type)
+  }
+
+  # footer: anova test
+  if (!is.null(anova_type)) {
+    footer <- .add_footer_anova_type(footer, anova_type, type)
+  }
+
+  # footer: htest alternative
+  if (!is.null(text_alternative)) {
+    footer <- .add_footer_alternative(footer, text_alternative, type)
   }
 
   # footer: generic text
@@ -492,7 +552,7 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
       }
       footer <- paste0(footer, sprintf("%s%s\n", fill, text))
     } else if (type == "html") {
-      footer <- c(footer, text)
+      footer <- c(footer, gsub("\n", "", text))
     }
   }
   footer
@@ -526,7 +586,6 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
 
 
 # footer: r-squared
-#' @importFrom insight format_value
 .add_footer_r2 <- function(footer = NULL, digits, r2 = NULL, type = "text") {
   if (!is.null(r2)) {
     rsq <- tryCatch(
@@ -556,6 +615,24 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
 }
 
 
+# footer: anova type
+.add_footer_anova_type <- function(footer = NULL, aov_type, type = "text") {
+  if (!is.null(aov_type)) {
+    if (type == "text") {
+      if (is.null(footer)) {
+        fill <- "\n"
+      } else {
+        fill <- ""
+      }
+      footer <- paste0(footer, sprintf("%sAnova Table (Type %s tests)\n", fill, aov_type))
+    } else if (type == "html") {
+      footer <- c(footer, sprintf("Anova Table (Type %s tests)", aov_type))
+    }
+  }
+  footer
+}
+
+
 # footer: anova test
 .add_footer_anova_test <- function(footer = NULL, test, type = "text") {
   if (!is.null(test)) {
@@ -568,6 +645,24 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
       footer <- paste0(footer, sprintf("%s%s test statistic\n", fill, test))
     } else if (type == "html") {
       footer <- c(footer, sprintf("%s test statistic", test))
+    }
+  }
+  footer
+}
+
+
+# footer: htest alternative
+.add_footer_alternative <- function(footer = NULL, text_alternative, type = "text") {
+  if (!is.null(text_alternative)) {
+    if (type == "text") {
+      if (is.null(footer)) {
+        fill <- "\n"
+      } else {
+        fill <- ""
+      }
+      footer <- paste0(footer, sprintf("%s%s\n", fill, text_alternative))
+    } else if (type == "html") {
+      footer <- c(footer, text_alternative)
     }
   }
   footer

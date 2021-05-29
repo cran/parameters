@@ -14,19 +14,23 @@
 or of class \code{PMCMR}, \code{trendPMCMR} or \code{osrt} (\pkg{PMCMRplus}).}
 
 \item{...}{Arguments passed to or from other methods. For instance, when
-\code{bootstrap = TRUE}, arguments like \code{ci_method} are passed down to
-\code{\link[bayestestR]{describe_posterior}}.}
+\code{bootstrap = TRUE}, arguments like \code{type} or \code{parallel} are
+passed down to \code{bootstrap_model()}, and arguments like \code{ci_method}
+are passed down to \code{\link[bayestestR]{describe_posterior}}.}
 
 \item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
-the coefficients (and related confidence intervals). This is typical for,
-say, logistic regressions, or more generally speaking: for models with log
-or logit link. \strong{Note:} standard errors are also transformed (by
-multiplying the standard errors with the exponentiated coefficients), to
-mimic behaviour of other software packages, such as Stata. For
-\code{compare_parameters()}, \code{exponentiate = "nongaussian"} will only
-exponentiate coefficients for all models except those from Gaussian family.}
+the coefficients (and related confidence intervals). This is typical for
+logistic regression, or more generally speaking, for models with log
+or logit links. \strong{Note:} Delta-method standard errors are also
+computed (by multiplying the standard errors by the transformed
+coefficients). This is to mimic behaviour of other software packages, such
+as Stata, but these standard errors poorly estimate uncertainty for the
+transformed coefficient. The transformed confidence interval more clearly
+captures this uncertainty. For \code{compare_parameters()},
+\code{exponentiate = "nongaussian"} will only exponentiate coefficients
+from non-Gaussian families.}
 
 \item{verbose}{Toggle warnings and messages.}
 }

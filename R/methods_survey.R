@@ -1,3 +1,39 @@
+# model_parameters -----------------------------------------
+
+#' @export
+model_parameters.svyglm <- function(model,
+                                    ci = .95,
+                                    df_method = "wald",
+                                    bootstrap = FALSE,
+                                    iterations = 1000,
+                                    standardize = NULL,
+                                    exponentiate = FALSE,
+                                    robust = FALSE,
+                                    p_adjust = NULL,
+                                    verbose = TRUE,
+                                    ...) {
+  if (insight::n_obs(model) > 1e4 && df_method == "likelihood") {
+    message(insight::format_message("Likelihood confidence intervals may take longer time to compute. Use 'df_method=\"wald\"' for faster computation of CIs."))
+  }
+
+  out <- .model_parameters_generic(
+    model = model,
+    ci = ci,
+    df_method = df_method,
+    bootstrap = bootstrap,
+    iterations = iterations,
+    merge_by = "Parameter",
+    standardize = standardize,
+    exponentiate = exponentiate,
+    robust = robust,
+    p_adjust = p_adjust,
+    ...
+  )
+
+  attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  out
+}
+
 
 
 # simulate_model -----------------------------------------
@@ -8,6 +44,7 @@ simulate_model.svyglm.nb <- simulate_model.default
 
 #' @export
 simulate_model.svyglm.zip <- simulate_model.default
+
 
 
 # standard erors -----------------------------------------
@@ -31,16 +68,38 @@ standard_error.svyglm.zip <- standard_error.svyglm.nb
 
 #' @export
 standard_error.svyglm <- function(model, ...) {
-  cs <- stats::coef(summary(model))
-  se <- cs[, 2]
+  vc <- insight::get_varcov(model)
   .data_frame(
-    Parameter = .remove_backticks_from_string(names(se)),
-    SE = as.vector(se)
+    Parameter = .remove_backticks_from_string(row.names(vc)),
+    SE = as.vector(sqrt(diag(vc)))
   )
 }
 
 
+#' @export
+standard_error.svyolr <- standard_error.svyglm
+
+
+
 # confidence intervals -----------------------------------
+
+#' @rdname ci.merMod
+#' @export
+ci.svyglm <- function(x, ci = .95, method = c("wald", "likelihood"), ...) {
+  method <- match.arg(method)
+  if (method == "likelihood") {
+    out <- lapply(ci, function(i) .ci_likelihood(model = x, ci = i))
+    out <- do.call(rbind, out)
+  } else {
+    out <- ci_wald(model = x, ci = ci)
+  }
+
+  row.names(out) <- NULL
+  out
+}
+
+#' @export
+ci.svyolr <- ci.svyglm
 
 #' @export
 ci.svyglm.nb <- ci.tobit
@@ -52,43 +111,23 @@ ci.svyglm.glimML <- ci.tobit
 ci.svyglm.zip <- ci.tobit
 
 
+
 # p values -----------------------------------------------
 
 #' @export
 p_value.svyglm <- function(model, verbose = TRUE, ...) {
-  cs <- stats::coef(summary(model))
-  if (ncol(cs) < 4) {
-    if (isTRUE(verbose)) {
-      warning("Could not retrieve p-values.", call. = FALSE)
-    }
-    return(NULL)
-  }
-
-  p <- cs[, 4]
+  statistic <- insight::get_statistic(model)
+  df <- insight::get_df(model, type = "residual")
+  p <- 2 * stats::pt(-abs(statistic$Statistic), df = df)
   .data_frame(
-    Parameter = .remove_backticks_from_string(rownames(cs)),
+    Parameter = statistic$Parameter,
     p = as.vector(p)
   )
 }
 
 
 #' @export
-p_value.svyolr <- function(model, verbose = TRUE, ...) {
-  cs <- stats::coef(summary(model))
-  if (ncol(cs) < 3) {
-    if (isTRUE(verbose)) {
-      warning("Could not retrieve p-values.", call. = FALSE)
-    }
-    return(NULL)
-  }
-
-  p <- 2 * stats::pt(abs(cs[, 3]), df = degrees_of_freedom(model, method = "any"), lower.tail = FALSE)
-
-  .data_frame(
-    Parameter = .remove_backticks_from_string(rownames(cs)),
-    p = as.vector(p)
-  )
-}
+p_value.svyolr <- p_value.svyglm
 
 
 #' @export
@@ -110,3 +149,34 @@ p_value.svyglm.nb <- function(model, ...) {
 
 #' @export
 p_value.svyglm.zip <- p_value.svyglm.nb
+
+
+
+
+# helper --------------------
+
+.ci_likelihood <- function(model, ci) {
+  glm_ci <- tryCatch(
+    {
+      out <- as.data.frame(stats::confint(model, level = ci, method = "likelihood"), stringsAsFactors = FALSE)
+      names(out) <- c("CI_low", "CI_high")
+
+      out$CI <- ci
+      out$Parameter <- insight::get_parameters(model, effects = "fixed", component = "conditional")$Parameter
+
+      out <- out[c("Parameter", "CI", "CI_low", "CI_high")]
+      rownames(out) <- NULL
+
+      out
+    },
+    error = function(e) {
+      NULL
+    }
+  )
+
+  if (is.null(glm_ci)) {
+    glm_ci <- ci_wald(model, ci = ci)
+  }
+
+  glm_ci
+}

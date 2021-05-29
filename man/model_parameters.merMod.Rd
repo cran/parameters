@@ -15,10 +15,9 @@
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
-  effects = "fixed",
+  effects = "all",
   group_level = FALSE,
   exponentiate = FALSE,
-  details = FALSE,
   df_method = NULL,
   p_adjust = NULL,
   verbose = TRUE,
@@ -30,16 +29,16 @@
   ci = 0.95,
   bootstrap = FALSE,
   iterations = 1000,
-  effects = "fixed",
+  effects = "all",
   component = "all",
   group_level = FALSE,
   standardize = NULL,
   exponentiate = FALSE,
   df_method = NULL,
-  details = FALSE,
   p_adjust = NULL,
   wb_component = TRUE,
   summary = FALSE,
+  parameters = NULL,
   verbose = TRUE,
   ...
 )
@@ -51,14 +50,14 @@
   df_method = "wald",
   iterations = 1000,
   standardize = NULL,
-  effects = "fixed",
+  effects = "all",
   group_level = FALSE,
   exponentiate = FALSE,
   robust = FALSE,
-  details = FALSE,
   p_adjust = NULL,
   wb_component = TRUE,
   summary = FALSE,
+  parameters = NULL,
   verbose = TRUE,
   ...
 )
@@ -66,12 +65,11 @@
 \method{model_parameters}{mixor}(
   model,
   ci = 0.95,
-  effects = "fixed",
+  effects = "all",
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
   exponentiate = FALSE,
-  details = FALSE,
   verbose = TRUE,
   ...
 )
@@ -82,10 +80,9 @@
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
-  effects = "fixed",
+  effects = "all",
   group_level = FALSE,
   exponentiate = FALSE,
-  details = FALSE,
   df_method = NULL,
   p_adjust = NULL,
   verbose = TRUE,
@@ -107,9 +104,15 @@ regressions} apply (see also
 \item{standardize}{The method used for standardizing the parameters. Can be
 \code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"},
 \code{"pseudo"} or \code{NULL} (default) for no standardization. See
-'Details' in \code{\link[effectsize]{standardize_parameters}}. Note that
-robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
-works when \code{standardize="refit"}.}
+'Details' in \code{\link[effectsize]{standardize_parameters}}.
+\strong{Important:} Categorical predictors (i.e. factors) are \emph{never}
+standardized by default, which may be a different behaviour compared to
+other R packages or other software packages (like SPSS). If standardizing
+categorical predictors is desired, either use \code{standardize="basic"}
+to mimic behaviour of SPSS or packages such as \pkg{lm.beta}, or standardize
+the data with \code{effectsize::standardize(force=TRUE)} before fitting
+the model. Robust estimation (i.e. \code{robust=TRUE}) of standardized
+parameters only works when \code{standardize="refit"}.}
 
 \item{effects}{Should parameters for fixed effects (\code{"fixed"}), random
 effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
@@ -122,16 +125,16 @@ include the parameters for each group level from random effects. If
 are shown.}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
-the coefficients (and related confidence intervals). This is typical for,
-say, logistic regressions, or more generally speaking: for models with log
-or logit link. \strong{Note:} standard errors are also transformed (by
-multiplying the standard errors with the exponentiated coefficients), to
-mimic behaviour of other software packages, such as Stata. For
-\code{compare_parameters()}, \code{exponentiate = "nongaussian"} will only
-exponentiate coefficients for all models except those from Gaussian family.}
-
-\item{details}{Logical, if \code{TRUE}, a summary of the random effects is
-included. See \code{\link{random_parameters}} for details.}
+the coefficients (and related confidence intervals). This is typical for
+logistic regression, or more generally speaking, for models with log
+or logit links. \strong{Note:} Delta-method standard errors are also
+computed (by multiplying the standard errors by the transformed
+coefficients). This is to mimic behaviour of other software packages, such
+as Stata, but these standard errors poorly estimate uncertainty for the
+transformed coefficient. The transformed confidence interval more clearly
+captures this uncertainty. For \code{compare_parameters()},
+\code{exponentiate = "nongaussian"} will only exponentiate coefficients
+from non-Gaussian families.}
 
 \item{df_method}{Method for computing degrees of freedom for p values,
 standard errors and confidence intervals (CI). May be \code{"wald"}
@@ -143,8 +146,10 @@ standard errors and confidence intervals (CI). May be \code{"wald"}
 \code{df_method = "profile"} and \code{df_method = "uniroot"} only affect
 confidence intervals; in this case, bootstrapped resp. profiled confidence
 intervals are computed. \code{"uniroot"} only applies to models of class
-\code{glmmTMB}. Note that when \code{df_method} is not \code{"wald"},
-robust standard errors etc. cannot be computed.}
+\code{glmmTMB}. For models of class \code{lmerMod}, when
+\code{df_method = "wald"}, residual degrees of freedom are returned.
+Note that when \code{df_method} is not \code{"wald"}, robust standard
+errors etc. cannot be computed.}
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
 adjust p-values. See \code{\link[stats]{p.adjust}} for details. Further
@@ -172,6 +177,20 @@ conditional or zero-inflated component of the model.}
 \item{summary}{Logical, if \code{TRUE}, prints summary information about the
 model (model formula, number of observations, residual standard deviation
 and more).}
+
+\item{parameters}{Character vector of length 1 with a regular expression pattern
+that describes the parameters that should be returned from the data frame, or
+a named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{parameters} is a character vector, every
+parameter in the \emph{"Parameters"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame. Furthermore,
+if \code{parameters} has more than one element, these will be merged into
+a regular expression pattern like this: \code{"(one|two|three)"}. If
+\code{parameters} is a named list of regular expression patterns, the
+names of the list-element should equal the column name where selection
+should be applied. This is useful for model objects where
+\code{model_parameters()} returns multiple columns with parameter components,
+like in \code{\link{model_parameters.lavaan}}.}
 
 \item{robust}{Logical, if \code{TRUE}, robust standard errors are calculated
 (if possible), and confidence intervals and p-values are based on these
@@ -206,7 +225,7 @@ if (require("glmmTMB")) {
     family = poisson(),
     data = Salamanders
   )
-  model_parameters(model, details = TRUE)
+  model_parameters(model, effects = "all")
 }
 
 if (require("lme4")) {

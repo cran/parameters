@@ -19,7 +19,7 @@
 #'   variances of observed and latent variables, but not the variances of
 #'   exogenous covariates. See \code{lavaan::standardizedsolution} for details.
 #' @inheritParams model_parameters.default
-#' @param component,type What type of links to return. Can be \code{"all"} or some of \code{c("regression", "correlation", "loading", "variance", "mean")}.
+#' @param component What type of links to return. Can be \code{"all"} or some of \code{c("regression", "correlation", "loading", "variance", "mean")}.
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @note There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
@@ -38,6 +38,15 @@
 #'   model <- lavaan::cfa(structure, data = HolzingerSwineford1939)
 #'   model_parameters(model)
 #'   model_parameters(model, standardize = TRUE)
+#'
+#'   # filter parameters
+#'   model_parameters(
+#'     model,
+#'     parameters = list(
+#'       To = "^(?!visual)",
+#'       From = "^(?!(x7|x8))"
+#'     )
+#'   )
 #'
 #'   # Structural Equation Model (SEM) ------------
 #'
@@ -75,23 +84,15 @@ model_parameters.lavaan <- function(model,
                                     ci = 0.95,
                                     standardize = FALSE,
                                     component = c("regression", "correlation", "loading", "defined"),
+                                    parameters = NULL,
                                     verbose = TRUE,
-                                    type = component,
                                     ...) {
-
-  ## TODO remove in a future update
-  if (!missing(type)) {
-    if (verbose) {
-      warning("Argument 'type' is deprecated. Please use 'component' instead.", call. = FALSE)
-    }
-    component <- type
-  }
-
   params <- .extract_parameters_lavaan(model,
-                                       ci = ci,
-                                       standardize = standardize,
-                                       verbose = verbose,
-                                       ...
+    ci = ci,
+    standardize = standardize,
+    filter_parameters = parameters,
+    verbose = verbose,
+    ...
   )
 
   # Filter
@@ -121,6 +122,7 @@ model_parameters.blavaan <- function(model,
                                      diagnostic = c("ESS", "Rhat"),
                                      component = "all",
                                      standardize = NULL,
+                                     parameters = NULL,
                                      verbose = TRUE,
                                      ...) {
 
@@ -138,6 +140,7 @@ model_parameters.blavaan <- function(model,
     diagnostic = diagnostic,
     effects = "all",
     standardize = standardize,
+    filter_parameters = parameters,
     verbose = verbose,
     ...
   )
@@ -220,8 +223,6 @@ p_value.blavaan <- p_value.BFBayesFactor
 
 # print ---------------------------
 
-
-#' @importFrom insight export_table
 #' @export
 print.parameters_sem <- function(x, digits = 2, ci_digits = 2, p_digits = 3, ...) {
   # check if user supplied digits attributes

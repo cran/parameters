@@ -36,6 +36,7 @@ model_parameters.zcpglm <- function(model,
                                     exponentiate = FALSE,
                                     robust = FALSE,
                                     p_adjust = NULL,
+                                    parameters = NULL,
                                     verbose = TRUE,
                                     ...) {
   component <- match.arg(component)
@@ -48,26 +49,27 @@ model_parameters.zcpglm <- function(model,
 
   # Processing
   if (bootstrap) {
-    parameters <- bootstrap_parameters(model, iterations = iterations, ci = ci, ...)
+    params <- bootstrap_parameters(model, iterations = iterations, ci = ci, ...)
   } else {
-    parameters <- .extract_parameters_generic(
+    params <- .extract_parameters_generic(
       model,
       ci = ci,
       component = component,
       standardize = standardize,
       robust = robust,
       p_adjust = p_adjust,
+      filter_parameters = parameters,
       ...
     )
   }
 
 
   if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-    parameters <- .exponentiate_parameters(parameters, model, exponentiate)
+    params <- .exponentiate_parameters(params, model, exponentiate)
   }
 
-  parameters <- .add_model_parameters_attributes(
-    parameters,
+  params <- .add_model_parameters_attributes(
+    params,
     model,
     ci,
     exponentiate,
@@ -75,14 +77,13 @@ model_parameters.zcpglm <- function(model,
     verbose = verbose,
     ...
   )
-  attr(parameters, "object_name") <- deparse(substitute(model), width.cutoff = 500)
-  class(parameters) <- c("parameters_model", "see_parameters_model", class(parameters))
+  attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  class(params) <- c("parameters_model", "see_parameters_model", class(params))
 
-  parameters
+  params
 }
 
 
-#' @importFrom utils capture.output
 #' @export
 standard_error.zcpglm <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
   if (!requireNamespace("cplm", quietly = TRUE)) {
@@ -131,7 +132,6 @@ standard_error.zcpglm <- function(model, component = c("all", "conditional", "zi
 #'   p_value(model)
 #'   p_value(model, component = "zi")
 #' }
-#' @importFrom utils capture.output
 #' @export
 p_value.zcpglm <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
   if (!requireNamespace("cplm", quietly = TRUE)) {
@@ -140,7 +140,7 @@ p_value.zcpglm <- function(model, component = c("all", "conditional", "zi", "zer
 
   component <- match.arg(component)
   junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
-  params <- get_parameters(model)
+  params <- insight::get_parameters(model)
 
   tweedie <- .data_frame(
     Parameter = params$Parameter[params$Component == "conditional"],
@@ -177,7 +177,6 @@ p_value.bcplm <- p_value.brmsfit
 ########## .cpglm ---------------
 
 
-#' @importFrom utils capture.output
 #' @export
 p_value.cpglm <- function(model, ...) {
   if (!requireNamespace("cplm", quietly = TRUE)) {
@@ -194,7 +193,6 @@ p_value.cpglm <- function(model, ...) {
 }
 
 
-#' @importFrom utils capture.output
 #' @export
 standard_error.cpglm <- function(model, ...) {
   if (!requireNamespace("cplm", quietly = TRUE)) {
@@ -227,10 +225,9 @@ model_parameters.cpglmm <- function(model,
                                     bootstrap = FALSE,
                                     iterations = 1000,
                                     standardize = NULL,
-                                    effects = "fixed", ## TODO change to "all" after effectsize > 0.4.4-1 on CRAN
+                                    effects = "all",
                                     group_level = FALSE,
                                     exponentiate = FALSE,
-                                    details = FALSE,
                                     df_method = NULL,
                                     p_adjust = NULL,
                                     verbose = TRUE,
@@ -242,11 +239,10 @@ model_parameters.cpglmm <- function(model,
 
   # standardize only works for fixed effects...
   if (!is.null(standardize)) {
+    if (!missing(effects) && effects != "fixed" && verbose) {
+      warning(insight::format_message("Standardizing coefficients only works for fixed effects of the mixed model."), call. = FALSE)
+    }
     effects <- "fixed"
-    ## TODO enable later, when fixed in "effectsize"
-    # if (verbose) {
-    #   warning("Standardizing coefficients only works for fixed effects of the mixed model.", call. = FALSE)
-    # }
   }
 
   params <- .mixed_model_parameters_generic(
@@ -258,15 +254,6 @@ model_parameters.cpglmm <- function(model,
 
   attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   class(params) <- c("parameters_model", "see_parameters_model", "data.frame")
-
-
-  ## TODO remove in a future update
-  if (isTRUE(details)) {
-    attr(params, "details") <- .randomeffects_summary(model)
-    if (verbose) {
-      message("Argument 'details' is deprecated. Please use 'group_level'.")
-    }
-  }
 
   params
 }
@@ -315,7 +302,7 @@ standard_error.cpglmm <- function(model, ...) {
   if (!is.null(df_method)) {
     df_method <- tolower(df_method)
     if (df_method %in% c("satterthwaite", "kenward", "kr")) {
-      warning("Satterthwaite or Kenward-Rogers approximation of degrees of freedom is only available for linear mixed models.", call. = FALSE)
+      warning(insight::format_message("Satterthwaite or Kenward-Rogers approximation of degrees of freedom is only available for linear mixed models."), call. = FALSE)
       df_method <- "wald"
     }
     df_method <- match.arg(df_method, choices = c("wald", "ml1", "betwithin", "profile", "boot", "uniroot"))

@@ -70,7 +70,6 @@ summary.parameters_omega <- function(object, ...) {
 
 
 #' @rdname principal_components
-#' @importFrom stats predict
 #' @export
 predict.parameters_efa <- function(object,
                                    newdata = NULL,
@@ -101,7 +100,7 @@ predict.parameters_pca <- predict.parameters_efa
 .merge_na <- function(object, out) {
   compl_cases <- attributes(object)$complete_cases
   if (is.null(compl_cases)) {
-    warning("Could not retrieve information about missing data. Returning only complete cases.", call. = FALSE)
+    warning(insight::format_message("Could not retrieve information about missing data. Returning only complete cases."), call. = FALSE)
   } else {
     original_data <- data.frame(.parameters_merge_id = 1:length(compl_cases))
     out$.parameters_merge_id <- (1:nrow(original_data))[compl_cases]
@@ -119,7 +118,6 @@ predict.parameters_pca <- predict.parameters_efa
 # print -------------------------------------------------------------------
 
 
-#' @importFrom insight export_table
 #' @export
 print.parameters_efa_summary <- function(x, digits = 3, ...) {
   if ("Parameter" %in% names(x)) {
@@ -137,7 +135,7 @@ print.parameters_efa_summary <- function(x, digits = 3, ...) {
 print.parameters_pca_summary <- print.parameters_efa_summary
 
 
-#' @importFrom insight print_color print_colour
+#' @rdname principal_components
 #' @export
 print.parameters_efa <- function(x,
                                  digits = 2,
@@ -316,7 +314,7 @@ print.parameters_omega_summary <- function(x, ...) {
 
 # sort --------------------------------------------------------------------
 
-
+#' @rdname principal_components
 #' @export
 sort.parameters_efa <- function(x, ...) {
   .sort_loadings(x)
@@ -395,7 +393,7 @@ sort.parameters_pca <- sort.parameters_efa
       }
     } else {
       for (col in loadings_columns) {
-        loadings[tail(order(abs(loadings[, col]), decreasing = TRUE), -round(threshold)), col] <- NA
+        loadings[utils::tail(order(abs(loadings[, col]), decreasing = TRUE), -round(threshold)), col] <- NA
       }
     }
   } else {

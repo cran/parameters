@@ -61,8 +61,6 @@ p_value.lmerMod <- function(model, method = "wald", ...) {
 #' @param effects Should parameters for fixed effects (\code{"fixed"}), random
 #'   effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
 #'   to mixed models. May be abbreviated.
-#' @param details Logical, if \code{TRUE}, a summary of the random effects is
-#'   included. See \code{\link{random_parameters}} for details.
 #' @param df_method Method for computing degrees of freedom for p values,
 #'   standard errors and confidence intervals (CI). May be \code{"wald"}
 #'   (default, see \code{\link{degrees_of_freedom}}), \code{"ml1"} (see
@@ -73,8 +71,10 @@ p_value.lmerMod <- function(model, method = "wald", ...) {
 #'   \code{df_method = "profile"} and \code{df_method = "uniroot"} only affect
 #'   confidence intervals; in this case, bootstrapped resp. profiled confidence
 #'   intervals are computed. \code{"uniroot"} only applies to models of class
-#'   \code{glmmTMB}. Note that when \code{df_method} is not \code{"wald"},
-#'   robust standard errors etc. cannot be computed.
+#'   \code{glmmTMB}. For models of class \code{lmerMod}, when
+#'   \code{df_method = "wald"}, residual degrees of freedom are returned.
+#'   Note that when \code{df_method} is not \code{"wald"}, robust standard
+#'   errors etc. cannot be computed.
 #' @param wb_component Logical, if \code{TRUE} and models contains within- and
 #'   between-effects (see \code{\link{demean}}), the \code{Component} column
 #'   will indicate which variables belong to the within-effects,
@@ -105,7 +105,7 @@ p_value.lmerMod <- function(model, method = "wald", ...) {
 #'     family = poisson(),
 #'     data = Salamanders
 #'   )
-#'   model_parameters(model, details = TRUE)
+#'   model_parameters(model, effects = "all")
 #' }
 #'
 #' if (require("lme4")) {
@@ -114,7 +114,6 @@ p_value.lmerMod <- function(model, method = "wald", ...) {
 #' }
 #' }
 #' @return A data frame of indices related to the model's parameters.
-#' @importFrom utils modifyList
 #' @export
 model_parameters.merMod <- function(model,
                                     ci = .95,
@@ -122,14 +121,14 @@ model_parameters.merMod <- function(model,
                                     df_method = "wald",
                                     iterations = 1000,
                                     standardize = NULL,
-                                    effects = "fixed", ## TODO change to "all" after effectsize > 0.4.4-1 on CRAN
+                                    effects = "all",
                                     group_level = FALSE,
                                     exponentiate = FALSE,
                                     robust = FALSE,
-                                    details = FALSE,
                                     p_adjust = NULL,
                                     wb_component = TRUE,
                                     summary = FALSE,
+                                    parameters = NULL,
                                     verbose = TRUE,
                                     ...) {
 
@@ -143,11 +142,10 @@ model_parameters.merMod <- function(model,
 
   # standardize only works for fixed effects...
   if (!is.null(standardize)) {
+    if (!missing(effects) && effects != "fixed" && verbose) {
+      warning(insight::format_message("Standardizing coefficients only works for fixed effects of the mixed model."), call. = FALSE)
+    }
     effects <- "fixed"
-    ## TODO enable later, when fixed in "effectsize"
-    # if (verbose) {
-    #   warning("Standardizing coefficients only works for fixed effects of the mixed model.", call. = FALSE)
-    # }
   }
 
   if (effects %in% c("fixed", "all")) {
@@ -162,7 +160,7 @@ model_parameters.merMod <- function(model,
       if (effects != "fixed") {
         effects <- "fixed"
         if (verbose) {
-          warning("Bootstrapping only returns fixed effects of the mixed model.", call. = FALSE)
+          warning(insight::format_message("Bootstrapping only returns fixed effects of the mixed model."), call. = FALSE)
         }
       }
     } else {
@@ -174,6 +172,7 @@ model_parameters.merMod <- function(model,
         standardize = standardize,
         p_adjust = p_adjust,
         wb_component = wb_component,
+        filter_parameters = parameters,
         verbose = verbose,
         ...
       )
@@ -236,14 +235,6 @@ model_parameters.merMod <- function(model,
   )
 
 
-  ## TODO remove in a future update
-  if (isTRUE(details)) {
-    attr(params, "details") <- .randomeffects_summary(model)
-    if (verbose) {
-      message("Argument 'details' is deprecated. Please use 'group_level'.")
-    }
-  }
-
   attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   class(params) <- c("parameters_model", "see_parameters_model", class(params))
 
@@ -298,7 +289,6 @@ model_parameters.merMod <- function(model,
 #'   ci(model, component = "zi")
 #' }
 #' }
-#' @importFrom stats profile
 #' @export
 ci.merMod <- function(x,
                       ci = 0.95,

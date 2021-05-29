@@ -78,7 +78,6 @@ skewness <- function(x, na.rm = TRUE, type = "2", iterations = NULL, ...) {
 # skewness -----------------------------------------
 
 
-#' @importFrom stats sd pnorm
 #' @export
 skewness.numeric <- function(x, na.rm = TRUE, type = "2", iterations = NULL, ...) {
   if (na.rm) x <- x[!is.na(x)]
@@ -88,7 +87,7 @@ skewness.numeric <- function(x, na.rm = TRUE, type = "2", iterations = NULL, ...
   type <- .check_skewness_type(type)
 
   if (type == "2" && n < 3) {
-    warning("Need at least 3 complete observations for type-2-skewness. Using 'type=\"1\"' now.", call. = FALSE)
+    warning(insight::format_message("Need at least 3 complete observations for type-2-skewness. Using 'type=\"1\"' now."), call. = FALSE)
     type <- "1"
   }
 
@@ -187,7 +186,7 @@ kurtosis.numeric <- function(x, na.rm = TRUE, type = "2", iterations = NULL, ...
   type <- .check_skewness_type(type)
 
   if (type == "2" && n < 4) {
-    warning("Need at least 4 complete observations for type-2-kurtosis Using 'type=\"1\"' now.", call. = FALSE)
+    warning(insight::format_message("Need at least 4 complete observations for type-2-kurtosis Using 'type=\"1\"' now."), call. = FALSE)
     type <- "1"
   }
 
@@ -293,7 +292,6 @@ print.parameters_kurtosis <- function(x, digits = 3, test = FALSE, ...) {
 #' @export
 print.parameters_skewness <- print.parameters_kurtosis
 
-#' @importFrom stats pnorm
 #' @rdname skewness
 #' @export
 summary.parameters_skewness <- function(object, test = FALSE, ...) {
@@ -326,7 +324,7 @@ summary.parameters_kurtosis <- function(object, test = FALSE, ...) {
   if (is.numeric(type)) type <- as.character(type)
 
   if (is.null(type) || is.na(type) || !(type %in% c("1", "2", "3", "I", "II", "III", "classic", "SPSS", "SAS", "Minitab"))) {
-    warning("'type' must be a character value from \"1\" to \"3\". Using 'type=\"2\"' now.", call. = FALSE)
+    warning(insight::format_message("'type' must be a character value from \"1\" to \"3\". Using 'type=\"2\"' now."), call. = FALSE)
     type <- "2"
   }
 

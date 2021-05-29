@@ -10,7 +10,6 @@ standard_error.MCMCglmm <- function(model, ...) {
 }
 
 
-#' @importFrom insight find_parameters
 #' @export
 p_value.MCMCglmm <- function(model, ...) {
   nF <- model$Fixed$nfl
@@ -34,6 +33,7 @@ model_parameters.MCMCglmm <- function(model,
                                       bf_prior = NULL,
                                       diagnostic = c("ESS", "Rhat"),
                                       priors = TRUE,
+                                      parameters = NULL,
                                       verbose = TRUE,
                                       ...) {
 
@@ -51,6 +51,7 @@ model_parameters.MCMCglmm <- function(model,
       bf_prior = bf_prior,
       diagnostic = diagnostic,
       priors = priors,
+      filter_parameters = parameters,
       verbose = verbose,
       ...
     )

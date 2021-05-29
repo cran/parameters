@@ -13,7 +13,7 @@ standard_error.sem <- function(model, ...) {
     return(NULL)
   }
   if (is.null(model$se)) {
-    warning("Model has no standard errors. Please fit model again with bootstrapped standard errors.", call. = FALSE)
+    warning(insight::format_message("Model has no standard errors. Please fit model again with bootstrapped standard errors."), call. = FALSE)
     return(NULL)
   }
   .data_frame(
@@ -23,8 +23,6 @@ standard_error.sem <- function(model, ...) {
 }
 
 
-#' @importFrom insight get_statistic
-#' @importFrom stats pnorm
 #' @export
 p_value.sem <- function(model, ...) {
   if (!.is_semLme(model)) {

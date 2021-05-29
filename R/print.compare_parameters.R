@@ -4,9 +4,21 @@ print.compare_parameters <- function(x,
                                      ci_digits = 2,
                                      p_digits = 3,
                                      style = NULL,
+                                     groups = NULL,
                                      ...) {
   # save original input
   orig_x <- x
+
+  # check if user supplied digits attributes
+  if (missing(digits)) {
+    digits <- .additional_arguments(x, "digits", digits)
+  }
+  if (missing(ci_digits)) {
+    ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
+  }
+  if (missing(p_digits)) {
+    p_digits <- .additional_arguments(x, "p_digits", p_digits)
+  }
 
   # get attributes
   if (missing(style)) {
@@ -22,7 +34,8 @@ print.compare_parameters <- function(x,
     p_digits = p_digits,
     ci_width = "auto",
     ci_brackets = c("(", ")"),
-    format = "text"
+    format = "text",
+    groups = groups,
   )
 
   cat(insight::export_table(formatted_table, format = "text", footer = NULL, empty_line = "-"))

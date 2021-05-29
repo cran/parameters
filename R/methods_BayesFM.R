@@ -19,8 +19,6 @@
 #' }
 #' }
 #' @return A data frame of loadings.
-#' @importFrom stats reshape
-#' @importFrom bayestestR describe_posterior
 #' @export
 model_parameters.befa <- function(model,
                                   sort = FALSE,
@@ -129,7 +127,7 @@ model_parameters.befa <- function(model,
 
 
   # Add some more attributes
-  long_loadings <- na.omit(long_loadings)
+  long_loadings <- stats::na.omit(long_loadings)
   row.names(long_loadings) <- NULL
   attr(loadings, "loadings_long") <- long_loadings
 

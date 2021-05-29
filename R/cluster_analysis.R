@@ -58,7 +58,6 @@
 #' groups <- cluster_analysis(iris[, 1:4], method = "k")
 #' groups
 #' }
-#' @importFrom stats dist na.omit hclust kmeans cutree complete.cases
 #' @export
 cluster_analysis <- function(x, n_clusters = NULL, method = c("hclust", "kmeans"),
                              distance = c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski"),
@@ -109,7 +108,7 @@ cluster_analysis <- function(x, n_clusters = NULL, method = c("hclust", "kmeans"
       },
       error = function(e) {
         if (isTRUE(verbose)) {
-          warning("Could not extract number of cluster. Please provide argument 'n_clusters'.", call. = FALSE)
+          warning(insight::format_message("Could not extract number of cluster. Please provide argument 'n_clusters'."), call. = FALSE)
         }
         1
       }

@@ -1,4 +1,3 @@
-#' @importFrom insight clean_parameters find_random get_response model_info is_multivariate
 #' @rdname model_parameters.stanreg
 #' @inheritParams insight::get_parameters
 #' @export
@@ -18,6 +17,7 @@ model_parameters.brmsfit <- function(model,
                                      exponentiate = FALSE,
                                      standardize = NULL,
                                      group_level = FALSE,
+                                     parameters = NULL,
                                      verbose = TRUE,
                                      ...) {
   modelinfo <- insight::model_info(model)
@@ -38,6 +38,7 @@ model_parameters.brmsfit <- function(model,
       priors = priors,
       exponentiate = exponentiate,
       standardize = standardize,
+      filter_parameters = parameters,
       ...
     )
   } else {
@@ -58,6 +59,7 @@ model_parameters.brmsfit <- function(model,
       effects = effects,
       component = component,
       standardize = standardize,
+      filter_parameters = parameters,
       verbose = verbose,
       ...
     )
@@ -93,7 +95,6 @@ model_parameters.brmsfit <- function(model,
 
 # brms meta analysis -------
 
-#' @importFrom insight get_parameters
 .model_parameters_brms_meta <- function(model,
                                         centrality = "median",
                                         dispersion = FALSE,
@@ -106,6 +107,7 @@ model_parameters.brmsfit <- function(model,
                                         priors = FALSE,
                                         exponentiate = FALSE,
                                         standardize = NULL,
+                                        filter_parameters = NULL,
                                         verbose = TRUE,
                                         ...) {
 
@@ -177,6 +179,9 @@ model_parameters.brmsfit <- function(model,
   first_cols <- c(1:ci_column, weight_column)
   params <- params[, c(first_cols, seq_len(ncol(params))[-first_cols])]
 
+  if (!is.null(filter_parameters)) {
+    parameters <- .filter_parameters(parameters, filter_parameters, verbose = verbose)
+  }
 
   # add attributes
   attr(params, "tau") <- params_tau

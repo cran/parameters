@@ -36,7 +36,6 @@
 #' @return A data frame.
 #' @references Kenward, M. G., & Roger, J. H. (1997). Small sample inference for
 #'   fixed effects from restricted maximum likelihood. Biometrics, 983-997.
-#' @importFrom stats pt coef
 #' @export
 p_value_kenward <- function(model, dof = NULL) {
   UseMethod("p_value_kenward")
@@ -109,6 +108,6 @@ p_value_kenward.lmerMod <- function(model, dof = NULL) {
     stop("Package 'lme4' required for this function to work. Please install it.")
   }
   if (!(lme4::getME(model, "is_REML"))) {
-    warning("Model was not fitted by REML. Re-fitting model now, but p-values, df, etc. still might be unreliable.", call. = FALSE)
+    warning(insight::format_message("Model was not fitted by REML. Re-fitting model now, but p-values, df, etc. still might be unreliable."), call. = FALSE)
   }
 }

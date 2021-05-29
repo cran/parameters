@@ -1,8 +1,6 @@
 # generic function ------------------------------------------------------
 
 
-#' @importFrom insight get_statistic get_parameters
-#' @importFrom stats confint
 #' @keywords internal
 .extract_parameters_generic <- function(model,
                                         ci,
@@ -16,6 +14,7 @@
                                         wb_component = FALSE,
                                         verbose = TRUE,
                                         keep_component_column = FALSE,
+                                        filter_parameters = NULL,
                                         ...) {
 
   # ==== check if standardization is required and package available
@@ -35,7 +34,7 @@
   # ==== for refit, we completely refit the model, than extract parameters, ci etc. as usual
 
   if (!is.null(standardize) && standardize == "refit") {
-    model <- effectsize::standardize(model, verbose = FALSE)
+    model <- effectsize::standardize(model, verbose = FALSE, ...)
     standardize <- NULL
   }
 
@@ -82,7 +81,7 @@
 
   if (!is.null(ci)) {
     if (isTRUE(robust)) {
-      ci_df <- suppressMessages(ci_robust(model, ci = ci, verbose = verbose, ...))
+      ci_df <- suppressMessages(ci_robust(model, ci = ci, component = component, verbose = verbose, ...))
     } else if (!is.null(df_method)) {
       ci_df <- suppressMessages(
         ci(
@@ -118,7 +117,7 @@
   # ==== p value
 
   if (isTRUE(robust)) {
-    pval <- p_value_robust(model, ...)
+    pval <- p_value_robust(model, component = component, ...)
   } else if (!is.null(df_method)) {
     pval <- p_value(
       model,
@@ -145,7 +144,7 @@
   std_err <- NULL
 
   if (isTRUE(robust)) {
-    std_err <- standard_error_robust(model, ...)
+    std_err <- standard_error_robust(model, component = component, ...)
   } else if (!is.null(df_method)) {
     std_err <- standard_error(
       model,
@@ -286,6 +285,13 @@
   parameters <- .add_sigma_residual_df(parameters, model)
 
 
+  # ==== filter parameters, if requested
+
+  if (!is.null(filter_parameters)) {
+    parameters <- .filter_parameters(parameters, filter_parameters, verbose = verbose)
+  }
+
+
   rownames(parameters) <- NULL
   parameters
 }
@@ -294,12 +300,11 @@
 # helper ----------------
 
 
-#' @importFrom insight get_sigma get_df
 .add_sigma_residual_df <- function(params, model) {
   if (is.null(params$Component) || !"sigma" %in% params$Component) {
     sig <- tryCatch(
       {
-        suppressWarnings(insight::get_sigma(model))
+        suppressWarnings(insight::get_sigma(model, ci = NULL, verbose = FALSE))
       },
       error = function(e) {
         NULL
@@ -322,11 +327,54 @@
 
 
 
+.filter_parameters <- function(params, filter_params, verbose = TRUE) {
+  if (is.list(filter_params)) {
+    for (i in names(filter_params)) {
+      params <- .filter_parameters_vector(params, filter_params[[i]], column = i, verbose = verbose)
+    }
+  } else {
+    params <- .filter_parameters_vector(params, filter_params, column = NULL, verbose = verbose)
+  }
+  params
+}
+
+
+.filter_parameters_vector <- function(params, filter_params, column = NULL, verbose = TRUE) {
+  # check pattern
+  if (length(filter_params) > 1) {
+    filter_params <- paste0("(", paste0(filter_params, collapse = "|"), ")")
+    if (verbose) {
+      message(insight::format_message(sprintf("The 'parameters' argument has more than 1 element. Merging into following regular expression: '%s'.", filter_params)))
+    }
+  }
+
+  if (is.null(column) || !column %in% colnames(params)) {
+    if ("Parameter" %in% colnames(params)) {
+      column <- "Parameter"
+    } else {
+      column <- 1
+    }
+  }
+  out <- params[grepl(filter_params, params[[column]], perl = TRUE), ]
+
+  if (nrow(out) == 0) {
+    if (verbose) {
+      warning(insight::format_message("The pattern defined in the 'parameters' argument would remove all parameters from the output. Thus, selecting specific parameters will be ignored."), call. = FALSE)
+    }
+    return(params)
+  }
+
+  out
+}
+
+
+
+
+
 
 # mixed models function ------------------------------------------------------
 
 
-#' @importFrom stats confint
 #' @keywords internal
 .extract_parameters_mixed <- function(model,
                                       ci = .95,
@@ -335,6 +383,7 @@
                                       robust = FALSE,
                                       p_adjust = NULL,
                                       wb_component = FALSE,
+                                      filter_parameters = NULL,
                                       verbose = TRUE,
                                       ...) {
   # check if standardization is required and package available
@@ -515,6 +564,12 @@
   # add sigma
   parameters <- .add_sigma_residual_df(parameters, model)
 
+
+  # filter parameters, if requested
+  if (!is.null(filter_parameters)) {
+    parameters <- .filter_parameters(parameters, filter_parameters, verbose = verbose)
+  }
+
   rownames(parameters) <- NULL
   parameters
 }
@@ -570,7 +625,6 @@
 
 
 
-#' @importFrom stats model.frame
 .find_within_between <- function(model, which_effect) {
   mf <- stats::model.frame(model)
   unlist(sapply(names(mf), function(i) {
@@ -588,9 +642,6 @@
 # Bayes function ------------------------------------------------------
 
 
-#' @importFrom bayestestR describe_posterior
-#' @importFrom insight is_multivariate reshape_ci
-#' @importFrom stats sd setNames na.omit
 #' @keywords internal
 .extract_parameters_bayesian <- function(model,
                                          centrality = "median",
@@ -604,6 +655,7 @@
                                          diagnostic = c("ESS", "Rhat"),
                                          priors = FALSE,
                                          standardize = NULL,
+                                         filter_parameters = NULL,
                                          verbose = TRUE,
                                          ...) {
   # check if standardization is required and package available
@@ -615,7 +667,7 @@
   # no ROPE for multi-response models
   if (insight::is_multivariate(model)) {
     test <- setdiff(test, c("rope", "p_rope"))
-    warning("Multivariate response models are not yet supported for tests 'rope' and 'p_rope'.", call. = FALSE)
+    warning(insight::format_message("Multivariate response models are not yet supported for tests 'rope' and 'p_rope'."), call. = FALSE)
   }
 
   # MCMCglmm need special handling
@@ -702,6 +754,11 @@
     parameters$ROPE_high <- NULL
   }
 
+  # filter parameters, if requested
+  if (!is.null(filter_parameters)) {
+    parameters <- .filter_parameters(parameters, filter_parameters, verbose = verbose)
+  }
+
   rownames(parameters) <- NULL
   parameters
 }
@@ -714,7 +771,12 @@
 
 
 #' @keywords internal
-.extract_parameters_lavaan <- function(model, ci = 0.95, standardize = FALSE, verbose = TRUE, ...) {
+.extract_parameters_lavaan <- function(model,
+                                       ci = 0.95,
+                                       standardize = FALSE,
+                                       filter_parameters = NULL,
+                                       verbose = TRUE,
+                                       ...) {
   if (!requireNamespace("lavaan", quietly = TRUE)) {
     stop("Package 'lavaan' required for this function to work. Please install it by running `install.packages('lavaan')`.")
   }
@@ -728,7 +790,7 @@
   if (!is.logical(standardize)) {
     if (!(standardize %in% c("all", "std.all", "latent", "std.lv", "no_exogenous", "std.nox"))) {
       if (verbose) {
-        warning("'standardize' should be one of TRUE, 'all', 'std.all', 'latent', 'std.lv', 'no_exogenous' or 'std.nox'. Returning unstandardized solution.", call. = FALSE)
+        warning(insight::format_message("'standardize' should be one of TRUE, 'all', 'std.all', 'latent', 'std.lv', 'no_exogenous' or 'std.nox'. Returning unstandardized solution."), call. = FALSE)
       }
       standardize <- FALSE
     }
@@ -738,7 +800,7 @@
   if (length(ci) > 1) {
     ci <- ci[1]
     if (verbose) {
-      warning(paste0("lavaan models only accept one level of CI :( Keeping the first one: `ci = ", ci, "`."), call. = FALSE)
+      warning(insight::format_message(paste0("lavaan models only accept one level of CI :( Keeping the first one: `ci = ", ci, "`.")), call. = FALSE)
     }
   }
 
@@ -828,6 +890,11 @@
     params$Group <- data$group
   }
 
+  # filter parameters, if requested
+  if (!is.null(filter_parameters)) {
+    params <- .filter_parameters(params, filter_parameters, verbose = verbose)
+  }
+
   params
 }
 
@@ -841,7 +908,7 @@
 
 .check_rank_deficiency <- function(p, verbose = TRUE) {
   if (anyNA(p$Estimate)) {
-    if (isTRUE(verbose)) warning(sprintf("Model matrix is rank deficient. Parameters %s were not estimable.", paste(p$Parameter[is.na(p$Estimate)], collapse = ", ")), call. = FALSE)
+    if (isTRUE(verbose)) warning(insight::format_message(sprintf("Model matrix is rank deficient. Parameters %s were not estimable.", paste(p$Parameter[is.na(p$Estimate)], collapse = ", "))), call. = FALSE)
     p <- p[!is.na(p$Estimate), ]
   }
   p

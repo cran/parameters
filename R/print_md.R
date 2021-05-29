@@ -18,8 +18,23 @@ print_md.parameters_model <- function(x,
                                       show_sigma = FALSE,
                                       show_formula = FALSE,
                                       zap_small = FALSE,
+                                      groups = NULL,
                                       verbose = TRUE,
                                       ...) {
+  # check if user supplied digits attributes
+  if (missing(digits)) {
+    digits <- .additional_arguments(x, "digits", digits)
+  }
+  if (missing(ci_digits)) {
+    ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
+  }
+  if (missing(p_digits)) {
+    p_digits <- .additional_arguments(x, "p_digits", p_digits)
+  }
+  if (missing(footer_digits)) {
+    footer_digits <- .additional_arguments(x, "footer_digits", footer_digits)
+  }
+
   # table caption
   table_caption <- .print_caption(x, caption, format = "markdown")
 
@@ -36,6 +51,7 @@ print_md.parameters_model <- function(x,
     ci_width = NULL,
     ci_brackets = ci_brackets,
     format = "markdown",
+    groups = groups,
     ...
   )
 
@@ -78,8 +94,16 @@ print_md.compare_parameters <- function(x,
                                         p_digits = 3,
                                         style = NULL,
                                         ...) {
-  # save original input
-  orig_x <- x
+  # check if user supplied digits attributes
+  if (missing(digits)) {
+    digits <- .additional_arguments(x, "digits", digits)
+  }
+  if (missing(ci_digits)) {
+    ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
+  }
+  if (missing(p_digits)) {
+    p_digits <- .additional_arguments(x, "p_digits", p_digits)
+  }
 
   # get attributes
   if (missing(style) || is.null(style)) {
@@ -115,9 +139,16 @@ print_md.parameters_sem <- function(x,
                                     ci_brackets = c("(", ")"),
                                     ...) {
   # check if user supplied digits attributes
-  if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
-  if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
-  if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
+  # check if user supplied digits attributes
+  if (missing(digits)) {
+    digits <- .additional_arguments(x, "digits", digits)
+  }
+  if (missing(ci_digits)) {
+    ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
+  }
+  if (missing(p_digits)) {
+    p_digits <- .additional_arguments(x, "p_digits", p_digits)
+  }
 
   formatted_table <- format(x = x, digits = digits, ci_digits, p_digits = p_digits, format = "markdown", ci_width = NULL, ci_brackets = ci_brackets, ...)
   insight::export_table(formatted_table, format = "markdown", align = "firstleft", ...)
@@ -126,9 +157,16 @@ print_md.parameters_sem <- function(x,
 #' @export
 print_md.parameters_stan <- function(x, split_components = TRUE, select = NULL, digits = 2, ci_digits = 2, p_digits = 3, ...) {
   # check if user supplied digits attributes
-  if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
-  if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
-  if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
+  # check if user supplied digits attributes
+  if (missing(digits)) {
+    digits <- .additional_arguments(x, "digits", digits)
+  }
+  if (missing(ci_digits)) {
+    ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
+  }
+  if (missing(p_digits)) {
+    p_digits <- .additional_arguments(x, "p_digits", p_digits)
+  }
 
   formatted_table <- format(x = x, split_components = split_components, select = select, format = "markdown", digits = digits, ci_digits, p_digits = p_digits, ci_width = NULL, ci_brackets = c("(", ")"), ...)
   insight::export_table(formatted_table, format = "markdown")
@@ -169,7 +207,6 @@ print_md.parameters_pca <- print_md.parameters_efa
 
 # Equivalence test ----------------------------
 
-#' @importFrom insight format_table
 #' @export
 print_md.equivalence_test_lm <- function(x, digits = 2, ci_brackets = c("(", ")"), zap_small = FALSE, ...) {
   rule <- attributes(x)$rule

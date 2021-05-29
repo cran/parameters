@@ -1,4 +1,3 @@
-#' @importFrom insight is_multivariate model_info find_formula get_data
 #' @keywords internal
 .add_model_parameters_attributes <- function(params,
                                              model,
@@ -13,7 +12,10 @@
                                              verbose = TRUE,
                                              group_level = FALSE,
                                              ...) {
+  # capture additional arguments
   dot.arguments <- lapply(match.call(expand.dots = FALSE)$`...`, function(x) x)
+
+  # model info
   info <- tryCatch(
     {
       suppressWarnings(insight::model_info(model, verbose = FALSE))
@@ -31,6 +33,9 @@
   if (!is.null(info) && insight::is_multivariate(model) && !"is_zero_inflated" %in% names(info)) {
     info <- info[[1]]
   }
+
+
+  # add regular attributes
 
   if (is.null(attr(params, "pretty_names", exact = TRUE))) {
     attr(params, "pretty_names") <- suppressWarnings(format_parameters(model))
@@ -71,24 +76,22 @@
     attr(params, "title") <- ""
   }
 
+  # weighted nobs
   weighted_nobs <- tryCatch(
     {
       w <- insight::get_weights(model, na_rm = TRUE, null_as_ones = TRUE)
       round(sum(w))
     },
-    error = function(e) {
-      NULL
-    }
+    error = function(e) { NULL }
   )
   attr(params, "weighted_nobs") <- weighted_nobs
 
+  # model formula
   model_formula <- tryCatch(
     {
       .safe_deparse(insight::find_formula(model)$conditional)
     },
-    error = function(e) {
-      NULL
-    }
+    error = function(e) { NULL }
   )
   attr(params, "model_formula") <- model_formula
 
@@ -97,7 +100,8 @@
   attr(params, "coefficient_name") <- coef_col
   attr(params, "zi_coefficient_name") <- ifelse(isTRUE(exponentiate), "Odds Ratio", "Log-Odds")
 
-
+  # special handling for meta analysis. we need additional information
+  # about study weights
   if (inherits(model, c("rma", "rma.uni"))) {
     rma_data <- tryCatch(
       {
@@ -111,6 +115,8 @@
     attr(params, "study_weights") <- 1 / model$vi
   }
 
+  # special handling for meta analysis again, but these objects save the
+  # inverse weighting information in a different column.
   if (inherits(model, c("meta_random", "meta_fixed", "meta_bma"))) {
     rma_data <- tryCatch(
       {
@@ -122,6 +128,10 @@
     )
     attr(params, "data") <- rma_data
     attr(params, "study_weights") <- 1 / params$SE^2
+  }
+
+  if ("groups" %in% names(dot.arguments)) {
+    attr(params, "coef_groups") <- eval(dot.arguments[["groups"]])
   }
 
   if ("digits" %in% names(dot.arguments)) {
@@ -203,7 +213,6 @@
 
 
 
-#' @importFrom insight model_info
 #' @keywords internal
 .exponentiate_parameters <- function(params, model = NULL, exponentiate = TRUE) {
   if (!is.null(model) && insight::model_info(model)$is_linear && identical(exponentiate, "nongaussian")) {
@@ -230,13 +239,12 @@
 
 
 
-#' @importFrom insight clean_parameters
 .add_pretty_names <- function(params, model) {
   attr(params, "model_class") <- class(model)
   cp <- insight::clean_parameters(model)
   clean_params <- cp[cp$Parameter %in% params$Parameter, ]
-  attr(params, "cleaned_parameters") <- setNames(clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)], params$Parameter)
-  attr(params, "pretty_names") <- setNames(clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)], params$Parameter)
+  attr(params, "cleaned_parameters") <- stats::setNames(clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)], params$Parameter)
+  attr(params, "pretty_names") <- stats::setNames(clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)], params$Parameter)
 
   params
 }
@@ -250,6 +258,7 @@
 
   attr(params, "ci") <- ci
   attr(params, "model_class") <- class(model)
+  attr(params, "anova_type") <- .anova_type(model)
 
   if (inherits(model, "Anova.mlm") && !identical(test, "univariate")) {
     attr(params, "anova_test") <- model$test

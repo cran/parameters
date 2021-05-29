@@ -3,7 +3,7 @@
 #'
 #' @description A \code{print()}-method for objects from \code{\link[=model_parameters]{model_parameters()}}.
 #'
-#' @param x An object returned by \code{\link[=model_parameters]{model_parameters()}}.
+#' @param x,object An object returned by \code{\link[=model_parameters]{model_parameters()}}.
 #' @param split_components Logical, if \code{TRUE} (default), For models with
 #'   multiple components (zero-inflation, smooth terms, ...), each component is
 #'   printed in a separate table. If \code{FALSE}, model parameters are printed
@@ -17,10 +17,22 @@
 #' @param show_formula Logical, if \code{TRUE}, adds the model formula to the output.
 #' @param caption Table caption as string. If \code{NULL}, no table caption is printed.
 #' @param footer_digits Number of decimal places for values in the footer summary.
+#' @param groups Named list, can be used to group parameters in the printed output.
+#'   List elements may either be character vectors that match the name of those
+#'   parameters that belong to one group, or list elements can be row numbers
+#'   of those parameter rows that should belong to one group. The names of the
+#'   list elements will be used as group names, which will be inserted as "header
+#'   row". A possible use case might be to emphasize focal predictors and control
+#'   variables, see 'Examples'. Parameters will be re-ordered according to the
+#'   order used in \code{groups}, while all non-matching parameters will be added
+#'   to the end.
 #' @inheritParams insight::format_table
 #'
 #' @inheritSection format_parameters Interpretation of Interaction Terms
 #' @inheritSection model_parameters Labeling the Degrees of Freedom
+#'
+#' @details \code{summary()} is a convenient shortcut for
+#'   \code{print(object, select = "minimal", show_sigma = TRUE, show_formula = TRUE)}.
 #'
 #' @return Invisibly returns the original input object.
 #'
@@ -47,8 +59,41 @@
 #'
 #'   print(mp, select = "minimal")
 #' }
+#'
+#'
+#' # group parameters ------
+#'
+#' data(iris)
+#' model <- lm(
+#'   Sepal.Width ~ Sepal.Length + Species + Petal.Length,
+#'   data = iris
+#' )
+#' # don't select "Intercept" parameter
+#' mp <- model_parameters(model, parameters = "^(?!\\(Intercept)")
+#' groups <- list(
+#'   "Focal Predictors" = c("Speciesversicolor", "Speciesvirginica"),
+#'   "Controls" = c("Sepal.Length", "Petal.Length")
+#' )
+#' print(mp, groups = groups)
+#'
+#' # or use row indices
+#' print(mp, groups = list("Focal Predictors" = c(1, 4),
+#'                         "Controls" = c(2, 3)))
+#'
+#' # only show coefficients, CI and p,
+#' # put non-matched parameters to the end
+#'
+#' data(mtcars)
+#' mtcars$cyl <- as.factor(mtcars$cyl)
+#' mtcars$gear <- as.factor(mtcars$gear)
+#' model <- lm(mpg ~ hp + gear * vs + cyl + drat, data = mtcars)
+#'
+#' # don't select "Intercept" parameter
+#' mp <- model_parameters(model, parameters = "^(?!\\(Intercept)")
+
+#' print(mp, groups = list("Engine" = c("cyl6", "cyl8", "vs", "hp"),
+#'                         "Interactions" = c("gear4:vs", "gear5:vs")))
 #' }
-#' @importFrom insight export_table
 #' @export
 print.parameters_model <- function(x,
                                    pretty_names = TRUE,
@@ -62,9 +107,26 @@ print.parameters_model <- function(x,
                                    show_sigma = FALSE,
                                    show_formula = FALSE,
                                    zap_small = FALSE,
+                                   groups = NULL,
                                    ...) {
   # save original input
   orig_x <- x
+
+
+  # check if user supplied digits attributes
+  if (missing(digits)) {
+    digits <- .additional_arguments(x, "digits", digits)
+  }
+  if (missing(ci_digits)) {
+    ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
+  }
+  if (missing(p_digits)) {
+    p_digits <- .additional_arguments(x, "p_digits", p_digits)
+  }
+  if (missing(footer_digits)) {
+    footer_digits <- .additional_arguments(x, "footer_digits", footer_digits)
+  }
+
 
   # table caption
   table_caption <- .print_caption(x, caption, format = "text")
@@ -82,6 +144,7 @@ print.parameters_model <- function(x,
     ci_width = "auto",
     ci_brackets = TRUE,
     format = "text",
+    groups = groups,
     ...
   )
 
@@ -94,12 +157,11 @@ print.parameters_model <- function(x,
   )
 
   # get attributes
-  res <- attributes(x)$details
   ci_method <- .additional_arguments(x, "ci_method", NULL)
   verbose <- .additional_arguments(x, "verbose", TRUE)
 
   # print main table
-  cat( insight::export_table(
+  cat(insight::export_table(
     formatted_table,
     format = "text",
     caption = table_caption,
@@ -111,15 +173,13 @@ print.parameters_model <- function(x,
     .print_footer_cimethod(ci_method)
   }
 
-
-  ## TODO remove in future update when deprecated
-
-  # print summary for random effects
-  if (!is.null(res)) {
-    cat("\n")
-    .print_random_parameters(res, digits = digits)
-  }
   invisible(orig_x)
+}
+
+#' @rdname print.parameters_model
+#' @export
+summary.parameters_model <- function(object, ...) {
+  print(x = object, select = "minimal", show_sigma = TRUE, show_formula = TRUE, ...)
 }
 
 #' @export
@@ -145,12 +205,8 @@ print.parameters_brms_meta <- print.parameters_model
                         ci_width = "auto",
                         ci_brackets = TRUE,
                         format = "text",
+                        group = NULL,
                         ...) {
-  # check if user supplied digits attributes
-  digits <- .additional_arguments(x, "digits", digits)
-  ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
-  p_digits <- .additional_arguments(x, "p_digits", p_digits)
-
   format(
     x,
     pretty_names = pretty_names,
@@ -163,6 +219,7 @@ print.parameters_brms_meta <- print.parameters_model
     ci_brackets = ci_brackets,
     zap_small = zap_small,
     format = format,
+    group = group,
     ...
   )
 }
@@ -173,15 +230,15 @@ print.parameters_brms_meta <- print.parameters_model
                           show_sigma = FALSE,
                           show_formula = FALSE,
                           format = "text") {
-    # get attributes
+  # get attributes
   sigma <- attributes(x)$sigma
+  show_summary <- isTRUE(attributes(x)$show_summary)
   verbose <- .additional_arguments(x, "verbose", TRUE)
-  digits <- .additional_arguments(x, "footer_digits", digits)
 
   # override defaults. if argument "summary" is called in "model_parameters()",
   # this overrides the defaults...
-  show_sigma <- .additional_arguments(x, "show_summary", show_sigma)
-  show_formula <- .additional_arguments(x, "show_summary", show_formula)
+  show_sigma <- ifelse(show_summary, TRUE, show_sigma)
+  show_formula <- ifelse(show_summary, TRUE, show_formula)
   show_r2 <- .additional_arguments(x, "show_summary", FALSE)
 
   # set defaults, if necessary
@@ -203,7 +260,7 @@ print.parameters_brms_meta <- print.parameters_model
 
 
 .print_caption <- function(x, caption = NULL, format = "text") {
-  title_attribute <- attributes(x)$title
+  title_attribute <- attributes(x)$title[1]
 
   # check effects and component parts
   if (!is.null(x$Effects) && all(x$Effects == "random")) {
@@ -218,11 +275,15 @@ print.parameters_brms_meta <- print.parameters_model
   }
 
   if (identical(format, "html") && is.null(caption)) {
-    table_caption <- "Model Summary"
+    if (isTRUE(attributes(x)$is_ggeffects)) {
+      table_caption <- title_attribute
+    } else {
+      table_caption <- "Model Summary"
+    }
   } else if (isTRUE(attributes(x)$ordinal_model)) {
     table_caption <- ""
   } else if (!is.null(title_attribute) && is.null(caption)) {
-    if (title_attribute == "") {
+    if (length(title_attribute) == 1 && title_attribute == "") {
       table_caption <- NULL
     } else {
       table_caption <- title_attribute
@@ -271,9 +332,16 @@ print.parameters_stan <- function(x,
   verbose <- .additional_arguments(x, "verbose", TRUE)
 
   # check if user supplied digits attributes
-  if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
-  if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
-  if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
+  # check if user supplied digits attributes
+  if (missing(digits)) {
+    digits <- .additional_arguments(x, "digits", digits)
+  }
+  if (missing(ci_digits)) {
+    ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
+  }
+  if (missing(p_digits)) {
+    p_digits <- .additional_arguments(x, "p_digits", p_digits)
+  }
 
 
   formatted_table <- format(
@@ -297,7 +365,10 @@ print.parameters_stan <- function(x,
   invisible(orig_x)
 }
 
-
+#' @export
+summary.parameters_stan <- function(object, ...) {
+  print(x = object, select = "minimal", ...)
+}
 
 
 
@@ -305,7 +376,6 @@ print.parameters_stan <- function(x,
 # helper --------------------
 
 
-#' @importFrom insight print_color
 #' @keywords internal
 .print_random_parameters <- function(random_params, digits = 2) {
   insight::print_color("# Random Effects\n\n", "blue")
