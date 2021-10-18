@@ -16,22 +16,32 @@ model_parameters.glmmTMB <- function(model,
                                      group_level = FALSE,
                                      standardize = NULL,
                                      exponentiate = FALSE,
-                                     df_method = NULL,
+                                     ci_method = NULL,
                                      p_adjust = NULL,
                                      wb_component = TRUE,
                                      summary = FALSE,
-                                     parameters = NULL,
+                                     keep = NULL,
+                                     drop = NULL,
+                                     parameters = keep,
                                      verbose = TRUE,
+                                     df_method = ci_method,
                                      ...) {
+
+  ## TODO remove later
+  if (!missing(df_method) && !identical(ci_method, df_method)) {
+    message(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."))
+    ci_method <- df_method
+  }
+
   # p-values, CI and se might be based on different df-methods
-  df_method <- .check_df_method(df_method)
+  ci_method <- .check_df_method(ci_method)
 
   # which components to return?
   effects <- match.arg(effects, choices = c("fixed", "random", "all"))
   component <- match.arg(component, choices = c("all", "conditional", "zi", "zero_inflated", "dispersion"))
 
   # standardize only works for fixed effects...
-  if (!is.null(standardize)) {
+  if (!is.null(standardize) && standardize != "refit") {
     if (!missing(effects) && effects != "fixed" && verbose) {
       warning(insight::format_message("Standardizing coefficients only works for fixed effects of the mixed model."), call. = FALSE)
     }
@@ -71,10 +81,11 @@ model_parameters.glmmTMB <- function(model,
         component = component,
         standardize = standardize,
         robust = FALSE,
-        df_method = df_method,
+        ci_method = ci_method,
         p_adjust = p_adjust,
         wb_component = wb_component,
-        filter_parameters = NULL,
+        keep_parameters = NULL,
+        drop_parameters = NULL,
         keep_component_column = component != "conditional",
         ...
       )
@@ -104,7 +115,7 @@ model_parameters.glmmTMB <- function(model,
   }
 
   if (effects %in% c("random", "all") && isFALSE(group_level)) {
-    params_variance <- .extract_random_variances(model, ci = ci, effects = effects, component = component)
+    params_variance <- .extract_random_variances(model, ci = ci, effects = effects, component = component, ci_method = ci_method)
   }
 
 
@@ -132,8 +143,8 @@ model_parameters.glmmTMB <- function(model,
   }
 
   # filter parameters
-  if (!is.null(parameters)) {
-    params <- .filter_parameters(params, parameters, verbose = verbose)
+  if (!is.null(keep) || !is.null(drop)) {
+    params <- .filter_parameters(params, keep, drop, verbose = verbose)
   }
 
 
@@ -148,7 +159,7 @@ model_parameters.glmmTMB <- function(model,
     model,
     ci = ifelse(effects == "random" && isFALSE(group_level), NA, ci),
     exponentiate,
-    df_method = df_method,
+    ci_method = ci_method,
     p_adjust = p_adjust,
     verbose = verbose,
     group_level = group_level,
@@ -166,37 +177,39 @@ model_parameters.glmmTMB <- function(model,
 # ci -----
 
 
-#' @rdname ci.merMod
+#' @rdname ci.default
 #' @export
 ci.glmmTMB <- function(x,
                        ci = .95,
-                       component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
-                       method = c("wald", "ml1", "betwithin", "robust", "profile", "uniroot"),
+                       dof = NULL,
+                       method = "wald",
+                       robust = FALSE,
+                       component = "all",
                        verbose = TRUE,
                        ...) {
+
   method <- tolower(method)
-  method <- match.arg(method)
-  component <- match.arg(component)
+  method <- match.arg(method, choices = c("wald", "normal", "ml1", "betwithin", "profile", "uniroot"))
+  component <- match.arg(component, choices = c("all", "conditional", "zi", "zero_inflated", "dispersion"))
 
   if (is.null(.check_component(x, component, verbose = verbose))) {
     return(NULL)
   }
 
-  if (method == "robust") {
-    ci_wald(model = x, ci = ci, dof = Inf, component = component, robust = TRUE)
-  } else if (method == "wald") {
-    ci_wald(model = x, ci = ci, dof = Inf, component = component, robust = FALSE)
-  } else if (method == "ml1") {
-    ci_ml1(model = x, ci = ci)
-  } else if (method == "betwithin") {
-    ci_betwithin(model = x, ci = ci)
-  } else if (method == "profile") {
+  # profiled CIs
+  if (method == "profile") {
     pp <- stats::profile(x)
     out <- lapply(ci, function(i) .ci_profile_glmmTMB(x, ci = i, profiled = pp, component = component, ...))
     do.call(rbind, out)
+
+    # uniroot CIs
   } else if (method == "uniroot") {
     out <- lapply(ci, function(i) .ci_uniroot_glmmTMB(x, ci = i, component = component, ...))
     do.call(rbind, out)
+  } else {
+
+    # all other
+    .ci_generic(model = x, ci = ci, dof = dof, method = method, robust = robust, component = component, ...)
   }
 }
 
@@ -252,35 +265,6 @@ standard_error.glmmTMB <- function(model,
 
     .filter_component(se, component)
   }
-}
-
-
-# p_value -----
-
-
-#' @rdname p_value.lmerMod
-#' @export
-p_value.glmmTMB <- function(model, component = c("all", "conditional", "zi", "zero_inflated", "dispersion"), verbose = TRUE, ...) {
-  component <- match.arg(component)
-  if (is.null(.check_component(model, component, verbose = verbose))) {
-    return(NULL)
-  }
-
-  cs <- .compact_list(stats::coef(summary(model)))
-  x <- lapply(names(cs), function(i) {
-    .data_frame(
-      Parameter = insight::find_parameters(model, effects = "fixed", component = i, flatten = TRUE),
-      p = as.vector(cs[[i]][, 4]),
-      Component = i
-    )
-  })
-
-  p <- do.call(rbind, x)
-  p$Component <- .rename_values(p$Component, "cond", "conditional")
-  p$Component <- .rename_values(p$Component, "zi", "zero_inflated")
-  p$Component <- .rename_values(p$Component, "disp", "dispersion")
-
-  .filter_component(p, component)
 }
 
 

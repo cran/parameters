@@ -6,15 +6,14 @@
 model_parameters.lme <- model_parameters.merMod
 
 
-#' @rdname ci.merMod
 #' @export
-ci.lme <- function(x, ci = .95, method = c("wald", "betwithin", "ml1", "satterthwaite"), ...) {
+ci.lme <- function(x, ci = .95, method = "wald", ...) {
   method <- tolower(method)
-  method <- match.arg(method)
+  method <- match.arg(method, choices = c("wald", "normal", "residual", "betwithin", "ml1", "satterthwaite"))
 
-  if (method == "wald") {
+  if (method %in% c("wald", "residual", "normal")) {
     if (!requireNamespace("nlme", quietly = TRUE)) {
-      ci_wald(model = x, ci = ci)
+      .ci_generic(model = x, ci = ci, method = method)
     } else {
       out <- lapply(ci, function(i) {
         ci_list <- tryCatch(
@@ -75,15 +74,10 @@ standard_error.gls <- standard_error.default
 
 
 #' @export
-ci.gls <- ci.biglm
+p_value.gls <- p_value.default
 
 
 #' @export
-p_value.gls <- function(model, ...) {
-  cs <- summary(model)$tTable
-  p <- cs[, 4]
-  .data_frame(
-    Parameter = .remove_backticks_from_string(rownames(cs)),
-    p = as.vector(p)
-  )
+degrees_of_freedom.gls <- function(model, method = NULL, ...) {
+  .degrees_of_freedom_no_dfresid_method(model, method)
 }

@@ -1,9 +1,5 @@
 
 #' @export
-ci.coxr <- ci.tobit
-
-
-#' @export
 standard_error.coxr <- function(model, ...) {
   params <- insight::get_parameters(model)
   vc <- insight::get_varcov(model)
@@ -13,6 +9,7 @@ standard_error.coxr <- function(model, ...) {
   )
 }
 
+## TODO add ci_method later?
 
 #' @export
 p_value.coxr <- function(model, ...) {

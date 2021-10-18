@@ -12,12 +12,15 @@ compare_parameters(
   component = "conditional",
   standardize = NULL,
   exponentiate = FALSE,
-  df_method = "wald",
+  ci_method = "wald",
   p_adjust = NULL,
   style = NULL,
   column_names = NULL,
-  groups = NULL,
-  verbose = TRUE
+  keep = NULL,
+  drop = NULL,
+  parameters = keep,
+  verbose = TRUE,
+  df_method = ci_method
 )
 
 compare_models(
@@ -27,40 +30,49 @@ compare_models(
   component = "conditional",
   standardize = NULL,
   exponentiate = FALSE,
-  df_method = "wald",
+  ci_method = "wald",
   p_adjust = NULL,
   style = NULL,
   column_names = NULL,
-  groups = NULL,
-  verbose = TRUE
+  keep = NULL,
+  drop = NULL,
+  parameters = keep,
+  verbose = TRUE,
+  df_method = ci_method
 )
 }
 \arguments{
 \item{...}{One or more regression model objects, or objects returned by
 \code{model_parameters()}. Regression models may be of different model
-types.}
+types. Model objects may be passed comma separated, or as a list.
+If model objects are passed with names or the list has named elements,
+these names will be used as column names.}
 
-\item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
+\item{ci}{Confidence Interval (CI) level. Default to \code{0.95} (\verb{95\%}).}
 
 \item{effects}{Should parameters for fixed effects (\code{"fixed"}), random
 effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
 to mixed models. May be abbreviated.}
 
 \item{component}{Model component for which parameters should be shown. See
-documentation for related model class in \code{\link{model_parameters}}.}
+documentation for related model class in \code{\link[=model_parameters]{model_parameters()}}.}
 
 \item{standardize}{The method used for standardizing the parameters. Can be
-\code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"},
-\code{"pseudo"} or \code{NULL} (default) for no standardization. See
-'Details' in \code{\link[effectsize]{standardize_parameters}}.
-\strong{Important:} Categorical predictors (i.e. factors) are \emph{never}
-standardized by default, which may be a different behaviour compared to
-other R packages or other software packages (like SPSS). If standardizing
-categorical predictors is desired, either use \code{standardize="basic"}
-to mimic behaviour of SPSS or packages such as \pkg{lm.beta}, or standardize
-the data with \code{effectsize::standardize(force=TRUE)} before fitting
-the model. Robust estimation (i.e. \code{robust=TRUE}) of standardized
-parameters only works when \code{standardize="refit"}.}
+\code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
+on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
+\code{"pseudo"}. See 'Details' in \code{\link[effectsize:standardize_parameters]{effectsize::standardize_parameters()}}.
+\strong{Important:}
+\itemize{
+\item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
+factors), which may be a different behaviour compared to other R packages
+(such as \pkg{lm.beta}) or other software packages (like SPSS). to mimic
+such behaviours, either use \code{standardize="basic"} or standardize the data
+with \code{effectsize::standardize(force=TRUE)} \emph{before} fitting the model.
+\item For mixed models, when using methods other than \code{"refit"}, only the fixed
+effects will be returned.
+\item Robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
+works when \code{standardize="refit"}.
+}}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
 the coefficients (and related confidence intervals). This is typical for
@@ -74,12 +86,12 @@ captures this uncertainty. For \code{compare_parameters()},
 \code{exponentiate = "nongaussian"} will only exponentiate coefficients
 from non-Gaussian families.}
 
-\item{df_method}{Method for computing degrees of freedom for p values,
-standard errors and confidence intervals (CI). See documentation for
-related model class in \code{\link{model_parameters}}.}
+\item{ci_method}{Method for computing degrees of freedom for p values
+and confidence intervals (CI). See documentation for related model class
+in \code{\link[=model_parameters]{model_parameters()}}.}
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
-adjust p-values. See \code{\link[stats]{p.adjust}} for details. Further
+adjust p-values. See \code{\link[stats:p.adjust]{stats::p.adjust()}} for details. Further
 possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
 \code{"sidak"} and \code{"none"} to explicitly disable adjustment for
 \code{emmGrid} objects (from \pkg{emmeans}).}
@@ -87,58 +99,99 @@ possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
 \item{style}{String, indicating which style of output is requested. Following
 templates are possible:
 \itemize{
-  \item \code{"ci"}: Estimate and confidence intervals, no asterisks for p-values.
-  \item \code{"se"}: Estimate and standard errors, no asterisks for p-values.
-  \item \code{"ci_p"}: Estimate, confidence intervals and asterisks for p-values.
-  \item \code{"se_p"}: Estimate, standard errors and asterisks for p-values.
-  \item \code{"ci_p2"}: Estimate, confidence intervals and numeric p-values, in two columns.
-  \item \code{"se_p2"}: Estimate, standard errors and numeric p-values, in two columns.
+\item \code{"ci"}: Estimate and confidence intervals, no asterisks for p-values.
+\item \code{"se"}: Estimate and standard errors, no asterisks for p-values.
+\item \code{"ci_p"}: Estimate, confidence intervals and asterisks for p-values.
+\item \code{"se_p"}: Estimate, standard errors and asterisks for p-values.
+\item \code{"ci_p2"}: Estimate, confidence intervals and numeric p-values, in two columns.
+\item \code{"se_p2"}: Estimate, standard errors and numeric p-values, in two columns.
 }}
 
 \item{column_names}{Character vector with strings that should be used as
 column headers. Must be of same length as number of models in \code{...}.}
 
-\item{groups}{Named list, can be used to group parameters in the printed output.
-List elements may either be character vectors that match the name of those
-parameters that belong to one group, or list elements can be row numbers
-of those parameter rows that should belong to one group. The names of the
-list elements will be used as group names, which will be inserted as "header
-row". A possible use case might be to emphasize focal predictors and control
-variables, see 'Examples'. Parameters will be re-ordered according to the
-order used in \code{groups}, while all non-matching parameters will be added
-to the end.}
+\item{keep}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{drop}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{parameters}{Deprecated, alias for \code{keep}.}
 
 \item{verbose}{Toggle warnings and messages.}
+
+\item{df_method}{Deprecated. Please use \code{ci_method}.}
 }
 \value{
 A data frame of indices related to the model's parameters.
 }
 \description{
-Compute and extract model parameters of multiple regression models.
-  See \code{\link{model_parameters}} for further details.
+Compute and extract model parameters of multiple regression
+models. See \code{\link[=model_parameters]{model_parameters()}} for further details.
 }
-\note{
-This function is in an early stage and does not yet cope with more
-  complex models, and probably does not yet properly render all model
-  components.
+\details{
+This function is in an early stage and does not yet cope with more complex
+models, and probably does not yet properly render all model components. It
+should also be noted that when including models with interaction terms, not
+only do the values of the parameters change, but so does their meaning (from
+main effects, to simple slopes), thereby making such comparisons hard.
+Therefore, you should not use this function to compare models with
+interaction terms with models without interaction terms.
 }
 \examples{
 data(iris)
 lm1 <- lm(Sepal.Length ~ Species, data = iris)
 lm2 <- lm(Sepal.Length ~ Species + Petal.Length, data = iris)
-lm3 <- lm(Sepal.Length ~ Species * Petal.Length, data = iris)
-compare_parameters(lm1, lm2, lm3)
+compare_parameters(lm1, lm2)
 
 data(mtcars)
 m1 <- lm(mpg ~ wt, data = mtcars)
 m2 <- glm(vs ~ wt + cyl, data = mtcars, family = "binomial")
 compare_parameters(m1, m2)
-
 \dontrun{
 # exponentiate coefficients, but not for lm
 compare_parameters(m1, m2, exponentiate = "nongaussian")
 
 # change column names
+compare_parameters("linear model" = m1, "logistic reg." = m2)
 compare_parameters(m1, m2, column_names = c("linear model", "logistic reg."))
+
+# or as list
+compare_parameters(list(m1, m2))
+compare_parameters(list("linear model" = m1, "logistic reg." = m2))
 }
 }

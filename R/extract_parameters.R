@@ -9,18 +9,28 @@
                                         standardize = NULL,
                                         effects = "fixed",
                                         robust = FALSE,
-                                        df_method = NULL,
+                                        ci_method = NULL,
                                         p_adjust = NULL,
                                         wb_component = FALSE,
                                         verbose = TRUE,
                                         keep_component_column = FALSE,
-                                        filter_parameters = NULL,
+                                        keep_parameters = NULL,
+                                        drop_parameters = NULL,
                                         ...) {
 
   # ==== check if standardization is required and package available
 
+  if (isTRUE(standardize)) {
+    if (verbose) {
+      insight::format_message(warning("'standardize' must be on of 'refit', 'posthoc', 'basic', 'smart' or 'pseudo'.", call. = FALSE))
+    }
+    standardize <- NULL
+  }
+
   if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
-    insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
+    if (verbose) {
+      insight::format_message(warning("Package 'effectsize' required to calculate standardized coefficients. Please install it.", call. = FALSE))
+    }
     standardize <- NULL
   }
 
@@ -38,11 +48,22 @@
     standardize <- NULL
   }
 
-  parameters <- insight::get_parameters(model, effects = effects, component = component, verbose = verbose)
+  parameters <- insight::get_parameters(model,
+    effects = effects,
+    component = component,
+    verbose = FALSE
+  )
   statistic <- insight::get_statistic(model, component = component)
+
+  ## TODO we may pass down the statistic down to ci(), p_value() and dof()
+  ## to save computation time, since this can avoid multiple calls to
+  ## "insight::find_statistic()"
+
+  # model_stat <- attributes(statistic)$statistic
 
   # check if all estimates are non-NA
   parameters <- .check_rank_deficiency(parameters)
+
 
   # ==== check if we really have a component column
 
@@ -53,8 +74,8 @@
 
   # ==== check Degrees of freedom
 
-  if (!.dof_method_ok(model, df_method)) {
-    df_method <- NULL
+  if (!.dof_method_ok(model, ci_method, type = "ci_method")) {
+    ci_method <- NULL
   }
 
 
@@ -81,15 +102,22 @@
 
   if (!is.null(ci)) {
     if (isTRUE(robust)) {
-      ci_df <- suppressMessages(ci_robust(model, ci = ci, component = component, verbose = verbose, ...))
-    } else if (!is.null(df_method)) {
+      ci_df <- suppressMessages(ci_robust(
+        model,
+        ci = ci,
+        method = ci_method,
+        component = component,
+        verbose = verbose,
+        ...
+      ))
+    } else if (!is.null(ci_method)) {
       ci_df <- suppressMessages(
         ci(
           model,
           ci = ci,
           effects = effects,
           component = component,
-          method = df_method,
+          method = ci_method,
           verbose = verbose
         )
       )
@@ -103,7 +131,7 @@
       ))
     }
     if (!is.null(ci_df)) {
-      if (length(ci) > 1) ci_df <- insight::reshape_ci(ci_df)
+      if (length(ci) > 1) ci_df <- datawizard::reshape_ci(ci_df)
       ci_cols <- names(ci_df)[!names(ci_df) %in% c("CI", merge_by)]
       parameters <- merge(parameters, ci_df, by = merge_by, sort = FALSE)
     } else {
@@ -117,19 +145,18 @@
   # ==== p value
 
   if (isTRUE(robust)) {
-    pval <- p_value_robust(model, component = component, ...)
-  } else if (!is.null(df_method)) {
+    pval <- p_value_robust(
+      model,
+      method = ci_method,
+      component = component,
+      ...
+    )
+  } else {
     pval <- p_value(
       model,
       effects = effects,
       component = component,
-      method = df_method,
-      verbose = verbose
-    )
-  } else {
-    pval <- p_value(model,
-      effects = effects,
-      component = component,
+      method = ci_method,
       verbose = verbose
     )
   }
@@ -145,12 +172,12 @@
 
   if (isTRUE(robust)) {
     std_err <- standard_error_robust(model, component = component, ...)
-  } else if (!is.null(df_method)) {
+  } else if (!is.null(ci_method)) {
     std_err <- standard_error(
       model,
       effects = effects,
       component = component,
-      method = df_method,
+      method = ci_method,
       verbose = verbose
     )
   } else {
@@ -176,10 +203,10 @@
 
 
   # ==== degrees of freedom
-  if (!is.null(df_method)) {
-    df_error <- degrees_of_freedom(model, method = df_method)
+  if (!is.null(ci_method)) {
+    df_error <- degrees_of_freedom(model, method = ci_method, verbose = FALSE)
   } else {
-    df_error <- degrees_of_freedom(model, method = "any")
+    df_error <- degrees_of_freedom(model, method = "any", verbose = FALSE)
   }
   if (!is.null(df_error) && (length(df_error) == 1 || length(df_error) == nrow(parameters))) {
     if (length(df_error) == 1) {
@@ -287,8 +314,12 @@
 
   # ==== filter parameters, if requested
 
-  if (!is.null(filter_parameters)) {
-    parameters <- .filter_parameters(parameters, filter_parameters, verbose = verbose)
+  if (!is.null(keep_parameters) || !is.null(drop_parameters)) {
+    parameters <- .filter_parameters(parameters,
+      keep = keep_parameters,
+      drop = drop_parameters,
+      verbose = verbose
+    )
   }
 
 
@@ -327,24 +358,47 @@
 
 
 
-.filter_parameters <- function(params, filter_params, verbose = TRUE) {
-  if (is.list(filter_params)) {
-    for (i in names(filter_params)) {
-      params <- .filter_parameters_vector(params, filter_params[[i]], column = i, verbose = verbose)
+.filter_parameters <- function(params, keep = NULL, drop = NULL, verbose = TRUE) {
+  if (!is.null(keep) && is.list(keep)) {
+    for (i in names(keep)) {
+      params <- .filter_parameters_vector(params,
+        keep[[i]],
+        drop = NULL,
+        column = i,
+        verbose = verbose
+      )
     }
   } else {
-    params <- .filter_parameters_vector(params, filter_params, column = NULL, verbose = verbose)
+    params <- .filter_parameters_vector(params,
+      keep,
+      drop,
+      column = NULL,
+      verbose = verbose
+    )
   }
   params
 }
 
 
-.filter_parameters_vector <- function(params, filter_params, column = NULL, verbose = TRUE) {
+.filter_parameters_vector <- function(params,
+                                      keep = NULL,
+                                      drop = NULL,
+                                      column = NULL,
+                                      verbose = TRUE) {
+
   # check pattern
-  if (length(filter_params) > 1) {
-    filter_params <- paste0("(", paste0(filter_params, collapse = "|"), ")")
+  if (!is.null(keep) && length(keep) > 1) {
+    keep <- paste0("(", paste0(keep, collapse = "|"), ")")
     if (verbose) {
-      message(insight::format_message(sprintf("The 'parameters' argument has more than 1 element. Merging into following regular expression: '%s'.", filter_params)))
+      message(insight::format_message(sprintf("The 'keep' argument has more than 1 element. Merging into following regular expression: '%s'.", keep)))
+    }
+  }
+
+  # check pattern
+  if (!is.null(drop) && length(drop) > 1) {
+    drop <- paste0("(", paste0(drop, collapse = "|"), ")")
+    if (verbose) {
+      message(insight::format_message(sprintf("The 'drop' argument has more than 1 element. Merging into following regular expression: '%s'.", drop)))
     }
   }
 
@@ -355,11 +409,26 @@
       column <- 1
     }
   }
-  out <- params[grepl(filter_params, params[[column]], perl = TRUE), ]
+
+  # row to keep and drop
+  if (!is.null(keep)) {
+    rows_to_keep <- grepl(keep, params[[column]], perl = TRUE)
+  } else {
+    rows_to_keep <- rep_len(TRUE, nrow(params))
+  }
+
+  if (!is.null(drop)) {
+    rows_to_drop <- !grepl(drop, params[[column]], perl = TRUE)
+  } else {
+    rows_to_drop <- rep_len(TRUE, nrow(params))
+  }
+
+
+  out <- params[rows_to_keep & rows_to_drop, ]
 
   if (nrow(out) == 0) {
     if (verbose) {
-      warning(insight::format_message("The pattern defined in the 'parameters' argument would remove all parameters from the output. Thus, selecting specific parameters will be ignored."), call. = FALSE)
+      warning(insight::format_message("The pattern defined in the 'keep' (and 'drop') arguments would remove all parameters from the output. Thus, selecting specific parameters will be ignored."), call. = FALSE)
     }
     return(params)
   }
@@ -368,43 +437,25 @@
 }
 
 
-
-
-
-
 # mixed models function ------------------------------------------------------
 
 
 #' @keywords internal
 .extract_parameters_mixed <- function(model,
                                       ci = .95,
-                                      df_method = "wald",
+                                      ci_method = "wald",
                                       standardize = NULL,
                                       robust = FALSE,
                                       p_adjust = NULL,
                                       wb_component = FALSE,
-                                      filter_parameters = NULL,
+                                      keep_parameters = NULL,
+                                      drop_parameters = NULL,
                                       verbose = TRUE,
                                       ...) {
-  # check if standardization is required and package available
-  if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
-    if (verbose) {
-      warning("Package 'effectsize' required to calculate standardized coefficients. Please install it.", call. = FALSE)
-    }
-    standardize <- NULL
-  }
-
-  # for refit, we completely refit the model, than extract parameters,
-  # ci etc. as usual - therefor, we set "standardize" to NULL
-  if (!is.null(standardize) && standardize == "refit") {
-    model <- effectsize::standardize(model, verbose = FALSE)
-    standardize <- NULL
-  }
-
-  special_df_methods <- c("betwithin", "satterthwaite", "ml1", "kenward", "kr")
+  special_ci_methods <- c("betwithin", "satterthwaite", "ml1", "kenward", "kr")
 
   # get parameters and statistic
-  parameters <- insight::get_parameters(model, effects = "fixed", component = "all")
+  parameters <- insight::get_parameters(model, effects = "fixed", component = "all", verbose = FALSE)
   statistic <- insight::get_statistic(model, component = "all")
 
   # check if all estimates are non-NA
@@ -421,8 +472,8 @@
 
 
   # Degrees of freedom
-  if (.dof_method_ok(model, df_method)) {
-    df <- degrees_of_freedom(model, df_method)
+  if (.dof_method_ok(model, ci_method)) {
+    df <- degrees_of_freedom(model, method = ci_method, verbose = FALSE)
   } else {
     df <- Inf
   }
@@ -436,21 +487,18 @@
   df_error$SE <- attr(df, "se", exact = TRUE)
 
 
-
-
-
   # CI - only if we don't already have CI for std. parameters
 
   if (!is.null(ci)) {
     if (isTRUE(robust)) {
       ci_df <- suppressMessages(ci_robust(model, ci = ci, ...))
-    } else if (df_method %in% c("kenward", "kr")) {
+    } else if (ci_method %in% c("kenward", "kr")) {
       # special handling for KR-CIs, where we already have computed SE
       ci_df <- .ci_kenward_dof(model, ci = ci, df_kr = df_error)
     } else {
-      ci_df <- ci(model, ci = ci, method = df_method, effects = "fixed")
+      ci_df <- ci(model, ci = ci, method = ci_method, effects = "fixed")
     }
-    if (length(ci) > 1) ci_df <- insight::reshape_ci(ci_df)
+    if (length(ci) > 1) ci_df <- datawizard::reshape_ci(ci_df)
     ci_cols <- names(ci_df)[!names(ci_df) %in% c("CI", "Parameter")]
     parameters <- merge(parameters, ci_df, by = "Parameter", sort = FALSE)
   } else {
@@ -468,7 +516,7 @@
       se_kr$df_error <- NULL
       parameters <- merge(parameters, se_kr, by = "Parameter", sort = FALSE)
     } else {
-      parameters <- merge(parameters, standard_error(model, method = df_method, effects = "fixed"), by = "Parameter", sort = FALSE)
+      parameters <- merge(parameters, standard_error(model, method = ci_method, effects = "fixed"), by = "Parameter", sort = FALSE)
     }
   }
 
@@ -479,10 +527,10 @@
   } else {
     if ("Pr(>|z|)" %in% names(parameters)) {
       names(parameters)[grepl("Pr(>|z|)", names(parameters), fixed = TRUE)] <- "p"
-    } else if (df_method %in% special_df_methods) {
+    } else if (ci_method %in% special_ci_methods) {
       # special handling for KR-p, which we already have computed from dof
       # parameters <- merge(parameters, .p_value_dof_kr(model, params = parameters, dof = df_error), by = "Parameter")
-      parameters <- merge(parameters, .p_value_dof(model, dof = df_error$df_error, method = df_method, se = df_error$SE), by = "Parameter", sort = FALSE)
+      parameters <- merge(parameters, .p_value_dof(model, dof = df_error$df_error, method = ci_method, se = df_error$SE), by = "Parameter", sort = FALSE)
     } else {
       parameters <- merge(parameters, p_value(model, dof = df, effects = "fixed"), by = "Parameter", sort = FALSE)
     }
@@ -490,7 +538,7 @@
 
 
   # adjust standard errors and test-statistic as well
-  if (isFALSE(robust) && df_method %in% special_df_methods) {
+  if (isFALSE(robust) && ci_method %in% special_ci_methods) {
     parameters$Statistic <- parameters$Estimate / parameters$SE
   } else {
     parameters <- merge(parameters, statistic, by = "Parameter", sort = FALSE)
@@ -499,7 +547,7 @@
 
   # dof
   if (!"df" %in% names(parameters)) {
-    if (!df_method %in% special_df_methods) {
+    if (!ci_method %in% special_ci_methods) {
       df_error <- data.frame(
         Parameter = parameters$Parameter,
         df_error = degrees_of_freedom(model, method = "any"),
@@ -566,8 +614,12 @@
 
 
   # filter parameters, if requested
-  if (!is.null(filter_parameters)) {
-    parameters <- .filter_parameters(parameters, filter_parameters, verbose = verbose)
+  if (!is.null(keep_parameters) || !is.null(drop_parameters)) {
+    parameters <- .filter_parameters(parameters,
+      keep = keep_parameters,
+      drop = drop_parameters,
+      verbose = verbose
+    )
   }
 
   rownames(parameters) <- NULL
@@ -646,16 +698,17 @@
 .extract_parameters_bayesian <- function(model,
                                          centrality = "median",
                                          dispersion = FALSE,
-                                         ci = .89,
+                                         ci = .95,
                                          ci_method = "hdi",
                                          test = c("pd", "rope"),
                                          rope_range = "default",
-                                         rope_ci = 1.0,
+                                         rope_ci = 0.95,
                                          bf_prior = NULL,
                                          diagnostic = c("ESS", "Rhat"),
                                          priors = FALSE,
                                          standardize = NULL,
-                                         filter_parameters = NULL,
+                                         keep_parameters = NULL,
+                                         drop_parameters = NULL,
                                          verbose = TRUE,
                                          ...) {
   # check if standardization is required and package available
@@ -739,7 +792,7 @@
   }
 
   if (length(ci) > 1) {
-    parameters <- insight::reshape_ci(parameters)
+    parameters <- datawizard::reshape_ci(parameters)
   }
 
   # Remove unnecessary columns
@@ -755,8 +808,12 @@
   }
 
   # filter parameters, if requested
-  if (!is.null(filter_parameters)) {
-    parameters <- .filter_parameters(parameters, filter_parameters, verbose = verbose)
+  if (!is.null(keep_parameters) || !is.null(drop_parameters)) {
+    parameters <- .filter_parameters(parameters,
+      keep = keep_parameters,
+      drop = drop_parameters,
+      verbose = verbose
+    )
   }
 
   rownames(parameters) <- NULL
@@ -774,12 +831,11 @@
 .extract_parameters_lavaan <- function(model,
                                        ci = 0.95,
                                        standardize = FALSE,
-                                       filter_parameters = NULL,
+                                       keep_parameters = NULL,
+                                       drop_parameters = NULL,
                                        verbose = TRUE,
                                        ...) {
-  if (!requireNamespace("lavaan", quietly = TRUE)) {
-    stop("Package 'lavaan' required for this function to work. Please install it by running `install.packages('lavaan')`.")
-  }
+  insight::check_if_installed("lavaan")
 
   # set proper default
   if (is.null(standardize)) {
@@ -833,6 +889,7 @@
     list(object = model, se = TRUE, ci = TRUE, level = ci),
     dot_args
   ))
+
   label <- data$label
 
   # check if standardized estimates are requested, and if so, which type
@@ -849,7 +906,14 @@
       "std.nox" = "std.nox",
       "std.all"
     )
-    data <- lavaan::standardizedsolution(model, se = TRUE, level = ci, type = type, ...)
+
+    data <- lavaan::standardizedsolution(model,
+      se = TRUE,
+      level = ci,
+      type = type,
+      ...
+    )
+
     names(data)[names(data) == "est.std"] <- "est"
   }
 
@@ -891,15 +955,16 @@
   }
 
   # filter parameters, if requested
-  if (!is.null(filter_parameters)) {
-    params <- .filter_parameters(params, filter_parameters, verbose = verbose)
+  if (!is.null(keep_parameters) || !is.null(drop_parameters)) {
+    params <- .filter_parameters(params,
+      keep = keep_parameters,
+      drop = drop_parameters,
+      verbose = verbose
+    )
   }
 
   params
 }
-
-
-
 
 
 

@@ -54,15 +54,12 @@ model_parameters.clmm <- model_parameters.cpglmm
 # CI ---------------------
 
 
-#' @export
-ci.clm <- ci.tobit
+## TODO residual df?
 
-
-#' @rdname ci.merMod
 #' @export
 ci.clm2 <- function(x, ci = .95, component = c("all", "conditional", "scale"), ...) {
   component <- match.arg(component)
-  ci_wald(model = x, ci = ci, dof = Inf, component = component)
+  .ci_generic(model = x, ci = ci, dof = Inf, component = component)
 }
 
 

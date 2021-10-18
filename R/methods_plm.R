@@ -5,7 +5,13 @@
 
 
 #' @export
-ci.plm <- ci.tobit
+degrees_of_freedom.plm <- function(model, method = "wald", ...) {
+  if (identical(method, "normal")) {
+    return(Inf)
+  } else {
+    model$df.residual
+  }
+}
 
 
 #' @export
@@ -20,14 +26,7 @@ standard_error.plm <- function(model, ...) {
 
 
 #' @export
-p_value.plm <- function(model, ...) {
-  p <- stats::coef(summary(model))
-
-  .data_frame(
-    Parameter = .remove_backticks_from_string(rownames(p)),
-    p = as.vector(p[, 4])
-  )
-}
+p_value.plm <- p_value.default
 
 
 
@@ -56,7 +55,9 @@ model_parameters.pgmm <- function(model,
                                   exponentiate = FALSE,
                                   robust = TRUE,
                                   p_adjust = NULL,
-                                  parameters = NULL,
+                                  keep = NULL,
+                                  drop = NULL,
+                                  parameters = keep,
                                   verbose = TRUE,
                                   ...) {
   component <- match.arg(component)
@@ -68,7 +69,8 @@ model_parameters.pgmm <- function(model,
     component = component,
     robust = robust,
     p_adjust = p_adjust,
-    filter_parameters = parameters,
+    keep_parameters = keep,
+    drop_parameters = drop,
     ...
   )
 
@@ -107,12 +109,12 @@ standard_error.pgmm <- function(model, component = c("conditional", "all"), ...)
 
 
 #' @export
-ci.pgmm <- function(x, ci = .95, dof = Inf, method = NULL, component = "conditional", ...) {
+ci.pgmm <- function(x, ci = .95, dof = Inf, method = NULL, robust = FALSE, component = "conditional", ...) {
   if (!is.null(method)) {
     method <- tolower(method)
   } else {
     method <- "wald"
   }
 
-  ci_wald(model = x, ci = ci, dof = dof, robust = method == "robust", component = component)
+  .ci_generic(model = x, ci = ci, dof = dof, robust = robust, method = method, component = component)
 }

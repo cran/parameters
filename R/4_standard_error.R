@@ -1,29 +1,26 @@
 #' Standard Errors
 #'
-#' \code{standard_error()} attempts to return standard errors of model
-#' parameters, while \code{standard_error_robust()} attempts to return robust
+#' `standard_error()` attempts to return standard errors of model
+#' parameters, while `standard_error_robust()` attempts to return robust
 #' standard errors.
 #'
 #' @param model A model.
-#' @param force Logical, if \code{TRUE}, factors are converted to numerical
+#' @param force Logical, if `TRUE`, factors are converted to numerical
 #'   values to calculate the standard error, with the lowest level being the
-#'   value \code{1} (unless the factor has numeric levels, which are converted
-#'   to the corresponding numeric value). By default, \code{NA} is returned for
+#'   value `1` (unless the factor has numeric levels, which are converted
+#'   to the corresponding numeric value). By default, `NA` is returned for
 #'   factors or character vectors.
-#' @param method If \code{"robust"}, robust standard errors are computed by
-#'   calling \code{\link[=standard_error_robust]{standard_error_robust()}}.
-#'   \code{standard_error_robust()}, in turn, calls one of the
-#'   \code{vcov*()}-functions from the \pkg{sandwich} or \pkg{clubSandwich}
-#'   package for robust covariance matrix estimators. For certain mixed models,
-#'   \code{method} may also be one of \code{"wald"},
-#'   \code{\link[=p_value_ml1]{"ml1"}},
-#'   \code{\link[=p_value_betwithin]{"betwithin"}},
-#'   \code{\link[=p_value_satterthwaite]{"satterthwaite"}} or
-#'   \code{\link[=p_value_kenward]{"kenward"}}.
+#' @param method If `"robust"`, robust standard errors are computed by
+#'   calling [`standard_error_robust()`][standard_error_robust].
+#'   `standard_error_robust()`, in turn, calls one of the
+#'   `vcov*()`-functions from the \pkg{sandwich} or \pkg{clubSandwich}
+#'   package for robust covariance matrix estimators. For linear mixed models,
+#'   `method` may also be [`"kenward"`][p_value_kenward] or
+#'   [`"satterthwaite"`][p_value_satterthwaite].
 #' @param ... Arguments passed to or from other methods. For
-#'   \code{standard_error()}, if \code{method = "robust"}, arguments
-#'   \code{vcov_estimation}, \code{vcov_type} and \code{vcov_args} can be passed
-#'   down to \code{\link[=standard_error_robust]{standard_error_robust()}}.
+#'   `standard_error()`, if `method = "robust"`, arguments
+#'   `vcov_estimation`, `vcov_type` and `vcov_args` can be passed
+#'   down to [`standard_error_robust()`][standard_error_robust].
 #' @param effects Should standard errors for fixed effects or random effects be
 #'   returned? Only applies to mixed models. May be abbreviated. When standard
 #'   errors for random effects are requested, for each grouping factor a list of
@@ -52,6 +49,8 @@ standard_error <- function(model, ...) {
 # Default methods ---------------------------------------------------------
 
 
+## TODO use "robust" argument instead of method = "robust"
+
 #' @rdname standard_error
 #' @export
 standard_error.default <- function(model, method = NULL, verbose = TRUE, ...) {
@@ -63,10 +62,6 @@ standard_error.default <- function(model, method = NULL, verbose = TRUE, ...) {
 
   if (method == "robust") {
     standard_error_robust(model, ...)
-  } else if (method == "ml1") {
-    se_ml1(model)
-  } else if (method == "betwithin") {
-    se_betwithin(model)
   } else {
     se <- tryCatch(
       {
@@ -142,9 +137,7 @@ standard_error.default <- function(model, method = NULL, verbose = TRUE, ...) {
 
 
 # .ranef_se <- function(x) {
-#   if (!requireNamespace("lme4", quietly = TRUE)) {
-#     stop("Package 'lme4' required for this function to work. Please install it by running `install.packages('lme4')`.")
-#   }
+# insight::check_if_installed("lme4")
 #
 #   cc <- stats::coef(model)
 #

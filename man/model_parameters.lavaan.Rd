@@ -9,7 +9,9 @@
   ci = 0.95,
   standardize = FALSE,
   component = c("regression", "correlation", "loading", "defined"),
-  parameters = NULL,
+  keep = NULL,
+  drop = NULL,
+  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -18,7 +20,7 @@
 \item{model}{CFA or SEM created by the \code{lavaan::cfa} or \code{lavaan::sem}
 functions.}
 
-\item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
+\item{ci}{Confidence Interval (CI) level. Default to \code{0.95} (\verb{95\%}).}
 
 \item{standardize}{Return standardized parameters (standardized coefficients).
 Can be \code{TRUE} (or \code{"all"} or \code{"std.all"}) for standardized
@@ -31,19 +33,47 @@ exogenous covariates. See \code{lavaan::standardizedsolution} for details.}
 
 \item{component}{What type of links to return. Can be \code{"all"} or some of \code{c("regression", "correlation", "loading", "variance", "mean")}.}
 
-\item{parameters}{Character vector of length 1 with a regular expression pattern
-that describes the parameters that should be returned from the data frame, or
-a named list of regular expressions. All non-matching parameters will be
-removed from the output. If \code{parameters} is a character vector, every
-parameter in the \emph{"Parameters"} column that matches the regular expression in
-\code{parameters} will be selected from the returned data frame. Furthermore,
-if \code{parameters} has more than one element, these will be merged into
-a regular expression pattern like this: \code{"(one|two|three)"}. If
-\code{parameters} is a named list of regular expression patterns, the
-names of the list-element should equal the column name where selection
-should be applied. This is useful for model objects where
-\code{model_parameters()} returns multiple columns with parameter components,
-like in \code{\link{model_parameters.lavaan}}.}
+\item{keep}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{drop}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{parameters}{Deprecated, alias for \code{keep}.}
 
 \item{verbose}{Toggle warnings and messages.}
 
@@ -106,11 +136,11 @@ if (require("lavaan", quietly = TRUE)) {
 }
 \references{
 \itemize{
-  \item Rosseel Y (2012). lavaan: An R Package for Structural Equation
-  Modeling. Journal of Statistical Software, 48(2), 1-36.
+\item Rosseel Y (2012). lavaan: An R Package for Structural Equation
+Modeling. Journal of Statistical Software, 48(2), 1-36.
 
-  \item Merkle EC , Rosseel Y (2018). blavaan: Bayesian Structural Equation
-  Models via Parameter Expansion. Journal of Statistical Software, 85(4),
-  1-30. http://www.jstatsoft.org/v85/i04/
+\item Merkle EC , Rosseel Y (2018). blavaan: Bayesian Structural Equation
+Models via Parameter Expansion. Journal of Statistical Software, 85(4),
+1-30. http://www.jstatsoft.org/v85/i04/
 }
 }

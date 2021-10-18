@@ -3,21 +3,21 @@
 #' This function performs an automated selection of the 'best' parameters,
 #' updating and returning the "best" model.
 #'
-#' @param model A statistical model (of class \code{lm}, \code{glm},
-#'   \code{merMod}, \code{stanreg} or \code{brmsfit}).
+#' @param model A statistical model (of class `lm`, `glm`,
+#'   `merMod`, `stanreg` or `brmsfit`).
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @details
 #'   \subsection{Classical lm and glm}{
-#'     For frequentist GLMs, \code{select_parameters()} performs an AIC-based
+#'     For frequentist GLMs, `select_parameters()` performs an AIC-based
 #'     stepwise selection.
 #'   }
 #'
 #'   \subsection{Mixed models}{
-#'     For mixed-effects models of class \code{merMod}, stepwise selection is
-#'     based on \code{\link[cAIC4:stepcAIC]{stepcAIC()}}. This step function
+#'     For mixed-effects models of class `merMod`, stepwise selection is
+#'     based on [cAIC4::stepcAIC()]. This step function
 #'     only searches the "best" model based on the random-effects structure,
-#'     i.e. \code{select_parameters()} adds or excludes random-effects until
+#'     i.e. `select_parameters()` adds or excludes random-effects until
 #'     the cAIC can't be improved further.
 #'   }
 #'
@@ -95,12 +95,7 @@ select_parameters.merMod <- function(model,
                                      direction = "backward",
                                      steps = 1000,
                                      ...) {
-
-
-  # Using cAIC4's stepcAIC()
-  if (!requireNamespace("cAIC4", quietly = TRUE)) {
-    stop("Package 'cAIC4' required for this function to work. Please install it by running `install.packages('cAIC4')`.")
-  }
+  insight::check_if_installed("cAIC4")
 
   # Find slope and group candidates
   # data <- insight::get_data(model)
@@ -131,9 +126,7 @@ select_parameters.merMod <- function(model,
 
   # Using MuMIn's dredge(): works nicely BUT throws unnecessary warnings and requires to set global options for na.action even tho no NaNs.
   # The code is here: https://github.com/cran/MuMIn/blob/master/R/dredge.R Maybe it could be reimplemented?
-  # if (!requireNamespace("MuMIn", quietly = TRUE)) {
-  #   stop("Package 'MuMIn' required for this function to work. Please install it by running `install.packages('MuMIn')`.")
-  # }
+  # insight::check_if_installed("MuMIn")
   # model <- lmer(Sepal.Width ~ Sepal.Length * Petal.Width * Petal.Length + (1 | Species), data = iris, na.action = na.fail)
   # summary(MuMIn::get.models(MuMIn::dredge(model), 1)[[1]])
 

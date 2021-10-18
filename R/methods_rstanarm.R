@@ -4,25 +4,39 @@
 #'
 #' @param model Bayesian model (including SEM from \pkg{blavaan}. May also be
 #'   a data frame with posterior samples.
-#' @param ci Credible Interval (CI) level. Default to 0.89 (89\%). See
-#'   \code{\link[bayestestR]{ci}} for further details.
+#' @param ci Credible Interval (CI) level. Default to `0.95` (`95%`). See
+#'   [bayestestR::ci()] for further details.
 #' @param group_level Logical, for multilevel models (i.e. models with random
-#'   effects) and when \code{effects = "all"} or \code{effects = "random"},
+#'   effects) and when `effects = "all"` or `effects = "random"`,
 #'   include the parameters for each group level from random effects. If
-#'   \code{group_level = FALSE} (the default), only information on SD and COR
+#'   `group_level = FALSE` (the default), only information on SD and COR
 #'   are shown.
+#' @param component Which type of parameters to return, such as parameters for the
+#'   conditional model, the zero-inflated part of the model, the dispersion
+#'   term, or other auxiliary parameters be returned? Applies to models with
+#'   zero-inflated and/or dispersion formula, or if parameters such as `sigma`
+#'   should be included. May be abbreviated. Note that the *conditional*
+#'   component is also called *count* or *mean* component, depending on the
+#'   model. There are three convenient shortcuts: `component = "all"` returns
+#'   all possible parameters. If `component = "location"`, location parameters
+#'   such as `conditional`, `zero_inflated`, or `smooth_terms`, are returned
+#'   (everything that are fixed or random effects - depending on the `effects`
+#'   argument - but no auxiliary parameters). For `component = "distributional"`
+#'   (or `"auxiliary"`), components like `sigma`, `dispersion`, or `beta`
+#'   (and other auxiliary parameters) are returned.
+#'
 #' @inheritParams model_parameters.default
 #' @inheritParams bayestestR::describe_posterior
 #' @inheritParams insight::get_parameters
 #'
-#' @seealso \code{\link[insight:standardize_names]{standardize_names()}} to
+#' @seealso [insight::standardize_names()] to
 #'   rename columns into a consistent, standardized naming scheme.
 #'
-#' @note When \code{standardize = "refit"}, columns \code{diagnostic},
-#'   \code{bf_prior} and \code{priors} refer to the \emph{original}
-#'   \code{model}. If \code{model} is a data frame, arguments \code{diagnostic},
-#'   \code{bf_prior} and \code{priors} are ignored. \cr \cr There is also a
-#'   \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method}
+#' @note When `standardize = "refit"`, columns `diagnostic`,
+#'   `bf_prior` and `priors` refer to the *original*
+#'   `model`. If `model` is a data frame, arguments `diagnostic`,
+#'   `bf_prior` and `priors` are ignored. \cr \cr There is also a
+#'   [`plot()`-method](https://easystats.github.io/see/articles/parameters.html)
 #'   implemented in the
 #'   \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 #'
@@ -42,11 +56,11 @@
 model_parameters.stanreg <- function(model,
                                      centrality = "median",
                                      dispersion = FALSE,
-                                     ci = .89,
+                                     ci = .95,
                                      ci_method = "hdi",
                                      test = c("pd", "rope"),
                                      rope_range = "default",
-                                     rope_ci = 1.0,
+                                     rope_ci = 0.95,
                                      bf_prior = NULL,
                                      diagnostic = c("ESS", "Rhat"),
                                      priors = TRUE,
@@ -54,7 +68,9 @@ model_parameters.stanreg <- function(model,
                                      exponentiate = FALSE,
                                      standardize = NULL,
                                      group_level = FALSE,
-                                     parameters = NULL,
+                                     keep = NULL,
+                                     drop = NULL,
+                                     parameters = keep,
                                      verbose = TRUE,
                                      ...) {
 
@@ -74,7 +90,8 @@ model_parameters.stanreg <- function(model,
     priors = priors,
     effects = effects,
     standardize = standardize,
-    filter_parameters = parameters,
+    keep_parameters = keep,
+    drop_parameters = drop,
     verbose = verbose,
     ...
   )
@@ -111,17 +128,19 @@ model_parameters.stanreg <- function(model,
 model_parameters.stanmvreg <- function(model,
                                        centrality = "median",
                                        dispersion = FALSE,
-                                       ci = .89,
+                                       ci = .95,
                                        ci_method = "hdi",
                                        test = "pd",
                                        rope_range = "default",
-                                       rope_ci = 1.0,
+                                       rope_ci = 0.95,
                                        bf_prior = NULL,
                                        diagnostic = c("ESS", "Rhat"),
                                        priors = TRUE,
                                        effects = "fixed",
                                        standardize = NULL,
-                                       parameters = NULL,
+                                       keep = NULL,
+                                       drop = NULL,
+                                       parameters = keep,
                                        verbose = TRUE,
                                        ...) {
 
@@ -141,7 +160,8 @@ model_parameters.stanmvreg <- function(model,
     priors = priors,
     effects = effects,
     standardize = standardize,
-    filter_parameters = parameters,
+    keep_parameters = keep,
+    drop_parameters = drop,
     verbose = verbose,
     ...
   )

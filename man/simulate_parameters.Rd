@@ -36,19 +36,19 @@ simulate_parameters(model, ...)
 \item{centrality}{The point-estimates (centrality indices) to compute.  Character (vector) or list with one or more of these options: \code{"median"}, \code{"mean"}, \code{"MAP"} or \code{"all"}.}
 
 \item{ci}{Value or vector of probability of the CI (between 0 and 1)
-to be estimated. Default to \code{.95} (95\%).}
+to be estimated. Default to \code{.95} (\verb{95\%}).}
 
 \item{ci_method}{The type of index used for Credible Interval. Can be
-\code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi}}), \code{"ETI"}
-(see \code{\link[bayestestR:eti]{eti}}), \code{"BCI"} (see
-\code{bci}) or \code{"SI"} (see \code{\link[bayestestR:si]{si}}).}
+\code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi()}}), \code{"ETI"}
+(see \code{\link[bayestestR:eti]{eti()}}), \code{"BCI"} (see
+\code{\link[bayestestR:bci]{bci()}}) or \code{"SI"} (see \code{\link[bayestestR:si]{si()}}).}
 
 \item{test}{The indices of effect existence to compute. Character (vector) or
 list with one or more of these options: \code{"p_direction"} (or \code{"pd"}),
 \code{"rope"}, \code{"p_map"}, \code{"equivalence_test"} (or \code{"equitest"}),
 \code{"bayesfactor"} (or \code{"bf"}) or \code{"all"} to compute all tests.
 For each "test", the corresponding \pkg{bayestestR} function is called
-(e.g. \code{\link[bayestestR:rope]{rope}} or \code{\link[bayestestR:p_direction]{p_direction}}) and its results
+(e.g. \code{\link[bayestestR:rope]{rope()}} or \code{\link[bayestestR:p_direction]{p_direction()}}) and its results
 included in the summary output.}
 
 \item{...}{Arguments passed to or from other methods.}
@@ -61,18 +61,18 @@ Compute simulated draws of parameters and their related indices such as Confiden
 }
 \details{
 \subsection{Technical Details}{
-    \code{simulate_parameters()} is a computationally faster alternative
-    to \code{bootstrap_parameters()}. Simulated draws for coefficients are based
-    on a multivariate normal distribution (\code{MASS::mvrnorm()}) with mean
-    \code{mu = coef(model)} and variance \code{Sigma = vcov(model)}.
-  }
-  \subsection{Models with Zero-Inflation Component}{
-    For models from packages \pkg{glmmTMB}, \pkg{pscl}, \pkg{GLMMadaptive} and
-    \pkg{countreg}, the \code{component} argument can be used to specify
-    which parameters should be simulated. For all other models, parameters
-    from the conditional component (fixed effects) are simulated. This may
-    include smooth terms, but not random effects.
-  }
+\code{simulate_parameters()} is a computationally faster alternative
+to \code{bootstrap_parameters()}. Simulated draws for coefficients are based
+on a multivariate normal distribution (\code{MASS::mvrnorm()}) with mean
+\code{mu = coef(model)} and variance \code{Sigma = vcov(model)}.
+}
+\subsection{Models with Zero-Inflation Component}{
+For models from packages \pkg{glmmTMB}, \pkg{pscl}, \pkg{GLMMadaptive} and
+\pkg{countreg}, the \code{component} argument can be used to specify
+which parameters should be simulated. For all other models, parameters
+from the conditional component (fixed effects) are simulated. This may
+include smooth terms, but not random effects.
+}
 }
 \note{
 There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
@@ -99,5 +99,5 @@ if (require("glmmTMB")) {
 Gelman A, Hill J. Data analysis using regression and multilevel/hierarchical models. Cambridge; New York: Cambridge University Press 2007: 140-143
 }
 \seealso{
-\code{\link{bootstrap_model}}, \code{\link{bootstrap_parameters}}, \code{\link{simulate_model}}
+\code{\link[=bootstrap_model]{bootstrap_model()}}, \code{\link[=bootstrap_parameters]{bootstrap_parameters()}}, \code{\link[=simulate_model]{simulate_model()}}
 }

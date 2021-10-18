@@ -4,10 +4,6 @@
 #################### .coxph ------
 
 
-#' @export
-ci.coxph <- ci.tobit
-
-
 #' @rdname standard_error
 #' @export
 standard_error.coxph <- function(model, method = NULL, ...) {
@@ -33,25 +29,21 @@ standard_error.coxph <- function(model, method = NULL, ...) {
 
 
 #' @export
-p_value.coxph <- function(model, method = NULL, ...) {
-  robust <- !is.null(method) && method == "robust"
-  if (isTRUE(robust)) {
-    return(p_value_robust(model, ...))
-  }
-
-  cs <- stats::coef(summary(model))
-  p_column <- grep("^(Pr\\(>|p)", colnames(cs))
-  p <- cs[, p_column]
+p_value.coxph <- function(model, ...) {
   params <- insight::get_parameters(model)
+  stats <- insight::get_statistic(model)
 
-  # check
-  if (length(p) > nrow(params)) {
-    p <- p[match(params$Parameter, .remove_backticks_from_string(rownames(cs)))]
+  params <- merge(params, stats, sort = FALSE)
+  statistic <- attributes(stats)$statistic
+
+  # convert in case of z
+  if (identical(statistic, "z-statistic")) {
+    params$Statistic <- params$Statistic ^ 2
   }
 
   .data_frame(
     Parameter = params$Parameter,
-    p = as.vector(p)
+    p = as.vector(1 - stats::pchisq(params$Statistic, df = 1))
   )
 }
 
@@ -85,9 +77,6 @@ p_value.aareg <- function(model, ...) {
 }
 
 
-#' @export
-ci.aareg <- ci.tobit
-
 
 
 
@@ -112,8 +101,7 @@ standard_error.survreg <- function(model, method = NULL, ...) {
 
 
 #' @export
-p_value.survreg <- function(model, method = NULL, ...) {
-  robust <- !is.null(method) && method == "robust"
+p_value.survreg <- function(model, method = NULL, robust = FALSE, ...) {
   if (isTRUE(robust)) {
     return(p_value_robust(model, ...))
   }

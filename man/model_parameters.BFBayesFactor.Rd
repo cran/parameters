@@ -8,11 +8,11 @@
   model,
   centrality = "median",
   dispersion = FALSE,
-  ci = 0.89,
+  ci = 0.95,
   ci_method = "hdi",
   test = c("pd", "rope"),
   rope_range = "default",
-  rope_ci = 0.89,
+  rope_ci = 0.95,
   priors = TRUE,
   verbose = TRUE,
   ...
@@ -26,19 +26,19 @@
 \item{dispersion}{Logical, if \code{TRUE}, computes indices of dispersion related to the estimate(s) (\code{SD} and \code{MAD} for \code{mean} and \code{median}, respectively).}
 
 \item{ci}{Value or vector of probability of the CI (between 0 and 1)
-to be estimated. Default to \code{.95} (95\%).}
+to be estimated. Default to \code{.95} (\verb{95\%}).}
 
 \item{ci_method}{The type of index used for Credible Interval. Can be
-\code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi}}), \code{"ETI"}
-(see \code{\link[bayestestR:eti]{eti}}), \code{"BCI"} (see
-\code{bci}) or \code{"SI"} (see \code{\link[bayestestR:si]{si}}).}
+\code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi()}}), \code{"ETI"}
+(see \code{\link[bayestestR:eti]{eti()}}), \code{"BCI"} (see
+\code{\link[bayestestR:bci]{bci()}}) or \code{"SI"} (see \code{\link[bayestestR:si]{si()}}).}
 
 \item{test}{The indices of effect existence to compute. Character (vector) or
 list with one or more of these options: \code{"p_direction"} (or \code{"pd"}),
 \code{"rope"}, \code{"p_map"}, \code{"equivalence_test"} (or \code{"equitest"}),
 \code{"bayesfactor"} (or \code{"bf"}) or \code{"all"} to compute all tests.
 For each "test", the corresponding \pkg{bayestestR} function is called
-(e.g. \code{\link[bayestestR:rope]{rope}} or \code{\link[bayestestR:p_direction]{p_direction}}) and its results
+(e.g. \code{\link[bayestestR:rope]{rope()}} or \code{\link[bayestestR:p_direction]{p_direction()}}) and its results
 included in the summary output.}
 
 \item{rope_range}{ROPE's lower and higher bounds. Should be a list of two
@@ -63,17 +63,17 @@ Parameters from BayesFactor objects.
 \details{
 The meaning of the extracted parameters:
 \itemize{
-  \item For \code{\link[BayesFactor]{ttestBF}}: \code{Difference} is the raw
-  difference between the means. \item For
-  \code{\link[BayesFactor]{correlationBF}}: \code{rho} is the linear
-  correlation estimate (equivalent to Pearson's \emph{r}). \item For
-  \code{\link[BayesFactor]{lmBF}} / \code{\link[BayesFactor]{generalTestBF}}
-  / \code{\link[BayesFactor]{regressionBF}} /
-  \code{\link[BayesFactor]{anovaBF}}: in addition to parameters of the fixed
-  and random effects, there are: \code{mu} is the (mean-centered) intercept;
-  \code{sig2} is the model's sigma; \code{g} / \code{g_*} are the \emph{g}
-  parameters; See the \emph{Bayes Factors for ANOVAs} paper
-  (\doi{10.1016/j.jmp.2012.08.001}).
+\item For \code{\link[BayesFactor:ttestBF]{BayesFactor::ttestBF()}}: \code{Difference} is the raw
+difference between the means. \item For
+\code{\link[BayesFactor:correlationBF]{BayesFactor::correlationBF()}}: \code{rho} is the linear
+correlation estimate (equivalent to Pearson's \emph{r}). \item For
+\code{\link[BayesFactor:lmBF]{BayesFactor::lmBF()}} / \code{\link[BayesFactor:generalTestBF]{BayesFactor::generalTestBF()}}
+/ \code{\link[BayesFactor:regressionBF]{BayesFactor::regressionBF()}} /
+\code{\link[BayesFactor:anovaBF]{BayesFactor::anovaBF()}}: in addition to parameters of the fixed
+and random effects, there are: \code{mu} is the (mean-centered) intercept;
+\code{sig2} is the model's sigma; \code{g} / \verb{g_*} are the \emph{g}
+parameters; See the \emph{Bayes Factors for ANOVAs} paper
+(\doi{10.1016/j.jmp.2012.08.001}).
 }
 }
 \examples{

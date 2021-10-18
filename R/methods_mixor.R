@@ -13,7 +13,7 @@ model_parameters.mixor <- function(model,
   effects <- match.arg(effects, choices = c("all", "fixed", "random"))
 
   # standardize only works for fixed effects...
-  if (!is.null(standardize)) {
+  if (!is.null(standardize) && standardize != "refit") {
     if (!missing(effects) && effects != "fixed" && verbose) {
       warning(insight::format_message("Standardizing coefficients only works for fixed effects of the mixed model."), call. = FALSE)
     }
@@ -39,11 +39,10 @@ model_parameters.mixor <- function(model,
 }
 
 
-#' @rdname ci.merMod
 #' @export
 ci.mixor <- function(x, ci = .95, effects = "all", ...) {
   effects <- match.arg(effects, choices = c("all", "fixed", "random"))
-  ci_wald(model = x, ci = ci, dof = Inf, effects = effects, robust = FALSE, ...)
+  .ci_generic(model = x, ci = ci, dof = Inf, effects = effects, robust = FALSE, ...)
 }
 
 
@@ -62,7 +61,6 @@ standard_error.mixor <- function(model, effects = "all", ...) {
 }
 
 
-#' @rdname p_value.lmerMod
 #' @export
 p_value.mixor <- function(model, effects = "all", ...) {
   effects <- match.arg(effects, choices = c("all", "fixed", "random"))

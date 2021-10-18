@@ -3,6 +3,11 @@
 ci.ivprobit <- ci.default
 
 
+
+#' @export
+degrees_of_freedom.ivprobit <- degrees_of_freedom.ivFixed
+
+
 #' @export
 standard_error.ivprobit <- function(model, ...) {
   .data_frame(
@@ -13,12 +18,7 @@ standard_error.ivprobit <- function(model, ...) {
 
 
 #' @export
-p_value.ivprobit <- function(model, ...) {
-  .data_frame(
-    Parameter = model$names,
-    p = as.vector(model$pval)
-  )
-}
+p_value.ivprobit <- p_value.default
 
 
 #' @export

@@ -14,10 +14,10 @@
 #' @details Multinomial or cumulative link models, i.e. models where the
 #'   response value (dependent variable) is categorical and has more than two
 #'   levels, usually return coefficients for each response level. Hence, the
-#'   output from \code{model_parameters()} will split the coefficient tables
+#'   output from `model_parameters()` will split the coefficient tables
 #'   by the different levels of the model's response.
 #'
-#' @seealso \code{\link[insight:standardize_names]{standardize_names()}} to rename
+#' @seealso [insight::standardize_names()] to rename
 #'   columns into a consistent, standardized naming scheme.
 #'
 #' @examples
@@ -99,16 +99,16 @@ ci.mlm <- function(x, ci = .95, ...) {
       .ci <- stats::confint(x, level = i, ...)
       rn <- rownames(.ci)
       .data_frame(
-        Parameter = gsub("^(.*):(.*)", "\\2", rn),
+        Parameter = gsub("([^\\:]+)(\\:)(.*)", "\\3", rn),
         CI = i,
         CI_low = .ci[, 1],
         CI_high = .ci[, 2],
-        Response = gsub("^(.*):(.*)", "\\1", rn)
+        Response = gsub("([^\\:]+)(\\:)(.*)", "\\1", rn)
       )
     })
     out <- .remove_backticks_from_parameter_names(do.call(rbind, out))
   } else {
-    out <- .data_frame(ci_wald(x, ci = ci, ...), Response = insight::get_parameters(x)$Response)
+    out <- .data_frame(.ci_generic(x, ci = ci, ...), Response = insight::get_parameters(x)$Response)
   }
   out
 }

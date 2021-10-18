@@ -1,36 +1,43 @@
 #' @title Compare model parameters of multiple models
 #' @name compare_parameters
 #'
-#' @description Compute and extract model parameters of multiple regression models.
-#'   See \code{\link{model_parameters}} for further details.
+#' @description Compute and extract model parameters of multiple regression
+#'   models. See [model_parameters()] for further details.
 #'
 #' @param ... One or more regression model objects, or objects returned by
-#'   \code{model_parameters()}. Regression models may be of different model
-#'   types.
+#'   `model_parameters()`. Regression models may be of different model
+#'   types. Model objects may be passed comma separated, or as a list.
+#'   If model objects are passed with names or the list has named elements,
+#'   these names will be used as column names.
 #' @param component Model component for which parameters should be shown. See
-#'   documentation for related model class in \code{\link{model_parameters}}.
+#'   documentation for related model class in [model_parameters()].
 #' @param column_names Character vector with strings that should be used as
-#'   column headers. Must be of same length as number of models in \code{...}.
-#' @param df_method Method for computing degrees of freedom for p values,
-#'   standard errors and confidence intervals (CI). See documentation for
-#'   related model class in \code{\link{model_parameters}}.
+#'   column headers. Must be of same length as number of models in `...`.
+#' @param ci_method Method for computing degrees of freedom for p values
+#'   and confidence intervals (CI). See documentation for related model class
+#'   in [model_parameters()].
 #' @param style String, indicating which style of output is requested. Following
 #'   templates are possible:
 #'   \itemize{
-#'     \item \code{"ci"}: Estimate and confidence intervals, no asterisks for p-values.
-#'     \item \code{"se"}: Estimate and standard errors, no asterisks for p-values.
-#'     \item \code{"ci_p"}: Estimate, confidence intervals and asterisks for p-values.
-#'     \item \code{"se_p"}: Estimate, standard errors and asterisks for p-values.
-#'     \item \code{"ci_p2"}: Estimate, confidence intervals and numeric p-values, in two columns.
-#'     \item \code{"se_p2"}: Estimate, standard errors and numeric p-values, in two columns.
+#'     \item `"ci"`: Estimate and confidence intervals, no asterisks for p-values.
+#'     \item `"se"`: Estimate and standard errors, no asterisks for p-values.
+#'     \item `"ci_p"`: Estimate, confidence intervals and asterisks for p-values.
+#'     \item `"se_p"`: Estimate, standard errors and asterisks for p-values.
+#'     \item `"ci_p2"`: Estimate, confidence intervals and numeric p-values, in two columns.
+#'     \item `"se_p2"`: Estimate, standard errors and numeric p-values, in two columns.
 #'   }
 #' @inheritParams model_parameters.default
 #' @inheritParams model_parameters.cpglmm
 #' @inheritParams print.parameters_model
 #'
-#' @note This function is in an early stage and does not yet cope with more
-#'   complex models, and probably does not yet properly render all model
-#'   components.
+#' @details
+#' This function is in an early stage and does not yet cope with more complex
+#' models, and probably does not yet properly render all model components. It
+#' should also be noted that when including models with interaction terms, not
+#' only do the values of the parameters change, but so does their meaning (from
+#' main effects, to simple slopes), thereby making such comparisons hard.
+#' Therefore, you should not use this function to compare models with
+#' interaction terms with models without interaction terms.
 #'
 #' @return A data frame of indices related to the model's parameters.
 #'
@@ -38,20 +45,23 @@
 #' data(iris)
 #' lm1 <- lm(Sepal.Length ~ Species, data = iris)
 #' lm2 <- lm(Sepal.Length ~ Species + Petal.Length, data = iris)
-#' lm3 <- lm(Sepal.Length ~ Species * Petal.Length, data = iris)
-#' compare_parameters(lm1, lm2, lm3)
+#' compare_parameters(lm1, lm2)
 #'
 #' data(mtcars)
 #' m1 <- lm(mpg ~ wt, data = mtcars)
 #' m2 <- glm(vs ~ wt + cyl, data = mtcars, family = "binomial")
 #' compare_parameters(m1, m2)
-#'
 #' \dontrun{
 #' # exponentiate coefficients, but not for lm
 #' compare_parameters(m1, m2, exponentiate = "nongaussian")
 #'
 #' # change column names
+#' compare_parameters("linear model" = m1, "logistic reg." = m2)
 #' compare_parameters(m1, m2, column_names = c("linear model", "logistic reg."))
+#'
+#' # or as list
+#' compare_parameters(list(m1, m2))
+#' compare_parameters(list("linear model" = m1, "logistic reg." = m2))
 #' }
 #' @export
 compare_parameters <- function(...,
@@ -60,19 +70,59 @@ compare_parameters <- function(...,
                                component = "conditional",
                                standardize = NULL,
                                exponentiate = FALSE,
-                               df_method = "wald",
+                               ci_method = "wald",
                                p_adjust = NULL,
                                style = NULL,
                                column_names = NULL,
-                               groups = NULL,
-                               verbose = TRUE) {
+                               keep = NULL,
+                               drop = NULL,
+                               parameters = keep,
+                               verbose = TRUE,
+                               df_method = ci_method) {
   models <- list(...)
-  model_names <- match.call(expand.dots = FALSE)$`...`
+
+  ## TODO remove later
+  if (!missing(df_method) && !identical(ci_method, df_method)) {
+    message(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."))
+    ci_method <- df_method
+  }
+
+  if (length(models) == 1) {
+    if (insight::is_model(models[[1]]) || inherits(models[[1]], "parameters_model")) {
+      modellist <- FALSE
+    } else {
+      models <- models[[1]]
+      modellist <- TRUE
+    }
+  } else {
+    modellist <- FALSE
+  }
+
+  if (isTRUE(modellist)) {
+    model_names <- names(models)
+    if (length(model_names) == 0) {
+      model_names <- paste("Model", seq_along(models), sep = " ")
+      names(models) <- model_names
+    }
+  } else {
+    model_names <- match.call(expand.dots = FALSE)$`...`
+    if (length(names(model_names)) > 0) {
+      model_names <- names(model_names)
+    } else if (any(sapply(model_names, is.call))) {
+      model_names <- paste("Model", seq_along(models), sep = " ")
+    } else {
+      model_names <- sapply(model_names, as.character)
+      names(models) <- model_names
+    }
+  }
 
   supported_models <- sapply(models, function(i) insight::is_model_supported(i) | inherits(i, "lavaan") | inherits(i, "parameters_model"))
 
   if (!all(supported_models)) {
-    warning(sprintf("Following objects are not supported: %s", paste0(model_names[!supported_models], collapse = ", ")))
+    warning(insight::format_message(
+      sprintf("Following objects are not supported: %s", paste0(model_names[!supported_models], collapse = ", ")),
+      "Dropping unsupported models now."
+    ), call. = FALSE)
     models <- models[supported_models]
     model_names <- model_names[supported_models]
   }
@@ -108,8 +158,10 @@ compare_parameters <- function(...,
         component = component,
         standardize = standardize,
         exponentiate = exponentiate,
-        df_method = df_method,
+        ci_method = ci_method,
         p_adjust = p_adjust,
+        keep = keep,
+        drop = drop,
         verbose = verbose
       )
     }
@@ -134,6 +186,9 @@ compare_parameters <- function(...,
     # save model number, for sorting
     dat$model <- i
     dat$model[.in_intercepts(dat$Parameter)] <- 0
+    # add index for row order. needed later, because "merge()" sometimes
+    # messes up the correct row sorting, despite setting "sort = FALSE"
+    dat$.row_index <- 1:nrow(dat)
     dat
   })
 
@@ -141,7 +196,12 @@ compare_parameters <- function(...,
   names(object_attributes) <- model_names
 
   # merge all data frames
-  all_models <- suppressWarnings(Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component")), m))
+  all_models <- suppressWarnings(Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component", ".row_index")), m))
+
+  # fix row order
+  row_order <- order(all_models$.row_index)
+  all_models <- all_models[row_order, ]
+  all_models$.row_index <- NULL
 
   # find columns with model numbers and create new variable "params_order",
   # which is pasted together of all model-column indices. Take lowest index of

@@ -7,19 +7,19 @@
 #' @param model A gam/gamm model.
 #' @inheritParams model_parameters.default
 #'
-#' @seealso \code{\link[insight:standardize_names]{standardize_names()}} to rename
+#' @seealso [insight::standardize_names()] to rename
 #'   columns into a consistent, standardized naming scheme.
 #'
-#' @details The reporting of degrees of freedom \emph{for the spline terms}
-#' slightly differs from the output of \code{summary(model)}, for example in the
-#' case of \code{mgcv::gam()}. The \emph{estimated degrees of freedom}, column
-#' \code{edf} in the summary-output, is named \code{df} in the returned data
-#' frame, while the column \code{df_error} in the returned data frame refers to
-#' the residual degrees of freedom that are returned by \code{df.residual()}.
-#' Hence, the values in the the column \code{df_error} differ from the column
-#' \code{Ref.df} from the summary, which is intentional, as these reference
+#' @details The reporting of degrees of freedom *for the spline terms*
+#' slightly differs from the output of `summary(model)`, for example in the
+#' case of `mgcv::gam()`. The *estimated degrees of freedom*, column
+#' `edf` in the summary-output, is named `df` in the returned data
+#' frame, while the column `df_error` in the returned data frame refers to
+#' the residual degrees of freedom that are returned by `df.residual()`.
+#' Hence, the values in the the column `df_error` differ from the column
+#' `Ref.df` from the summary, which is intentional, as these reference
 #' degrees of freedom \dQuote{is not very interpretable}
-#' (\href{https://r.789695.n4.nabble.com/ref-df-in-mgcv-gam-tp4756194p4756195.html}{web}).
+#' ([web](https://stat.ethz.ch/pipermail/r-help/2019-March/462135.html)).
 #'
 #' @return A data frame of indices related to the model's parameters.
 #'
@@ -33,13 +33,16 @@
 #' @export
 model_parameters.cgam <- function(model,
                                   ci = .95,
+                                  ci_method = "residual",
                                   bootstrap = FALSE,
                                   iterations = 1000,
                                   standardize = NULL,
                                   exponentiate = FALSE,
                                   robust = FALSE,
                                   p_adjust = NULL,
-                                  parameters = NULL,
+                                  keep = NULL,
+                                  drop = NULL,
+                                  parameters = keep,
                                   verbose = TRUE,
                                   ...) {
   # Processing
@@ -51,17 +54,19 @@ model_parameters.cgam <- function(model,
       ...
     )
   } else {
-    params <-
-      .extract_parameters_generic(
-        model,
-        ci = ci,
-        component = "all",
-        merge_by = c("Parameter", "Component"),
-        standardize = standardize,
-        robust = robust,
-        p_adjust = p_adjust,
-        filter_parameters = parameters
-      )
+    params <- .extract_parameters_generic(
+      model,
+      ci = ci,
+      ci_method = ci_method,
+      component = "all",
+      merge_by = c("Parameter", "Component"),
+      standardize = standardize,
+      robust = robust,
+      p_adjust = p_adjust,
+      keep_parameters = keep,
+      drop_parameters = drop,
+      ...
+    )
   }
 
   # fix statistic column
@@ -155,6 +160,15 @@ standard_error.cgam <- function(model, ...) {
 
 
 #' @export
-degrees_of_freedom.cgam <- function(model, ...) {
-  model$resid_df_obs
+degrees_of_freedom.cgam <- function(model, method = "wald", ...) {
+  if (is.null(method)) {
+    method <- "wald"
+  }
+  method <- match.arg(tolower(method), choices = c("analytical", "any", "fit", "wald", "residual", "normal"))
+
+  if (method %in% c("wald", "residual", "fit")) {
+    model$resid_df_obs
+  } else {
+    degrees_of_freedom.default(model, method = method, ...)
+  }
 }

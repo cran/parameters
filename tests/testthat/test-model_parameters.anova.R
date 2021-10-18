@@ -1,6 +1,6 @@
 .runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
 
-if (.runThisTest && require("insight") && require("testthat") && require("parameters")) {
+if (.runThisTest && requiet("insight") && requiet("testthat") && requiet("parameters")) {
   data(mtcars)
   m <- glm(am ~ mpg + hp + factor(cyl),
     data = mtcars, family = binomial()
@@ -32,7 +32,7 @@ if (.runThisTest && require("insight") && require("testthat") && require("parame
     )
   })
 
-  if (require("car")) {
+  if (requiet("car")) {
     a <- car::Anova(m, type = 3, test.statistic = "F")
     mp <- model_parameters(a)
 
@@ -70,7 +70,7 @@ if (.runThisTest && require("insight") && require("testthat") && require("parame
     })
 
 
-    if (require("MASS")) {
+    if (requiet("MASS")) {
       data(housing)
       m <- polr(Sat ~ Infl + Type + Cont, weights = Freq, data = housing)
       a <- car::Anova(m)
@@ -83,7 +83,7 @@ if (.runThisTest && require("insight") && require("testthat") && require("parame
     }
   }
 
-  if (require("lme4") && require("effectsize") && utils::packageVersion("effectsize") > "0.4.3") {
+  if (requiet("lme4") && requiet("effectsize") && utils::packageVersion("effectsize") > "0.4.3") {
     data(iris)
     df <- iris
     df$Sepal.Big <- ifelse(df$Sepal.Width >= 3, "Yes", "No")
@@ -115,7 +115,7 @@ if (.runThisTest && require("insight") && require("testthat") && require("parame
 
 # XXX -----
 
-if (.runThisTest && require("parameters") && require("testthat")) {
+if (.runThisTest && requiet("parameters") && requiet("testthat")) {
   test_that("anova type | lm", {
     m <- lm(mpg ~ factor(cyl) * hp + disp, mtcars)
 
@@ -136,7 +136,9 @@ if (.runThisTest && require("parameters") && require("testthat")) {
     expect_warning(model_parameters(aov(m)), regexp = NA) # no need for warning, because no interactions
 
     m <- lm(mpg ~ factor(cyl) * scale(disp, TRUE, FALSE) + scale(disp, TRUE, FALSE),
-            mtcars, contrasts = list("factor(cyl)" = contr.helmert))
+      mtcars,
+      contrasts = list("factor(cyl)" = contr.helmert)
+    )
     a3 <- car::Anova(m, type = 3)
     expect_warning(model_parameters(a3), regexp = NA) # expect no warning
   })
@@ -172,9 +174,10 @@ if (.runThisTest && require("parameters") && require("testthat")) {
 
   test_that("anova type | lme4", {
     skip_if_not_installed("lmerTest")
-    m1 <- lme4::lmer(mpg ~ factor(cyl) * hp + disp + (1|gear), mtcars)
-    m2 <- lme4::glmer(carb ~ factor(cyl) * hp + disp + (1|gear), mtcars,
-                      family = poisson())
+    m1 <- lme4::lmer(mpg ~ factor(cyl) * hp + disp + (1 | gear), mtcars)
+    m2 <- lme4::glmer(carb ~ factor(cyl) * hp + disp + (1 | gear), mtcars,
+      family = poisson()
+    )
 
     a1 <- anova(m1)
     expect_equal(attr(model_parameters(a1), "anova_type"), 1)
@@ -203,8 +206,9 @@ if (.runThisTest && require("parameters") && require("testthat")) {
     data(obk.long, package = "afex")
 
     m <- afex::aov_ez("id", "value", obk.long,
-                      between = c("treatment", "gender"),
-                      within = c("phase", "hour"), observed = "gender")
+      between = c("treatment", "gender"),
+      within = c("phase", "hour"), observed = "gender"
+    )
 
     expect_equal(attr(model_parameters(m), "anova_type"), 3)
     expect_equal(attr(model_parameters(m$Anova, verbose = FALSE), "anova_type"), 3)

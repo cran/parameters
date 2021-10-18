@@ -11,6 +11,7 @@
 \method{model_parameters}{default}(
   model,
   ci = 0.95,
+  ci_method = NULL,
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
@@ -18,7 +19,9 @@
   robust = FALSE,
   p_adjust = NULL,
   summary = FALSE,
-  parameters = NULL,
+  keep = NULL,
+  drop = NULL,
+  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -26,7 +29,7 @@
 \method{model_parameters}{glm}(
   model,
   ci = 0.95,
-  df_method = "profile",
+  ci_method = NULL,
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
@@ -35,6 +38,7 @@
   p_adjust = NULL,
   summary = FALSE,
   verbose = TRUE,
+  df_method = ci_method,
   ...
 )
 
@@ -82,28 +86,41 @@
 \arguments{
 \item{model}{Model object.}
 
-\item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
+\item{ci}{Confidence Interval (CI) level. Default to \code{0.95} (\verb{95\%}).}
+
+\item{ci_method}{Method for computing degrees of freedom for
+confidence intervals (CI) and the related p-values. Allowed are following
+options (which vary depending on the model class): \code{"residual"},
+\code{"normal"}, \code{"likelihood"}, \code{"satterthwaite"}, \code{"kenward"}, \code{"wald"},
+\code{"profile"}, \code{"boot"}, \code{"uniroot"}, \code{"ml1"}, \code{"betwithin"}, \code{"hdi"},
+\code{"quantile"}, \code{"ci"}, \code{"eti"}, \code{"si"}, \code{"bci"}, or \code{"bcai"}. See section
+\emph{Confidence intervals and approximation of degrees of freedom} in
+\code{\link[=model_parameters]{model_parameters()}} for further details. When \code{ci_method=NULL}, in most
+cases \code{"wald"} is used then.}
 
 \item{bootstrap}{Should estimates be based on bootstrapped model? If
-\code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian
-regressions} apply (see also
+\code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian regressions} apply (see also
 \code{\link[=bootstrap_parameters]{bootstrap_parameters()}}).}
 
 \item{iterations}{The number of bootstrap replicates. This only apply in the
 case of bootstrapped frequentist models.}
 
 \item{standardize}{The method used for standardizing the parameters. Can be
-\code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"},
-\code{"pseudo"} or \code{NULL} (default) for no standardization. See
-'Details' in \code{\link[effectsize]{standardize_parameters}}.
-\strong{Important:} Categorical predictors (i.e. factors) are \emph{never}
-standardized by default, which may be a different behaviour compared to
-other R packages or other software packages (like SPSS). If standardizing
-categorical predictors is desired, either use \code{standardize="basic"}
-to mimic behaviour of SPSS or packages such as \pkg{lm.beta}, or standardize
-the data with \code{effectsize::standardize(force=TRUE)} before fitting
-the model. Robust estimation (i.e. \code{robust=TRUE}) of standardized
-parameters only works when \code{standardize="refit"}.}
+\code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
+on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
+\code{"pseudo"}. See 'Details' in \code{\link[effectsize:standardize_parameters]{effectsize::standardize_parameters()}}.
+\strong{Important:}
+\itemize{
+\item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
+factors), which may be a different behaviour compared to other R packages
+(such as \pkg{lm.beta}) or other software packages (like SPSS). to mimic
+such behaviours, either use \code{standardize="basic"} or standardize the data
+with \code{effectsize::standardize(force=TRUE)} \emph{before} fitting the model.
+\item For mixed models, when using methods other than \code{"refit"}, only the fixed
+effects will be returned.
+\item Robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
+works when \code{standardize="refit"}.
+}}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
 the coefficients (and related confidence intervals). This is typical for
@@ -126,7 +143,7 @@ and \href{https://easystats.github.io/parameters/articles/model_parameters_robus
 for working examples.}
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
-adjust p-values. See \code{\link[stats]{p.adjust}} for details. Further
+adjust p-values. See \code{\link[stats:p.adjust]{stats::p.adjust()}} for details. Further
 possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
 \code{"sidak"} and \code{"none"} to explicitly disable adjustment for
 \code{emmGrid} objects (from \pkg{emmeans}).}
@@ -135,30 +152,36 @@ possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
 model (model formula, number of observations, residual standard deviation
 and more).}
 
-\item{parameters}{Character vector of length 1 with a regular expression pattern
-that describes the parameters that should be returned from the data frame, or
-a named list of regular expressions. All non-matching parameters will be
-removed from the output. If \code{parameters} is a character vector, every
-parameter in the \emph{"Parameters"} column that matches the regular expression in
-\code{parameters} will be selected from the returned data frame. Furthermore,
-if \code{parameters} has more than one element, these will be merged into
-a regular expression pattern like this: \code{"(one|two|three)"}. If
-\code{parameters} is a named list of regular expression patterns, the
-names of the list-element should equal the column name where selection
-should be applied. This is useful for model objects where
-\code{model_parameters()} returns multiple columns with parameter components,
-like in \code{\link{model_parameters.lavaan}}.}
+\item{keep, drop}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{parameters}{Deprecated, alias for \code{keep}.}
 
 \item{verbose}{Toggle warnings and messages.}
 
 \item{...}{Arguments passed to or from other methods. For instance, when
 \code{bootstrap = TRUE}, arguments like \code{type} or \code{parallel} are
 passed down to \code{bootstrap_model()}, and arguments like \code{ci_method}
-are passed down to \code{\link[bayestestR]{describe_posterior}}.}
+are passed down to \code{\link[bayestestR:describe_posterior]{bayestestR::describe_posterior()}}.}
 
-\item{df_method}{Method for computing degrees of freedom for confidence
-intervals (CI). Only applies to models of class \code{glm} or \code{polr}.
-May be \code{"profile"} or \code{"wald"}.}
+\item{df_method}{Deprecated. Please use \code{ci_method}.}
 
 \item{component}{Model component for which parameters should be shown. May be
 one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}),
@@ -173,6 +196,185 @@ A data frame of indices related to the model's parameters.
 Extract and compute indices and measures to describe parameters of (general)
 linear models (GLMs).
 }
+\section{Confidence intervals and approximation of degrees of freedom}{
+
+There are different ways of approximating the degrees of freedom depending
+on different assumptions about the nature of the model and its sampling
+distribution. The \code{ci_method} modulates the method for computing degrees
+of freedom (df) that are used to calculate confidence intervals (CI) and the
+related p-values. Following options are allowed, depending on the model
+class:
+
+\strong{Classical methods:}
+
+Classical inference is generally based on the \strong{Wald method}.
+The Wald approach to inference computes a test statistic by dividing the
+parameter estimate by its standard error (Coefficient / SE),
+then comparing this statistic against a t- or normal distribution.
+This approach can be used to compute CIs and p-values.
+
+\code{"wald"}
+\itemize{
+\item Applies to \emph{non-Bayesian models}
+\item For \emph{linear models}, CIs computed using the Wald method (SE and a \emph{t-distribution with residual df})
+\item For \emph{linear models}, p-values computed using the Wald method with a \emph{t-distribution with residual df}
+\item For other models, CIs computed using the Wald method (SE and a \emph{normal distribution})
+\item For other models, p-values computed using the Wald method with a \emph{normal distribution}
+}
+
+\code{"normal"}
+\itemize{
+\item Applies to \emph{non-Bayesian models}
+\item Compute Wald CIs and p values, but always use a normal distribution
+\item CIs computed using the Wald method (SE and a \emph{normal distribution})
+\item p-values computed using the Wald method with a \emph{normal distribution}
+}
+
+\code{"residual"}
+\itemize{
+\item Applies to \emph{non-Bayesian models}
+\item Compute Wald CIs and p values, but always use a \emph{t-distribution with residual df} when possible
+\item CIs computed using the Wald method (SE and a \emph{t-distribution with residual df})
+\item p-values computed using the Wald method with a \emph{t-distribution with residual df}
+\item If the residual df for a model cannot be determined, a normal distribution is used instead
+}
+
+\strong{Methods for mixed models:}
+
+Compared to fixed effects (or single-level) models, determining appropriate
+df for Wald-based inference in mixed models is more difficult.
+See \href{https://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#what-are-the-p-values-listed-by-summaryglmerfit-etc.-are-they-reliable}{the R GLMM FAQ}
+for a discussion.
+
+Several approximate methods for computing df are available, but you should
+also consider instead using profile likelihood (\code{"profile"}) or bootstrap ("\verb{boot"})
+CIs and p-values instead.
+
+\code{"satterthwaite"}
+\itemize{
+\item Applies to \emph{linear mixed models}
+\item CIs computed using the Wald method (SE and a \emph{t-distribution with Satterthwaite df})
+\item p-values computed using the Wald method with a \emph{t-distribution with Satterthwaite df}
+}
+
+\code{"kenward"}
+\itemize{
+\item Applies to \emph{linear mixed models}
+\item CIs computed using the Wald method (\emph{Kenward-Roger SE} and a \emph{t-distribution with Kenward-Roger df})
+\item p-values computed using the Wald method with a \emph{Kenward-Roger SE and t-distribution with Kenward-Roger df}
+}
+
+\code{"ml1"}
+\itemize{
+\item Applies to \emph{linear mixed models}
+\item CIs computed using the Wald method (SE and a \emph{t-distribution with m-l-1 approximated df})
+\item p-values computed using the Wald method with a \emph{t-distribution with m-l-1 approximated df}
+\item See \code{\link[=ci_ml1]{ci_ml1()}}
+}
+
+\code{"betwithin"}
+\itemize{
+\item Applies to \emph{linear mixed models} and \emph{generalized linear mixed models}
+\item CIs computed using the Wald method (SE and a \emph{t-distribution with between-within df})
+\item p-values computed using the Wald method with a \emph{t-distribution with between-within df}
+\item See \code{\link[=ci_betwithin]{ci_betwithin()}}
+}
+
+\strong{Likelihood-based methods:}
+
+Likelihood-based inference is based on comparing the likelihood for the
+maximum-likelihood estimate to the the likelihood for models with one or more
+parameter values changed (e.g., set to zero or a range of alternative values).
+Likelihood ratios for the maximum-likelihood and alternative models are compared
+to a \eqn{\chi}-squared distribution to compute CIs and p-values.
+
+\code{"profile"}
+\itemize{
+\item Applies to \emph{non-Bayesian models} of class \code{glm}, \code{polr} or \code{glmmTMB}
+\item CIs computed by \emph{profiling the likelihood curve for a parameter},
+using linear interpolation to find where likelihood ratio equals a critical value
+\item p-values computed using the Wald method with a \emph{normal-distribution)}
+(note: this might change in a future update!)
+}
+
+\code{"uniroot"}
+\itemize{
+\item Applies to \emph{non-Bayesian models} of class \code{glmmTMB}
+\item CIs computed by \emph{profiling the likelihood curve for a parameter},
+using root finding to find where likelihood ratio equals a critical value;
+\item p-values computed using the Wald method with a \emph{normal-distribution)}
+(note: this might change in a future update!)
+}
+
+\strong{Methods for bootstrapped or Bayesian models:}
+
+Bootstrap-based inference is based on \strong{resampling} and refitting the model
+to the resampled datasets. The distribution of parameter estimates across resampled
+datasets is used to approximate the parameter's sampling distribution.
+Depending on the type of model, several different methods for bootstrapping
+and constructing CIs and p-values from the bootstrap distribution are available.
+
+For Bayesian models, inference is based on drawing samples from the model posterior distribution.
+
+\code{"quantile"}
+\itemize{
+\item Applies to \emph{all models (including Bayesian models)}
+\item For non-Bayesian models, only applies if \code{bootstrap = TRUE}
+\item CIs computed as \emph{equal tailed intervals} using the quantiles of the bootstrap or posterior samples
+\item p-values are based on the \emph{probability of direction}
+\item See \code{\link[bayestestR:eti]{bayestestR::eti()}}
+}
+
+\code{"eti"}
+\itemize{
+\item Same as \code{"quantile"}
+}
+
+\code{"hdi"}
+\itemize{
+\item Applies to \emph{all models (including Bayesian models)}
+\item For non-Bayesian models, only applies if \code{bootstrap = TRUE}
+\item CIs computed as \emph{highest density intervals} for the bootstrap or posterior samples
+\item p-values are based on the \emph{probability of direction}
+\item See \code{\link[bayestestR:hdi]{bayestestR::hdi()}}
+}
+
+\code{"bci"}
+\itemize{
+\item Applies to \emph{all models (including Bayesian models)}
+\item For non-Bayesian models, only applies if \code{bootstrap = TRUE}
+\item CIs computed as \emph{bias corrected and accelerated intervals} for the bootstrap or posterior samples
+\item p-values are based on the \emph{probability of direction}
+\item See \code{\link[bayestestR:bci]{bayestestR::bci()}}
+}
+
+\code{"bcai"}
+\itemize{
+\item Same as \code{"bci"}
+}
+
+\code{"si"}
+\itemize{
+\item Applies to \emph{Bayesian models} with proper priors
+\item CIs computed as \emph{support intervals} comparing the posterior samples against the prior samples
+\item p-values are based on the \emph{probability of direction}
+\item See \code{\link[bayestestR:si]{bayestestR::si()}}
+}
+
+\code{"boot"}
+\itemize{
+\item Applies to \emph{non-Bayesian models} of class \code{merMod}
+\item CIs computed using \emph{parametric bootstrapping} (simulating data from the fitted model)
+\item p-values computed using the Wald method with a \emph{normal-distribution)}
+(note: this might change in a future update!)
+}
+
+For all iteration-based methods other than \code{"boot"}
+(\code{"hdi"}, \code{"quantile"}, \code{"ci"}, \code{"eti"}, \code{"si"}, \code{"bci"}, \code{"bcai"}),
+p-values are based on the probability of direction (\code{\link[bayestestR:p_direction]{bayestestR::p_direction()}}),
+which is converted into a p-value using \code{\link[bayestestR:pd_to_p]{bayestestR::pd_to_p()}}.
+}
+
 \examples{
 library(parameters)
 model <- lm(mpg ~ wt + cyl, data = mtcars)
@@ -189,6 +391,7 @@ model_parameters(model, standardize = "refit")
 model_parameters(model, p_digits = 5)
 model_parameters(model, digits = 3, ci_digits = 4, p_digits = "scientific")
 
+\donttest{
 # logistic regression model
 model <- glm(vs ~ wt + cyl, data = mtcars, family = "binomial")
 model_parameters(model)
@@ -196,7 +399,8 @@ model_parameters(model)
 # show odds ratio / exponentiated coefficients
 model_parameters(model, exponentiate = TRUE)
 }
+}
 \seealso{
-\code{\link[insight:standardize_names]{standardize_names()}} to
-  rename columns into a consistent, standardized naming scheme.
+\code{\link[insight:standardize_names]{insight::standardize_names()}} to
+rename columns into a consistent, standardized naming scheme.
 }

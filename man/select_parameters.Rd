@@ -41,7 +41,8 @@ select_parameters(model, ...)
     referred to as BIC or SBC.
   }
 
-\item{method}{The method used in the variable selection. Can be \code{NULL} (default), \code{"forward"} or \code{"L1"}. See \code{projpred::varsel}.}
+\item{method}{The method used in the variable selection. Can be \code{NULL}
+(default), \code{"forward"} or \code{"L1"}. See \code{projpred::varsel}.}
 
 \item{cross_validation}{Select with cross-validation.}
 }
@@ -54,21 +55,21 @@ updating and returning the "best" model.
 }
 \details{
 \subsection{Classical lm and glm}{
-    For frequentist GLMs, \code{select_parameters()} performs an AIC-based
-    stepwise selection.
-  }
+For frequentist GLMs, \code{select_parameters()} performs an AIC-based
+stepwise selection.
+}
 
-  \subsection{Mixed models}{
-    For mixed-effects models of class \code{merMod}, stepwise selection is
-    based on \code{\link[cAIC4:stepcAIC]{stepcAIC()}}. This step function
-    only searches the "best" model based on the random-effects structure,
-    i.e. \code{select_parameters()} adds or excludes random-effects until
-    the cAIC can't be improved further.
-  }
+\subsection{Mixed models}{
+For mixed-effects models of class \code{merMod}, stepwise selection is
+based on \code{\link[cAIC4:stepcAIC]{cAIC4::stepcAIC()}}. This step function
+only searches the "best" model based on the random-effects structure,
+i.e. \code{select_parameters()} adds or excludes random-effects until
+the cAIC can't be improved further.
+}
 
-  \subsection{Bayesian models}{
-    For Bayesian models, it uses the \pkg{projpred} package.
-  }
+\subsection{Bayesian models}{
+For Bayesian models, it uses the \pkg{projpred} package.
+}
 }
 \examples{
 model <- lm(mpg ~ ., data = mtcars)

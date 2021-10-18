@@ -12,16 +12,20 @@
   df_error = NULL,
   type = NULL,
   ci = NULL,
+  alternative = NULL,
   test = NULL,
   power = FALSE,
-  parameters = NULL,
+  keep = NULL,
+  drop = NULL,
+  parameters = keep,
+  table_wide = FALSE,
   verbose = TRUE,
   ...
 )
 }
 \arguments{
-\item{model}{Object of class \code{\link{aov}}, \code{\link{anova}},
-\code{aovlist}, \code{Gam}, \code{\link{manova}}, \code{Anova.mlm},
+\item{model}{Object of class \code{\link[=aov]{aov()}}, \code{\link[=anova]{anova()}},
+\code{aovlist}, \code{Gam}, \code{\link[=manova]{manova()}}, \code{Anova.mlm},
 \code{afex_aov} or \code{maov}.}
 
 \item{omega_squared}{Compute omega squared as index of effect size. Can be
@@ -50,6 +54,12 @@ ANOVA-tables using \code{car::Anova()} will be returned. (Ignored for
 will compute no confidence intervals. \code{ci} should be a scalar between
 0 and 1.}
 
+\item{alternative}{A character string specifying the alternative hypothesis;
+Controls the type of CI returned: \code{"two.sided"} (default, two-sided CI),
+\code{"greater"} or \code{"less"} (one-sided CI). Partial matching is allowed
+(e.g., \code{"g"}, \code{"l"}, \code{"two"}...). See section \emph{One-Sided CIs} in
+the \href{https://easystats.github.io/effectsize/}{effectsize_CIs vignette}.}
+
 \item{test}{String, indicating the type of test for \code{Anova.mlm} to be
 returned. If \code{"multivariate"} (or \code{NULL}), returns the summary of
 the multivariate test (that is also given by the \code{print}-method). If
@@ -58,19 +68,51 @@ the multivariate test (that is also given by the \code{print}-method). If
 \item{power}{Logical, if \code{TRUE}, adds a column with power for each
 parameter.}
 
-\item{parameters}{Character vector of length 1 with a regular expression pattern
-that describes the parameters that should be returned from the data frame, or
-a named list of regular expressions. All non-matching parameters will be
-removed from the output. If \code{parameters} is a character vector, every
-parameter in the \emph{"Parameters"} column that matches the regular expression in
-\code{parameters} will be selected from the returned data frame. Furthermore,
-if \code{parameters} has more than one element, these will be merged into
-a regular expression pattern like this: \code{"(one|two|three)"}. If
-\code{parameters} is a named list of regular expression patterns, the
-names of the list-element should equal the column name where selection
-should be applied. This is useful for model objects where
-\code{model_parameters()} returns multiple columns with parameter components,
-like in \code{\link{model_parameters.lavaan}}.}
+\item{keep}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{drop}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{parameters}{Deprecated, alias for \code{keep}.}
+
+\item{table_wide}{Logical that decides whether the ANOVA table should be in
+wide format, i.e. should the numerator and denominator degrees of freedom
+be in the same row. Default: \code{FALSE}.}
 
 \item{verbose}{Toggle warnings and messages.}
 
@@ -84,11 +126,11 @@ Parameters from ANOVAs
 }
 \note{
 For ANOVA-tables from mixed models (i.e. \code{anova(lmer())}), only
-  partial or adjusted effect sizes can be computed. Note that type 3 ANOVAs
-  with interactions involved only give sensible and informative results when
-  covariates are mean-centred and factors are coded with orthogonal contrasts
-  (such as those produced by \code{contr.sum}, \code{contr.poly}, or
-  \code{contr.helmert}, but \emph{not} by the default \code{contr.treatment}).
+partial or adjusted effect sizes can be computed. Note that type 3 ANOVAs
+with interactions involved only give sensible and informative results when
+covariates are mean-centred and factors are coded with orthogonal contrasts
+(such as those produced by \code{contr.sum}, \code{contr.poly}, or
+\code{contr.helmert}, but \emph{not} by the default \code{contr.treatment}).
 }
 \examples{
 if (requireNamespace("effectsize", quietly = TRUE)) {

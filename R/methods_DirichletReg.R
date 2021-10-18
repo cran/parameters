@@ -38,7 +38,6 @@ model_parameters.DirichletRegModel <- function(model,
 }
 
 
-#' @rdname ci.merMod
 #' @export
 ci.DirichletRegModel <- function(x,
                                  ci = .95,
@@ -46,7 +45,7 @@ ci.DirichletRegModel <- function(x,
                                  ...) {
   component <- match.arg(component)
   params <- insight::get_parameters(x, component = component)
-  out <- ci_wald(model = x, ci = ci, dof = Inf, ...)
+  out <- .ci_generic(model = x, ci = ci, dof = Inf, ...)
 
   if (is.null(out$Component)) {
     component <- "all"
@@ -98,9 +97,9 @@ standard_error.DirichletRegModel <- function(model,
 #'
 #' @param model A statistical model.
 #' @param component Should all parameters, parameters for the conditional model,
-#'   precision- or scale-component or smooth_terms be returned? \code{component}
-#'   may be one of \code{"conditional"}, \code{"precision"}, \code{"scale"},
-#'   \code{"smooth_terms"}, \code{"full"} or \code{"all"} (default).
+#'   precision- or scale-component or smooth_terms be returned? `component`
+#'   may be one of `"conditional"`, `"precision"`, `"scale"`,
+#'   `"smooth_terms"`, `"full"` or `"all"` (default).
 #' @inheritParams p_value
 #'
 #' @return The p-values.

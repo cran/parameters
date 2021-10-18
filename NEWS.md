@@ -1,3 +1,137 @@
+# parameters 0.15.0
+
+## Breaking changes
+
+* Following functions were moved to the new *datawizard* package and are now
+  re-exported from *parameters* package:
+
+  - `center()`
+
+  - `convert_data_to_numeric()`
+
+  - `data_partition()`
+
+  - `demean()` (and its aliases `degroup()` and `detrend()`)
+
+  - `kurtosis()`
+
+  - `rescale_weights()`
+
+  - `skewness()`
+
+  - `smoothness()`
+
+Note that these functions will be removed in the next release of *parameters*
+package and they are currently being re-exported only as a convenience for the
+package developers. This release should provide them with time to make the
+necessary changes before this breaking change is implemented.
+
+* Following functions were moved to the *performance* package:
+
+  - `check_heterogeneity()`
+
+  - `check_multimodal()`
+
+## General
+
+* The handling to approximate the degrees of freedom in `model_parameters()`, 
+  `ci()` and `p_value()` was revised and should now be more consistent. Some
+  bugs related to the previous computation of confidence intervals and p-values
+  have been fixed. Now it is possible to change the method to approximate 
+  degrees of freedom for CIs and p-values using the `ci_method`, resp. `method`
+  argument. This change has been documented in detail in `?model_parameters`, 
+  and online here: https://easystats.github.io/parameters/reference/model_parameters.html
+
+* Minor changes to `print()` for *glmmTMB* with dispersion parameter.
+
+* Added vignette on printing options for model parameters.
+
+## Changes to functions
+
+### `model_parameters()`
+
+* The `df_method` argument in `model_parameters()` is deprecated. Please use
+  `ci_method` now.
+
+* `model_parameters()` with `standardize = "refit"` now returns random effects
+  from the standardized model.
+
+* `model_parameters()` and `ci()` for `lmerMod` models gain a `"residuals"`
+  option for the `ci_method` (resp. `method`) argument, to explicitly calculate
+  confidence intervals based on the residual degrees of freedom, when present.
+
+* `model_parameters()` supports following new objects:
+  `trimcibt`, `wmcpAKP`, `dep.effect` (in *WRS2* package), `systemfit`
+
+* `model_parameters()` gains a new argument `table_wide` for ANOVA tables. This
+  can be helpful for users who may wish to report ANOVA table in wide format
+  (i.e., with numerator and denominator degrees of freedom on the same row).
+
+* `model_parameters()` gains two new arguments, `keep` and `drop`. `keep` is the
+  new names for the former `parameters` argument and can be used to filter
+  parameters. While `keep` selects those parameters whose names match the
+  regular expression pattern defined in `keep`, `drop` is the counterpart and
+  excludes matching parameter names.
+
+* When `model_parameters()` is called with `verbose = TRUE`, and `ci_method` is
+  not the default value, the printed output includes a message indicating which
+  approximation-method for degrees of freedom was used.
+
+* `model_parameters()` for mixed models with `ci_method = "profile` computes 
+  (profiled) confidence intervals for both fixed and random effects. Thus, 
+  `ci_method = "profile` allows to add confidence intervals to the random
+  effect variances.
+
+* `model_parameters()` should longer fail for supported model classes when
+  robust standard errors are not available.
+
+### Other functions
+
+* `n_factors()` the methods based on fit indices have been fixed and can be 
+  included separately (`package = "fit"`). Also added a `n_max` argument to 
+  crop the output.  
+
+* `compare_parameters()` now also accepts a list of model objects.
+
+* `describe_distribution()` gets `verbose` argument to toggle warnings and
+  messages.
+
+* `format_parameters()` removes dots and underscores from parameter names, to
+  make these more "human readable".
+
+* The experimental calculation of p-values in `equivalence_test()` was 
+  replaced by a proper calculation p-values. The argument `p_value` was removed
+  and p-values are now always included.
+
+* Minor improvements to `print()`, `print_html()` and `print_md()`.
+
+## Bug fixes
+
+* The random effects returned by `model_parameters()` mistakenly displayed the
+  residuals standard deviation as square-root of the residual SD.
+
+* Fixed issue with `model_parameters()` for *brmsfit* objects that model
+  standard errors (i.e. for meta-analysis).
+
+* Fixed issue in `model_parameters` for `lmerMod` models that, by default,
+  returned residual degrees of freedom in the statistic column, but confidence
+  intervals were based on `Inf` degrees of freedom instead.
+
+* Fixed issue in `ci_satterthwaite()`, which used `Inf` degrees of freedom 
+  instead of the Satterthwaite approximation.
+
+* Fixed issue in `model_parameters.mlm()` when model contained interaction
+  terms.
+
+* Fixed issue in `model_parameters.rma()` when model contained interaction
+  terms.
+
+* Fixed sign error for `model_parameters.htest()` for objects created with
+  `t.test.formula()` (issue #552)
+
+* Fixed issue when computing random effect variances in `model_parameters()` 
+  for mixed models with categorical random slopes.
+
 # parameters 0.14.0
 
 ## Breaking changes
@@ -6,13 +140,12 @@
 
 * Removed deprecated arguments.
 
-* `model_parameters()` for bootstrapped samples used in *emmeans* now treats
-  the bootstrap samples as samples from posterior distributions (Bayesian
-  models).
+* `model_parameters()` for bootstrapped samples used in *emmeans* now treats the
+  bootstrap samples as samples from posterior distributions (Bayesian models).
 
 ## New supported model classes
 
-* `SemiParBIV` (*GJRM*), `selection` (*sampleSelection*), `htest` from the 
+* `SemiParBIV` (*GJRM*), `selection` (*sampleSelection*), `htest` from the
   *survey* package, `pgmm` (*plm*).
 
 ## General
@@ -29,13 +162,13 @@
 ### `model_parameters()`
 
 * `model_parameters()` gains a `parameters` argument, which takes a regular
-  expression as string, to select specific parameters from the returned data 
+  expression as string, to select specific parameters from the returned data
   frame.
 
 * `print()` for `model_parameters()` and `compare_parameters()` gains a `groups`
-  argument, to group parameters in the output. Furthermore, `groups` can be
-  used directly as argument in `model_parameters()` and `compare_parameters()`
-  and will be passed to the `print()` method.
+  argument, to group parameters in the output. Furthermore, `groups` can be used
+  directly as argument in `model_parameters()` and `compare_parameters()` and
+  will be passed to the `print()` method.
 
 * `model_parameters()` for ANOVAs now saves the type as attribute and prints
   this information as footer in the output as well.
@@ -43,12 +176,12 @@
 * `model_parameters()` for *htest*-objects now saves the alternative hypothesis
   as attribute and prints this information as footer in the output as well.
 
-* `model_parameters()` passes arguments `type`, `parallel` and `n_cpus` down
-  to `bootstrap_model()` when `bootstrap = TRUE`.
+* `model_parameters()` passes arguments `type`, `parallel` and `n_cpus` down to
+  `bootstrap_model()` when `bootstrap = TRUE`.
 
 ### other
 
-* `bootstrap_models()` for *merMod* and *glmmTMB* objects gains further 
+* `bootstrap_models()` for *merMod* and *glmmTMB* objects gains further
   arguments to set the type of bootstrapping and to allow parallel computing.
 
 * `bootstrap_parameters()` gains the `ci_method` type `"bci"`, to compute
@@ -58,10 +191,11 @@
 
 ## Bug fixes
 
-* Fixed issue in `model_parameters()` for *emmGrid* objects with Bayesian models.
+* Fixed issue in `model_parameters()` for *emmGrid* objects with Bayesian
+  models.
 
-* Arguments `digits`, `ci_digits` and `p_digits` were ignored for `print()`
-  and only worked when used in the call to `model_parameters()` directly.
+* Arguments `digits`, `ci_digits` and `p_digits` were ignored for `print()` and
+  only worked when used in the call to `model_parameters()` directly.
 
 # parameters 0.13.0
 
@@ -103,7 +237,7 @@
 * To be internally consistent, the degrees of freedom column for `lqm(m)` and
   `cgam(m)` objects (with *t*-statistic) is called `df_error`.
 
-* `model_parameters()` gains a `summary` argument to add summary information 
+* `model_parameters()` gains a `summary` argument to add summary information
   about the model to printed outputs.
 
 * Minor improvements for models from *quantreg*.
@@ -536,7 +670,7 @@
 * `check_heterogeneity()` as a small helper to find variables that have a
   within- and between-effect related to a grouping variable (and thus, may
   result in heterogeneity bias, see [this
-  vignette](https://easystats.github.io/parameters/articles/demean.html)).
+  vignette](https://easystats.github.io/datawizard/articles/demean.html)).
 
 ## Changes to functions
 

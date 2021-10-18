@@ -10,13 +10,16 @@
 \method{model_parameters}{cgam}(
   model,
   ci = 0.95,
+  ci_method = "residual",
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
   exponentiate = FALSE,
   robust = FALSE,
   p_adjust = NULL,
-  parameters = NULL,
+  keep = NULL,
+  drop = NULL,
+  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -24,13 +27,16 @@
 \method{model_parameters}{gam}(
   model,
   ci = 0.95,
+  ci_method = "residual",
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
   exponentiate = FALSE,
   robust = FALSE,
   p_adjust = NULL,
-  parameters = NULL,
+  keep = NULL,
+  drop = NULL,
+  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -38,13 +44,16 @@
 \method{model_parameters}{rqss}(
   model,
   ci = 0.95,
+  ci_method = "residual",
   bootstrap = FALSE,
   iterations = 1000,
   standardize = NULL,
   exponentiate = FALSE,
   robust = FALSE,
   p_adjust = NULL,
-  parameters = NULL,
+  keep = NULL,
+  drop = NULL,
+  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -52,28 +61,41 @@
 \arguments{
 \item{model}{A gam/gamm model.}
 
-\item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
+\item{ci}{Confidence Interval (CI) level. Default to \code{0.95} (\verb{95\%}).}
+
+\item{ci_method}{Method for computing degrees of freedom for
+confidence intervals (CI) and the related p-values. Allowed are following
+options (which vary depending on the model class): \code{"residual"},
+\code{"normal"}, \code{"likelihood"}, \code{"satterthwaite"}, \code{"kenward"}, \code{"wald"},
+\code{"profile"}, \code{"boot"}, \code{"uniroot"}, \code{"ml1"}, \code{"betwithin"}, \code{"hdi"},
+\code{"quantile"}, \code{"ci"}, \code{"eti"}, \code{"si"}, \code{"bci"}, or \code{"bcai"}. See section
+\emph{Confidence intervals and approximation of degrees of freedom} in
+\code{\link[=model_parameters]{model_parameters()}} for further details. When \code{ci_method=NULL}, in most
+cases \code{"wald"} is used then.}
 
 \item{bootstrap}{Should estimates be based on bootstrapped model? If
-\code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian
-regressions} apply (see also
+\code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian regressions} apply (see also
 \code{\link[=bootstrap_parameters]{bootstrap_parameters()}}).}
 
 \item{iterations}{The number of bootstrap replicates. This only apply in the
 case of bootstrapped frequentist models.}
 
 \item{standardize}{The method used for standardizing the parameters. Can be
-\code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"},
-\code{"pseudo"} or \code{NULL} (default) for no standardization. See
-'Details' in \code{\link[effectsize]{standardize_parameters}}.
-\strong{Important:} Categorical predictors (i.e. factors) are \emph{never}
-standardized by default, which may be a different behaviour compared to
-other R packages or other software packages (like SPSS). If standardizing
-categorical predictors is desired, either use \code{standardize="basic"}
-to mimic behaviour of SPSS or packages such as \pkg{lm.beta}, or standardize
-the data with \code{effectsize::standardize(force=TRUE)} before fitting
-the model. Robust estimation (i.e. \code{robust=TRUE}) of standardized
-parameters only works when \code{standardize="refit"}.}
+\code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
+on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
+\code{"pseudo"}. See 'Details' in \code{\link[effectsize:standardize_parameters]{effectsize::standardize_parameters()}}.
+\strong{Important:}
+\itemize{
+\item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
+factors), which may be a different behaviour compared to other R packages
+(such as \pkg{lm.beta}) or other software packages (like SPSS). to mimic
+such behaviours, either use \code{standardize="basic"} or standardize the data
+with \code{effectsize::standardize(force=TRUE)} \emph{before} fitting the model.
+\item For mixed models, when using methods other than \code{"refit"}, only the fixed
+effects will be returned.
+\item Robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
+works when \code{standardize="refit"}.
+}}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
 the coefficients (and related confidence intervals). This is typical for
@@ -96,38 +118,66 @@ and \href{https://easystats.github.io/parameters/articles/model_parameters_robus
 for working examples.}
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
-adjust p-values. See \code{\link[stats]{p.adjust}} for details. Further
+adjust p-values. See \code{\link[stats:p.adjust]{stats::p.adjust()}} for details. Further
 possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
 \code{"sidak"} and \code{"none"} to explicitly disable adjustment for
 \code{emmGrid} objects (from \pkg{emmeans}).}
 
-\item{parameters}{Character vector of length 1 with a regular expression pattern
-that describes the parameters that should be returned from the data frame, or
-a named list of regular expressions. All non-matching parameters will be
-removed from the output. If \code{parameters} is a character vector, every
-parameter in the \emph{"Parameters"} column that matches the regular expression in
-\code{parameters} will be selected from the returned data frame. Furthermore,
-if \code{parameters} has more than one element, these will be merged into
-a regular expression pattern like this: \code{"(one|two|three)"}. If
-\code{parameters} is a named list of regular expression patterns, the
-names of the list-element should equal the column name where selection
-should be applied. This is useful for model objects where
-\code{model_parameters()} returns multiple columns with parameter components,
-like in \code{\link{model_parameters.lavaan}}.}
+\item{keep}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{drop}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{parameters}{Deprecated, alias for \code{keep}.}
 
 \item{verbose}{Toggle warnings and messages.}
 
 \item{...}{Arguments passed to or from other methods. For instance, when
 \code{bootstrap = TRUE}, arguments like \code{type} or \code{parallel} are
 passed down to \code{bootstrap_model()}, and arguments like \code{ci_method}
-are passed down to \code{\link[bayestestR]{describe_posterior}}.}
+are passed down to \code{\link[bayestestR:describe_posterior]{bayestestR::describe_posterior()}}.}
 }
 \value{
 A data frame of indices related to the model's parameters.
 }
 \description{
 Extract and compute indices and measures to describe parameters
-  of generalized additive models (GAM(M)s).
+of generalized additive models (GAM(M)s).
 }
 \details{
 The reporting of degrees of freedom \emph{for the spline terms}
@@ -139,7 +189,7 @@ the residual degrees of freedom that are returned by \code{df.residual()}.
 Hence, the values in the the column \code{df_error} differ from the column
 \code{Ref.df} from the summary, which is intentional, as these reference
 degrees of freedom \dQuote{is not very interpretable}
-(\href{https://r.789695.n4.nabble.com/ref-df-in-mgcv-gam-tp4756194p4756195.html}{web}).
+(\href{https://stat.ethz.ch/pipermail/r-help/2019-March/462135.html}{web}).
 }
 \examples{
 library(parameters)
@@ -150,6 +200,6 @@ if (require("mgcv")) {
 }
 }
 \seealso{
-\code{\link[insight:standardize_names]{standardize_names()}} to rename
-  columns into a consistent, standardized naming scheme.
+\code{\link[insight:standardize_names]{insight::standardize_names()}} to rename
+columns into a consistent, standardized naming scheme.
 }

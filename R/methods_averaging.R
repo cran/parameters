@@ -10,7 +10,7 @@
 #' @inheritParams model_parameters.default
 #' @inheritParams simulate_model
 #'
-#' @seealso \code{\link[insight:standardize_names]{standardize_names()}} to rename
+#' @seealso [insight::standardize_names()] to rename
 #'   columns into a consistent, standardized naming scheme.
 #'
 #' @examples
@@ -88,5 +88,5 @@ p_value.averaging <- function(model, component = c("conditional", "full"), ...) 
 #' @export
 ci.averaging <- function(x, ci = .95, component = c("conditional", "full"), ...) {
   component <- match.arg(component)
-  ci_wald(model = x, ci = ci, dof = Inf, component = component)
+  .ci_generic(model = x, ci = ci, dof = Inf, component = component)
 }

@@ -1,6 +1,6 @@
 .runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
 
-if (.runThisTest && require("testthat") && require("parameters")) {
+if (.runThisTest && requiet("testthat") && requiet("parameters")) {
   test_that("emmeans | lm", {
     skip_if_not_installed("emmeans")
     skip_if_not_installed("boot")
@@ -22,9 +22,13 @@ if (.runThisTest && require("testthat") && require("parameters")) {
     )
 
     mp <- model_parameters(emmeans::emmeans(b, consec ~ cyl), verbose = FALSE)
-    expect_equal(colnames(mp),
-                 c("Parameter", "Median", "CI", "CI_low", "CI_high", "pd",
-                   "ROPE_CI", "ROPE_low", "ROPE_high", "ROPE_Percentage", "Component"))
+    expect_equal(
+      colnames(mp),
+      c(
+        "Parameter", "Median", "CI", "CI_low", "CI_high", "pd",
+        "ROPE_CI", "ROPE_low", "ROPE_high", "ROPE_Percentage", "Component"
+      )
+    )
     expect_equal(nrow(mp), 5)
   })
 
@@ -51,9 +55,13 @@ if (.runThisTest && require("testthat") && require("parameters")) {
     )
 
     mp <- suppressWarnings(model_parameters(emmeans::emmeans(b, consec ~ cyl)))
-    expect_equal(colnames(mp),
-                 c("Parameter", "Median", "CI", "CI_low", "CI_high", "pd",
-                   "ROPE_CI", "ROPE_low", "ROPE_high", "ROPE_Percentage", "Component"))
+    expect_equal(
+      colnames(mp),
+      c(
+        "Parameter", "Median", "CI", "CI_low", "CI_high", "pd",
+        "ROPE_CI", "ROPE_low", "ROPE_high", "ROPE_Percentage", "Component"
+      )
+    )
     expect_equal(nrow(mp), 5)
   })
 }

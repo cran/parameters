@@ -1,9 +1,5 @@
 
 #' @export
-ci.flexsurvreg <- ci.tobit
-
-
-#' @export
 standard_error.flexsurvreg <- function(model, ...) {
   params <- insight::find_parameters(model, flatten = TRUE)
   se <- model$res[rownames(model$res) %in% params, "se"]
@@ -14,6 +10,8 @@ standard_error.flexsurvreg <- function(model, ...) {
   )
 }
 
+
+## TODO add ci_method later?
 
 #' @export
 p_value.flexsurvreg <- function(model, ...) {

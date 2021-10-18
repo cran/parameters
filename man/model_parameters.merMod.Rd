@@ -18,9 +18,10 @@
   effects = "all",
   group_level = FALSE,
   exponentiate = FALSE,
-  df_method = NULL,
+  ci_method = NULL,
   p_adjust = NULL,
   verbose = TRUE,
+  df_method = ci_method,
   ...
 )
 
@@ -34,12 +35,15 @@
   group_level = FALSE,
   standardize = NULL,
   exponentiate = FALSE,
-  df_method = NULL,
+  ci_method = NULL,
   p_adjust = NULL,
   wb_component = TRUE,
   summary = FALSE,
-  parameters = NULL,
+  keep = NULL,
+  drop = NULL,
+  parameters = keep,
   verbose = TRUE,
+  df_method = ci_method,
   ...
 )
 
@@ -47,7 +51,7 @@
   model,
   ci = 0.95,
   bootstrap = FALSE,
-  df_method = "wald",
+  ci_method = NULL,
   iterations = 1000,
   standardize = NULL,
   effects = "all",
@@ -57,8 +61,11 @@
   p_adjust = NULL,
   wb_component = TRUE,
   summary = FALSE,
-  parameters = NULL,
+  keep = NULL,
+  drop = NULL,
+  parameters = keep,
   verbose = TRUE,
+  df_method = ci_method,
   ...
 )
 
@@ -83,36 +90,40 @@
   effects = "all",
   group_level = FALSE,
   exponentiate = FALSE,
-  df_method = NULL,
+  ci_method = NULL,
   p_adjust = NULL,
   verbose = TRUE,
+  df_method = ci_method,
   ...
 )
 }
 \arguments{
 \item{model}{A mixed model.}
 
-\item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
+\item{ci}{Confidence Interval (CI) level. Default to \code{0.95} (\verb{95\%}).}
 
 \item{bootstrap}{Should estimates be based on bootstrapped model? If
-\code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian
-regressions} apply (see also
+\code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian regressions} apply (see also
 \code{\link[=bootstrap_parameters]{bootstrap_parameters()}}).}
 
 \item{iterations}{The number of draws to simulate/bootstrap.}
 
 \item{standardize}{The method used for standardizing the parameters. Can be
-\code{"refit"}, \code{"posthoc"}, \code{"smart"}, \code{"basic"},
-\code{"pseudo"} or \code{NULL} (default) for no standardization. See
-'Details' in \code{\link[effectsize]{standardize_parameters}}.
-\strong{Important:} Categorical predictors (i.e. factors) are \emph{never}
-standardized by default, which may be a different behaviour compared to
-other R packages or other software packages (like SPSS). If standardizing
-categorical predictors is desired, either use \code{standardize="basic"}
-to mimic behaviour of SPSS or packages such as \pkg{lm.beta}, or standardize
-the data with \code{effectsize::standardize(force=TRUE)} before fitting
-the model. Robust estimation (i.e. \code{robust=TRUE}) of standardized
-parameters only works when \code{standardize="refit"}.}
+\code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
+on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
+\code{"pseudo"}. See 'Details' in \code{\link[effectsize:standardize_parameters]{effectsize::standardize_parameters()}}.
+\strong{Important:}
+\itemize{
+\item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
+factors), which may be a different behaviour compared to other R packages
+(such as \pkg{lm.beta}) or other software packages (like SPSS). to mimic
+such behaviours, either use \code{standardize="basic"} or standardize the data
+with \code{effectsize::standardize(force=TRUE)} \emph{before} fitting the model.
+\item For mixed models, when using methods other than \code{"refit"}, only the fixed
+effects will be returned.
+\item Robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
+works when \code{standardize="refit"}.
+}}
 
 \item{effects}{Should parameters for fixed effects (\code{"fixed"}), random
 effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
@@ -136,28 +147,25 @@ captures this uncertainty. For \code{compare_parameters()},
 \code{exponentiate = "nongaussian"} will only exponentiate coefficients
 from non-Gaussian families.}
 
-\item{df_method}{Method for computing degrees of freedom for p values,
-standard errors and confidence intervals (CI). May be \code{"wald"}
-(default, see \code{\link{degrees_of_freedom}}), \code{"ml1"} (see
-\code{\link{dof_ml1}}), \code{"betwithin"} (see
-\code{\link{dof_betwithin}}), \code{"satterthwaite"} (see
-\code{\link{dof_satterthwaite}}) or \code{"kenward"} (see
-\code{\link{dof_kenward}}). The options \code{df_method = "boot"},
-\code{df_method = "profile"} and \code{df_method = "uniroot"} only affect
-confidence intervals; in this case, bootstrapped resp. profiled confidence
-intervals are computed. \code{"uniroot"} only applies to models of class
-\code{glmmTMB}. For models of class \code{lmerMod}, when
-\code{df_method = "wald"}, residual degrees of freedom are returned.
-Note that when \code{df_method} is not \code{"wald"}, robust standard
-errors etc. cannot be computed.}
+\item{ci_method}{Method for computing degrees of freedom for
+confidence intervals (CI) and the related p-values. Allowed are following
+options (which vary depending on the model class): \code{"residual"},
+\code{"normal"}, \code{"likelihood"}, \code{"satterthwaite"}, \code{"kenward"}, \code{"wald"},
+\code{"profile"}, \code{"boot"}, \code{"uniroot"}, \code{"ml1"}, \code{"betwithin"}, \code{"hdi"},
+\code{"quantile"}, \code{"ci"}, \code{"eti"}, \code{"si"}, \code{"bci"}, or \code{"bcai"}. See section
+\emph{Confidence intervals and approximation of degrees of freedom} in
+\code{\link[=model_parameters]{model_parameters()}} for further details. When \code{ci_method=NULL}, in most
+cases \code{"wald"} is used then.}
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
-adjust p-values. See \code{\link[stats]{p.adjust}} for details. Further
+adjust p-values. See \code{\link[stats:p.adjust]{stats::p.adjust()}} for details. Further
 possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
 \code{"sidak"} and \code{"none"} to explicitly disable adjustment for
 \code{emmGrid} objects (from \pkg{emmeans}).}
 
 \item{verbose}{Toggle warnings and messages.}
+
+\item{df_method}{Deprecated. Please use \code{ci_method}.}
 
 \item{...}{Arguments passed to or from other methods.}
 
@@ -168,7 +176,7 @@ with zero-inflated component. \code{component} may be one of \code{"conditional"
 (default). May be abbreviated.}
 
 \item{wb_component}{Logical, if \code{TRUE} and models contains within- and
-between-effects (see \code{\link{demean}}), the \code{Component} column
+between-effects (see \code{datawizard::demean()}), the \code{Component} column
 will indicate which variables belong to the within-effects,
 between-effects, and cross-level interactions. By default, the
 \code{Component} column indicates, which parameters belong to the
@@ -178,19 +186,47 @@ conditional or zero-inflated component of the model.}
 model (model formula, number of observations, residual standard deviation
 and more).}
 
-\item{parameters}{Character vector of length 1 with a regular expression pattern
-that describes the parameters that should be returned from the data frame, or
-a named list of regular expressions. All non-matching parameters will be
-removed from the output. If \code{parameters} is a character vector, every
-parameter in the \emph{"Parameters"} column that matches the regular expression in
-\code{parameters} will be selected from the returned data frame. Furthermore,
-if \code{parameters} has more than one element, these will be merged into
-a regular expression pattern like this: \code{"(one|two|three)"}. If
-\code{parameters} is a named list of regular expression patterns, the
-names of the list-element should equal the column name where selection
-should be applied. This is useful for model objects where
-\code{model_parameters()} returns multiple columns with parameter components,
-like in \code{\link{model_parameters.lavaan}}.}
+\item{keep}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{drop}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{parameters} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{parameters}{Deprecated, alias for \code{keep}.}
 
 \item{robust}{Logical, if \code{TRUE}, robust standard errors are calculated
 (if possible), and confidence intervals and p-values are based on these
@@ -209,6 +245,14 @@ Parameters from (linear) mixed models.
 \note{
 There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 }
+\section{Confidence intervals for random effect variances}{
+
+When \code{ci_method = "profile"} and \code{effects} is either \code{"random"} or \code{"all"},
+profiled confidence intervals are computed for the random effects. For all
+other options of \code{ci_method}, confidence intervals for random effects will
+be missing.
+}
+
 \examples{
 library(parameters)
 if (require("lme4")) {
@@ -235,6 +279,6 @@ if (require("lme4")) {
 }
 }
 \seealso{
-\code{\link[insight:standardize_names]{standardize_names()}} to
-  rename columns into a consistent, standardized naming scheme.
+\code{\link[insight:standardize_names]{insight::standardize_names()}} to
+rename columns into a consistent, standardized naming scheme.
 }

@@ -60,19 +60,19 @@ number of clusters. Can be \code{"all"} or a vector containing
 }
 \value{
 The group classification for each observation as vector. The
-  returned vector includes missing values, so it has the same length
-  as \code{nrow(x)}.
+returned vector includes missing values, so it has the same length
+as \code{nrow(x)}.
 }
 \description{
 Compute hierarchical or kmeans cluster analysis and return the group
-               assignment for each observation as vector.
+assignment for each observation as vector.
 }
 \details{
 The \code{print()} and \code{plot()} methods show the (standardized)
-  mean value for each variable within each cluster. Thus, a higher absolute
-  value indicates that a certain variable characteristic is more pronounced
-  within that specific cluster (as compared to other cluster groups with lower
-  absolute mean values).
+mean value for each variable within each cluster. Thus, a higher absolute
+value indicates that a certain variable characteristic is more pronounced
+within that specific cluster (as compared to other cluster groups with lower
+absolute mean values).
 }
 \note{
 There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.

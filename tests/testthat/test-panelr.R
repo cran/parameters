@@ -1,9 +1,9 @@
 .runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
 
 if (.runThisTest &&
-  require("testthat") &&
-  require("parameters") &&
-  require("panelr")) {
+  requiet("testthat") &&
+  requiet("parameters") &&
+  requiet("panelr")) {
   data("WageData")
   wages <- panel_data(WageData, id = id, wave = t)
   m1 <- wbm(lwage ~ lag(union) + wks | blk + fem | blk * lag(union), data = wages)
@@ -58,7 +58,7 @@ if (.runThisTest &&
       model_parameters(m1, effects = "all")$Coefficient,
       c(
         0.05825, -0.00164, 6.59813, -0.028, 0.00438, -0.22941, -0.44176,
-        -0.12732, 0.35399, 0.48233
+        -0.12732, 0.35399, 0.23264
       ),
       tolerance = 1e-3
     )

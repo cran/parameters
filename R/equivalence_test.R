@@ -9,20 +9,19 @@ bayestestR::equivalence_test
 #' @description Compute the (conditional) equivalence test for frequentist models.
 #'
 #' @param x A statistical model.
-#' @param range The range of practical equivalence of an effect. May be \code{"default"},
-#'   to automatically define this range based on properties of the model's data.
-#' @param ci Confidence Interval (CI+) level. Default to 0.95 (95\%).
+#' @param range The range of practical equivalence of an effect. May be
+#'   `"default"`, to automatically define this range based on properties of the
+#'   model's data.
+#' @param ci Confidence Interval (CI) level. Default to `0.95` (`95%`).
 #' @param rule Character, indicating the rules when testing for practical
-#'   equivalence. Can be \code{"bayes"}, \code{"classic"} or \code{"cet"}. See
+#'   equivalence. Can be `"bayes"`, `"classic"` or `"cet"`. See
 #'   'Details'.
-#' @param p_values Logical, if \code{TRUE}, adjusted p-values for equivalence
-#'   testing are calculated.
 #' @param verbose Toggle warnings and messages.
 #' @param ... Arguments passed to or from other methods.
 #' @inheritParams model_parameters.merMod
 #' @inheritParams p_value
 #'
-#' @seealso For more details, see \code{\link[bayestestR:equivalence_test]{equivalence_test()}}.
+#' @seealso For more details, see [bayestestR::equivalence_test()].
 #'   Further readings can be found in the references.
 #'
 #' @details
@@ -34,9 +33,9 @@ bayestestR::equivalence_test
 #' hypothesis. In the latter case, all we can say is that no significant effect
 #' was observed, but one cannot conclude that the null hypothesis is true.}
 #' (\cite{Pernet 2017}). One way to address this issues without Bayesian methods
-#' is \emph{Equivalence Testing}, as implemented in \code{equivalence_test()}.
+#' is *Equivalence Testing*, as implemented in `equivalence_test()`.
 #' While you either can reject the null hypothesis or claim an inconclusive result
-#' in NHST, the equivalence test adds a third category, \emph{"accept"}. Roughly
+#' in NHST, the equivalence test adds a third category, *"accept"*. Roughly
 #' speaking, the idea behind equivalence testing in a frequentist framework is
 #' to check whether an estimate and its uncertainty (i.e. confidence interval)
 #' falls within a region of "practical equivalence". Depending on the rule for
@@ -50,7 +49,7 @@ bayestestR::equivalence_test
 #'     \item{"bayes" - Bayesian rule (Kruschke 2018)}{
 #'       This rule follows the \dQuote{HDI+ROPE decision rule} \cite{(Kruschke,
 #'       2014, 2018)} used for the
-#'       \code{\link[bayestestR:equivalence_test]{Bayesian counterpart}}. This
+#'       [`Bayesian counterpart()`][bayestestR::equivalence_test]. This
 #'       means, if the confidence intervals are completely outside the ROPE, the
 #'       "null hypothesis" for this parameter is "rejected". If the ROPE
 #'       completely covers the CI, the null hypothesis is accepted. Else, it's
@@ -61,10 +60,10 @@ bayestestR::equivalence_test
 #'     \item{"classic" - The TOST rule (Lakens 2017)}{
 #'       This rule follows the \dQuote{TOST rule}, i.e. a two one-sided test
 #'       procedure (\cite{Lakens 2017}). Following this rule, practical
-#'       equivalence of an effect (i.e. H0) is \emph{rejected}, when the
-#'       coefficient is statistically significant \emph{and} the narrow
-#'       confidence intervals (i.e. \code{1-2*alpha}) \emph{include} or
-#'       \emph{exceed} the ROPE boundaries. Practical equivalence is assumed
+#'       equivalence of an effect (i.e. H0) is *rejected*, when the
+#'       coefficient is statistically significant *and* the narrow
+#'       confidence intervals (i.e. `1-2*alpha`) *include* or
+#'       *exceed* the ROPE boundaries. Practical equivalence is assumed
 #'       (i.e. H0 accepted) when the narrow confidence intervals are completely
 #'       inside the ROPE, no matter if the effect is statistically significant
 #'       or not. Else, the decision whether to accept or reject H0 is undecided.
@@ -73,50 +72,41 @@ bayestestR::equivalence_test
 #'     The Conditional Equivalence Testing as described by \cite{Campbell and
 #'     Gustafson 2018}. According to this rule, practical equivalence is
 #'     rejected when the coefficient is statistically significant. When the
-#'     effect is \emph{not} significant and the narrow confidence intervals are
+#'     effect is *not* significant and the narrow confidence intervals are
 #'     completely inside the ROPE, we accept H0, else it is undecided.
 #'     }
 #'   }
 #' }
 #' \subsection{Levels of Confidence Intervals used for Equivalence Testing}{
-#'   For \code{rule = "classic"}, "narrow" confidence intervals are used for
+#'   For `rule = "classic"`, "narrow" confidence intervals are used for
 #'   equivalence testing. "Narrow" means, the the intervals is not 1 - alpha,
-#'   but 1 - 2 * alpha. Thus, if \code{ci = .95}, alpha is assumed to be 0.05
-#'   and internally a ci-level of 0.90 is used. \code{rule = "cet"} uses
-#'   both regular and narrow confidence intervals, while \code{rule = "bayes"}
+#'   but 1 - 2 * alpha. Thus, if `ci = .95`, alpha is assumed to be 0.05
+#'   and internally a ci-level of 0.90 is used. `rule = "cet"` uses
+#'   both regular and narrow confidence intervals, while `rule = "bayes"`
 #'   only uses the regular intervals.
+#' }
+#' \subsection{p-Values}{
+#'   The equivalence p-value is the area of the (cumulative) confidence
+#'   distribution that is outside of the region of equivalence. It can be
+#'   interpreted as p-value for *rejecting* the alternative hypothesis
+#'   and *accepting* the null hypothesis.
 #' }
 #' \subsection{Second Generation p-Value (SGPV)}{
 #'   Second generation p-values (SGPV) were proposed as a statistic
 #'   that represents \dQuote{the proportion of data-supported hypotheses
 #'   that are also null hypotheses} \cite{(Blume et al. 2018)}. This statistic
 #'   is actually computed in the same way as the percentage inside the ROPE as
-#'   returned by \code{equivalence_test()} (see \cite{Lakens and Delacre 2020}
-#'   for details on computation of the SGPV). Thus, the \code{"inside ROPE"}
+#'   returned by `equivalence_test()` (see \cite{Lakens and Delacre 2020}
+#'   for details on computation of the SGPV). Thus, the `"inside ROPE"`
 #'   column reflects the SGPV.
-#' }
-#' \subsection{Adjustment for multiple testing}{
-#'   The calculation of p-values is somewhat "experimental". For parameters, where H0...
-#'   \itemize{
-#'     \item ... is rejected, the p-value equals a NHST as if the upper / lower
-#'     boundary of the ROPE (see \code{range}) would be the point-null to test
-#'     against.
-#'     \item ... is accepted, the p-value is set to 1.
-#'     \item ... is undecided, the p-value equals a NHST against the point-null,
-#'     however, the "uncertainty" (i.e. ROPE range) is added to the confidence
-#'     intervals (so the upper confidence interval limit equals the regular
-#'     upper confidence interval limit + half the ROPE range).
-#'   }
-#'   All p-values are then adjusted for multiple testing (using
-#'   \code{\link[stats]{p.adjust}} with \code{method = "fdr"}).
 #' }
 #' \subsection{ROPE range}{
 #'   Some attention is required for finding suitable values for the ROPE limits
-#'   (argument \code{range}). See 'Details' in \code{\link[bayestestR]{rope_range}}
+#'   (argument `range`). See 'Details' in [bayestestR::rope_range()]
 #'   for further information.
 #' }
 #'
-#' @note There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#' @note There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 #'
 #' @references
 #' \itemize{
@@ -170,11 +160,10 @@ equivalence_test.lm <- function(x,
                                 range = "default",
                                 ci = .95,
                                 rule = "classic",
-                                p_values = FALSE,
                                 verbose = TRUE,
                                 ...) {
   rule <- match.arg(tolower(rule), choices = c("bayes", "classic", "cet"))
-  out <- .equivalence_test_frequentist(x, range, ci, rule, p_values, verbose, ...)
+  out <- .equivalence_test_frequentist(x, range, ci, rule, verbose, ...)
 
   if (is.null(attr(out, "pretty_names", exact = TRUE))) {
     attr(out, "pretty_names") <- format_parameters(x)
@@ -235,7 +224,6 @@ equivalence_test.merMod <- function(x,
                                     ci = .95,
                                     rule = "classic",
                                     effects = c("fixed", "random"),
-                                    p_values = FALSE,
                                     verbose = TRUE,
                                     ...) {
 
@@ -248,7 +236,7 @@ equivalence_test.merMod <- function(x,
   # ==== equivalent testing for fixed or random effects ====
 
   if (effects == "fixed") {
-    out <- .equivalence_test_frequentist(x, range, ci, rule, p_values, verbose, ...)
+    out <- .equivalence_test_frequentist(x, range, ci, rule, verbose, ...)
   } else {
     out <- .equivalence_test_frequentist_random(x, range, ci, rule, verbose, ...)
   }
@@ -320,7 +308,6 @@ equivalence_test.parameters_simulate_model <- function(x,
                                           range = "default",
                                           ci = .95,
                                           rule = "classic",
-                                          p_values = FALSE,
                                           verbose = TRUE,
                                           ...) {
 
@@ -343,14 +330,14 @@ equivalence_test.parameters_simulate_model <- function(x,
 
   # ==== requested confidence intervals ====
 
-  params <- conf_int <- ci_wald(x, ci = ci)
+  params <- conf_int <- .ci_generic(x, ci = ci)
   conf_int <- as.data.frame(t(conf_int[, c("CI_low", "CI_high")]))
 
 
   # ==== the "narrower" intervals (1-2*alpha) for CET-rules. ====
 
   alpha <- 1 - ci
-  conf_int2 <- ci_wald(x, ci = (ci - alpha))
+  conf_int2 <- .ci_generic(x, ci = (ci - alpha))
   conf_int2 <- as.data.frame(t(conf_int2[, c("CI_low", "CI_high")]))
 
 
@@ -380,9 +367,9 @@ equivalence_test.parameters_simulate_model <- function(x,
   )
 
 
-  # ==== adjusted p-value for tests ====
+  # ==== (adjusted) p-values for tests ====
 
-  if (isTRUE(p_values)) out$p <- .add_p_to_equitest(x, ci, range, out$ROPE_Equivalence)
+  out$p <- .add_p_to_equitest(x, ci, range)
 
   attr(out, "rope") <- range
   out
@@ -410,7 +397,7 @@ equivalence_test.parameters_simulate_model <- function(x,
     ci <- ci[1]
   }
 
-  params <- insight::get_parameters(x, effects = "random", component = "conditional")
+  params <- insight::get_parameters(x, effects = "random", component = "conditional", verbose = FALSE)
   se <- standard_error(x, effects = "random", component = "conditional")
 
   alpha <- (1 + ci) / 2
@@ -572,21 +559,22 @@ equivalence_test.parameters_simulate_model <- function(x,
 
 
 
-.add_p_to_equitest <- function(model, ci, range, decision) {
+.add_p_to_equitest <- function(model, ci, range) {
   tryCatch(
     {
+      params <- insight::get_parameters(model)
+
+      # degrees of freedom
       df <- degrees_of_freedom(model, method = "any")
-      fac <- stats::qt((1 + ci) / 2, df = df)
-      interval <- ci_wald(model, ci = ci)
-      se <- abs((interval$CI_high - interval$CI_low) / (2 * fac))
-      est <- insight::get_parameters(model)$Estimate
-      r <- range[2]
-      if (any(decision == "Undecided")) se[decision == "Undecided"] <- se[decision == "Undecided"] + (r / fac)
-      if (any(decision == "Rejected")) est[decision == "Rejected"] <- ifelse(est[decision == "Rejected"] < 0, est[decision == "Rejected"] + r, est[decision == "Rejected"] - r)
-      stat <- abs(est / se)
-      out <- stats::p.adjust(2 * stats::pt(stat, df = df, lower.tail = FALSE), method = "fdr")
-      if (any(decision == "Accepted")) out[decision == "Accepted"] <- 1
-      out
+
+      # mu
+      params$mu <- params$Estimate * -1
+
+      # se
+      se <- standard_error(model)
+
+      stats::pt((range[1] - params$mu) / se$SE, df, lower.tail = TRUE) +
+        stats::pt((range[2] - params$mu) / se$SE, df, lower.tail = FALSE)
     },
     error = function(e) {
       NULL
@@ -602,8 +590,59 @@ equivalence_test.parameters_simulate_model <- function(x,
 # methods ----------------
 
 
+
 #' @export
-print.equivalence_test_lm <- function(x, digits = 2, ...) {
+format.equivalence_test_lm <- function(x,
+                                       digits = 2,
+                                       ci_digits = 2,
+                                       p_digits = 3,
+                                       ci_width = NULL,
+                                       ci_brackets = NULL,
+                                       format = "text",
+                                       zap_small = FALSE,
+                                       ...) {
+
+  # default brackets are parenthesis for HTML / MD
+  if ((is.null(ci_brackets) || isTRUE(ci_brackets)) && (identical(format, "html") || identical(format, "markdown"))) {
+    ci_brackets <- c("(", ")")
+  } else if (is.null(ci_brackets) || isTRUE(ci_brackets)) {
+    ci_brackets <- c("[", "]")
+  }
+
+  # main formatting
+  out <- insight::format_table(
+    x,
+    digits = digits,
+    ci_digits = ci_digits,
+    p_digits = p_digits,
+    ci_width = ci_width,
+    ci_brackets = ci_brackets,
+    zap_small = zap_small,
+    ...
+  )
+
+  # format column names
+  colnames(out)[which(colnames(out) == "Equivalence (ROPE)")] <- "H0"
+  out$ROPE <- NULL
+
+  # only show supported components
+  if ("Component" %in% colnames(out)) {
+    out <- out[out$Component %in% c("conditional", "count"), ]
+  }
+
+  out
+}
+
+
+
+#' @export
+print.equivalence_test_lm <- function(x,
+                                      digits = 2,
+                                      ci_digits = 2,
+                                      p_digits = 3,
+                                      ci_brackets = NULL,
+                                      zap_small = FALSE,
+                                      ...) {
   orig_x <- x
 
   rule <- attributes(x)$rule
@@ -622,82 +661,85 @@ print.equivalence_test_lm <- function(x, digits = 2, ...) {
   .rope <- attr(x, "rope", exact = TRUE)
   cat(sprintf("  ROPE: [%.*f %.*f]\n\n", digits, .rope[1], digits, .rope[2]))
 
-  # set pretty names
-  x <- tryCatch(
-    {
-      pretty_names <- attr(x, "pretty_names", exact = TRUE)
-      if (!is.null(pretty_names)) {
-        x$Parameter[match(names(pretty_names), x$Parameter)] <- pretty_names
-      }
-      x
-    },
-    error = function(e) {
-      x
-    }
+  # formatting
+  x <- format(x,
+    digits = digits,
+    ci_digits = ci_digits,
+    p_digits = p_digits,
+    ci_width = "auto",
+    ci_brackets = ci_brackets,
+    format = "text",
+    zap_small = zap_small,
+    ...
   )
-
-  if ("Component" %in% colnames(x)) {
-    x <- x[x$Component %in% c("conditional", "count"), ]
-  }
 
   if ("Group" %in% colnames(x)) {
     out <- split(x, x$Group)
     for (i in names(out)) {
       insight::print_color(sprintf("Group: %s\n\n", i), "red")
-      .print_equitest_freq(out[[i]], digits, ...)
+      cat(insight::export_table(out[[i]]))
     }
   } else {
-    .print_equitest_freq(x, digits, ...)
+    cat(insight::export_table(x))
   }
   invisible(orig_x)
 }
 
 
-
 #' @export
 plot.equivalence_test_lm <- function(x, ...) {
-  if (!requireNamespace("see", quietly = TRUE)) {
-    stop("Package 'see' needed to plot results from equivalence-test. Please install it by running `install.packages('see')`.")
-  }
+  insight::check_if_installed("see")
   NextMethod()
 }
-
-
-
-
-# method-helper ----------------------
-
-.print_equitest_freq <- function(x, digits, ...) {
-  # find the longest CI-value, so we can align the brackets in the output
-  x$CI_low <- sprintf("%.*f", digits, x$CI_low)
-  x$CI_high <- sprintf("%.*f", digits, x$CI_high)
-
-  maxlen_low <- max(nchar(x$CI_low))
-  maxlen_high <- max(nchar(x$CI_high))
-
-  x$ROPE_Percentage <- sprintf("%.*f %%", digits, 100 * x$ROPE_Percentage)
-  x$conf.int <- sprintf("[%*s %*s]", maxlen_low, x$CI_low, maxlen_high, x$CI_high)
-  if ("p" %in% colnames(x)) {
-    x$p <- insight::format_p(x$p, name = NULL)
-  }
-
-  CI <- unique(x$CI)
-  keep.columns <- c("CI", "Parameter", "ROPE_Equivalence", "ROPE_Percentage", "conf.int", "p")
-
-  x <- x[, intersect(keep.columns, colnames(x))]
-
-  colnames(x)[which(colnames(x) == "ROPE_Equivalence")] <- "H0"
-  colnames(x)[which(colnames(x) == "ROPE_Percentage")] <- "inside ROPE"
-
-  for (i in CI) {
-    xsub <- x[x$CI == i, -which(colnames(x) == "CI"), drop = FALSE]
-    if ("p" %in% colnames(x)) {
-      ci_col <- ncol(xsub) - 1
-    } else {
-      ci_col <- ncol(xsub)
-    }
-    colnames(xsub)[ci_col] <- sprintf("%i%% CI", round(100 * i))
-    print.data.frame(xsub, digits = digits, row.names = FALSE)
-    cat("\n")
-  }
-}
+#'
+#'
+#' #' @export
+#' print_md.equivalence_test_lm <- function(x,
+#'                                          digits = 2,
+#'                                          ci_digits = 2,
+#'                                          p_digits = 3,
+#'                                          ci_brackets = NULL,
+#'                                          zap_small = FALSE,
+#'                                          ...) {
+#'   orig_x <- x
+#'
+#'   rule <- attributes(x)$rule
+#'   if (!is.null(rule)) {
+#'     if (rule == "cet") {
+#'       title <- "Conditional Equivalence Testing"
+#'     } else if (rule == "classic") {
+#'       title <- "TOST-test for Practical Equivalence"
+#'     } else {
+#'       title <- "Test for Practical Equivalence"
+#'     }
+#'   } else {
+#'     title <- "Test for Practical Equivalence"
+#'   }
+#'
+#'   .rope <- attr(x, "rope", exact = TRUE)
+#'   subtitle <- sprintf("  ROPE: [%.*f %.*f]\n\n", digits, .rope[1], digits, .rope[2])
+#'
+#'   # formatting
+#'   x <- format(x,
+#'               digits = digits,
+#'               ci_digits = ci_digits,
+#'               p_digits = p_digits,
+#'               ci_width = NULL,
+#'               ci_brackets = ci_brackets,
+#'               format = "md",
+#'               zap_small = zap_small,
+#'               ...)
+#'
+#'   if ("Group" %in% colnames(x)) {
+#'     group_by <- "Group"
+#'   } else {
+#'     group_by <- NULL
+#'   }
+#'
+#'   cat(insight::export_table(x,
+#'                             format = "md",
+#'                             title = title,
+#'                             subtitle = subtitle,
+#'                             group_by = group_by))
+#'   invisible(orig_x)
+#' }

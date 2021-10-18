@@ -21,12 +21,14 @@ p_value_robust(
   vcov_type = NULL,
   vcov_args = NULL,
   component = "conditional",
+  method = NULL,
   ...
 )
 
 ci_robust(
   model,
   ci = 0.95,
+  method = NULL,
   vcov_estimation = "HC",
   vcov_type = NULL,
   vcov_args = NULL,
@@ -37,27 +39,41 @@ ci_robust(
 \arguments{
 \item{model}{A model.}
 
-\item{vcov_estimation}{String, indicating the suffix of the \code{vcov*()}-function
-from the \pkg{sandwich} or \pkg{clubSandwich} package, e.g. \code{vcov_estimation = "CL"}
-(which calls \code{\link[sandwich]{vcovCL}} to compute clustered covariance matrix
+\item{vcov_estimation}{String, indicating the suffix of the
+\verb{vcov*()}-function from the \pkg{sandwich} or \pkg{clubSandwich}
+package, e.g. \code{vcov_estimation = "CL"} (which calls
+\code{\link[sandwich:vcovCL]{sandwich::vcovCL()}} to compute clustered covariance matrix
 estimators), or \code{vcov_estimation = "HC"} (which calls
-\code{\link[sandwich:vcovHC]{vcovHC()}} to compute heteroskedasticity-consistent
-covariance matrix estimators).}
+\code{\link[sandwich:vcovHC]{sandwich::vcovHC()}} to compute
+heteroskedasticity-consistent covariance matrix estimators).}
 
 \item{vcov_type}{Character vector, specifying the estimation type for the
-robust covariance matrix estimation (see \code{\link[sandwich:vcovHC]{vcovHC()}}
-or \code{clubSandwich::vcovCR()} for details).}
+robust covariance matrix estimation (see
+\code{\link[sandwich:vcovHC]{sandwich::vcovHC()}} or \code{clubSandwich::vcovCR()}
+for details).}
 
-\item{vcov_args}{List of named vectors, used as additional arguments that
-are passed down to the \pkg{sandwich}-function specified in \code{vcov_estimation}.}
+\item{vcov_args}{List of named vectors, used as additional arguments that are
+passed down to the \pkg{sandwich}-function specified in
+\code{vcov_estimation}.}
 
-\item{component}{Should all parameters or parameters for specific model components be returned?}
+\item{component}{Should all parameters or parameters for specific model
+components be returned?}
 
-\item{...}{Arguments passed to or from other methods. For \code{standard_error()},
-if \code{method = "robust"}, arguments \code{vcov_estimation}, \code{vcov_type}
-and \code{vcov_args} can be passed down to \code{standard_error_robust()}.}
+\item{...}{Arguments passed to or from other methods. For
+\code{standard_error()}, if \code{method = "robust"}, arguments
+\code{vcov_estimation}, \code{vcov_type} and \code{vcov_args} can be passed
+down to \code{standard_error_robust()}.}
 
-\item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
+\item{method}{Method for computing degrees of freedom for
+confidence intervals (CI) and the related p-values. Allowed are following
+options (which vary depending on the model class): \code{"residual"},
+\code{"normal"}, \code{"likelihood"}, \code{"satterthwaite"}, \code{"kenward"}, \code{"wald"},
+\code{"profile"}, \code{"boot"}, \code{"uniroot"}, \code{"ml1"}, \code{"betwithin"}, \code{"hdi"},
+\code{"quantile"}, \code{"ci"}, \code{"eti"}, \code{"si"}, \code{"bci"}, or \code{"bcai"}. See section
+\emph{Confidence intervals and approximation of degrees of freedom} in
+\code{\link[=model_parameters]{model_parameters()}} for further details.}
+
+\item{ci}{Confidence Interval (CI) level. Default to \code{0.95} (\verb{95\%}).}
 }
 \value{
 A data frame.
@@ -69,8 +85,8 @@ matrix, using the packages \pkg{sandwich} and \pkg{clubSandwich}.
 }
 \note{
 These functions rely on the \pkg{sandwich} or \pkg{clubSandwich} package
-  (the latter if \code{vcov_estimation = "CR"} for cluster-robust standard errors)
-  and will thus only work for those models supported by those packages.
+(the latter if \code{vcov_estimation = "CR"} for cluster-robust standard errors)
+and will thus only work for those models supported by those packages.
 }
 \examples{
 if (require("sandwich", quietly = TRUE)) {

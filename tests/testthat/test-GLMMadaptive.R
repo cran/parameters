@@ -1,9 +1,9 @@
 .runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
 
-if (require("testthat") &&
-  require("parameters") &&
-  require("lme4") &&
-  require("GLMMadaptive")) {
+if (requiet("testthat") &&
+  requiet("parameters") &&
+  requiet("lme4") &&
+  requiet("GLMMadaptive")) {
   data("fish")
   data("cbpp")
 
@@ -131,7 +131,7 @@ if (require("testthat") &&
     )
   })
 
-  if (.runThisTest && require("glmmTMB")) {
+  if (.runThisTest && requiet("glmmTMB")) {
     data("Salamanders")
     model <- mixed_model(
       count ~ spp + mined,
@@ -153,8 +153,8 @@ if (require("testthat") &&
       expect_equal(
         params$Parameter,
         c(
-          "SD (Intercept)", "SD (DOY)", "Cor (Intercept~site)", "SD (Observations)",
-          "SD (Intercept)", "SD (DOP)", "Cor (Intercept~site)", "SD (Observations)"
+          "SD (Intercept)", "SD (DOY)", "Cor (Intercept~DOY: site)", "SD (Observations)",
+          "SD (Intercept)", "SD (DOP)", "Cor (Intercept~DOP: site)", "SD (Observations)"
         )
       )
       expect_equal(
@@ -166,7 +166,7 @@ if (require("testthat") &&
       )
       expect_equal(
         params$Coefficient,
-        c(0.56552, 0.29951, 0.06307, 1.27254, 1.02233, 0.38209, -0.17162, 1.27254),
+        c(0.56552, 0.29951, 0.06307, 1.61936, 1.02233, 0.38209, -0.17162, 1.61936),
         tolerance = 1e-2
       )
     })

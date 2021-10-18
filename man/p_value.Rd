@@ -8,7 +8,15 @@
 \usage{
 p_value(model, ...)
 
-\method{p_value}{default}(model, method = NULL, verbose = TRUE, ...)
+\method{p_value}{default}(
+  model,
+  dof = NULL,
+  method = NULL,
+  robust = FALSE,
+  component = "all",
+  verbose = TRUE,
+  ...
+)
 
 \method{p_value}{emmGrid}(model, ci = 0.95, adjust = "none", ...)
 }
@@ -17,11 +25,25 @@ p_value(model, ...)
 
 \item{...}{Arguments passed down to \code{standard_error_robust()} when confidence intervals or p-values based on robust standard errors should be computed. Only available for models where \code{method = "robust"} is supported.}
 
+\item{dof}{Number of degrees of freedom to be used when calculating
+confidence intervals. If \code{NULL} (default), the degrees of freedom are
+retrieved by calling \code{\link[=degrees_of_freedom]{degrees_of_freedom()}} with
+approximation method defined in \code{method}. If not \code{NULL}, use this argument
+to override the default degrees of freedom used to compute confidence
+intervals.}
+
 \item{method}{If \code{"robust"}, and if model is supported by the \pkg{sandwich} or \pkg{clubSandwich} packages, computes p-values based on robust covariance matrix estimation.}
+
+\item{robust}{Logical, if \code{TRUE}, computes confidence intervals based on
+robust standard errors. See \code{\link[=standard_error_robust]{standard_error_robust()}}.}
+
+\item{component}{Model component for which parameters should be shown. See
+the documentation for your object's class in \code{\link[=model_parameters]{model_parameters()}} for
+further details.}
 
 \item{verbose}{Toggle warnings and messages.}
 
-\item{ci}{Confidence Interval (CI) level. Default to 0.95 (95\%).}
+\item{ci}{Confidence Interval (CI) level. Default to \code{0.95} (\verb{95\%}).}
 
 \item{adjust}{Character value naming the method used to adjust p-values or confidence intervals. See \code{?emmeans::summary.emmGrid} for details.}
 }
@@ -31,18 +53,17 @@ A data frame with at least two columns: the parameter names and the p-values. De
 \description{
 This function attempts to return, or compute, p-values of a model's parameters. See the documentation for your object's class:
 \itemize{
- \item{\link[=p_value.lmerMod]{Mixed models} (\pkg{lme4}, \pkg{nlme}, \pkg{glmmTMB}, ...)}
- \item{\link[=p_value.BFBayesFactor]{Bayesian models} (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, ...)}
- \item{\link[=p_value.zeroinfl]{Zero-inflated models} (\code{hurdle}, \code{zeroinfl}, \code{zerocount}, ...)}
- \item{\link[=p_value.poissonmfx]{Marginal effects models} (\pkg{mfx})}
- \item{\link[=p_value.DirichletRegModel]{Models with special components} (\code{DirichletRegModel}, \code{clm2}, \code{cgam}, ...)}
- }
+\item{\link[=p_value.BFBayesFactor]{Bayesian models} (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, ...)}
+\item{\link[=p_value.zeroinfl]{Zero-inflated models} (\code{hurdle}, \code{zeroinfl}, \code{zerocount}, ...)}
+\item{\link[=p_value.poissonmfx]{Marginal effects models} (\pkg{mfx})}
+\item{\link[=p_value.DirichletRegModel]{Models with special components} (\code{DirichletRegModel}, \code{clm2}, \code{cgam}, ...)}
+}
 }
 \note{
-\code{p_value_robust()} resp. \code{p_value(method = "robust")}
-  rely on the \pkg{sandwich} or \pkg{clubSandwich} package (the latter if
-  \code{vcov_estimation = "CR"} for cluster-robust standard errors) and will
-  thus only work for those models supported by those packages.
+\code{p_value_robust()} resp. \code{p_value(robust = TRUE)}
+rely on the \pkg{sandwich} or \pkg{clubSandwich} package (the latter if
+\code{vcov_estimation = "CR"} for cluster-robust standard errors) and will
+thus only work for those models supported by those packages.
 }
 \examples{
 data(iris)

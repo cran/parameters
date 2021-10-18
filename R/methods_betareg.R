@@ -1,3 +1,5 @@
+## TODO add ci_method later?
+
 #' @rdname model_parameters.averaging
 #' @export
 model_parameters.betareg <- function(model,
@@ -37,14 +39,14 @@ model_parameters.betareg <- function(model,
 }
 
 
-#' @rdname ci.merMod
 #' @export
 ci.betareg <- function(x,
                        ci = .95,
-                       component = c("all", "conditional", "precision"),
+                       component = "all",
                        ...) {
-  component <- match.arg(component)
-  ci_wald(model = x, ci = ci, dof = Inf, component = component)
+
+  component <- match.arg(component, choices = c("all", "conditional", "precision"))
+  .ci_generic(model = x, ci = ci, dof = Inf, component = component)
 }
 
 

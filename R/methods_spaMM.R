@@ -3,7 +3,6 @@
 model_parameters.HLfit <- model_parameters.default
 
 
-#' @rdname ci.merMod
 #' @export
 ci.HLfit <- function(x,
                      ci = 0.95,
@@ -14,7 +13,7 @@ ci.HLfit <- function(x,
 
   # Wald approx
   if (method == "wald") {
-    out <- ci_wald(model = x, ci = ci, dof = Inf)
+    out <- .ci_generic(model = x, ci = ci, dof = Inf)
 
     # ml1 approx
   } else if (method == "ml1") {
@@ -52,21 +51,15 @@ ci.HLfit <- function(x,
 standard_error.HLfit <- function(model, method = NULL, ...) {
   if (is.null(method)) method <- "wald"
 
-  if (method == "ml1") {
-    se_ml1(model)
-  } else if (method == "betwithin") {
-    se_betwithin(model)
-  } else {
-    utils::capture.output(se <- summary(model)$beta_table[, 2])
-    .data_frame(
-      Parameter = insight::find_parameters(model,
-        effects = "fixed",
-        component = "conditional",
-        flatten = TRUE
-      ),
-      SE = as.vector(se)
-    )
-  }
+  utils::capture.output(se <- summary(model)$beta_table[, 2])
+  .data_frame(
+    Parameter = insight::find_parameters(model,
+      effects = "fixed",
+      component = "conditional",
+      flatten = TRUE
+    ),
+    SE = as.vector(se)
+  )
 }
 
 

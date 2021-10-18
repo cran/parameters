@@ -1,6 +1,6 @@
 .runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
 
-if (.runThisTest && require("testthat") && require("cgam")) {
+if (.runThisTest && requiet("testthat") && requiet("cgam") && utils::packageVersion("insight") > "0.14.4") {
   test_that("model_parameters - cgam", {
     # cgam -----------------------
 
@@ -9,26 +9,20 @@ if (.runThisTest && require("testthat") && require("cgam")) {
     # model
     m_cgam <- cgam::cgam(formula = y ~ incr.conv(x), data = cubic)
 
-    df_cgam <- as.data.frame(parameters::model_parameters(m_cgam))
+    df_cgam <- parameters::model_parameters(m_cgam)
 
-    expect_equal(df_cgam,
-      structure(
-        list(
-          Parameter = "(Intercept)",
-          Coefficient = 1.187,
-          SE = 0.3054,
-          CI = 0.95,
-          CI_low = 0.588426999121468,
-          CI_high = 1.78557300087853,
-          t = 3.8868,
-          df_error = 39.5,
-          p = 4e-04
-        ),
-        row.names = 1L,
-        sigma = 2.159464,
-        residual_df = 49,
+    expect_equal(
+      df_cgam,
+      structure(list(
+        Parameter = "(Intercept)", Coefficient = 1.187, SE = 0.3054,
+        CI = 0.95, CI_low = 0.569520101908619, CI_high = 1.80447989809138,
+        t = 3.8868, df_error = 39.5, p = 4e-04),
+        row.names = c(NA, -1L),
+        sigma = 2.15946395506817,
+        residual_df = 39.5,
         pretty_names = c(`(Intercept)` = "(Intercept)"),
         ci = 0.95,
+        test_statistic = "t-statistic",
         verbose = TRUE,
         exponentiate = FALSE,
         ordinal_model = FALSE,
@@ -38,6 +32,7 @@ if (.runThisTest && require("testthat") && require("cgam")) {
         model_class = "cgam",
         bootstrap = FALSE,
         iterations = 1000,
+        robust_vcov = FALSE,
         ignore_group = TRUE,
         ran_pars = TRUE,
         show_summary = FALSE,
@@ -49,9 +44,8 @@ if (.runThisTest && require("testthat") && require("cgam")) {
         ci_digits = 2,
         p_digits = 3,
         footer_digits = 3,
-        class = "data.frame",
-        object_name = "m_cgam"
-      ),
+        class = c("parameters_model", "see_parameters_model", "data.frame"),
+        object_name = "m_cgam"),
       tolerance = 0.01
     )
   })
@@ -95,7 +89,7 @@ if (.runThisTest && require("testthat") && require("cgam")) {
     # use REML method to fit the model
     ans <- cgam::cgamm(formula = y ~ s.incr(x) + (1 | group), reml = TRUE)
 
-    df <- as.data.frame(suppressWarnings(parameters::model_parameters(ans)))
+    df <- suppressWarnings(parameters::model_parameters(ans))
 
     expect_equal(df,
       structure(
@@ -112,8 +106,9 @@ if (.runThisTest && require("testthat") && require("cgam")) {
         ),
         row.names = 1L,
         sigma = numeric(0),
-        residual_df = Inf,
+        residual_df = 890,
         ci = 0.95,
+        test_statistic = "t-statistic",
         verbose = TRUE,
         exponentiate = FALSE,
         ordinal_model = FALSE,
@@ -125,6 +120,7 @@ if (.runThisTest && require("testthat") && require("cgam")) {
         ),
         bootstrap = FALSE,
         iterations = 1000,
+        robust_vcov = FALSE,
         ignore_group = TRUE,
         ran_pars = TRUE,
         show_summary = FALSE,
@@ -135,10 +131,10 @@ if (.runThisTest && require("testthat") && require("cgam")) {
         ci_digits = 2,
         p_digits = 3,
         footer_digits = 3,
-        class = "data.frame",
+        class = c("parameters_model", "see_parameters_model", "data.frame"),
         object_name = "ans"
       ),
-      tolerance = 0.001
+      tolerance = 0.01
     )
   })
 }

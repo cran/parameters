@@ -42,12 +42,12 @@ while \code{select = "short"} prints coefficient, standard errors and p-values.}
 
 \item{caption}{Table caption as string. If \code{NULL}, no table caption is printed.}
 
-\item{digits}{Number of decimal places for numeric values (except confidence
-intervals and p-values).}
-
-\item{ci_digits}{Number of decimal places for confidence intervals.}
-
-\item{p_digits}{Number of decimal places for p-values. May also be \code{"scientific"} for scientific notation of p-values.}
+\item{digits, ci_digits, p_digits}{Number of digits for rounding or
+significant figures. May also be \code{"signif"} to return significant
+figures or \code{"scientific"} to return scientific notation. Control the
+number of digits by adding the value as suffix, e.g. \code{digits = "scientific4"}
+to have scientific notation with 4 decimal places, or \code{digits = "signif5"}
+for 5 significant figures (see also \code{\link[=signif]{signif()}}).}
 
 \item{footer_digits}{Number of decimal places for values in the footer summary.}
 
@@ -80,7 +80,7 @@ A \code{print()}-method for objects from \code{\link[=model_parameters]{model_pa
 }
 \details{
 \code{summary()} is a convenient shortcut for
-  \code{print(object, select = "minimal", show_sigma = TRUE, show_formula = TRUE)}.
+\code{print(object, select = "minimal", show_sigma = TRUE, show_formula = TRUE)}.
 }
 \section{Interpretation of Interaction Terms}{
 
@@ -149,8 +149,10 @@ groups <- list(
 print(mp, groups = groups)
 
 # or use row indices
-print(mp, groups = list("Focal Predictors" = c(1, 4),
-                        "Controls" = c(2, 3)))
+print(mp, groups = list(
+  "Focal Predictors" = c(1, 4),
+  "Controls" = c(2, 3)
+))
 
 # only show coefficients, CI and p,
 # put non-matched parameters to the end
@@ -162,11 +164,13 @@ model <- lm(mpg ~ hp + gear * vs + cyl + drat, data = mtcars)
 
 # don't select "Intercept" parameter
 mp <- model_parameters(model, parameters = "^(?!\\\\(Intercept)")
-print(mp, groups = list("Engine" = c("cyl6", "cyl8", "vs", "hp"),
-                        "Interactions" = c("gear4:vs", "gear5:vs")))
+print(mp, groups = list(
+  "Engine" = c("cyl6", "cyl8", "vs", "hp"),
+  "Interactions" = c("gear4:vs", "gear5:vs")
+))
 }
 }
 \seealso{
 There is a dedicated method to use inside rmarkdown files,
-  \code{\link[=print_md.parameters_model]{print_md()}}.
+\code{\link[=print_md.parameters_model]{print_md()}}.
 }

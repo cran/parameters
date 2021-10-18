@@ -10,8 +10,8 @@ model_parameters.gam <- model_parameters.cgam
 
 
 #' @export
-ci.gam <- function(x, ci = .95, ...) {
-  ci_wald(model = x, ci = ci, ...)
+ci.gam <- function(x, ci = .95, method = NULL, ...) {
+  .ci_generic(model = x, ci = ci, method = "wald", ...)
 }
 
 
@@ -53,9 +53,7 @@ p_value.gam <- function(model, ...) {
 
 #' @export
 simulate_model.gam <- function(model, iterations = 1000, ...) {
-  if (!requireNamespace("MASS", quietly = TRUE)) {
-    stop("Package 'MASS' needed for this function to work. Please install it.", call. = FALSE)
-  }
+  insight::check_if_installed("MASS")
 
   if (is.null(iterations)) iterations <- 1000
 
@@ -77,23 +75,16 @@ simulate_model.gam <- function(model, iterations = 1000, ...) {
 
 #' @export
 model_parameters.list <- function(model,
-                                  ci = .95,
-                                  bootstrap = FALSE,
-                                  iterations = 1000,
-                                  robust = FALSE,
-                                  verbose = TRUE,
                                   ...) {
   if ("gam" %in% names(model)) {
     model <- model$gam
     class(model) <- c("gam", "lm", "glm")
-    model_parameters(
-      model,
-      ci = ci,
-      bootstrap = bootstrap,
-      iterations = iterations,
-      robust = robust,
-      ...
-    )
+    model_parameters(model, ...)
+  } else if ("pamobject" %in% names(model)) {
+    model <- model$pamobject
+    model_parameters(model, ...)
+  } else {
+    stop("We don't recognize this object of class 'list'. Please raise an issue.")
   }
 }
 

@@ -25,7 +25,7 @@ model_parameters.merModList <- function(model,
 
 #' @export
 ci.merModList <- function(x, ci = .95, ...) {
-  ci_wald(model = x, ci = ci, dof = NULL, robust = FALSE, component = "conditional")
+  .ci_generic(model = x, ci = ci, dof = NULL, robust = FALSE, component = "conditional")
 }
 
 
@@ -44,13 +44,6 @@ standard_error.merModList <- function(model, ...) {
 degrees_of_freedom.merModList <- function(model, ...) {
   s <- suppressWarnings(summary(model))
   s$fe$df
-}
-
-
-#' @export
-p_value.merModList <- function(model, ...) {
-  dof <- degrees_of_freedom(model)
-  p_value_wald(model, dof, ...)
 }
 
 

@@ -1,8 +1,8 @@
-#' Parameters from PCA/FA
+#' Parameters from Bayesian Exploratory Factor Analysis
 #'
-#' Format PCA/FA objects from the psych package (Revelle, 2016).
+#' Format Bayesian Exploratory Factor Analysis objects from the BayesFM package.
 #'
-#' @param model Bayesian EFA created by the \code{BayesFM::befa}.
+#' @param model Bayesian EFA created by the `BayesFM::befa`.
 #' @inheritParams principal_components
 #' @inheritParams bayestestR::describe_posterior
 #' @inheritParams model_parameters.default
@@ -24,15 +24,13 @@ model_parameters.befa <- function(model,
                                   sort = FALSE,
                                   centrality = "median",
                                   dispersion = FALSE,
-                                  ci = .89,
+                                  ci = .95,
                                   ci_method = "hdi",
                                   test = NULL,
                                   verbose = TRUE,
                                   ...) {
   if (!attr(model, "post.column.switch") | !attr(model, "post.sign.switch")) {
-    if (!requireNamespace("BayesFM", quietly = TRUE)) {
-      stop("Package 'BayesFM' required for this function to work. Please install it by running `install.packages('BayesFM')`.")
-    }
+    insight::check_if_installed("BayesFM")
     if (!attr(model, "post.column.switch")) model <- BayesFM::post.column.switch(model)
     if (!attr(model, "post.sign.switch")) model <- BayesFM::post.sign.switch(model)
   }

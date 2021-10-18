@@ -5,10 +5,10 @@
 #' @param model Statistical model.
 #' @param iterations The number of draws to simulate/bootstrap.
 #' @param type Character string specifying the type of bootstrap. For mixed models
-#'   of class \code{merMod} or \code{glmmTMB}, may be \code{"parametric"} (default) or
-#'   \code{"semiparametric"} (see \code{?lme4::bootMer} for details). For all
-#'   other models, see argument \code{sim} in \code{?boot::boot} (defaults to
-#'   \code{"ordinary"}).
+#'   of class `merMod` or `glmmTMB`, may be `"parametric"` (default) or
+#'   `"semiparametric"` (see `?lme4::bootMer` for details). For all
+#'   other models, see argument `sim` in `?boot::boot` (defaults to
+#'   `"ordinary"`).
 #' @param parallel The type of parallel operation to be used (if any).
 #' @param n_cpus Number of processes to be used in parallel operation.
 #' @param ... Arguments passed to or from other methods.
@@ -16,27 +16,27 @@
 #'
 #' @return A data frame of bootstrapped estimates.
 #'
-#' @details By default, \code{boot::boot()} is used to generate bootstraps from
-#' the model data, which are then used to \code{update()} the model, i.e. refit
-#' the model with the bootstrapped samples. For \code{merMod} objects (\pkg{lme4})
-#' or models from \pkg{glmmTMB}, the \code{lme4::bootMer()} function is used to
-#' obtain bootstrapped samples. \code{bootstrap_parameters()} summarizes the
+#' @details By default, `boot::boot()` is used to generate bootstraps from
+#' the model data, which are then used to `update()` the model, i.e. refit
+#' the model with the bootstrapped samples. For `merMod` objects (**lme4**)
+#' or models from **glmmTMB**, the `lme4::bootMer()` function is used to
+#' obtain bootstrapped samples. `bootstrap_parameters()` summarizes the
 #' bootstrapped model estimates.
 #'
-#' @section Using with \code{emmeans}:
+#' @section Using with **emmeans**:
 #' The output can be passed directly to the various functions from the
-#' \code{emmeans} package, to obtain bootstrapped estimates, contrasts, simple
+#' **emmeans** package, to obtain bootstrapped estimates, contrasts, simple
 #' slopes, etc. and their confidence intervals. These can then be passed to
-#' \code{model_parameter()} to obtain standard errors, p-values, etc (see
+#' `model_parameter()` to obtain standard errors, p-values, etc. (see
 #' example).
 #' \cr\cr
 #' Note that that p-values returned here are estimated under the assumption of
-#' \emph{translation equivariance}: that shape of the sampling distribution is
+#' *translation equivariance*: that shape of the sampling distribution is
 #' unaffected by the null being true or not. If this assumption does not hold,
 #' p-values can be biased, and it is suggested to use proper permutation tests
 #' to obtain non-parametric p-values.
 #'
-#' @seealso \code{\link{bootstrap_parameters}}, \code{\link{simulate_model}}, \code{\link{simulate_parameters}}
+#' @seealso [bootstrap_parameters()], [simulate_model()], [simulate_parameters()]
 #'
 #' @examples
 #' \dontrun{
@@ -45,7 +45,7 @@
 #'   b <- bootstrap_model(model)
 #'   print(head(b))
 #'
-#'   if (require("emmeans")) {
+#'   if (require("emmeans", quietly = TRUE)) {
 #'     est <- emmeans(b, consec ~ cyl)
 #'     print(model_parameters(est))
 #'   }
@@ -72,14 +72,13 @@ bootstrap_model.default <- function(model,
                                     n_cpus = 1,
                                     verbose = FALSE,
                                     ...) {
-  if (!requireNamespace("boot", quietly = TRUE)) {
-    stop("Package 'boot' needed for this function to work. Please install it.")
-  }
+  insight::check_if_installed("boot")
 
   type <- match.arg(type, choices = c("ordinary", "parametric", "balanced", "permutation", "antithetic"))
   parallel <- match.arg(parallel)
 
-  data <- insight::get_data(model)
+  model_data <- data <- insight::get_data(model)
+  model_response <- insight::find_response(model)
 
   boot_function <- function(model, data, indices) {
     d <- data[indices, ] # allows boot to select sample
@@ -94,7 +93,7 @@ bootstrap_model.default <- function(model,
       }
     }
 
-    params <- insight::get_parameters(fit)
+    params <- insight::get_parameters(fit, verbose = FALSE)
     n_params <- insight::n_parameters(model)
 
     if (nrow(params) != n_params) {
@@ -106,20 +105,39 @@ bootstrap_model.default <- function(model,
     return(params)
   }
 
-  results <- boot::boot(
-    data = data,
-    statistic = boot_function,
-    R = iterations,
-    sim = type,
-    parallel = parallel,
-    ncpus = n_cpus,
-    model = model
-  )
+  if (type == "parametric") {
+    f <- function(x, mle) {
+      out <- model_data
+      resp <- stats::simulate(x, nsim = 1)
+      out[[model_response]] <- resp
+      return(out)
+    }
+    results <- boot::boot(
+      data = data,
+      statistic = boot_function,
+      R = iterations,
+      sim = type,
+      parallel = parallel,
+      ncpus = n_cpus,
+      model = model,
+      ran.gen = f
+    )
+  } else {
+    results <- boot::boot(
+      data = data,
+      statistic = boot_function,
+      R = iterations,
+      sim = type,
+      parallel = parallel,
+      ncpus = n_cpus,
+      model = model
+    )
+  }
 
   out <- as.data.frame(results$t)
   out <- out[stats::complete.cases(out), ]
 
-  names(out) <- insight::get_parameters(model)$Parameter
+  names(out) <- insight::get_parameters(model, verbose = FALSE)$Parameter
 
   class(out) <- unique(c("bootstrap_model", "see_bootstrap_model", class(out)))
   attr(out, "original_model") <- model
@@ -136,15 +154,13 @@ bootstrap_model.merMod <- function(model,
                                    n_cpus = 1,
                                    verbose = FALSE,
                                    ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("Package 'lme4' required for this function to work. Please install it by running `install.packages('lme4')`.")
-  }
+  insight::check_if_installed("lme4")
 
   type <- match.arg(type, choices = c("parametric", "semiparametric"))
-  parallel = match.arg(parallel)
+  parallel <- match.arg(parallel)
 
   boot_function <- function(model) {
-    params <- insight::get_parameters(model)
+    params <- insight::get_parameters(model, verbose = FALSE)
     n_params <- insight::n_parameters(model)
 
     if (nrow(params) != n_params) {

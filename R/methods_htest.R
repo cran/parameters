@@ -2,32 +2,33 @@
 #'
 #' Parameters of h-tests (correlations, t-tests, chi-squared, ...).
 #'
-#' @param model Object of class \code{htest} or \code{pairwise.htest}.
+#' @param model Object of class `htest` or `pairwise.htest`.
 #' @param bootstrap Should estimates be bootstrapped?
 #' @param cramers_v,phi Compute Cramer's V or phi as index of effect size.
-#'   Can be \code{"raw"} or \code{"adjusted"} (effect size will be bias-corrected).
-#'   Only applies to objects from \code{chisq.test()}.
-#' @param cohens_g If \code{TRUE}, compute Cohen's g as index of effect size.
-#'   Only applies to objects from \code{mcnemar.test()}.
-#' @param standardized_d If \code{TRUE}, compute standardized d as index of
-#'   effect size. Only applies to objects from \code{t.test()}. Calculation of
-#'   \code{d} is based on the t-value (see \code{\link[effectsize]{t_to_d}})
+#'   Can be `"raw"` or `"adjusted"` (effect size will be bias-corrected).
+#'   Only applies to objects from `chisq.test()`.
+#' @param cohens_g If `TRUE`, compute Cohen's g as index of effect size.
+#'   Only applies to objects from `mcnemar.test()`.
+#' @param standardized_d If `TRUE`, compute standardized d as index of
+#'   effect size. Only applies to objects from `t.test()`. Calculation of
+#'   `d` is based on the t-value (see [effectsize::t_to_d()])
 #'   for details.
-#' @param hedges_g If \code{TRUE}, compute Hedge's g as index of effect size.
-#'   Only applies to objects from \code{t.test()}.
-#' @param omega_squared,eta_squared,epsilon_squared Logical, if \code{TRUE},
+#' @param hedges_g If `TRUE`, compute Hedge's g as index of effect size.
+#'   Only applies to objects from `t.test()`.
+#' @param omega_squared,eta_squared,epsilon_squared Logical, if `TRUE`,
 #'   returns the non-partial effect size Omega, Eta or Epsilon squared. Only
-#'   applies to objects from \code{oneway.test()}.
-#' @param rank_biserial If \code{TRUE}, compute the rank-biserial correlation as
-#'   effect size measure. Only applies to objects from \code{wilcox.test()}.
-#' @param rank_epsilon_squared If \code{TRUE}, compute the rank epsilon squared
-#'   as effect size measure. Only applies to objects from \code{kruskal.test()}.
-#' @param kendalls_w If \code{TRUE}, compute the Kendall's coefficient of
+#'   applies to objects from `oneway.test()`.
+#' @param rank_biserial If `TRUE`, compute the rank-biserial correlation as
+#'   effect size measure. Only applies to objects from `wilcox.test()`.
+#' @param rank_epsilon_squared If `TRUE`, compute the rank epsilon squared
+#'   as effect size measure. Only applies to objects from `kruskal.test()`.
+#' @param kendalls_w If `TRUE`, compute the Kendall's coefficient of
 #'   concordance as effect size measure. Only applies to objects from
-#'   \code{friedman.test()}.
+#'   `friedman.test()`.
 #' @param ci Level of confidence intervals for effect size statistic. Currently
-#'   only applies to objects from \code{chisq.test()} or \code{oneway.test()}.
+#'   only applies to objects from `chisq.test()` or `oneway.test()`.
 #' @inheritParams model_parameters.default
+#' @inheritParams model_parameters.aov
 #' @param ... Arguments passed to or from other methods.
 #'
 #' @examples
@@ -67,6 +68,7 @@ model_parameters.htest <- function(model,
                                    rank_epsilon_squared = NULL,
                                    kendalls_w = NULL,
                                    ci = .95,
+                                   alternative = NULL,
                                    bootstrap = FALSE,
                                    verbose = TRUE,
                                    ...) {
@@ -87,6 +89,7 @@ model_parameters.htest <- function(model,
       rank_epsilon_squared = rank_epsilon_squared,
       kendalls_w = kendalls_w,
       ci = ci,
+      alternative = alternative,
       verbose = verbose,
       ...
     )
@@ -158,25 +161,35 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
                                       rank_epsilon_squared = NULL,
                                       kendalls_w = NULL,
                                       ci = 0.95,
+                                      alternative = NULL,
                                       verbose = TRUE,
                                       ...) {
   m_info <- insight::model_info(model)
 
   if (m_info$is_correlation) {
+
+    # correlation ---------
     out <- .extract_htest_correlation(model)
   } else if (.is_levenetest(model)) {
+
+    # levene's test ---------
     out <- .extract_htest_levenetest(model)
   } else if (m_info$is_ttest) {
+
+    # t-test -----------
     out <- .extract_htest_ttest(model)
     out <- .add_effectsize_ttest(model,
       out,
       standardized_d,
       hedges_g,
       ci = ci,
+      alternative = alternative,
       verbose = verbose,
       ...
     )
   } else if (m_info$is_ranktest) {
+
+    # rank-test (kruskal / wilcox / friedman) -----------
     out <- .extract_htest_ranktest(model)
 
     if (grepl("^Wilcox", model$method)) {
@@ -209,6 +222,8 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
       )
     }
   } else if (m_info$is_onewaytest) {
+
+    # one-way test -----------
     out <- .extract_htest_oneway(model)
     out <- .add_effectsize_oneway(
       model,
@@ -220,15 +235,21 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
       verbose = verbose
     )
   } else if (m_info$is_chi2test) {
+
+    # chi2- and mcnemar-test -----------
     out <- .extract_htest_chi2(model)
     if (grepl("^McNemar", model$method)) {
       out <- .add_effectsize_mcnemar(model, out, cohens_g = cohens_g, ci = ci, verbose = verbose)
     } else {
-      out <- .add_effectsize_chi2(model, out, cramers_v = cramers_v, phi = phi, ci = ci, verbose = verbose)
+      out <- .add_effectsize_chi2(model, out, cramers_v = cramers_v, phi = phi, ci = ci, alternative = alternative, verbose = verbose)
     }
   } else if (m_info$is_proptest) {
+
+    # test of proportion --------------
     out <- .extract_htest_prop(model)
   } else if (m_info$is_binomtest) {
+
+    # exact binomial test --------------
     out <- .extract_htest_binom(model)
   } else {
     stop("model_parameters not implemented for such h-tests yet.")
@@ -437,7 +458,7 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
           "Group" = names[2],
           "Mean_Group1" = model$estimate[1],
           "Mean_Group2" = model$estimate[2],
-          "Difference" = model$estimate[2] - model$estimate[1],
+          "Difference" = model$estimate[1] - model$estimate[2],
           "CI_low" = model$conf.int[1],
           "CI_high" = model$conf.int[2],
           "t" = model$statistic,
@@ -602,17 +623,19 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
                                  cramers_v = NULL,
                                  phi = NULL,
                                  ci = .95,
+                                 alternative = NULL,
                                  verbose = TRUE) {
-  if (is.null(cramers_v) && is.null(phi)) {
+  if (!requireNamespace("effectsize", quietly = TRUE) || (is.null(cramers_v) && is.null(phi))) {
     return(out)
   }
 
-  if (!is.null(cramers_v) && requireNamespace("effectsize", quietly = TRUE)) {
+  if (!is.null(cramers_v)) {
     # Cramers V
     es <- effectsize::effectsize(
       model,
       type = "cramers_v",
       ci = ci,
+      alternative = alternative,
       adjust = identical(cramers_v, "adjusted"),
       verbose = verbose
     )
@@ -622,12 +645,13 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
     out <- cbind(out, es)
   }
 
-  if (!is.null(phi) && requireNamespace("effectsize", quietly = TRUE)) {
+  if (!is.null(phi)) {
     # Phi
     es <- effectsize::effectsize(
       model,
       type = "phi",
       ci = ci,
+      alternative = alternative,
       adjust = identical(phi, "adjusted"),
       verbose = verbose
     )
@@ -684,6 +708,7 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
                                   standardized_d = NULL,
                                   hedges_g = NULL,
                                   ci = .95,
+                                  alternative = NULL,
                                   verbose = TRUE,
                                   ...) {
   if (is.null(standardized_d) && is.null(hedges_g)) {
@@ -691,9 +716,17 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
   }
 
   if (requireNamespace("effectsize", quietly = TRUE)) {
+
     # standardized d
     if (!is.null(standardized_d)) {
-      es <- effectsize::effectsize(model, type = "cohens_d", ci = ci, verbose = verbose, ...)
+      es <- effectsize::effectsize(
+        model,
+        type = "cohens_d",
+        ci = ci,
+        alternative = alternative,
+        verbose = verbose,
+        ...
+      )
       es$CI <- NULL
       ci_cols <- grepl("^CI", names(es))
       names(es)[ci_cols] <- paste0("d_", names(es)[ci_cols])
@@ -702,7 +735,14 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
 
     # Hedge's g
     if (!is.null(hedges_g)) {
-      es <- effectsize::effectsize(model, type = "hedges_g", ci = ci, verbose = verbose, ...)
+      es <- effectsize::effectsize(
+        model,
+        type = "hedges_g",
+        ci = ci,
+        alternative = alternative,
+        verbose = verbose,
+        ...
+      )
       es$CI <- NULL
       ci_cols <- grepl("^CI", names(es))
       names(es)[ci_cols] <- paste0("g_", names(es)[ci_cols])
@@ -892,9 +932,10 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
     if (!is.null(model$null.value)) {
       if (length(model$null.value) == 1L) {
         alt.char <- switch(model$alternative,
-                           two.sided = "not equal to",
-                           less = "less than",
-                           greater = "greater than")
+          two.sided = "not equal to",
+          less = "less than",
+          greater = "greater than"
+        )
         h1_text <- paste0(h1_text, "true ", names(model$null.value), " is ", alt.char, " ", model$null.value)
       } else {
         h1_text <- paste0(h1_text, model$alternative)

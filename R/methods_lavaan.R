@@ -8,21 +8,21 @@
 #'
 #' Format CFA/SEM objects from the lavaan package (Rosseel, 2012; Merkle and Rosseel 2018).
 #'
-#' @param model CFA or SEM created by the \code{lavaan::cfa} or \code{lavaan::sem}
+#' @param model CFA or SEM created by the `lavaan::cfa` or `lavaan::sem`
 #'   functions.
 #' @param standardize Return standardized parameters (standardized coefficients).
-#'   Can be \code{TRUE} (or \code{"all"} or \code{"std.all"}) for standardized
+#'   Can be `TRUE` (or `"all"` or `"std.all"`) for standardized
 #'   estimates based on both the variances of observed and latent variables;
-#'   \code{"latent"} (or \code{"std.lv"}) for standardized estimates based
-#'   on the variances of the latent variables only; or \code{"no_exogenous"}
-#'   (or \code{"std.nox"}) for standardized estimates based on both the
+#'   `"latent"` (or `"std.lv"`) for standardized estimates based
+#'   on the variances of the latent variables only; or `"no_exogenous"`
+#'   (or `"std.nox"`) for standardized estimates based on both the
 #'   variances of observed and latent variables, but not the variances of
-#'   exogenous covariates. See \code{lavaan::standardizedsolution} for details.
+#'   exogenous covariates. See `lavaan::standardizedsolution` for details.
 #' @inheritParams model_parameters.default
-#' @param component What type of links to return. Can be \code{"all"} or some of \code{c("regression", "correlation", "loading", "variance", "mean")}.
+#' @param component What type of links to return. Can be `"all"` or some of `c("regression", "correlation", "loading", "variance", "mean")`.
 #' @param ... Arguments passed to or from other methods.
 #'
-#' @note There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#' @note There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 #'
 #' @examples
 #' library(parameters)
@@ -84,13 +84,16 @@ model_parameters.lavaan <- function(model,
                                     ci = 0.95,
                                     standardize = FALSE,
                                     component = c("regression", "correlation", "loading", "defined"),
-                                    parameters = NULL,
+                                    keep = NULL,
+                                    drop = NULL,
+                                    parameters = keep,
                                     verbose = TRUE,
                                     ...) {
   params <- .extract_parameters_lavaan(model,
     ci = ci,
     standardize = standardize,
-    filter_parameters = parameters,
+    keep_parameters = keep,
+    drop_parameters = drop,
     verbose = verbose,
     ...
   )
@@ -114,15 +117,17 @@ model_parameters.lavaan <- function(model,
 model_parameters.blavaan <- function(model,
                                      centrality = "median",
                                      dispersion = FALSE,
-                                     ci = .89,
+                                     ci = .95,
                                      ci_method = "hdi",
                                      test = c("pd", "rope"),
                                      rope_range = "default",
-                                     rope_ci = 1.0,
+                                     rope_ci = 0.95,
                                      diagnostic = c("ESS", "Rhat"),
                                      component = "all",
                                      standardize = NULL,
-                                     parameters = NULL,
+                                     keep = NULL,
+                                     drop = NULL,
+                                     parameters = keep,
                                      verbose = TRUE,
                                      ...) {
 
@@ -140,7 +145,8 @@ model_parameters.blavaan <- function(model,
     diagnostic = diagnostic,
     effects = "all",
     standardize = standardize,
-    filter_parameters = parameters,
+    keep_parameters = keep,
+    drop_parameters = drop,
     verbose = verbose,
     ...
   )
@@ -231,13 +237,12 @@ print.parameters_sem <- function(x, digits = 2, ci_digits = 2, p_digits = 3, ...
   if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
 
   verbose <- .additional_arguments(x, "verbose", TRUE)
-  ci_method <- .additional_arguments(x, "ci_method", NULL)
 
   formatted_table <- format(x = x, digits = digits, ci_digits, p_digits = p_digits, format = "text", ci_brackets = TRUE, ci_width = "auto", ...)
   cat(insight::export_table(formatted_table, format = "text", ...))
 
   if (isTRUE(verbose)) {
-    .print_footer_cimethod(ci_method)
+    .print_footer_cimethod(x)
   }
 
   invisible(x)
@@ -246,9 +251,12 @@ print.parameters_sem <- function(x, digits = 2, ci_digits = 2, p_digits = 3, ...
 
 #' @export
 predict.parameters_sem <- function(object, newdata = NULL, ...) {
-  if (!requireNamespace("lavaan", quietly = TRUE)) {
-    stop("Package 'lavaan' required for this function to work. Please install it by running `install.packages('lavaan')`.")
-  }
+  insight::check_if_installed("lavaan")
 
-  as.data.frame(lavaan::lavPredict(attributes(object)$model, newdata = newdata, method = "EBM", ...))
+  as.data.frame(lavaan::lavPredict(
+    attributes(object)$model,
+    newdata = newdata,
+    method = "EBM",
+    ...
+  ))
 }

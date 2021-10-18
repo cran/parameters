@@ -1,10 +1,10 @@
 .runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
 
 if (.runThisTest) {
-  if (require("testthat") &&
-    require("parameters") &&
-    require("lme4") &&
-    require("insight")) {
+  if (requiet("testthat") &&
+    requiet("parameters") &&
+    requiet("lme4") &&
+    requiet("insight")) {
     data(mtcars)
     test_that("p_value", {
       # h-tests
@@ -89,7 +89,8 @@ if (.runThisTest) {
 
       # Mixed models
       model <- lme4::lmer(wt ~ cyl + (1 | gear), data = mtcars)
-      expect_equal(p_value(model)$p[1], 0.1956467, tolerance = 0.01)
+      expect_equal(p_value(model)$p[1], 0.206219, tolerance = 0.01)
+      expect_equal(p_value(model, method = "normal")$p[1], 0.1956467, tolerance = 0.01)
       expect_equal(p_value(model, method = "kr")$p[1], 0.319398, tolerance = 0.01)
 
       model <- insight::download_model("merMod_1")

@@ -3,25 +3,25 @@
 #' Compute bootstrapped parameters and their related indices such as Confidence Intervals (CI) and p-values.
 #'
 #'
-#' @param test The indices to compute. Character (vector) with one or more of these options: \code{"p-value"} (or \code{"p"}), \code{"p_direction"} (or \code{"pd"}), \code{"rope"}, \code{"p_map"}, \code{"equivalence_test"} (or \code{"equitest"}), \code{"bayesfactor"} (or \code{"bf"}) or \code{"all"} to compute all tests. For each "test", the corresponding \pkg{bayestestR} function is called (e.g. \code{\link[bayestestR]{rope}} or \code{\link[bayestestR]{p_direction}}) and its results included in the summary output.
+#' @param test The indices to compute. Character (vector) with one or more of these options: `"p-value"` (or `"p"`), `"p_direction"` (or `"pd"`), `"rope"`, `"p_map"`, `"equivalence_test"` (or `"equitest"`), `"bayesfactor"` (or `"bf"`) or `"all"` to compute all tests. For each "test", the corresponding \pkg{bayestestR} function is called (e.g. [bayestestR::rope()] or [bayestestR::p_direction()]) and its results included in the summary output.
 #' @inheritParams bootstrap_model
 #' @inheritParams bayestestR::describe_posterior
 #'
 #' @return A data frame summarizing the bootstrapped parameters.
 #'
-#' @inheritSection bootstrap_model Using with \code{emmeans}
+#' @inheritSection bootstrap_model Using with **emmeans**
 #'
 #' @references Davison, A. C., & Hinkley, D. V. (1997). Bootstrap methods and their application (Vol. 1). Cambridge university press.
 #'
-#' @seealso \code{\link{bootstrap_model}}, \code{\link{simulate_parameters}}, \code{\link{simulate_model}}
+#' @seealso [bootstrap_model()], [simulate_parameters()], [simulate_model()]
 #'
-#' @details This function first calls \code{\link{bootstrap_model}} to generate
+#' @details This function first calls [bootstrap_model()] to generate
 #'   bootstrapped coefficients. The resulting replicated for each coefficient
-#'   are treated as "distribution", and is passed to \code{\link[bayestestR:describe_posterior]{describe_posterior()}}
-#'   to calculate the related indices defined in the \code{"test"} argument.
+#'   are treated as "distribution", and is passed to [bayestestR::describe_posterior()]
+#'   to calculate the related indices defined in the `"test"` argument.
 #'   \cr\cr
 #'   Note that that p-values returned here are estimated under the assumption of
-#'   \emph{translation equivariance}: that shape of the sampling distribution is
+#'   *translation equivariance*: that shape of the sampling distribution is
 #'   unaffected by the null being true or not. If this assumption does not hold,
 #'   p-values can be biased, and it is suggested to use proper permutation tests
 #'   to obtain non-parametric p-values.
@@ -90,7 +90,7 @@ bootstrap_parameters <- function(model,
   if ("CI" %in% names(parameters) && .n_unique(parameters$CI) == 1) {
     parameters$CI <- NULL
   } else if ("CI" %in% names(parameters) && .n_unique(parameters$CI) > 1) {
-    parameters <- insight::reshape_ci(parameters)
+    parameters <- datawizard::reshape_ci(parameters)
   }
 
   # Coef
@@ -100,11 +100,14 @@ bootstrap_parameters <- function(model,
 
   # p-value
   if (p_value) {
-    parameters$.col_order <- 1:nrow(parameters)
-    p <- p_value(data, ...)
+    parameters$.row_order <- 1:nrow(parameters)
+    # calculate probability of direction, then convert to p.
+    p <- bayestestR::p_direction(data, null = 0, ...)
+    p$p <- bayestestR::pd_to_p(p$pd)
+    p$pd <- NULL
     parameters <- merge(parameters, p, all = TRUE)
-    parameters <- parameters[order(parameters$.col_order), ]
-    parameters$.col_order <- NULL
+    parameters <- parameters[order(parameters$.row_order), ]
+    parameters$.row_order <- NULL
   }
 
   rownames(parameters) <- NULL

@@ -1,5 +1,19 @@
 #' Type of model parameters
 #'
+#' In a regression model, the parameters do not all have the meaning. For
+#' instance, the intercept has to be interpreted as theoretical outcome value
+#' under some conditions (when predictors are set to 0), whereas other
+#' coefficients are to be interpreted as amounts of change. Others, such as
+#' interactions, represent changes in another of the parameter. The
+#' `parameters_type` function attempts to retrieve information and meaning
+#' of parameters. It outputs a dataframe of information for each parameters,
+#' such as the `Type` (whether the parameter corresponds to a factor or a
+#' numeric predictor, or whether it is a (regular) interaction or a nested
+#' one), the `Link` (whether the parameter can be interpreted as a mean
+#' value, the slope of an association or a difference between two levels) and,
+#' in the case of interactions, which other parameters is impacted by which
+#' parameter.
+#'
 #' @param model A statistical model.
 #' @param ... Arguments passed to or from other methods.
 #'
@@ -219,13 +233,13 @@ parameters_type <- function(model, ...) {
     return(c(type, "Association", name, var, degree, NA))
 
     # Splines
-  } else if (grepl("(bs|ns|psline|lspline|rcs)\\(", name)) {
+  } else if (grepl("(bs|ns|psline|lspline|rcs|mSpline)\\(", name)) {
     type <- "spline"
-    var <- gsub("(bs|ns|psline|lspline|rcs)\\((.*)\\)(\\d)", "\\2", name)
+    var <- gsub("(bs|ns|psline|lspline|rcs|mSpline)\\((.*)\\)(\\d)", "\\2", name)
     if (grepl(",", var, fixed = TRUE)) {
       var <- substr(var, start = 0, stop = regexpr(",", var, fixed = TRUE) - 1)
     }
-    degree <- gsub("(bs|ns|psline|lspline|rcs)\\((.*)\\)(\\d)", "\\3", name)
+    degree <- gsub("(bs|ns|psline|lspline|rcs|mSpline)\\((.*)\\)(\\d)", "\\3", name)
     return(c(type, "Association", name, var, degree, NA))
 
     # log-transformation

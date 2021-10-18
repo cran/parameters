@@ -1,8 +1,8 @@
-if (require("testthat") &&
-  require("parameters") &&
-  require("nlme") &&
-  require("lme4") &&
-  require("insight")) {
+if (requiet("testthat") &&
+  requiet("parameters") &&
+  requiet("nlme") &&
+  requiet("lme4") &&
+  requiet("insight")) {
   data("sleepstudy")
   m1 <- nlme::lme(Reaction ~ Days,
     random = ~ 1 + Days | Subject,
@@ -58,18 +58,18 @@ if (require("testthat") &&
   })
 
   test_that("model_parameters, satterthwaite", {
-    params <- model_parameters(m2, df_method = "satterthwaite", effects = "fixed")
+    params <- model_parameters(m2, ci_method = "satterthwaite", effects = "fixed")
     expect_equal(params$Coefficient, c(17.70671, 0.66019, -2.32102), tolerance = 1e-4)
     expect_equal(params$SE, c(0.83155, 0.06209, 0.74307), tolerance = 1e-4)
     # expect_equal(params$df, c(104.1503, 82.87867, 26.25), tolerance = 1e-4)
-    expect_equal(params$CI_low, c(16.05848, 0.5379, -3.81337), tolerance = 1e-4)
+    expect_equal(params$CI_low, c(16.0391, 0.53609, -3.88541), tolerance = 1e-3)
   })
 
   test_that("model_parameters, satterthwaite", {
-    params <- model_parameters(m2, df_method = "satterthwaite", effects = "all")
-    expect_equal(params$Coefficient, c(17.70671, 0.66019, -2.32102, 1.73008, 1.19278), tolerance = 1e-4)
+    params <- model_parameters(m2, ci_method = "satterthwaite", effects = "all")
+    expect_equal(params$Coefficient, c(17.70671, 0.66019, -2.32102, 1.73008, 1.42273), tolerance = 1e-4)
     expect_equal(params$SE, c(0.83155, 0.06209, 0.74307, NA, NA), tolerance = 1e-4)
     # expect_equal(params$df, c(104.1503, 82.87867, 26.25), tolerance = 1e-4)
-    expect_equal(params$CI_low, c(16.05848, 0.5379, -3.81337, NA, NA), tolerance = 1e-4)
+    expect_equal(params$CI_low, c(16.0391, 0.53609, -3.88541, NA, NA), tolerance = 1e-3)
   })
 }

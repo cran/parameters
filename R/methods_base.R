@@ -3,12 +3,14 @@
 model_parameters.data.frame <- function(model,
                                         centrality = "median",
                                         dispersion = FALSE,
-                                        ci = .89,
+                                        ci = .95,
                                         ci_method = "hdi",
                                         test = c("pd", "rope"),
                                         rope_range = "default",
-                                        rope_ci = 1.0,
-                                        parameters = NULL,
+                                        rope_ci = 0.95,
+                                        keep = NULL,
+                                        drop = NULL,
+                                        parameters = keep,
                                         verbose = TRUE,
                                         ...) {
   # Processing
@@ -24,7 +26,8 @@ model_parameters.data.frame <- function(model,
     bf_prior = NULL,
     diagnostic = NULL,
     priors = FALSE,
-    filter_parameters = parameters,
+    keep_parameters = keep,
+    drop_parameters = drop,
     verbose = verbose,
     ...
   )
@@ -140,7 +143,7 @@ standard_error.effectsize_std_params <- function(model, verbose = TRUE, ...) {
 # p-Values from standard classes ---------------------------------------------
 
 #' @export
-p_value.numeric <- function(model, ...) {
+p_value.numeric <- function(model, null = 0, ...) {
   # k_lt0 <- sum(model <= 0)
   # k_gt0 <- sum(model >= 0)
   # k <- 2 * min(k_lt0, k_gt0)
@@ -148,10 +151,14 @@ p_value.numeric <- function(model, ...) {
 
   # https://blogs.sas.com/content/iml/2011/11/02/how-to-compute-p-values-for-a-bootstrap-distribution.html
   # https://stats.stackexchange.com/a/28725/293056
-  x <- model
+  x <- stats::na.omit(model)
   xM <- mean(x)
-  x0 <- x - xM
-  k <- sum(abs(x0) > abs(xM))
+  if (is.null(null) || all(is.na(null))) {
+    x0 <- x - xM
+  } else {
+    x0 <- null
+  }
+  k <- sum(x > x0)
   N <- length(x)
   (k + 1) / (N + 1)
 }
@@ -168,11 +175,11 @@ p_value.data.frame <- function(model, ...) {
 
 
 #' @export
-p_value.list <- function(model, verbose = TRUE, ...) {
+p_value.list <- function(model, method = NULL, verbose = TRUE, ...) {
   if ("gam" %in% names(model)) {
     model <- model$gam
     class(model) <- c("gam", "lm", "glm")
-    p_value(model)
+    p_value(model, method = method)
   } else {
     if (isTRUE(verbose)) {
       warning("Could not extract p-values from model object.", call. = FALSE)

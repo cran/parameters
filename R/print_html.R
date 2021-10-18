@@ -25,12 +25,15 @@ print_html.parameters_model <- function(x,
   if (missing(digits)) {
     digits <- .additional_arguments(x, "digits", digits)
   }
+
   if (missing(ci_digits)) {
     ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
   }
+
   if (missing(p_digits)) {
     p_digits <- .additional_arguments(x, "p_digits", p_digits)
   }
+
   if (missing(footer_digits)) {
     footer_digits <- .additional_arguments(x, "footer_digits", footer_digits)
   }
@@ -88,22 +91,28 @@ print_html.parameters_brms_meta <- print_html.parameters_model
 print_html.parameters_simulate <- print_html.parameters_model
 
 #' @export
+print_html.parameters_sem <- print_html.parameters_model
+
+#' @export
 print_html.compare_parameters <- function(x,
                                           digits = 2,
                                           ci_digits = 2,
                                           p_digits = 3,
+                                          caption = NULL,
+                                          subtitle = NULL,
+                                          footer = NULL,
                                           style = NULL,
                                           ...) {
-  # save original input
-  orig_x <- x
 
   # check if user supplied digits attributes
   if (missing(digits)) {
     digits <- .additional_arguments(x, "digits", digits)
   }
+
   if (missing(ci_digits)) {
     ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
   }
+
   if (missing(p_digits)) {
     p_digits <- .additional_arguments(x, "p_digits", p_digits)
   }
@@ -125,16 +134,12 @@ print_html.compare_parameters <- function(x,
     format = "html"
   )
 
-  insight::export_table(formatted_table, format = "html", footer = NULL)
+  insight::export_table(
+    formatted_table,
+    format = "html",
+    caption = caption, # TODO: get rid of NOTE
+    subtitle = subtitle,
+    footer = footer,
+    ...
+  )
 }
-
-
-
-
-
-
-# Reexports models ------------------------
-
-#' @importFrom insight print_html
-#' @export
-insight::print_html

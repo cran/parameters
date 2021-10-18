@@ -8,7 +8,7 @@
 #'
 #' Extract and compute indices and measures to describe parameters of meta-analysis models.
 #'
-#' @param include_studies Logical, if \code{TRUE} (default), includes parameters
+#' @param include_studies Logical, if `TRUE` (default), includes parameters
 #'   for all studies. Else, only parameters for overall-effects are shown.
 #' @inheritParams model_parameters.default
 #'
@@ -63,17 +63,16 @@ model_parameters.rma <- function(model,
     ci <- ci_level / 100
   }
 
-  meta_analysis_overall <-
-    .model_parameters_generic(
-      model = model,
-      ci = ci,
-      bootstrap = bootstrap,
-      iterations = iterations,
-      merge_by = "Parameter",
-      standardize = standardize,
-      exponentiate = exponentiate,
-      ...
-    )
+  meta_analysis_overall <- .model_parameters_generic(
+    model = model,
+    ci = ci,
+    bootstrap = bootstrap,
+    iterations = iterations,
+    merge_by = "Parameter",
+    standardize = standardize,
+    exponentiate = exponentiate,
+    ...
+  )
 
   subgroups <- NULL
   group_variable <- NULL
@@ -98,6 +97,11 @@ model_parameters.rma <- function(model,
     sprintf("%s", model$slab)
   } else {
     sprintf("Study %i", 1:model[["k"]])
+  }
+
+  # find missing
+  if (!is.null(model$yi.f) && anyNA(model$yi.f)) {
+    rma_parameters <- rma_parameters[match(model$yi, model$yi.f)]
   }
 
   rma_coeffients <- as.vector(model$yi)

@@ -19,6 +19,7 @@
   rank_epsilon_squared = NULL,
   kendalls_w = NULL,
   ci = 0.95,
+  alternative = NULL,
   bootstrap = FALSE,
   verbose = TRUE,
   ...
@@ -35,7 +36,7 @@ Only applies to objects from \code{chisq.test()}.}
 
 \item{standardized_d}{If \code{TRUE}, compute standardized d as index of
 effect size. Only applies to objects from \code{t.test()}. Calculation of
-\code{d} is based on the t-value (see \code{\link[effectsize]{t_to_d}})
+\code{d} is based on the t-value (see \code{\link[effectsize:t_to_r]{effectsize::t_to_d()}})
 for details.}
 
 \item{hedges_g}{If \code{TRUE}, compute Hedge's g as index of effect size.
@@ -60,6 +61,12 @@ concordance as effect size measure. Only applies to objects from
 
 \item{ci}{Level of confidence intervals for effect size statistic. Currently
 only applies to objects from \code{chisq.test()} or \code{oneway.test()}.}
+
+\item{alternative}{A character string specifying the alternative hypothesis;
+Controls the type of CI returned: \code{"two.sided"} (default, two-sided CI),
+\code{"greater"} or \code{"less"} (one-sided CI). Partial matching is allowed
+(e.g., \code{"g"}, \code{"l"}, \code{"two"}...). See section \emph{One-Sided CIs} in
+the \href{https://easystats.github.io/effectsize/}{effectsize_CIs vignette}.}
 
 \item{bootstrap}{Should estimates be bootstrapped?}
 

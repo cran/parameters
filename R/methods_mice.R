@@ -6,9 +6,7 @@ ci.mipo <- ci.gam
 
 #' @export
 ci.mira <- function(x, ci = .95, ...) {
-  if (!requireNamespace("mice", quietly = TRUE)) {
-    stop("Package 'mice' needed for this function to work. Please install it.")
-  }
+  insight::check_if_installed("mice")
   ci(mice::pool(x), ci = ci, ...)
 }
 
@@ -17,9 +15,7 @@ ci.mira <- function(x, ci = .95, ...) {
 
 #' @export
 degrees_of_freedom.mira <- function(model, ...) {
-  if (!requireNamespace("mice", quietly = TRUE)) {
-    stop("Package 'mice' needed for this function to work. Please install it.")
-  }
+  insight::check_if_installed("mice")
   degrees_of_freedom(mice::pool(model), ...)
 }
 
@@ -43,9 +39,7 @@ p_value.mipo <- function(model, ...) {
 
 #' @export
 p_value.mira <- function(model, ...) {
-  if (!requireNamespace("mice", quietly = TRUE)) {
-    stop("Package 'mice' needed for this function to work. Please install it.")
-  }
+  insight::check_if_installed("mice")
   p_value(mice::pool(model), ...)
 }
 
@@ -63,9 +57,7 @@ standard_error.mipo <- function(model, ...) {
 
 #' @export
 standard_error.mira <- function(model, ...) {
-  if (!requireNamespace("mice", quietly = TRUE)) {
-    stop("Package 'mice' needed for this function to work. Please install it.")
-  }
+  insight::check_if_installed("mice")
   standard_error(mice::pool(model), ...)
 }
 
@@ -84,14 +76,14 @@ model_parameters.mipo <- model_parameters.default
 
 #' Parameters from multiply imputed repeated analyses
 #'
-#' Format models of class \code{mira}, obtained from \code{mice::width.mids()}.
+#' Format models of class `mira`, obtained from `mice::width.mids()`.
 #'
-#' @param model An object of class \code{mira}.
+#' @param model An object of class `mira`.
 #' @inheritParams model_parameters.default
 #' @param ... Arguments passed to or from other methods.
 #'
-#' @details \code{model_parameters()} for objects of class \code{mira} works
-#'   similar to \code{summary(mice::pool())}, i.e. it generates the pooled summary
+#' @details `model_parameters()` for objects of class `mira` works
+#'   similar to `summary(mice::pool())`, i.e. it generates the pooled summary
 #'   of multiple imputed repeated regression analyses.
 #'
 #' @examples
@@ -136,9 +128,7 @@ model_parameters.mira <- function(model,
                                   p_adjust = NULL,
                                   verbose = TRUE,
                                   ...) {
-  if (!requireNamespace("mice", quietly = TRUE)) {
-    stop("Package 'mice' needed for this function to work. Please install it.")
-  }
+  insight::check_if_installed("mice")
   out <- .model_parameters_generic(
     model = mice::pool(model),
     ci = ci,

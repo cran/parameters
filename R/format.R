@@ -37,7 +37,7 @@ format.parameters_model <- function(x,
   }
 
   # remove method for htest
-  if (!is.null(m_class) && any(m_class %in% c("BFBayesFactor", "htest", "rma", "t1way", "yuen", "PMCMR", "osrt", "trendPMCMR", "anova"))) {
+  if (!is.null(m_class) && any(m_class %in% c("BFBayesFactor", "htest", "rma", "t1way", "yuen", "PMCMR", "osrt", "trendPMCMR", "anova", "afex_aov"))) {
     x$Method <- NULL
     x$Alternative <- NULL
   }
@@ -115,37 +115,17 @@ format.parameters_model <- function(x,
   formatted_table
 }
 
-
-.format_columns_single_component <- function(x, pretty_names, digits = 2, ci_digits = 2, p_digits = 3, ci_width = "auto", ci_brackets = TRUE, format = NULL, coef_name = NULL, zap_small = FALSE, ...) {
-  # default brackets are parenthesis for HTML / MD
-  if ((is.null(ci_brackets) || isTRUE(ci_brackets)) && (identical(format, "html") || identical(format, "markdown"))) {
-    brackets <- c("(", ")")
-  } else if (is.null(ci_brackets) || isTRUE(ci_brackets)) {
-    brackets <- c("[", "]")
-  } else {
-    brackets <- ci_brackets
-  }
-
-  # fix coefficient column name for random effects
-  if (!is.null(x$Effects) && all(x$Effects == "random") && any(colnames(x) %in% .all_coefficient_types())) {
-    colnames(x)[colnames(x) %in% .all_coefficient_types()] <- "Coefficient"
-  }
-
-  # random pars with level? combine into parameter column
-  if (all(c("Parameter", "Level") %in% colnames(x))) {
-    x$Parameter <- paste0(x$Parameter, " ", brackets[1], x$Level, brackets[2])
-    x$Level <- NULL
-  }
-
-  insight::format_table(x, pretty_names = pretty_names, digits = digits, ci_width = ci_width, ci_brackets = ci_brackets, ci_digits = ci_digits, p_digits = p_digits, zap_small = zap_small, ...)
-}
-
-
 #' @export
 format.parameters_simulate <- format.parameters_model
 
 #' @export
 format.parameters_brms_meta <- format.parameters_model
+
+
+
+
+
+# Compare parameters ----------------------
 
 
 #' @inheritParams print.parameters_model
@@ -243,102 +223,21 @@ format.compare_parameters <- function(x,
 
 
 
-
-# output-format helper  -------------------------
-
-# this function does the main composition of columns for the output
-
-.format_output_style <- function(x, style, format, modelname) {
-  linesep <- " "
-  if (style %in% c("se", "ci")) {
-    x$p_stars <- ""
-  }
-
-  if (style == "minimal") {
-    ci_col <- colnames(x)[grepl(" CI$", colnames(x)) | colnames(x) == "CI"]
-    param_col <- colnames(x)[1]
-    x[[param_col]] <- trimws(paste0(x[[param_col]], linesep, x[[ci_col]]))
-    x <- x[c(param_col, "p")]
-    colnames(x) <- paste0(colnames(x), " (", modelname, ")")
-  } else if (style %in% c("ci_p", "ci")) {
-    ci_col <- colnames(x)[grepl(" CI$", colnames(x)) | colnames(x) == "CI"]
-    param_col <- colnames(x)[1]
-    x[[param_col]] <- trimws(paste0(x[[param_col]], x$p_stars, linesep, x[[ci_col]]))
-    x <- x[param_col]
-    colnames(x) <- modelname
-  } else if (style %in% c("se_p", "se")) {
-    param_col <- colnames(x)[1]
-    x[[param_col]] <- trimws(paste0(x[[param_col]], x$p_stars, linesep, "(", x$SE, ")"))
-    x <- x[param_col]
-    colnames(x) <- modelname
-  } else if (style %in% c("ci_p2")) {
-    ci_col <- colnames(x)[grepl(" CI$", colnames(x)) | colnames(x) == "CI"]
-    param_col <- colnames(x)[1]
-    x[[param_col]] <- trimws(paste0(x[[param_col]], linesep, x[[ci_col]]))
-    x <- x[c(param_col, "p")]
-    colnames(x) <- paste0(colnames(x), " (", modelname, ")")
-  } else if (style %in% c("se_p2")) {
-    param_col <- colnames(x)[1]
-    x[[param_col]] <- trimws(paste0(x[[param_col]], linesep, "(", x$SE, ")"))
-    x <- x[c(param_col, "p")]
-    colnames(x) <- paste0(colnames(x), " (", modelname, ")")
-  }
-  x[[1]][x[[1]] == "()"] <- ""
-  x
-}
-
-
-
-.add_obs_row <- function(x, att, style) {
-  observations <- unlist(lapply(att, function(i) {
-    if (is.null(i$n_obs)) {
-      NA
-    } else {
-      i$n_obs
-    }
-  }))
-  weighted_observations <- unlist(lapply(att, function(i) {
-    if (is.null(i$weighted_nobs)) {
-      NA
-    } else {
-      i$weighted_nobs
-    }
-  }))
-
-  # check if model had weights, and if due to missing values n of weighted
-  # observations differs from "raw" observations
-  if (!all(is.na(weighted_observations)) && !all(is.na(observations))) {
-    if (!isTRUE(all.equal(as.vector(weighted_observations), as.vector(observations)))) {
-      message(insight::format_message("Number of weighted observations differs from number of unweighted observations."))
-    }
-    observations <- weighted_observations
-  }
-
-  if (!all(is.na(observations))) {
-    # add empty row, as separator
-    empty_row <- do.call(data.frame, as.list(rep(NA, ncol(x))))
-    colnames(empty_row) <- colnames(x)
-    x <- rbind(x, empty_row)
-    # add observations
-    steps <- (ncol(x) - 1) / length(observations)
-    empty_row[[1]] <- "Observations"
-    insert_at <- seq(2, ncol(x), by = steps)
-    for (i in 1:length(insert_at)) {
-      empty_row[[insert_at[i]]] <- observations[i]
-    }
-    x <- rbind(x, empty_row)
-  }
-  x
-}
-
-
-
-
-
 # stan models ----------------------------
 
 #' @export
-format.parameters_stan <- function(x, split_components = TRUE, select = NULL, ci_width = NULL, ci_brackets = NULL, zap_small = FALSE, format = NULL, ...) {
+format.parameters_stan <- function(x,
+                                   split_components = TRUE,
+                                   select = NULL,
+                                   digits = 2,
+                                   ci_digits = 2,
+                                   p_digits = 3,
+                                   ci_width = NULL,
+                                   ci_brackets = NULL,
+                                   zap_small = FALSE,
+                                   format = NULL,
+                                   table_caption = NULL,
+                                   ...) {
   cp <- attributes(x)$parameter_info
   att <- attributes(x)
   final_table <- list()
@@ -359,14 +258,23 @@ format.parameters_stan <- function(x, split_components = TRUE, select = NULL, ci
       x[to_remove] <- NULL
     }
 
-    out <- insight::print_parameters(cp, x, keep_parameter_column = FALSE)
+    out <- insight::print_parameters(cp, x, keep_parameter_column = FALSE, format = format)
 
     final_table <- lapply(out, function(i) {
       if (identical(format, "markdown")) {
         attr(i, "table_caption") <- attributes(i)$main_title
       }
       attributes(i) <- utils::modifyList(att, attributes(i))
-      param_table <- insight::format_table(i, ci_width = ci_width, ci_brackets = ci_brackets, zap_small = zap_small, preserve_attributes = TRUE)
+      param_table <- insight::format_table(
+        i,
+        ci_width = ci_width,
+        ci_brackets = ci_brackets,
+        zap_small = zap_small,
+        digits = digits,
+        ci_digits = ci_digits,
+        p_digits = p_digits,
+        preserve_attributes = TRUE
+      )
       param_table$Group <- NULL
       param_table$Response <- NULL
       param_table$Function <- NULL
@@ -374,7 +282,16 @@ format.parameters_stan <- function(x, split_components = TRUE, select = NULL, ci
     })
   }
 
-  .compact_list(final_table)
+  final_table <- .compact_list(final_table)
+
+  # modify table title, if requested
+  if (length(final_table) == 1 && !is.null(table_caption)) {
+    attr(final_table[[1]], "table_caption") <- table_caption
+  } else if (length(final_table) == 1 && attr(final_table[[1]], "table_caption")[1] == "# Fixed effects") {
+    attr(final_table[[1]], "table_caption") <- ""
+  }
+
+  final_table
 }
 
 
@@ -383,7 +300,15 @@ format.parameters_stan <- function(x, split_components = TRUE, select = NULL, ci
 # sem-models ---------------------------------
 
 #' @export
-format.parameters_sem <- function(x, digits = 2, ci_digits = 2, p_digits = 3, format = NULL, ci_width = NULL, ci_brackets = TRUE, ...) {
+format.parameters_sem <- function(x,
+                                  digits = 2,
+                                  ci_digits = 2,
+                                  p_digits = 3,
+                                  format = NULL,
+                                  ci_width = NULL,
+                                  ci_brackets = TRUE,
+                                  pretty_names = TRUE,
+                                  ...) {
   if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
   if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
   if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
@@ -714,14 +639,62 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
 
 
 # footer: type of uncertainty interval
-.print_footer_cimethod <- function(ci_method = NULL) {
+.print_footer_cimethod <- function(x) {
+
+  # get attributes
+  ci_method <- .additional_arguments(x, "ci_method", NULL)
+  test_statistic <- .additional_arguments(x, "test_statistic", NULL)
+  bootstrap <- .additional_arguments(x, "bootstrap", FALSE)
+  residual_df <- .additional_arguments(x, "residual_df", NULL)
+
+  # prepare strings
   if (!is.null(ci_method)) {
-    ci_method <- switch(toupper(ci_method),
-      "HDI" = "highest density intervals",
-      "ETI" = "equal-tailed intervals",
-      "SI" = "support intervals",
-      "uncertainty intervals"
-    )
-    message(paste0("\nUsing ", ci_method, " as credible intervals."))
+
+    # in case of glm's that have df.residual(), and where residual df where requested
+    if (ci_method == "residual" && test_statistic == "z-statistic" && !is.null(residual_df) && !is.infinite(residual_df) && !is.na(residual_df)) {
+      test_statistic <- "t-statistic"
+    }
+
+    string_tailed <- switch(toupper(ci_method),
+                            "HDI" = "highest-density",
+                            "UNIROOT" = ,
+                            "PROFILE" = "profile-likelihood",
+                            "equal-tailed")
+
+    string_method <- switch(toupper(ci_method),
+                            "BCI" = ,
+                            "BCAI" = "bias-corrected accelerated bootstrap",
+                            "SI" = ,
+                            "CI" = ,
+                            "QUANTILE" = ,
+                            "ETI" = ,
+                            "HDI" = ifelse(isTRUE(bootstrap), "na\u0131ve bootstrap", "MCMC"),
+                            "NORMAL" = "Wald normal",
+                            "BOOT" = "parametric bootstrap",
+                            "Wald")
+
+    if (toupper(ci_method) %in% c("KENWARD", "KR", "KENWARD-ROGER", "KENWARD-ROGERS", "SATTERTHWAITE")) {
+      string_approx <- paste0("with ", format_df_adjust(ci_method, approx_string = "", dof_string = ""), " ")
+    } else {
+      string_approx <- ""
+    }
+
+    if (!is.null(test_statistic) && !ci_method %in% c("normal") && !isTRUE(bootstrap)) {
+      string_statistic <- switch(tolower(test_statistic),
+                                 "t-statistic" = "t",
+                                 "chi-squared statistic" = ,
+                                 "z-statistic" = "z",
+                                 "")
+      string_method <- paste0(string_method, " ", string_statistic, "-")
+    } else {
+      string_method <- paste0(string_method, " ")
+    }
+
+    # bootstrapped intervals
+    if (isTRUE(bootstrap)) {
+      message(insight::format_message(paste0("\nUncertainty intervals (", string_tailed, ") are ", string_method, "intervals.")))
+    } else {
+      message(insight::format_message(paste0("\nUncertainty intervals (", string_tailed, ") and p values (two-tailed) computed using a ", string_method, "distribution ", string_approx, "approximation.")))
+    }
   }
 }

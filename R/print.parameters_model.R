@@ -1,21 +1,21 @@
 #' @title Print model parameters
 #' @name print.parameters_model
 #'
-#' @description A \code{print()}-method for objects from \code{\link[=model_parameters]{model_parameters()}}.
+#' @description A `print()`-method for objects from [`model_parameters()`][model_parameters].
 #'
-#' @param x,object An object returned by \code{\link[=model_parameters]{model_parameters()}}.
-#' @param split_components Logical, if \code{TRUE} (default), For models with
+#' @param x,object An object returned by [`model_parameters()`][model_parameters].
+#' @param split_components Logical, if `TRUE` (default), For models with
 #'   multiple components (zero-inflation, smooth terms, ...), each component is
-#'   printed in a separate table. If \code{FALSE}, model parameters are printed
-#'   in a single table and a \code{Component} column is added to the output.
+#'   printed in a separate table. If `FALSE`, model parameters are printed
+#'   in a single table and a `Component` column is added to the output.
 #' @param select Character vector (or numeric index) of column names that should
-#'   be printed. If \code{NULL} (default), all columns are printed. The shortcut
-#'   \code{select = "minimal"} prints coefficient, confidence intervals and p-values,
-#'   while \code{select = "short"} prints coefficient, standard errors and p-values.
-#' @param show_sigma Logical, if \code{TRUE}, adds information about the residual
+#'   be printed. If `NULL` (default), all columns are printed. The shortcut
+#'   `select = "minimal"` prints coefficient, confidence intervals and p-values,
+#'   while `select = "short"` prints coefficient, standard errors and p-values.
+#' @param show_sigma Logical, if `TRUE`, adds information about the residual
 #'   standard deviation.
-#' @param show_formula Logical, if \code{TRUE}, adds the model formula to the output.
-#' @param caption Table caption as string. If \code{NULL}, no table caption is printed.
+#' @param show_formula Logical, if `TRUE`, adds the model formula to the output.
+#' @param caption Table caption as string. If `NULL`, no table caption is printed.
 #' @param footer_digits Number of decimal places for values in the footer summary.
 #' @param groups Named list, can be used to group parameters in the printed output.
 #'   List elements may either be character vectors that match the name of those
@@ -24,20 +24,26 @@
 #'   list elements will be used as group names, which will be inserted as "header
 #'   row". A possible use case might be to emphasize focal predictors and control
 #'   variables, see 'Examples'. Parameters will be re-ordered according to the
-#'   order used in \code{groups}, while all non-matching parameters will be added
+#'   order used in `groups`, while all non-matching parameters will be added
 #'   to the end.
+#' @param digits,ci_digits,p_digits Number of digits for rounding or
+#'   significant figures. May also be `"signif"` to return significant
+#'   figures or `"scientific"` to return scientific notation. Control the
+#'   number of digits by adding the value as suffix, e.g. `digits = "scientific4"`
+#'   to have scientific notation with 4 decimal places, or `digits = "signif5"`
+#'   for 5 significant figures (see also [signif()]).
 #' @inheritParams insight::format_table
 #'
 #' @inheritSection format_parameters Interpretation of Interaction Terms
 #' @inheritSection model_parameters Labeling the Degrees of Freedom
 #'
-#' @details \code{summary()} is a convenient shortcut for
-#'   \code{print(object, select = "minimal", show_sigma = TRUE, show_formula = TRUE)}.
+#' @details `summary()` is a convenient shortcut for
+#'   `print(object, select = "minimal", show_sigma = TRUE, show_formula = TRUE)`.
 #'
 #' @return Invisibly returns the original input object.
 #'
 #' @seealso There is a dedicated method to use inside rmarkdown files,
-#'   \code{\link[=print_md.parameters_model]{print_md()}}.
+#'   [`print_md()`][print_md.parameters_model].
 #'
 #' @examples
 #' \donttest{
@@ -77,8 +83,10 @@
 #' print(mp, groups = groups)
 #'
 #' # or use row indices
-#' print(mp, groups = list("Focal Predictors" = c(1, 4),
-#'                         "Controls" = c(2, 3)))
+#' print(mp, groups = list(
+#'   "Focal Predictors" = c(1, 4),
+#'   "Controls" = c(2, 3)
+#' ))
 #'
 #' # only show coefficients, CI and p,
 #' # put non-matched parameters to the end
@@ -90,9 +98,10 @@
 #'
 #' # don't select "Intercept" parameter
 #' mp <- model_parameters(model, parameters = "^(?!\\(Intercept)")
-
-#' print(mp, groups = list("Engine" = c("cyl6", "cyl8", "vs", "hp"),
-#'                         "Interactions" = c("gear4:vs", "gear5:vs")))
+#' print(mp, groups = list(
+#'   "Engine" = c("cyl6", "cyl8", "vs", "hp"),
+#'   "Interactions" = c("gear4:vs", "gear5:vs")
+#' ))
 #' }
 #' @export
 print.parameters_model <- function(x,
@@ -111,7 +120,6 @@ print.parameters_model <- function(x,
                                    ...) {
   # save original input
   orig_x <- x
-
 
   # check if user supplied digits attributes
   if (missing(digits)) {
@@ -157,7 +165,6 @@ print.parameters_model <- function(x,
   )
 
   # get attributes
-  ci_method <- .additional_arguments(x, "ci_method", NULL)
   verbose <- .additional_arguments(x, "verbose", TRUE)
 
   # print main table
@@ -168,9 +175,9 @@ print.parameters_model <- function(x,
     footer = footer
   ))
 
-  # for Bayesian models
+  # inform about CI and df approx.
   if (isTRUE(verbose)) {
-    .print_footer_cimethod(ci_method)
+    .print_footer_cimethod(x)
   }
 
   invisible(orig_x)
@@ -179,7 +186,13 @@ print.parameters_model <- function(x,
 #' @rdname print.parameters_model
 #' @export
 summary.parameters_model <- function(object, ...) {
-  print(x = object, select = "minimal", show_sigma = TRUE, show_formula = TRUE, ...)
+  print(
+    x = object,
+    select = "minimal",
+    show_sigma = TRUE,
+    show_formula = TRUE,
+    ...
+  )
 }
 
 #' @export
@@ -191,8 +204,32 @@ print.parameters_brms_meta <- print.parameters_model
 
 
 
-# helper ------------------
+# Random effects ------------------
 
+#' @export
+print.parameters_random <- function(x, digits = 2, ...) {
+  .print_random_parameters(x, digits = digits)
+  invisible(x)
+}
+
+
+
+
+# Stan models ------------------
+
+#' @export
+print.parameters_stan <- print.parameters_model
+
+#' @export
+summary.parameters_stan <- function(object, ...) {
+  print(x = object, select = "minimal", show_formula = TRUE, ...)
+}
+
+
+
+
+
+# helper --------------------
 
 .print_core <- function(x,
                         pretty_names = TRUE,
@@ -223,6 +260,8 @@ print.parameters_brms_meta <- print.parameters_model
     ...
   )
 }
+
+
 
 
 .print_footer <- function(x,
@@ -259,7 +298,13 @@ print.parameters_brms_meta <- print.parameters_model
 
 
 
+
 .print_caption <- function(x, caption = NULL, format = "text") {
+  no_caption <- attributes(x)$no_caption
+  if (isTRUE(no_caption)) {
+    return(NULL)
+  }
+
   title_attribute <- attributes(x)$title[1]
 
   # check effects and component parts
@@ -302,78 +347,6 @@ print.parameters_brms_meta <- print.parameters_model
 }
 
 
-
-
-
-# Random effects ------------------
-
-#' @export
-print.parameters_random <- function(x, digits = 2, ...) {
-  .print_random_parameters(x, digits = digits)
-  invisible(x)
-}
-
-
-
-
-
-# Stan models ------------------
-
-#' @export
-print.parameters_stan <- function(x,
-                                  split_components = TRUE,
-                                  select = NULL,
-                                  digits = 2,
-                                  ci_digits = 2,
-                                  p_digits = 3,
-                                  ...) {
-  orig_x <- x
-  ci_method <- .additional_arguments(x, "ci_method", NULL)
-  verbose <- .additional_arguments(x, "verbose", TRUE)
-
-  # check if user supplied digits attributes
-  # check if user supplied digits attributes
-  if (missing(digits)) {
-    digits <- .additional_arguments(x, "digits", digits)
-  }
-  if (missing(ci_digits)) {
-    ci_digits <- .additional_arguments(x, "ci_digits", ci_digits)
-  }
-  if (missing(p_digits)) {
-    p_digits <- .additional_arguments(x, "p_digits", p_digits)
-  }
-
-
-  formatted_table <- format(
-    x,
-    split_components = split_components,
-    select = select,
-    digits = digits,
-    ci_digits = ci_digits,
-    p_digits = p_digits,
-    format = "text",
-    ci_width = "auto",
-    ci_brackets = TRUE,
-    ...
-  )
-  cat(insight::export_table(formatted_table, format = "text"))
-
-  if (isTRUE(verbose)) {
-    .print_footer_cimethod(ci_method)
-  }
-
-  invisible(orig_x)
-}
-
-#' @export
-summary.parameters_stan <- function(object, ...) {
-  print(x = object, select = "minimal", ...)
-}
-
-
-
-
-# helper --------------------
 
 
 #' @keywords internal

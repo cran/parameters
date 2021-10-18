@@ -1,37 +1,38 @@
-#' @title Compute a linear discriminant analysis on classified cluster groups
+#' Compute a linear discriminant analysis on classified cluster groups
 #'
-#' @name cluster_discrimination
-#'
-#' @description Computes linear discriminant analysis on classified cluster groups,
-#'   and determines the goodness of classification for each cluster group.
+#' Computes linear discriminant analysis (LDA) on classified cluster groups, and determines the goodness of classification for each cluster group. See `MASS::lda()` for details.
 #'
 #' @param x A data frame
 #' @param cluster_groups Group classification of the cluster analysis, which can
-#'   be retrieved from the \code{\link{cluster_analysis}} function.
+#'   be retrieved from the [cluster_analysis()] function.
 #'
-#' @seealso \code{\link{n_clusters}} to determine the number of clusters to extract, \code{\link{cluster_analysis}} to compute a cluster analysis and \code{\link{check_clusterstructure}} to check suitability of data for clustering.
+#' @seealso [n_clusters()] to determine the number of clusters to extract, [cluster_analysis()] to compute a cluster analysis and [check_clusterstructure()] to check suitability of data for clustering.
 #'
 #' @examples
-#' \dontrun{
-#' # retrieve group classification from hierarchical cluster analysis
-#' groups <- cluster_analysis(iris[, 1:4])
+#' if (requireNamespace("MASS", quietly = TRUE)) {
+#'   # retrieve group classification from hierarchical cluster analysis
+#'   groups <- cluster_analysis(iris[, 1:4], n = 2)
 #'
-#' # goodness of group classificatoin
-#' cluster_discrimination(iris[, 1:4], cluster_groups = groups)
+#'   # goodness of group classificatoin
+#'   cluster_discrimination(iris[, 1:4], cluster_groups = groups)
 #' }
 #' @export
-cluster_discrimination <- function(x, cluster_groups = NULL) {
+cluster_discrimination <- function(x, cluster_groups) {
   if (is.null(cluster_groups)) {
     cluster_groups <- cluster_analysis(x)
   }
+
+  ## TODO fix when WIP cluster_analysis_new is re-implemented.
+
+  # if (inherits(cluster_groups, "cluster_analysis")) {
+  #   cluster_groups <- attributes(cluster_groups)$clusters
+  # }
 
   x <- stats::na.omit(x)
   cluster_groups <- stats::na.omit(cluster_groups)
 
   # compute discriminant analysis of groups on original data frame
-  if (!requireNamespace("MASS", quietly = TRUE)) {
-    stop("Package 'MASS' required for this function to work. Please install it by running `install.packages('MASS')`.")
-  }
+  insight::check_if_installed("MASS")
   disc <- MASS::lda(cluster_groups ~ ., data = x, na.action = "na.omit", CV = TRUE)
 
   # Assess the accuracy of the prediction
@@ -49,14 +50,14 @@ cluster_discrimination <- function(x, cluster_groups = NULL) {
   )
 
   attr(out, "Overall_Accuracy") <- total_correct
-  class(out) <- c("cluster_discrimintation", class(out))
+  class(out) <- c("cluster_discrimination", class(out))
 
   out
 }
 
 
 #' @export
-print.cluster_discrimintation <- function(x, ...) {
+print.cluster_discrimination <- function(x, ...) {
   orig_x <- x
   insight::print_color("# Accuracy of Cluster Group Classification\n\n", "blue")
 

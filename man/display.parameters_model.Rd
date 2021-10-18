@@ -3,7 +3,6 @@
 %   R/print_md.R
 \name{display.parameters_model}
 \alias{display.parameters_model}
-\alias{display.parameters_stan}
 \alias{display.parameters_sem}
 \alias{display.parameters_efa_summary}
 \alias{display.parameters_efa}
@@ -32,14 +31,6 @@
   show_formula = FALSE,
   zap_small = FALSE,
   verbose = TRUE,
-  ...
-)
-
-\method{display}{parameters_stan}(
-  object,
-  split_components = TRUE,
-  select = NULL,
-  format = "markdown",
   ...
 )
 
@@ -162,12 +153,12 @@ new text line under the table.}
 \item{align}{Only applies to HTML tables. May be one of \code{"left"},
 \code{"right"} or \code{"center"}.}
 
-\item{digits}{Number of decimal places for numeric values (except confidence
-intervals and p-values).}
-
-\item{ci_digits}{Number of decimal places for confidence intervals.}
-
-\item{p_digits}{Number of decimal places for p-values. May also be \code{"scientific"} for scientific notation of p-values.}
+\item{digits, ci_digits, p_digits}{Number of digits for rounding or
+significant figures. May also be \code{"signif"} to return significant
+figures or \code{"scientific"} to return scientific notation. Control the
+number of digits by adding the value as suffix, e.g. \code{digits = "scientific4"}
+to have scientific notation with 4 decimal places, or \code{digits = "signif5"}
+for 5 significant figures (see also \code{\link[=signif]{signif()}}).}
 
 \item{footer_digits}{Number of decimal places for values in the footer summary.}
 
@@ -195,7 +186,8 @@ n strongest loadings to retain. Can also be \code{"max"}, in which case it
 will only display the maximum loading per variable (the most simple
 structure).}
 
-\item{labels}{A character vector containing labels to be added to the loadings data. Usually, the question related to the item.}
+\item{labels}{A character vector containing labels to be added to the
+loadings data. Usually, the question related to the item.}
 
 \item{x}{An object returned by \code{\link[=model_parameters]{model_parameters()}}.}
 
@@ -216,20 +208,20 @@ to the end.}
 }
 \value{
 If \code{format = "markdown"}, the return value will be a character
-  vector in markdown-table format. If \code{format = "html"}, an object of
-  class \code{gt_tbl}.
+vector in markdown-table format. If \code{format = "html"}, an object of
+class \code{gt_tbl}.
 }
 \description{
 Prints tables (i.e. data frame) in different output formats.
-  \code{print_md()} is a alias for \code{display(format = "markdown")}.
+\code{print_md()} is a alias for \code{display(format = "markdown")}.
 }
 \details{
 \code{display()} is useful when the table-output from functions,
-  which is usually printed as formatted text-table to console, should
-  be formatted for pretty table-rendering in markdown documents, or if
-  knitted from rmarkdown to PDF or Word files. See
-  \href{https://easystats.github.io/parameters/articles/model_parameters_formatting.html}{vignette}
-  for examples.
+which is usually printed as formatted text-table to console, should
+be formatted for pretty table-rendering in markdown documents, or if
+knitted from rmarkdown to PDF or Word files. See
+\href{https://easystats.github.io/parameters/articles/model_parameters_formatting.html}{vignette}
+for examples.
 }
 \examples{
 model <- lm(mpg ~ wt + cyl, data = mtcars)

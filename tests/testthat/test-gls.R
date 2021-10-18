@@ -1,6 +1,6 @@
-if (require("testthat") &&
-  require("parameters") &&
-  require("nlme")) {
+if (requiet("testthat") &&
+  requiet("parameters") &&
+  requiet("nlme")) {
   data(Ovary)
   m1 <- gls(follicles ~ sin(2 * pi * Time) + cos(2 * pi * Time),
     data = Ovary,
@@ -10,7 +10,7 @@ if (require("testthat") &&
   test_that("ci", {
     expect_equal(
       ci(m1)$CI_low,
-      c(10.9137205623851, -4.03898261140754, -2.26675468048102),
+      c(10.90853, -4.04402, -2.2722),
       tolerance = 1e-4
     )
   })

@@ -2,8 +2,8 @@
 #'
 #' Parameters from Hypothesis Testing.
 #'
-#' @param model Object of class \code{\link[multcomp:glht]{glht}} (\pkg{multcomp})
-#'   or of class \code{PMCMR}, \code{trendPMCMR} or \code{osrt} (\pkg{PMCMRplus}).
+#' @param model Object of class [multcomp::glht()] (\pkg{multcomp})
+#'   or of class `PMCMR`, `trendPMCMR` or `osrt` (\pkg{PMCMRplus}).
 #' @inheritParams model_parameters.default
 #'
 #' @return A data frame of indices related to the model's parameters.
@@ -62,9 +62,8 @@ model_parameters.glht <- function(model,
 
 
 #' @export
-ci.glht <- function(x, ci = .95, method = "robust", ...) {
+ci.glht <- function(x, ci = .95, robust = TRUE, ...) {
   s <- summary(x)
-  robust <- !is.null(method) && method == "robust"
   if (robust) {
     adjusted_ci <- 2 * stats::pnorm(s$test$qfunction(ci)) - 1
     dof <- Inf
@@ -72,7 +71,7 @@ ci.glht <- function(x, ci = .95, method = "robust", ...) {
     adjusted_ci <- ci
     dof <- x$df
   }
-  out <- ci_wald(model = x, ci = adjusted_ci, dof = dof, ...)
+  out <- .ci_generic(model = x, ci = adjusted_ci, dof = dof, ...)
   if (robust) {
     out$CI <- ci
   }

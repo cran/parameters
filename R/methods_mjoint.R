@@ -5,7 +5,9 @@ model_parameters.mjoint <- function(model,
                                     component = c("all", "conditional", "survival"),
                                     exponentiate = FALSE,
                                     p_adjust = NULL,
-                                    parameters = NULL,
+                                    keep = NULL,
+                                    drop = NULL,
+                                    parameters = keep,
                                     verbose = TRUE,
                                     ...) {
   effects <- match.arg(effects, choices = c("fixed", "random", "all"))
@@ -21,9 +23,9 @@ model_parameters.mjoint <- function(model,
       component = component,
       standardize = FALSE,
       robust = FALSE,
-      df_method = NULL,
       p_adjust = p_adjust,
-      filter_parameters = parameters,
+      keep_parameters = keep,
+      drop_parameters = drop,
       ...
     )
 
@@ -34,7 +36,7 @@ model_parameters.mjoint <- function(model,
   }
 
   if (effects %in% c("random", "all")) {
-    params_variance <- .extract_random_variances(model, ci = ci, effects = effects)
+    params_variance <- .extract_random_variances(model, ci = ci, effects = effects, ci_method = NULL)
     params_variance$Component <- "conditional"
   }
 
@@ -63,7 +65,7 @@ model_parameters.mjoint <- function(model,
     model,
     ci = ifelse(effects == "random", NA, ci),
     exponentiate,
-    df_method = NULL,
+    ci_method = NULL,
     p_adjust = p_adjust,
     verbose = verbose,
     group_level = FALSE,
@@ -109,7 +111,7 @@ p_value.mjoint <- function(model, component = c("all", "conditional", "survival"
 
 #' @export
 ci.mjoint <- function(x, ci = .95, ...) {
-  ci_wald(model = x, ci = ci, dof = Inf, ...)
+  .ci_generic(model = x, ci = ci, dof = Inf, ...)
 }
 
 

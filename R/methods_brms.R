@@ -4,11 +4,11 @@
 model_parameters.brmsfit <- function(model,
                                      centrality = "median",
                                      dispersion = FALSE,
-                                     ci = .89,
+                                     ci = .95,
                                      ci_method = "hdi",
                                      test = c("pd", "rope"),
                                      rope_range = "default",
-                                     rope_ci = 1.0,
+                                     rope_ci = 0.95,
                                      bf_prior = NULL,
                                      diagnostic = c("ESS", "Rhat"),
                                      priors = FALSE,
@@ -17,7 +17,9 @@ model_parameters.brmsfit <- function(model,
                                      exponentiate = FALSE,
                                      standardize = NULL,
                                      group_level = FALSE,
-                                     parameters = NULL,
+                                     keep = NULL,
+                                     drop = NULL,
+                                     parameters = keep,
                                      verbose = TRUE,
                                      ...) {
   modelinfo <- insight::model_info(model)
@@ -38,7 +40,8 @@ model_parameters.brmsfit <- function(model,
       priors = priors,
       exponentiate = exponentiate,
       standardize = standardize,
-      filter_parameters = parameters,
+      keep_parameters = keep,
+      drop_parameters = drop,
       ...
     )
   } else {
@@ -59,7 +62,8 @@ model_parameters.brmsfit <- function(model,
       effects = effects,
       component = component,
       standardize = standardize,
-      filter_parameters = parameters,
+      keep_parameters = keep,
+      drop_parameters = drop,
       verbose = verbose,
       ...
     )
@@ -98,22 +102,23 @@ model_parameters.brmsfit <- function(model,
 .model_parameters_brms_meta <- function(model,
                                         centrality = "median",
                                         dispersion = FALSE,
-                                        ci = .89,
+                                        ci = .95,
                                         ci_method = "hdi",
                                         test = c("pd", "rope"),
                                         rope_range = "default",
-                                        rope_ci = 1.0,
+                                        rope_ci = 0.95,
                                         diagnostic = c("ESS", "Rhat"),
                                         priors = FALSE,
                                         exponentiate = FALSE,
                                         standardize = NULL,
-                                        filter_parameters = NULL,
+                                        keep_parameters = NULL,
+                                        drop_parameters = NULL,
                                         verbose = TRUE,
                                         ...) {
 
 
   # parameters
-  smd <- insight::get_parameters(model, effects = "fixed")
+  smd <- insight::get_parameters(model, effects = "fixed", component = "conditional")
   studies <- insight::get_parameters(model, effects = "random", parameters = "^(?!sd_)")
   studies[] <- lapply(studies, function(i) i + smd[[1]])
   tau <- insight::get_parameters(model, effects = "random", parameters = "^sd_")
@@ -158,11 +163,11 @@ model_parameters.brmsfit <- function(model,
   # Renaming
   re_name <- insight::find_random(model, flatten = TRUE)
 
-  study_names <- gsub(sprintf("r_%s\\.(.*)", re_name[1]), "\\1", colnames(studies))
+  study_names <- gsub(sprintf("r_%s\\[(.*)\\]", re_name[1]), "\\1", colnames(studies))
   # replace dots by white space
   study_names <- gsub(".", " ", study_names, fixed = TRUE)
   # remove "Intercept"
-  study_names <- trimws(gsub("Intercept", "", study_names, fixed = TRUE))
+  study_names <- trimws(gsub(",Intercept", "", study_names, fixed = TRUE))
 
   cleaned_parameters <- c(study_names, "Overall", "tau")
 
@@ -179,8 +184,13 @@ model_parameters.brmsfit <- function(model,
   first_cols <- c(1:ci_column, weight_column)
   params <- params[, c(first_cols, seq_len(ncol(params))[-first_cols])]
 
-  if (!is.null(filter_parameters)) {
-    parameters <- .filter_parameters(parameters, filter_parameters, verbose = verbose)
+  # filter parameters, if requested
+  if (!is.null(keep_parameters) || !is.null(drop_parameters)) {
+    params <- .filter_parameters(params,
+      keep = keep_parameters,
+      drop = drop_parameters,
+      verbose = verbose
+    )
   }
 
   # add attributes

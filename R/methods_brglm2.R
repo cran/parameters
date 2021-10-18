@@ -1,5 +1,6 @@
 # classes: .bracl, .multinom, .brmultinom
 
+## TODO add ci_method later?
 
 ############# .bracl --------------
 
@@ -52,10 +53,9 @@ model_parameters.bracl <- function(model,
 
 
 #' @export
-ci.bracl <- function(x, ci = .95, method = NULL, ...) {
-  robust <- !is.null(method) && method == "robust"
+ci.bracl <- function(x, ci = .95, method = NULL, robust = FALSE, ...) {
   params <- insight::get_parameters(x)
-  out <- ci_wald(model = x, ci = ci, dof = Inf, robust = robust, ...)
+  out <- .ci_generic(model = x, ci = ci, method = method, robust = robust, ...)
   if ("Response" %in% colnames(params)) {
     out$Response <- params$Response
   }
@@ -108,6 +108,24 @@ model_parameters.multinom <- model_parameters.bracl
 ci.multinom <- ci.bracl
 
 
+
+
+
+#' @export
+degrees_of_freedom.multinom <- function(model, method = NULL, ...) {
+  if (identical(method, "normal")) {
+    Inf
+  } else {
+    insight::n_obs(model) - model$edf
+  }
+}
+
+#' @export
+degrees_of_freedom.nnet <- degrees_of_freedom.multinom
+
+
+
+
 #' @export
 standard_error.multinom <- function(model, ...) {
   se <- tryCatch(
@@ -153,13 +171,9 @@ standard_error.multinom <- function(model, ...) {
 
 
 #' @export
-p_value.multinom <- function(model, ...) {
+p_value.multinom <- function(model, method = "residual", ...) {
   stat <- insight::get_statistic(model)
-  p <- 2 * stats::pnorm(abs(stat$Statistic), lower.tail = FALSE)
-  out <- .data_frame(
-    Parameter = stat$Parameter,
-    p = as.vector(p)
-  )
+  out <- p_value.default(model, method = method, ...)
   if (!is.null(stat$Response)) {
     out$Response <- stat$Response
   }

@@ -1,33 +1,38 @@
 #' @title Robust estimation
 #' @name standard_error_robust
 #'
-#' @description \code{standard_error_robust()}, \code{ci_robust()} and \code{p_value_robust()}
+#' @description `standard_error_robust()`, `ci_robust()` and `p_value_robust()`
 #' attempt to return indices based on robust estimation of the variance-covariance
 #' matrix, using the packages \pkg{sandwich} and \pkg{clubSandwich}.
 #'
 #' @param model A model.
-#' @param vcov_estimation String, indicating the suffix of the \code{vcov*()}-function
-#'   from the \pkg{sandwich} or \pkg{clubSandwich} package, e.g. \code{vcov_estimation = "CL"}
-#'   (which calls \code{\link[sandwich]{vcovCL}} to compute clustered covariance matrix
-#'   estimators), or \code{vcov_estimation = "HC"} (which calls
-#'   \code{\link[sandwich:vcovHC]{vcovHC()}} to compute heteroskedasticity-consistent
-#'   covariance matrix estimators).
+#' @param vcov_estimation String, indicating the suffix of the
+#'   `vcov*()`-function from the \pkg{sandwich} or \pkg{clubSandwich}
+#'   package, e.g. `vcov_estimation = "CL"` (which calls
+#'   [sandwich::vcovCL()] to compute clustered covariance matrix
+#'   estimators), or `vcov_estimation = "HC"` (which calls
+#'   [sandwich::vcovHC()] to compute
+#'   heteroskedasticity-consistent covariance matrix estimators).
 #' @param vcov_type Character vector, specifying the estimation type for the
-#'   robust covariance matrix estimation (see \code{\link[sandwich:vcovHC]{vcovHC()}}
-#'   or \code{clubSandwich::vcovCR()} for details).
-#' @param vcov_args List of named vectors, used as additional arguments that
-#'   are passed down to the \pkg{sandwich}-function specified in \code{vcov_estimation}.
-#' @param component Should all parameters or parameters for specific model components be returned?
-#' @param ... Arguments passed to or from other methods. For \code{standard_error()},
-#'   if \code{method = "robust"}, arguments \code{vcov_estimation}, \code{vcov_type}
-#'   and \code{vcov_args} can be passed down to \code{standard_error_robust()}.
-#' @inheritParams ci.merMod
+#'   robust covariance matrix estimation (see
+#'   [sandwich::vcovHC()] or `clubSandwich::vcovCR()`
+#'   for details).
+#' @param vcov_args List of named vectors, used as additional arguments that are
+#'   passed down to the \pkg{sandwich}-function specified in
+#'   `vcov_estimation`.
+#' @param component Should all parameters or parameters for specific model
+#'   components be returned?
+#' @param ... Arguments passed to or from other methods. For
+#'   `standard_error()`, if `method = "robust"`, arguments
+#'   `vcov_estimation`, `vcov_type` and `vcov_args` can be passed
+#'   down to `standard_error_robust()`.
+#' @inheritParams ci.default
 #'
 #' @note These functions rely on the \pkg{sandwich} or \pkg{clubSandwich} package
-#'   (the latter if \code{vcov_estimation = "CR"} for cluster-robust standard errors)
+#'   (the latter if `vcov_estimation = "CR"` for cluster-robust standard errors)
 #'   and will thus only work for those models supported by those packages.
 #'
-#' @seealso Working examples cam be found \href{https://easystats.github.io/parameters/articles/model_parameters_robust.html}{in this vignette}.
+#' @seealso Working examples cam be found [in this vignette](https://easystats.github.io/parameters/articles/model_parameters_robust.html).
 #'
 #' @examples
 #' if (require("sandwich", quietly = TRUE)) {
@@ -89,6 +94,7 @@ p_value_robust <- function(model,
                            vcov_type = NULL,
                            vcov_args = NULL,
                            component = "conditional",
+                           method = NULL,
                            ...) {
   # exceptions
   if (inherits(model, "gee")) {
@@ -105,7 +111,8 @@ p_value_robust <- function(model,
     vcov_fun = vcov_estimation,
     vcov_type = vcov_type,
     vcov_args = vcov_args,
-    component = component
+    component = component,
+    method = method
   )
 
   if ("Component" %in% colnames(robust) && .n_unique(robust$Component) > 1) {
@@ -117,20 +124,20 @@ p_value_robust <- function(model,
 }
 
 
-
-
 #' @rdname standard_error_robust
 #' @export
 ci_robust <- function(model,
                       ci = 0.95,
+                      method = NULL,
                       vcov_estimation = "HC",
                       vcov_type = NULL,
                       vcov_args = NULL,
                       component = "conditional",
                       ...) {
-  out <- ci_wald(
+  out <- .ci_generic(
     model = model,
     ci = ci,
+    method = method,
     component = component,
     robust = TRUE,
     vcov_estimation = vcov_estimation,
@@ -145,9 +152,12 @@ ci_robust <- function(model,
 }
 
 
-
-
-.robust_covariance_matrix <- function(x, vcov_fun = "vcovHC", vcov_type = NULL, vcov_args = NULL, component = "conditional") {
+.robust_covariance_matrix <- function(x,
+                                      vcov_fun = "vcovHC",
+                                      vcov_type = NULL,
+                                      vcov_args = NULL,
+                                      component = "conditional",
+                                      method = "any") {
   # fix default, if necessary
   if (!is.null(vcov_type) && vcov_type %in% c("CR0", "CR1", "CR1p", "CR1S", "CR2", "CR3")) {
     vcov_fun <- "vcovCR"
@@ -160,28 +170,40 @@ ci_robust <- function(model,
 
   # check if required package is available
   if (vcov_fun == "vcovCR") {
-    if (!requireNamespace("clubSandwich", quietly = TRUE)) {
-      stop("Package `clubSandwich` needed for this function. Please install and try again.")
-    }
-    .vcov <- do.call(clubSandwich::vcovCR, c(list(obj = x, type = vcov_type), vcov_args))
+    insight::check_if_installed("clubSandwich", reason = "to get cluster-robust standard errors")
+    .vcov <- do.call(
+      clubSandwich::vcovCR,
+      c(
+        list(obj = x, type = vcov_type),
+        vcov_args
+      )
+    )
   } else {
-    if (!requireNamespace("sandwich", quietly = TRUE)) {
-      stop("Package `sandwich` needed for this function. Please install and try again.")
-    }
+    insight::check_if_installed("sandwich", reason = "to get robust standard errors")
     vcov_fun <- get(vcov_fun, asNamespace("sandwich"))
-    .vcov <- do.call(vcov_fun, c(list(x = x, type = vcov_type), vcov_args))
+    .vcov <- do.call(
+      vcov_fun,
+      c(
+        list(x = x, type = vcov_type),
+        vcov_args
+      )
+    )
   }
 
   # get coefficients
-  params <- insight::get_parameters(x, component = component)
+  params <- insight::get_parameters(x, component = component, verbose = FALSE)
 
   if (!is.null(component) && component != "all" && nrow(.vcov) > nrow(params)) {
     keep <- match(insight::find_parameters(x)[[component]], rownames(.vcov))
     .vcov <- .vcov[keep, keep, drop = FALSE]
   }
 
+  if (is.null(method)) {
+    method <- "any"
+  }
+
   se <- sqrt(diag(.vcov))
-  dendf <- degrees_of_freedom(x, method = "any")
+  dendf <- degrees_of_freedom(x, method = method)
   t.stat <- params$Estimate / se
 
   if (is.null(dendf)) {

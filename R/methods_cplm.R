@@ -7,14 +7,15 @@
 #' @title Parameters from Zero-Inflated Models
 #' @name model_parameters.zcpglm
 #'
-#' @description Parameters from zero-inflated models (from packages like \pkg{pscl},
-#'   \pkg{cplm} or \pkg{countreg}).
+#' @description
+#' Parameters from zero-inflated models (from packages like \pkg{pscl},
+#' \pkg{cplm} or \pkg{countreg}).
 #'
 #' @param model A model with zero-inflation component.
 #' @inheritParams model_parameters.default
 #' @inheritParams simulate_model
 #'
-#' @seealso \code{\link[insight:standardize_names]{standardize_names()}} to rename
+#' @seealso [insight::standardize_names()] to rename
 #'   columns into a consistent, standardized naming scheme.
 #'
 #' @examples
@@ -36,7 +37,9 @@ model_parameters.zcpglm <- function(model,
                                     exponentiate = FALSE,
                                     robust = FALSE,
                                     p_adjust = NULL,
-                                    parameters = NULL,
+                                    keep = NULL,
+                                    drop = NULL,
+                                    parameters = keep,
                                     verbose = TRUE,
                                     ...) {
   component <- match.arg(component)
@@ -58,7 +61,8 @@ model_parameters.zcpglm <- function(model,
       standardize = standardize,
       robust = robust,
       p_adjust = p_adjust,
-      filter_parameters = parameters,
+      keep_parameters = keep,
+      drop_parameters = drop,
       ...
     )
   }
@@ -85,10 +89,10 @@ model_parameters.zcpglm <- function(model,
 
 
 #' @export
-standard_error.zcpglm <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
-  if (!requireNamespace("cplm", quietly = TRUE)) {
-    stop("To use this function, please install package 'cplm'.")
-  }
+standard_error.zcpglm <- function(model,
+                                  component = c("all", "conditional", "zi", "zero_inflated"),
+                                  ...) {
+  insight::check_if_installed("cplm")
 
   component <- match.arg(component)
   junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
@@ -113,17 +117,17 @@ standard_error.zcpglm <- function(model, component = c("all", "conditional", "zi
 
 #' p-values for Models with Zero-Inflation
 #'
-#' This function attempts to return, or compute, p-values of hurdle and zero-inflated models.
+#' This function attempts to return, or compute, p-values of hurdle and
+#' zero-inflated models.
 #'
 #' @param model A statistical model.
 #' @inheritParams p_value
 #' @inheritParams simulate_model
 #' @inheritParams standard_error
-#' @inheritParams ci.merMod
 #'
-#' @return A data frame with at least two columns: the parameter names and the
-#'   p-values. Depending on the model, may also include columns for model
-#'   components etc.
+#' @return
+#' A data frame with at least two columns: the parameter names and the p-values.
+#' Depending on the model, may also include columns for model components etc.
 #'
 #' @examples
 #' if (require("pscl", quietly = TRUE)) {
@@ -133,10 +137,10 @@ standard_error.zcpglm <- function(model, component = c("all", "conditional", "zi
 #'   p_value(model, component = "zi")
 #' }
 #' @export
-p_value.zcpglm <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), ...) {
-  if (!requireNamespace("cplm", quietly = TRUE)) {
-    stop("To use this function, please install package 'cplm'.")
-  }
+p_value.zcpglm <- function(model,
+                           component = c("all", "conditional", "zi", "zero_inflated"),
+                           ...) {
+  insight::check_if_installed("cplm")
 
   component <- match.arg(component)
   junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
@@ -179,9 +183,7 @@ p_value.bcplm <- p_value.brmsfit
 
 #' @export
 p_value.cpglm <- function(model, ...) {
-  if (!requireNamespace("cplm", quietly = TRUE)) {
-    stop("To use this function, please install package 'cplm'.")
-  }
+  insight::check_if_installed("cplm")
 
   junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
   params <- insight::get_parameters(model)
@@ -195,9 +197,7 @@ p_value.cpglm <- function(model, ...) {
 
 #' @export
 standard_error.cpglm <- function(model, ...) {
-  if (!requireNamespace("cplm", quietly = TRUE)) {
-    stop("To use this function, please install package 'cplm'.")
-  }
+  insight::check_if_installed("cplm")
 
   junk <- utils::capture.output(stats <- cplm::summary(model)$coefficients)
   params <- insight::get_parameters(model)
@@ -208,9 +208,6 @@ standard_error.cpglm <- function(model, ...) {
   )
 }
 
-
-#' @export
-ci.cpglm <- ci.tobit
 
 
 
@@ -228,17 +225,24 @@ model_parameters.cpglmm <- function(model,
                                     effects = "all",
                                     group_level = FALSE,
                                     exponentiate = FALSE,
-                                    df_method = NULL,
+                                    ci_method = NULL,
                                     p_adjust = NULL,
                                     verbose = TRUE,
+                                    df_method = ci_method,
                                     ...) {
 
+  ## TODO remove later
+  if (!missing(df_method) && !identical(ci_method, df_method)) {
+    message(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."))
+    ci_method <- df_method
+  }
+
   # p-values, CI and se might be based on different df-methods
-  df_method <- .check_df_method(df_method)
+  ci_method <- .check_df_method(ci_method)
   effects <- match.arg(effects, choices = c("fixed", "random", "all"))
 
   # standardize only works for fixed effects...
-  if (!is.null(standardize)) {
+  if (!is.null(standardize) && standardize != "refit") {
     if (!missing(effects) && effects != "fixed" && verbose) {
       warning(insight::format_message("Standardizing coefficients only works for fixed effects of the mixed model."), call. = FALSE)
     }
@@ -246,10 +250,19 @@ model_parameters.cpglmm <- function(model,
   }
 
   params <- .mixed_model_parameters_generic(
-    model = model, ci = ci, bootstrap = bootstrap, iterations = iterations,
-    merge_by = "Parameter", standardize = standardize,
-    exponentiate = exponentiate, effects = effects, robust = FALSE,
-    p_adjust = p_adjust, group_level = group_level, df_method = df_method, ...
+    model = model,
+    ci = ci,
+    bootstrap = bootstrap,
+    iterations = iterations,
+    merge_by = "Parameter",
+    standardize = standardize,
+    exponentiate = exponentiate,
+    effects = effects,
+    robust = FALSE,
+    p_adjust = p_adjust,
+    group_level = group_level,
+    ci_method = ci_method,
+    ...
   )
 
   attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
@@ -259,30 +272,15 @@ model_parameters.cpglmm <- function(model,
 }
 
 
-#' @rdname p_value.lmerMod
 #' @export
 p_value.cpglmm <- function(model, method = "wald", ...) {
-  method <- match.arg(tolower(method), c("wald", "betwithin", "ml1"))
-  if (method == "wald") {
-    dof <- Inf
-  } else if (method == "ml1") {
-    dof <- dof_ml1(model)
-  } else {
-    dof <- dof_betwithin(model)
-  }
-  p_value_wald(model, dof, ...)
+  p_value.default(model, method = method, ...)
 }
 
 
 #' @export
-ci.cpglmm <- ci.tobit
-
-
-#' @export
 standard_error.cpglmm <- function(model, ...) {
-  if (!requireNamespace("cplm", quietly = TRUE)) {
-    stop("To use this function, please install package 'cplm'.")
-  }
+  insight::check_if_installed("cplm")
 
   stats <- cplm::summary(model)$coefs
   params <- insight::get_parameters(model)
@@ -305,7 +303,7 @@ standard_error.cpglmm <- function(model, ...) {
       warning(insight::format_message("Satterthwaite or Kenward-Rogers approximation of degrees of freedom is only available for linear mixed models."), call. = FALSE)
       df_method <- "wald"
     }
-    df_method <- match.arg(df_method, choices = c("wald", "ml1", "betwithin", "profile", "boot", "uniroot"))
+    df_method <- match.arg(df_method, choices = c("wald", "normal", "residual", "ml1", "betwithin", "profile", "boot", "uniroot"))
   }
   df_method
 }

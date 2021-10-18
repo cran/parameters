@@ -5,9 +5,9 @@
                                              exponentiate = FALSE,
                                              bootstrap = FALSE,
                                              iterations = 1000,
-                                             df_method = NULL,
                                              ci_method = NULL,
                                              p_adjust = NULL,
+                                             robust = FALSE,
                                              summary = FALSE,
                                              verbose = TRUE,
                                              group_level = FALSE,
@@ -42,6 +42,8 @@
   }
   attr(params, "ci") <- ci
   attr(params, "ci_method") <- ci_method
+  attr(params, "df_method") <- ci_method
+  attr(params, "test_statistic") <- insight::find_statistic(model)
   attr(params, "verbose") <- verbose
   attr(params, "exponentiate") <- exponentiate
   attr(params, "ordinal_model") <- isTRUE(info$is_ordinal) | isTRUE(info$is_multinomial)
@@ -51,8 +53,8 @@
   attr(params, "model_class") <- class(model)
   attr(params, "bootstrap") <- bootstrap
   attr(params, "iterations") <- iterations
-  attr(params, "df_method") <- df_method
   attr(params, "p_adjust") <- p_adjust
+  attr(params, "robust_vcov") <- isTRUE(robust)
   attr(params, "ignore_group") <- isFALSE(group_level)
   attr(params, "ran_pars") <- isFALSE(group_level)
   attr(params, "show_summary") <- isTRUE(summary)
@@ -71,8 +73,9 @@
     }
   }
 
-  # here we add exception for objects that should not have a table headline
-  if (inherits(model, c("emmGrid", "emm_list", "lm", "glm"))) {
+  # here we add exception for objects that should not have a
+  # table headline
+  if (inherits(model, c("emmGrid", "emm_list", "lm", "glm", "coxph"))) {
     attr(params, "title") <- ""
   }
 
@@ -82,7 +85,9 @@
       w <- insight::get_weights(model, na_rm = TRUE, null_as_ones = TRUE)
       round(sum(w))
     },
-    error = function(e) { NULL }
+    error = function(e) {
+      NULL
+    }
   )
   attr(params, "weighted_nobs") <- weighted_nobs
 
@@ -91,7 +96,9 @@
     {
       .safe_deparse(insight::find_formula(model)$conditional)
     },
-    error = function(e) { NULL }
+    error = function(e) {
+      NULL
+    }
   )
   attr(params, "model_formula") <- model_formula
 
@@ -176,6 +183,7 @@
     }
   }
 
+  row.names(params) <- NULL
   params
 }
 

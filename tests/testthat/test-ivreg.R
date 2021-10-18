@@ -1,6 +1,6 @@
-if (require("testthat") &&
-  require("parameters") &&
-  require("AER")) {
+if (requiet("testthat") &&
+  requiet("parameters") &&
+  requiet("AER")) {
   data(CigarettesSW)
   CigarettesSW$rprice <- with(CigarettesSW, price / cpi)
   CigarettesSW$rincome <- with(CigarettesSW, income / population / cpi)
@@ -14,7 +14,7 @@ if (require("testthat") &&
 
   test_that("ci", {
     expect_equal(
-      ci(m1)$CI_low,
+      ci(m1, method = "normal")$CI_low,
       c(7.82022, -1.79328, -0.18717),
       tolerance = 1e-4
     )
@@ -48,14 +48,13 @@ if (require("testthat") &&
     out <- utils::capture.output(print(model_parameters(m1)))
     expect_equal(
       out,
-      c(
-        "# Fixed Effects",
+      c("# Fixed Effects",
         "",
         "Parameter     | Coefficient |   SE |         95% CI | t(45) |      p",
         "--------------------------------------------------------------------",
-        "(Intercept)   |        9.89 | 1.06 | [ 7.82, 11.97] |  9.35 | < .001",
-        "rprice [log]  |       -1.28 | 0.26 | [-1.79, -0.76] | -4.85 | < .001",
-        "rincome [log] |        0.28 | 0.24 | [-0.19,  0.75] |  1.18 | 0.246 "
+        "(Intercept)   |        9.89 | 1.06 | [ 7.76, 12.03] |  9.35 | < .001",
+        "rprice [log]  |       -1.28 | 0.26 | [-1.81, -0.75] | -4.85 | < .001",
+        "rincome [log] |        0.28 | 0.24 | [-0.20,  0.76] |  1.18 | 0.246 "
       )
     )
   })

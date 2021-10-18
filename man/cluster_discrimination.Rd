@@ -4,27 +4,26 @@
 \alias{cluster_discrimination}
 \title{Compute a linear discriminant analysis on classified cluster groups}
 \usage{
-cluster_discrimination(x, cluster_groups = NULL)
+cluster_discrimination(x, cluster_groups)
 }
 \arguments{
 \item{x}{A data frame}
 
 \item{cluster_groups}{Group classification of the cluster analysis, which can
-be retrieved from the \code{\link{cluster_analysis}} function.}
+be retrieved from the \code{\link[=cluster_analysis]{cluster_analysis()}} function.}
 }
 \description{
-Computes linear discriminant analysis on classified cluster groups,
-  and determines the goodness of classification for each cluster group.
+Computes linear discriminant analysis (LDA) on classified cluster groups, and determines the goodness of classification for each cluster group. See \code{MASS::lda()} for details.
 }
 \examples{
-\dontrun{
-# retrieve group classification from hierarchical cluster analysis
-groups <- cluster_analysis(iris[, 1:4])
+if (requireNamespace("MASS", quietly = TRUE)) {
+  # retrieve group classification from hierarchical cluster analysis
+  groups <- cluster_analysis(iris[, 1:4], n = 2)
 
-# goodness of group classificatoin
-cluster_discrimination(iris[, 1:4], cluster_groups = groups)
+  # goodness of group classificatoin
+  cluster_discrimination(iris[, 1:4], cluster_groups = groups)
 }
 }
 \seealso{
-\code{\link{n_clusters}} to determine the number of clusters to extract, \code{\link{cluster_analysis}} to compute a cluster analysis and \code{\link{check_clusterstructure}} to check suitability of data for clustering.
+\code{\link[=n_clusters]{n_clusters()}} to determine the number of clusters to extract, \code{\link[=cluster_analysis]{cluster_analysis()}} to compute a cluster analysis and \code{\link[=check_clusterstructure]{check_clusterstructure()}} to check suitability of data for clustering.
 }

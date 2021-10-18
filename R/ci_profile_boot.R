@@ -5,7 +5,11 @@
       names(out) <- c("CI_low", "CI_high")
 
       out$CI <- ci
-      out$Parameter <- insight::get_parameters(model, effects = "fixed", component = "conditional")$Parameter
+      out$Parameter <- insight::get_parameters(model,
+        effects = "fixed",
+        component = "conditional",
+        verbose = FALSE
+      )$Parameter
 
       out <- out[c("Parameter", "CI", "CI_low", "CI_high")]
       rownames(out) <- NULL
@@ -18,7 +22,7 @@
   )
 
   if (is.null(glm_ci)) {
-    glm_ci <- ci_wald(model, ci = ci)
+    glm_ci <- .ci_generic(model, ci = ci)
   }
 
   glm_ci
@@ -48,7 +52,7 @@
   )
 
   if (is.null(glm_ci)) {
-    glm_ci <- ci_wald(model, ci = ci)
+    glm_ci <- .ci_generic(model, ci = ci)
   }
 
   glm_ci
@@ -57,7 +61,7 @@
 
 #' @keywords internal
 .ci_profile_merMod <- function(x, ci, profiled, ...) {
-  out <- as.data.frame(stats::confint(profiled, level = ci, ...))
+  out <- as.data.frame(suppressWarnings(stats::confint(profiled, level = ci, ...)))
   rownames(out) <- gsub("`", "", rownames(out), fixed = TRUE)
   out <- out[rownames(out) %in% insight::find_parameters(x, effects = "fixed")$conditional, ]
   names(out) <- c("CI_low", "CI_high")
@@ -90,7 +94,12 @@
 .process_glmmTMB_CI <- function(x, out, ci, component) {
   rownames(out) <- gsub("`", "", rownames(out), fixed = TRUE)
 
-  pars <- insight::get_parameters(x, effects = "fixed", component = component)
+  pars <- insight::get_parameters(x,
+    effects = "fixed",
+    component = component,
+    verbose = FALSE
+  )
+
   param_names <- switch(component,
     "conditional" = pars$Parameter,
     "zi" = ,
@@ -117,9 +126,7 @@
 
 #' @keywords internal
 .ci_boot_merMod <- function(x, ci, ...) {
-  if (!requireNamespace("lme4", quietly = TRUE)) {
-    stop("Package 'lme4' required for this function to work. Please install it by running `install.packages('lme4')`.")
-  }
+  insight::check_if_installed("lme4")
 
   # Compute
   out <- as.data.frame(lme4::confint.merMod(x, level = ci, method = "boot", ...))

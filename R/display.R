@@ -2,29 +2,35 @@
 #' @name display.parameters_model
 #'
 #' @description Prints tables (i.e. data frame) in different output formats.
-#'   \code{print_md()} is a alias for \code{display(format = "markdown")}.
+#'   `print_md()` is a alias for `display(format = "markdown")`.
 #'
-#' @param object An object returned by \code{\link[=model_parameters]{model_parameters()}},
-#'   \code{\link[=simulate_parameters]{simulate_parameters()}},
-#'   \code{\link[=equivalence_test.lm]{equivalence_test()}} or
-#'   \code{\link[=principal_components]{principal_components()}}.
-#' @param format String, indicating the output format. Can be \code{"markdown"}
-#'   or \code{"html"}.
-#' @param align Only applies to HTML tables. May be one of \code{"left"},
-#'   \code{"right"} or \code{"center"}.
+#' @param object An object returned by [`model_parameters()`][model_parameters],
+#'   [`simulate_parameters()`][simulate_parameters],
+#'   [`equivalence_test()`][equivalence_test.lm] or
+#'   [`principal_components()`][principal_components].
+#' @param format String, indicating the output format. Can be `"markdown"`
+#'   or `"html"`.
+#' @param align Only applies to HTML tables. May be one of `"left"`,
+#'   `"right"` or `"center"`.
+#' @param digits,ci_digits,p_digits Number of digits for rounding or
+#'   significant figures. May also be `"signif"` to return significant
+#'   figures or `"scientific"` to return scientific notation. Control the
+#'   number of digits by adding the value as suffix, e.g. `digits = "scientific4"`
+#'   to have scientific notation with 4 decimal places, or `digits = "signif5"`
+#'   for 5 significant figures (see also [signif()]).
 #' @inheritParams print.parameters_model
 #' @inheritParams insight::format_table
 #' @inheritParams insight::export_table
 #'
-#' @return If \code{format = "markdown"}, the return value will be a character
-#'   vector in markdown-table format. If \code{format = "html"}, an object of
-#'   class \code{gt_tbl}.
+#' @return If `format = "markdown"`, the return value will be a character
+#'   vector in markdown-table format. If `format = "html"`, an object of
+#'   class `gt_tbl`.
 #'
-#' @details \code{display()} is useful when the table-output from functions,
+#' @details `display()` is useful when the table-output from functions,
 #'   which is usually printed as formatted text-table to console, should
 #'   be formatted for pretty table-rendering in markdown documents, or if
 #'   knitted from rmarkdown to PDF or Word files. See
-#'   \href{https://easystats.github.io/parameters/articles/model_parameters_formatting.html}{vignette}
+#'   [vignette](https://easystats.github.io/parameters/articles/model_parameters_formatting.html)
 #'   for examples.
 #'
 #' @examples
@@ -59,10 +65,20 @@ display.parameters_model <- function(object,
 }
 
 #' @export
+display.parameters_stan <- display.parameters_model
+
+#' @export
 display.parameters_simulate <- display.parameters_model
 
 #' @export
 display.parameters_brms_meta <- display.parameters_model
+
+
+
+
+
+# Compare Parameters ------------------------
+
 
 #' @export
 display.compare_parameters <- function(object,
@@ -79,17 +95,6 @@ display.compare_parameters <- function(object,
   }
 }
 
-
-
-
-# Stan models ------------------------
-
-
-#' @rdname display.parameters_model
-#' @export
-display.parameters_stan <- function(object, split_components = TRUE, select = NULL, format = "markdown", ...) {
-  print_md(x = object, split_components = split_components, select = select, ...)
-}
 
 
 

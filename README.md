@@ -1,9 +1,20 @@
 
-# parameters <img src='man/figures/logo.png' align="right" height="139" />
+# parameters <img src="man/figures/logo.png" align="right" height="139" />
 
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.02445/status.svg)](https://doi.org/10.21105/joss.02445)
 [![downloads](http://cranlogs.r-pkg.org/badges/parameters)](https://cran.r-project.org/package=parameters)
 [![total](https://cranlogs.r-pkg.org/badges/grand-total/parameters)](https://cranlogs.r-pkg.org/)
+[![status](https://tinyverse.netlify.com/badge/parameters)](https://CRAN.R-project.org/package=parameters)
+
+------------------------------------------------------------------------
+
+:warning: For Bayesian models, we changed the default the CI width!
+Please make an [informed
+decision](https://easystats.github.io/bayestestR/articles/credible_interval.html)
+and set it explicitly (`ci = 0.89`, `ci = 0.95`, or anything else that
+you decide) :warning:
+
+------------------------------------------------------------------------
 
 ***Describe and understand your model’s parameters!***
 
@@ -36,7 +47,13 @@ CRAN:
 install.packages("parameters")
 ```
 
-Or this one to install the latest development version:
+Or this one to install the latest development version from R-universe…
+
+``` r
+install.packages("parameters", repos = "https://easystats.r-universe.dev")
+```
+
+…or from GitHub:
 
 ``` r
 install.packages("remotes")
@@ -69,7 +86,7 @@ these vignettes:
 -   [Parameters
     selection](https://easystats.github.io/parameters/articles/parameters_selection.html)
 -   [A Practical Guide for Panel Data
-    Analysis](https://easystats.github.io/parameters/articles/demean.html)
+    Analysis](https://easystats.github.io/datawizard/articles/demean.html)
 
 ## Contributing and Support
 
@@ -83,9 +100,7 @@ email or also file an issue.
 
 ## Model’s parameters description
 
-<p>
-<img src='man/figures/figure1.png' align="center" />
-</p>
+<img src="man/figures/figure1.png" width="734" style="display: block; margin: auto;" />
 
 The
 [`model_parameters()`](https://easystats.github.io/parameters/articles/model_parameters.html)
@@ -116,24 +131,24 @@ model_parameters(model)
 #> Parameter                           | Coefficient |   SE |         95% CI | t(143) |      p
 #> -------------------------------------------------------------------------------------------
 #> (Intercept)                         |        2.89 | 0.36 | [ 2.18,  3.60] |   8.01 | < .001
-#> Petal.Length                        |        0.26 | 0.25 | [-0.22,  0.75] |   1.07 | 0.287 
+#> Petal Length                        |        0.26 | 0.25 | [-0.22,  0.75] |   1.07 | 0.287 
 #> Species [versicolor]                |       -1.66 | 0.53 | [-2.71, -0.62] |  -3.14 | 0.002 
 #> Species [virginica]                 |       -1.92 | 0.59 | [-3.08, -0.76] |  -3.28 | 0.001 
-#> Petal.Width                         |        0.62 | 0.14 | [ 0.34,  0.89] |   4.41 | < .001
-#> Petal.Length * Species [versicolor] |       -0.09 | 0.26 | [-0.61,  0.42] |  -0.36 | 0.721 
-#> Petal.Length * Species [virginica]  |       -0.13 | 0.26 | [-0.64,  0.38] |  -0.50 | 0.618
+#> Petal Width                         |        0.62 | 0.14 | [ 0.34,  0.89] |   4.41 | < .001
+#> Petal Length * Species [versicolor] |       -0.09 | 0.26 | [-0.61,  0.42] |  -0.36 | 0.721 
+#> Petal Length * Species [virginica]  |       -0.13 | 0.26 | [-0.64,  0.38] |  -0.50 | 0.618
 
 # standardized parameters
 model_parameters(model, standardize = "refit")
 #> Parameter                           | Coefficient |   SE |         95% CI | t(143) |      p
 #> -------------------------------------------------------------------------------------------
 #> (Intercept)                         |        3.59 | 1.30 | [ 1.01,  6.17] |   2.75 | 0.007 
-#> Petal.Length                        |        1.07 | 1.00 | [-0.91,  3.04] |   1.07 | 0.287 
+#> Petal Length                        |        1.07 | 1.00 | [-0.91,  3.04] |   1.07 | 0.287 
 #> Species [versicolor]                |       -4.62 | 1.31 | [-7.21, -2.03] |  -3.53 | < .001
 #> Species [virginica]                 |       -5.51 | 1.38 | [-8.23, -2.79] |  -4.00 | < .001
-#> Petal.Width                         |        1.08 | 0.24 | [ 0.59,  1.56] |   4.41 | < .001
-#> Petal.Length * Species [versicolor] |       -0.38 | 1.06 | [-2.48,  1.72] |  -0.36 | 0.721 
-#> Petal.Length * Species [virginica]  |       -0.52 | 1.04 | [-2.58,  1.54] |  -0.50 | 0.618
+#> Petal Width                         |        1.08 | 0.24 | [ 0.59,  1.56] |   4.41 | < .001
+#> Petal Length * Species [versicolor] |       -0.38 | 1.06 | [-2.48,  1.72] |  -0.36 | 0.721 
+#> Petal Length * Species [virginica]  |       -0.52 | 1.04 | [-2.58,  1.54] |  -0.50 | 0.618
 ```
 
 ### Mixed Models
@@ -149,15 +164,15 @@ model_parameters(model, effects = "all")
 #> 
 #> Parameter    | Coefficient |   SE |       95% CI | t(146) |      p
 #> ------------------------------------------------------------------
-#> (Intercept)  |        2.00 | 0.56 | [0.90, 3.10] |   3.56 | < .001
-#> Petal.Length |        0.28 | 0.06 | [0.17, 0.40] |   4.75 | < .001
+#> (Intercept)  |        2.00 | 0.56 | [0.89, 3.11] |   3.56 | < .001
+#> Petal Length |        0.28 | 0.06 | [0.16, 0.40] |   4.75 | < .001
 #> 
 #> # Random Effects
 #> 
 #> Parameter               | Coefficient
 #> -------------------------------------
 #> SD (Intercept: Species) |        0.89
-#> SD (Residual)           |        0.56
+#> SD (Residual)           |        0.32
 
 # model parameters with CI, df and p-values based on Kenward-Roger approximation
 model_parameters(model, df_method = "kenward")
@@ -166,14 +181,14 @@ model_parameters(model, df_method = "kenward")
 #> Parameter    | Coefficient |   SE |       95% CI |    t |     df |      p
 #> -------------------------------------------------------------------------
 #> (Intercept)  |        2.00 | 0.57 | [0.07, 3.93] | 3.53 |   2.67 | 0.046 
-#> Petal.Length |        0.28 | 0.06 | [0.16, 0.40] | 4.58 | 140.98 | < .001
+#> Petal Length |        0.28 | 0.06 | [0.16, 0.40] | 4.58 | 140.98 | < .001
 #> 
 #> # Random Effects
 #> 
 #> Parameter               | Coefficient
 #> -------------------------------------
 #> SD (Intercept: Species) |        0.89
-#> SD (Residual)           |        0.56
+#> SD (Residual)           |        0.32
 ```
 
 ### Structural Models
@@ -205,9 +220,7 @@ model_parameters(model)
 
 ## Variable and parameters selection
 
-<p>
-<img src='man/figures/figure2.png' align="center" />
-</p>
+<img src="man/figures/figure2.png" width="756" style="display: block; margin: auto;" />
 
 [`select_parameters()`](https://easystats.github.io/parameters/articles/parameters_selection.html)
 can help you quickly select and retain the most relevant predictors

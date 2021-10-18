@@ -33,6 +33,10 @@ standard_error.BBreg <- function(model, ...) {
 }
 
 
+## TODO add ci_method later?
+## TODO BBmm only has p based on normal distribution assumptions?
+
+
 #' @export
 p_value.BBmm <- function(model, ...) {
   .data_frame(
@@ -46,6 +50,10 @@ p_value.BBmm <- function(model, ...) {
 }
 
 
+## TODO add ci_method later?
+## TODO BBreg only has p based on normal distribution assumptions?
+
+
 #' @export
 p_value.BBreg <- function(model, ...) {
   .data_frame(
@@ -57,3 +65,18 @@ p_value.BBreg <- function(model, ...) {
     p = as.data.frame(summary(model)$coefficients)$p.value
   )
 }
+
+
+
+#' @export
+degrees_of_freedom.BBmm <- function(model, method = "residual", ...) {
+  if (method %in% c("residual", "wald")) {
+    return(model$df)
+  } else {
+    return(degrees_of_freedom.default(model = model, method = method, ...))
+  }
+}
+
+
+#' @export
+degrees_of_freedom.BBreg <- degrees_of_freedom.BBmm

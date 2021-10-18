@@ -8,16 +8,9 @@
 
 
 #' @export
-ci.tobit <- function(x, ci = .95, method = NULL, ...) {
-  robust <- !is.null(method) && method == "robust"
-  ci_wald(model = x, ci = ci, dof = Inf, robust = robust, ...)
-}
-
-
-#' @export
-p_value.tobit <- function(model, ...) {
+p_value.tobit <- function(model, method = NULL, ...) {
   params <- insight::get_parameters(model)
-  p <- p_value.default(model, ...)
+  p <- p_value.default(model, method = method, ...)
   p[p$Parameter %in% params$Parameter, ]
 }
 

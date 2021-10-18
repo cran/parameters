@@ -145,9 +145,8 @@ model_parameters.betamfx <- function(model,
 
 
 #' @export
-ci.logitor <- function(x, ci = .95, method = NULL, ...) {
-  robust <- !is.null(method) && method == "robust"
-  ci_wald(model = x$fit, ci = ci, robust = robust, ...)
+ci.logitor <- function(x, ci = .95, method = NULL, robust = FALSE, ...) {
+  .ci_generic(model = x$fit, ci = ci, method = method, robust = robust, ...)
 }
 
 
@@ -159,16 +158,15 @@ ci.poissonirr <- ci.logitor
 ci.negbinirr <- ci.logitor
 
 
-#' @rdname ci.merMod
 #' @export
 ci.poissonmfx <- function(x,
                           ci = .95,
                           component = c("all", "conditional", "marginal"),
                           method = NULL,
+                          robust = FALSE,
                           ...) {
   component <- match.arg(component)
-  robust <- !is.null(method) && method == "robust"
-  ci_wald(model = x, ci = ci, component = component, robust = robust, ...)
+  .ci_generic(model = x, ci = ci, component = component, method = method, robust = robust, ...)
 }
 
 
@@ -190,20 +188,19 @@ ci.betaor <- function(x,
                       component = c("all", "conditional", "precision"),
                       ...) {
   component <- match.arg(component)
-  ci_wald(model = x$fit, ci = ci, dof = Inf, component = component)
+  .ci_generic(model = x$fit, ci = ci, dof = Inf, component = component)
 }
 
 
-#' @rdname ci.merMod
 #' @export
 ci.betamfx <- function(x,
                        ci = .95,
-                       component = c("all", "conditional", "precision", "marginal"),
                        method = NULL,
+                       robust = FALSE,
+                       component = c("all", "conditional", "precision", "marginal"),
                        ...) {
   component <- match.arg(component)
-  robust <- !is.null(method) && method == "robust"
-  ci_wald(model = x, ci = ci, component = component, robust = robust, ...)
+  .ci_generic(model = x, ci = ci, component = component, method = method, robust = robust, ...)
 }
 
 
@@ -349,10 +346,13 @@ degrees_of_freedom.betamfx <- degrees_of_freedom.logitor
 
 #' p-values for Marginal Effects Models
 #'
-#' This function attempts to return, or compute, p-values of marginal effects models from package \pkg{mfx}.
+#' This function attempts to return, or compute, p-values of marginal effects
+#' models from package \pkg{mfx}.
 #'
 #' @param model A statistical model.
-#' @param component Should all parameters, parameters for the conditional model, precision-component or marginal effects be returned? \code{component} may be one of \code{"conditional"}, \code{"precision"}, \code{"marginal"} or \code{"all"} (default).
+#' @param component Should all parameters, parameters for the conditional model,
+#'   precision-component or marginal effects be returned? `component` may be one
+#'   of `"conditional"`, `"precision"`, `"marginal"` or `"all"` (default).
 #' @param ... Currently not used.
 #'
 #' @return A data frame with at least two columns: the parameter names and the
@@ -372,7 +372,9 @@ degrees_of_freedom.betamfx <- degrees_of_freedom.logitor
 #'   p_value(model, component = "marginal")
 #' }
 #' @export
-p_value.poissonmfx <- function(model, component = c("all", "conditional", "marginal"), ...) {
+p_value.poissonmfx <- function(model,
+                               component = c("all", "conditional", "marginal"),
+                               ...) {
   parms <- insight::get_parameters(model, component = "all")
   cs <- stats::coef(summary(model$fit))
   p <- c(as.vector(model$mfxest[, 4]), as.vector(cs[, 4]))
@@ -420,7 +422,9 @@ p_value.negbinmfx <- p_value.poissonmfx
 
 #' @rdname p_value.poissonmfx
 #' @export
-p_value.betaor <- function(model, component = c("all", "conditional", "precision"), ...) {
+p_value.betaor <- function(model,
+                           component = c("all", "conditional", "precision"),
+                           ...) {
   component <- match.arg(component)
   p_value.betareg(model$fit, component = component, ...)
 }
@@ -428,7 +432,9 @@ p_value.betaor <- function(model, component = c("all", "conditional", "precision
 
 #' @rdname p_value.poissonmfx
 #' @export
-p_value.betamfx <- function(model, component = c("all", "conditional", "precision", "marginal"), ...) {
+p_value.betamfx <- function(model,
+                            component = c("all", "conditional", "precision", "marginal"),
+                            ...) {
   parms <- insight::get_parameters(model, component = "all")
   cs <- do.call(rbind, stats::coef(summary(model$fit)))
   p <- c(as.vector(model$mfxest[, 4]), as.vector(cs[, 4]))
@@ -454,9 +460,17 @@ p_value.betamfx <- function(model, component = c("all", "conditional", "precisio
 
 
 #' @export
-simulate_model.betaor <- function(model, iterations = 1000, component = c("all", "conditional", "precision"), ...) {
+simulate_model.betaor <- function(model,
+                                  iterations = 1000,
+                                  component = c("all", "conditional", "precision"),
+                                  ...) {
   component <- match.arg(component)
-  simulate_model.betareg(model$fit, iterations = iterations, component = component, ...)
+
+  simulate_model.betareg(model$fit,
+    iterations = iterations,
+    component = component,
+    ...
+  )
 }
 
 

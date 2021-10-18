@@ -50,7 +50,13 @@ p_value.mhurdle <- function(model, component = c("all", "conditional", "zi", "ze
 
 #' @export
 ci.mhurdle <- function(x, ci = .95, ...) {
-  ci_wald(model = x, ci = ci, ...)
+  .ci_generic(model = x, ci = ci, ...)
+}
+
+
+#' @export
+degrees_of_freedom.mhurdle <- function(model, method = NULL, ...) {
+  .degrees_of_freedom_no_dfresid_method(model, method)
 }
 
 

@@ -11,7 +11,7 @@ model_parameters.emmGrid <- function(model,
                                      ci_method = "hdi",
                                      test = c("pd", "rope"),
                                      rope_range = "default",
-                                     rope_ci = 1.0,
+                                     rope_ci = 0.95,
                                      exponentiate = FALSE,
                                      p_adjust = NULL,
                                      parameters = NULL,
@@ -51,7 +51,6 @@ model_parameters.emmGrid <- function(model,
     if (!is.null(p_adjust)) {
       params <- .p_adjust(params, p_adjust, model, verbose)
     }
-
   } else {
 
     # Bayesian models go here...
@@ -72,7 +71,6 @@ model_parameters.emmGrid <- function(model,
     )
 
     statistic <- NULL
-
   }
 
 
@@ -81,7 +79,7 @@ model_parameters.emmGrid <- function(model,
     names(params) <- gsub("Statistic", gsub("-statistic", "", attr(statistic, "statistic", exact = TRUE), fixed = TRUE), names(params))
   }
   names(params) <- gsub("Std. Error", "SE", names(params))
-  names(params) <- gsub(model@misc$estName, "Estimate", names(params))
+  names(params) <- gsub(estName <- attr(s, "estName"), "Estimate", names(params))
   names(params) <- gsub("lower.CL", "CI_low", names(params))
   names(params) <- gsub("upper.CL", "CI_high", names(params))
   names(params) <- gsub("asymp.LCL", "CI_low", names(params))
@@ -108,11 +106,13 @@ model_parameters.emmGrid <- function(model,
   }
 
   # Reorder
-  estimate_pos <- which(colnames(s) == model@misc$estName)
-  parameter_names <- colnames(params)[1:(estimate_pos - 1)]
-  order <- c(parameter_names, "Estimate", "Median", "Mean", "SE", "SD", "MAD",
-             "CI_low", "CI_high", "F", "t", "z", "df", "df_error", "p", "pd",
-             "ROPE_CI", "ROPE_low", "ROPE_high", "ROPE_Percentage")
+  estimate_pos <- which(colnames(s) == estName)
+  parameter_names <- colnames(params)[seq_len(estimate_pos - 1)]
+  order <- c(
+    parameter_names, "Estimate", "Median", "Mean", "SE", "SD", "MAD",
+    "CI_low", "CI_high", "F", "t", "z", "df", "df_error", "p", "pd",
+    "ROPE_CI", "ROPE_low", "ROPE_high", "ROPE_Percentage"
+  )
   params <- params[order[order %in% names(params)]]
 
   # rename
@@ -153,7 +153,7 @@ model_parameters.emm_list <- function(model,
       verbose = verbose
     )
     estimate_pos <- which(colnames(pars) %in% c("Coefficient", "Median", "Mean"))[1]
-    pars[1:(estimate_pos - 1)] <- NULL
+    pars[seq_len(estimate_pos - 1)] <- NULL
     cbind(
       Parameter = .pretty_emmeans_Parameter_names(model[[i]]),
       pars
@@ -186,7 +186,7 @@ standard_error.emmGrid <- function(model, ...) {
   }
 
   s <- summary(model)
-  estimate_pos <- which(colnames(s) == model@misc$estName)
+  estimate_pos <- which(colnames(s) == attr(s, "estName"))
 
   if (length(estimate_pos) && !is.null(s$SE)) {
     out <- .data_frame(
@@ -291,7 +291,7 @@ p_value.emmGrid <- function(model, ci = .95, adjust = "none", ...) {
 
 
   s <- summary(model, level = ci, adjust = adjust)
-  estimate_pos <- which(colnames(s) == model@misc$estName)
+  estimate_pos <- which(colnames(s) == attr(s, "estName"))
 
   if (length(estimate_pos)) {
     stat <- insight::get_statistic(model, ci = ci, adjust = adjust)
@@ -397,7 +397,7 @@ format_parameters.emm_list <- function(model, ...) {
     parnames <- lapply(seq_along(s), function(i) .pretty_emmeans_Parameter_names(model[[i]]))
     parnames <- unlist(parnames)
   } else {
-    estimate_pos <- which(colnames(s) == model@misc$estName)
+    estimate_pos <- which(colnames(s) == attr(s, "estName"))
     params <- s[, 1:(estimate_pos - 1), drop = FALSE]
     if (ncol(params) >= 2) {
       r <- apply(params, 1, function(i) paste0(colnames(params), " [", i, "]"))
@@ -418,6 +418,6 @@ format_parameters.emm_list <- function(model, ...) {
 
 .is_bayesian_emmeans <- function(model) {
   is_frq <- isTRUE(all.equal(dim(model@post.beta), c(1, 1))) &&
-            isTRUE(is.na(model@post.beta)) && is.null(model@misc$is_boot)
+    isTRUE(is.na(model@post.beta)) && is.null(model@misc$is_boot)
   isFALSE(is_frq)
 }

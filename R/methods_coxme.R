@@ -1,9 +1,5 @@
 
 #' @export
-ci.coxme <- ci.tobit
-
-
-#' @export
 standard_error.coxme <- function(model, ...) {
   beta <- model$coefficients
 
@@ -15,6 +11,7 @@ standard_error.coxme <- function(model, ...) {
   }
 }
 
+## TODO add ci_method later?
 
 #' @export
 p_value.coxme <- function(model, ...) {

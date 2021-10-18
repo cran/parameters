@@ -1,25 +1,35 @@
+# degrees of freedom -----------------
+
+#' @export
+degrees_of_freedom.rlm <- function(model, method = "residual", ...) {
+  .degrees_of_freedom_no_dfresid_method(model, method)
+}
+
+
+
+
+
+
+# ci -----------------
 
 #' @export
 ci.negbin <- ci.glm
 
 
-#' @rdname ci.merMod
 #' @export
-ci.polr <- function(x, ci = .95, method = c("profile", "wald", "robust"), ...) {
-  method <- match.arg(method)
+ci.polr <- function(x, ci = .95, dof = NULL, method = "profile", robust = FALSE, ...) {
+  method <- match.arg(method, choices = c("profile", "wald"))
   if (method == "profile") {
     out <- lapply(ci, function(i) .ci_profiled2(model = x, ci = i))
     out <- do.call(rbind, out)
-  } else if (method == "robust") {
-    out <- ci_wald(model = x, ci = ci, robust = TRUE, ...)
   } else {
-    out <- ci_wald(model = x, ci = ci)
+    out <- .ci_generic(model = x, ci = ci, dof = dof, method = method, robust = robust, ...)
   }
 
   # for polr, profiled CI do not return CI for response levels
   # thus, we also calculate Wald CI and add missing rows to result
 
-  out_missing <- ci_wald(model = x, ci = ci)
+  out_missing <- .ci_generic(model = x, ci = ci)
   missing_rows <- out_missing$Parameter %in% setdiff(out_missing$Parameter, out$Parameter)
   out <- rbind(out, out_missing[missing_rows, ])
 
@@ -31,6 +41,12 @@ ci.polr <- function(x, ci = .95, method = c("profile", "wald", "robust"), ...) {
   out
 }
 
+
+
+
+
+
+# SE -----------------
 
 #' @export
 standard_error.polr <- function(model, method = NULL, ...) {
@@ -49,6 +65,12 @@ standard_error.polr <- function(model, method = NULL, ...) {
   )
 }
 
+
+
+
+
+
+# p -----------------
 
 #' @export
 p_value.negbin <- p_value.default
@@ -83,6 +105,11 @@ p_value.polr <- function(model, method = NULL, ...) {
   )
 }
 
+
+
+
+
+# parameters -----------------
 
 #' @export
 model_parameters.ridgelm <- function(model, verbose = TRUE, ...) {
