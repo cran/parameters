@@ -35,10 +35,10 @@ print.compare_parameters <- function(x,
     ci_width = "auto",
     ci_brackets = c("(", ")"),
     format = "text",
-    groups = groups,
+    groups = groups
   )
 
-  cat(insight::export_table(formatted_table, format = "text", footer = NULL, empty_line = "-"))
+  cat(insight::export_table(formatted_table, format = "text", footer = NULL, empty_line = "-", ...))
 
   invisible(orig_x)
 }

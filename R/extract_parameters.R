@@ -16,6 +16,8 @@
                                         keep_component_column = FALSE,
                                         keep_parameters = NULL,
                                         drop_parameters = NULL,
+                                        include_sigma = TRUE,
+                                        summary = FALSE,
                                         ...) {
 
   # ==== check if standardization is required and package available
@@ -44,7 +46,7 @@
   # ==== for refit, we completely refit the model, than extract parameters, ci etc. as usual
 
   if (!is.null(standardize) && standardize == "refit") {
-    model <- effectsize::standardize(model, verbose = FALSE, ...)
+    model <- datawizard::standardize(model, verbose = FALSE, ...)
     standardize <- NULL
   }
 
@@ -54,12 +56,6 @@
     verbose = FALSE
   )
   statistic <- insight::get_statistic(model, component = component)
-
-  ## TODO we may pass down the statistic down to ci(), p_value() and dof()
-  ## to save computation time, since this can avoid multiple calls to
-  ## "insight::find_statistic()"
-
-  # model_stat <- attributes(statistic)$statistic
 
   # check if all estimates are non-NA
   parameters <- .check_rank_deficiency(parameters)
@@ -86,7 +82,9 @@
     intercept_groups <- which(grepl("^Intercept:", parameters$Parameter))
     parameters$Parameter <- gsub("Intercept: ", "", parameters$Parameter, fixed = TRUE)
   } else if (inherits(model, "clm") && !is.null(model$alpha)) {
-    intercept_groups <- match(names(model$alpha), parameters$Parameter)
+    intercept_groups <- rep(c("intercept", "location", "scale"), vapply(model[c("alpha", "beta", "zeta")], length, numeric(1)))
+  } else if (inherits(model, "clm2") && !is.null(model$Alpha)) {
+    intercept_groups <- rep(c("intercept", "location", "scale"), vapply(model[c("Alpha", "beta", "zeta")], length, numeric(1)))
   } else {
     intercept_groups <- NULL
   }
@@ -239,13 +237,11 @@
 
   # ==== add intercept groups for ordinal models
 
-  if (inherits(model, c("polr", "clm")) && !is.null(intercept_groups)) {
+  if (inherits(model, "polr") && !is.null(intercept_groups)) {
     parameters$Component <- "beta"
     parameters$Component[intercept_groups] <- "alpha"
-  } else if (inherits(model, "clm2") && !is.null(model$Alpha)) {
-    intercept_groups <- match(names(model$Alpha), parameters$Parameter)
-    parameters$Component[parameters$Component == "conditional"] <- "beta"
-    parameters$Component[intercept_groups] <- "alpha"
+  } else if (inherits(model, c("clm", "clm2")) && !is.null(intercept_groups)) {
+    parameters$Component <- intercept_groups
   }
 
 
@@ -309,7 +305,9 @@
 
   # ==== add sigma and residual df
 
-  parameters <- .add_sigma_residual_df(parameters, model)
+  if (isTRUE(include_sigma) || isTRUE(summary)) {
+    parameters <- .add_sigma_residual_df(parameters, model)
+  }
 
 
   # ==== filter parameters, if requested
@@ -450,6 +448,8 @@
                                       wb_component = FALSE,
                                       keep_parameters = NULL,
                                       drop_parameters = NULL,
+                                      include_sigma = FALSE,
+                                      summary = FALSE,
                                       verbose = TRUE,
                                       ...) {
   special_ci_methods <- c("betwithin", "satterthwaite", "ml1", "kenward", "kr")
@@ -610,7 +610,9 @@
 
 
   # add sigma
-  parameters <- .add_sigma_residual_df(parameters, model)
+  if (isTRUE(include_sigma) || isTRUE(summary)) {
+    parameters <- .add_sigma_residual_df(parameters, model)
+  }
 
 
   # filter parameters, if requested

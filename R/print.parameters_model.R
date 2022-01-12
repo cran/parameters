@@ -26,6 +26,12 @@
 #'   variables, see 'Examples'. Parameters will be re-ordered according to the
 #'   order used in `groups`, while all non-matching parameters will be added
 #'   to the end.
+#' @param column_width Width of table columns. Can be either `NULL`, a named
+#'   numeric vector, or `"fixed"`. If `NULL`, the width for each table column is
+#'   adjusted to the minimum required width. If a named numeric vector, value
+#'   names are matched against column names, and for each match, the specified
+#'   width is used. If `"fixed"`, and table is split into multiple components,
+#'   columns across all table components are adjusted to have the same width.
 #' @param digits,ci_digits,p_digits Number of digits for rounding or
 #'   significant figures. May also be `"signif"` to return significant
 #'   figures or `"scientific"` to return scientific notation. Control the
@@ -117,6 +123,8 @@ print.parameters_model <- function(x,
                                    show_formula = FALSE,
                                    zap_small = FALSE,
                                    groups = NULL,
+                                   column_width = NULL,
+                                   ci_brackets = c("[", "]"),
                                    ...) {
   # save original input
   orig_x <- x
@@ -135,7 +143,6 @@ print.parameters_model <- function(x,
     footer_digits <- .additional_arguments(x, "footer_digits", footer_digits)
   }
 
-
   # table caption
   table_caption <- .print_caption(x, caption, format = "text")
 
@@ -150,11 +157,16 @@ print.parameters_model <- function(x,
     p_digits = p_digits,
     zap_small = zap_small,
     ci_width = "auto",
-    ci_brackets = TRUE,
+    ci_brackets = ci_brackets,
     format = "text",
     groups = groups,
     ...
   )
+
+  # if we have multiple components, we can align colum width across components here
+  if (!is.null(column_width) && all(column_width == "fixed") && is.list(formatted_table)) {
+    column_width <- .find_min_colwidth(formatted_table)
+  }
 
   # footer
   footer <- .print_footer(
@@ -172,7 +184,9 @@ print.parameters_model <- function(x,
     formatted_table,
     format = "text",
     caption = table_caption,
-    footer = footer
+    footer = footer,
+    width = column_width,
+    ...
   ))
 
   # inform about CI and df approx.
@@ -403,4 +417,22 @@ summary.parameters_stan <- function(object, ...) {
       cat(sprintf("%s\n", i$Value))
     }
   }
+}
+
+
+
+.find_min_colwidth <- function(formatted_table) {
+  shared_cols <- unique(unlist(lapply(formatted_table, colnames)))
+  col_width <- rep(NA, length(shared_cols))
+  for (i in 1:length(shared_cols)) {
+    col_width[i] <- max(unlist(lapply(formatted_table, function(j) {
+      col <- j[[shared_cols[i]]]
+      if (!is.null(col)) {
+        max(nchar(col))
+      } else {
+        NA
+      }
+    })))
+  }
+  stats::na.omit(stats::setNames(col_width, shared_cols))
 }

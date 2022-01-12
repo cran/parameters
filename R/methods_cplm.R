@@ -45,7 +45,7 @@ model_parameters.zcpglm <- function(model,
   component <- match.arg(component)
 
   # fix argument, if model has no zi-part
-  if (!insight::model_info(model)$is_zero_inflated && component != "conditional") {
+  if (!insight::model_info(model, verbose = FALSE)$is_zero_inflated && component != "conditional") {
     component <- "conditional"
   }
 
@@ -229,11 +229,12 @@ model_parameters.cpglmm <- function(model,
                                     p_adjust = NULL,
                                     verbose = TRUE,
                                     df_method = ci_method,
+                                    include_sigma = FALSE,
                                     ...) {
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    message(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."))
+    warning(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."), call. = FALSE)
     ci_method <- df_method
   }
 
@@ -262,6 +263,7 @@ model_parameters.cpglmm <- function(model,
     p_adjust = p_adjust,
     group_level = group_level,
     ci_method = ci_method,
+    include_sigma = include_sigma,
     ...
   )
 

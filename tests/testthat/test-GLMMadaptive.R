@@ -57,28 +57,28 @@ if (requiet("testthat") &&
   test_that("se", {
     expect_equal(
       standard_error(m1)$SE,
-      c(0.54002, 0.09485, 0.09356, 0.46812, 0.29416, 0.50763),
+      c(0.540016, 0.094847, 0.09356, 0.468122, 0.29416, 0.507634),
       tolerance = 1e-3
     )
     expect_equal(
       standard_error(m1, component = "cond")$SE,
-      c(0.54002, 0.09485, 0.09356),
+      c(0.540016, 0.094847, 0.09356),
       tolerance = 1e-3
     )
     expect_equal(
       standard_error(m1, component = "zi")$SE,
-      c(0.46812, 0.29416, 0.50763),
+      c(0.468122, 0.29416, 0.507634),
       tolerance = 1e-3
     )
 
     expect_equal(
       standard_error(m2)$SE,
-      c(0.23354, 0.30678, 0.32678, 0.42761),
+      c(0.233543, 0.306776, 0.326777, 0.427606),
       tolerance = 1e-3
     )
     expect_equal(
       standard_error(m2, component = "cond")$SE,
-      c(0.23354, 0.30678, 0.32678, 0.42761),
+      c(0.233543, 0.306776, 0.326777, 0.427606),
       tolerance = 1e-3
     )
 
@@ -131,7 +131,21 @@ if (requiet("testthat") &&
     )
   })
 
-  if (.runThisTest && requiet("glmmTMB")) {
+  win_os <- tryCatch(
+    {
+      si <- Sys.info()
+      if (!is.null(si["sysname"])) {
+        si["sysname"] == "Windows" || grepl("^mingw", R.version$os)
+      } else {
+        FALSE
+      }
+    },
+    error = function(e) {
+      FALSE
+    }
+  )
+
+  if (.runThisTest && requiet("glmmTMB") && win_os) {
     data("Salamanders")
     model <- mixed_model(
       count ~ spp + mined,
@@ -145,7 +159,7 @@ if (requiet("testthat") &&
 
     test_that("model_parameters.mixed-ran_pars", {
       params <- model_parameters(model, effects = "random")
-      expect_equal(c(nrow(params), ncol(params)), c(8, 9))
+      expect_equal(c(nrow(params), ncol(params)), c(7, 9))
       expect_equal(
         colnames(params),
         c("Parameter", "Coefficient", "SE", "CI", "CI_low", "CI_high", "Effects", "Group", "Component")
@@ -154,19 +168,19 @@ if (requiet("testthat") &&
         params$Parameter,
         c(
           "SD (Intercept)", "SD (DOY)", "Cor (Intercept~DOY: site)", "SD (Observations)",
-          "SD (Intercept)", "SD (DOP)", "Cor (Intercept~DOP: site)", "SD (Observations)"
+          "SD (Intercept)", "SD (DOP)", "Cor (Intercept~DOP: site)"
         )
       )
       expect_equal(
         params$Component,
         c(
           "conditional", "conditional", "conditional", "conditional",
-          "zero_inflated", "zero_inflated", "zero_inflated", "zero_inflated"
+          "zero_inflated", "zero_inflated", "zero_inflated"
         )
       )
       expect_equal(
         params$Coefficient,
-        c(0.56552, 0.29951, 0.06307, 1.61936, 1.02233, 0.38209, -0.17162, 1.61936),
+        c(0.56552, 0.29951, 0.06307, 0, 1.02233, 0.38209, -0.17162),
         tolerance = 1e-2
       )
     })

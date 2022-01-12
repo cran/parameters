@@ -19,11 +19,13 @@
 #'   `"quantile"`, `"ci"`, `"eti"`, `"si"`, `"bci"`, or `"bcai"`. See section
 #'   _Confidence intervals and approximation of degrees of freedom_ in
 #'   [`model_parameters()`] for further details.
-#' @param robust Logical, if `TRUE`, computes confidence intervals based on
-#'   robust standard errors. See [`standard_error_robust()`].
+#' @param robust Logical, if `TRUE`, computes confidence intervals (or p-values)
+#'   based on robust standard errors. See [`standard_error_robust()`].
 #' @param component Model component for which parameters should be shown. See
 #'   the documentation for your object's class in [`model_parameters()`] for
 #'   further details.
+#' @param iterations The number of bootstrap replicates. Only applies to models
+#'   of class `merMod` when `method=boot`.
 #' @param verbose Toggle warnings and messages.
 #' @param ... Arguments passed down to [`standard_error_robust()`]
 #'   when confidence intervals or p-values based on robust standard errors
@@ -31,8 +33,8 @@
 #'
 #' @return A data frame containing the CI bounds.
 #'
-#' @note `ci_robust()` resp. `ci(robust = TRUE)` rely on the \pkg{sandwich}
-#'   or \pkg{clubSandwich} package (the latter if `vcov_estimation = "CR"` for
+#' @note `ci_robust()` resp. `ci(robust=TRUE)` rely on the \pkg{sandwich}
+#'   or \pkg{clubSandwich} package (the latter if `vcov_estimation="CR"` for
 #'   cluster-robust standard errors) and will thus only work for those models
 #'   supported by those packages.
 #'
@@ -66,7 +68,6 @@ ci.glm <- function(x,
                    method = "profile",
                    robust = FALSE,
                    ...) {
-
   method <- match.arg(method, choices = c("profile", "wald", "normal", "residual"))
   if (method == "profile") {
     out <- lapply(ci, function(i) .ci_profiled(model = x, ci = i))
@@ -85,12 +86,14 @@ ci.glm <- function(x,
 
 #' @keywords internal
 .check_component <- function(m, x, verbose = TRUE) {
-  minfo <- insight::model_info(m)
-  if (!isTRUE(minfo$is_zero_inflated) && x %in% c("zi", "zero_inflated")) {
-    if (isTRUE(verbose)) {
-      message("Model has no zero-inflation component!")
+  if (x %in% c("zi", "zero_inflated")) {
+    minfo <- insight::model_info(m, verbose = FALSE)
+    if (!isTRUE(minfo$is_zero_inflated)) {
+      if (isTRUE(verbose)) {
+        message("Model has no zero-inflation component!")
+      }
+      x <- NULL
     }
-    x <- NULL
   }
   x
 }

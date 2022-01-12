@@ -49,7 +49,7 @@ on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"}
 factors), which may be a different behaviour compared to other R packages
 (such as \pkg{lm.beta}) or other software packages (like SPSS). to mimic
 such behaviours, either use \code{standardize="basic"} or standardize the data
-with \code{effectsize::standardize(force=TRUE)} \emph{before} fitting the model.
+with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed
 effects will be returned.
 \item Robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
@@ -88,7 +88,7 @@ describes the parameters that should be included (for \code{keep}) or excluded
 named list of regular expressions. All non-matching parameters will be
 removed from the output. If \code{keep} is a character vector, every parameter
 name in the \emph{"Parameter"} column that matches the regular expression in
-\code{parameters} will be selected from the returned data frame (and vice versa,
+\code{keep} will be selected from the returned data frame (and vice versa,
 all parameter names matching \code{drop} will be excluded). Furthermore, if
 \code{keep} has more than one element, these will be merged with an \code{OR}
 operator into a regular expression pattern like this: \code{"(one|two|three)"}.
@@ -108,7 +108,7 @@ describes the parameters that should be included (for \code{keep}) or excluded
 named list of regular expressions. All non-matching parameters will be
 removed from the output. If \code{keep} is a character vector, every parameter
 name in the \emph{"Parameter"} column that matches the regular expression in
-\code{parameters} will be selected from the returned data frame (and vice versa,
+\code{keep} will be selected from the returned data frame (and vice versa,
 all parameter names matching \code{drop} will be excluded). Furthermore, if
 \code{keep} has more than one element, these will be merged with an \code{OR}
 operator into a regular expression pattern like this: \code{"(one|two|three)"}.

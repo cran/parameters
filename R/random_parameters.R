@@ -64,7 +64,7 @@ random_parameters <- function(model, component = "conditional") {
 # helper -----------------------------------
 
 .n_randomeffects <- function(model) {
-  sapply(insight::get_data(model)[insight::find_random(model, split_nested = TRUE, flatten = TRUE)], function(i) .n_unique(i))
+  sapply(insight::get_data(model, verbose = FALSE)[insight::find_random(model, split_nested = TRUE, flatten = TRUE)], function(i) .n_unique(i))
 }
 
 
@@ -81,9 +81,11 @@ random_parameters <- function(model, component = "conditional") {
     out$Sigma2 <- re_variances$var.residual
 
     # Random Intercept Variance
-    var_intercept <- as.list(re_variances$var.intercept)
-    names(var_intercept) <- paste0("tau00_", names(re_variances$var.intercept))
-    out <- c(out, var_intercept)
+    if (!.is_empty_object(re_variances$var.intercept)) {
+      var_intercept <- as.list(re_variances$var.intercept)
+      names(var_intercept) <- paste0("tau00_", names(re_variances$var.intercept))
+      out <- c(out, var_intercept)
+    }
 
     # Random Slope Variance
     if (!.is_empty_object(re_variances$var.slope) && !.is_empty_object(model_rs)) {

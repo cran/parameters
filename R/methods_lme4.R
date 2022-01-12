@@ -9,26 +9,39 @@
 #' @param model A mixed model.
 #' @param effects Should parameters for fixed effects (`"fixed"`), random
 #'   effects (`"random"`), or both (`"all"`) be returned? Only applies
-#'   to mixed models. May be abbreviated.
+#'   to mixed models. May be abbreviated. If the calculation of random effects
+#'   parameters takes too long, you may use `effects = "fixed"`.
 #' @param wb_component Logical, if `TRUE` and models contains within- and
 #'   between-effects (see `datawizard::demean()`), the `Component` column
 #'   will indicate which variables belong to the within-effects,
 #'   between-effects, and cross-level interactions. By default, the
 #'   `Component` column indicates, which parameters belong to the
 #'   conditional or zero-inflated component of the model.
+#' @param include_sigma Logical, if `TRUE`, includes the residual standard
+#'   deviation. For mixed models, this is defined as the sum of the distribution-specific
+#'   variance and the variance for the additive overdispersion term (see
+#'   [insight::get_variance()] for details). Defaults to `FALSE` for mixed models
+#'   due to the longer computation time.
 #' @inheritParams model_parameters.default
 #' @inheritParams model_parameters.stanreg
 #'
+#' @inheritSection model_parameters Confidence intervals and approximation of degrees of freedom
+#'
 #' @section Confidence intervals for random effect variances:
-#' When `ci_method = "profile"` and `effects` is either `"random"` or `"all"`,
-#' profiled confidence intervals are computed for the random effects. For all
-#' other options of `ci_method`, confidence intervals for random effects will
-#' be missing.
+#' For models of class `merMod` and `glmmTMB`, confidence intervals for random
+#' effect variances can be calculated. For models of class `lme4`, when
+#' `ci_method` is either `"profile"` or `"boot"`, and `effects` is either
+#' `"random"` or `"all"`, profiled resp. bootstrapped confidence intervals are
+#' computed for the random effects. For all other options of `ci_method`,
+#' confidence intervals for random effects will be missing. For models of class
+#' `glmmTMB`, confidence intervals for random effect variances always use a
+#' Wald t-distribution approximation.
 #'
 #' @seealso [insight::standardize_names()] to
 #'   rename columns into a consistent, standardized naming scheme.
 #'
-#' @note There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#' @note If the calculation of random effects parameters takes too long, you may
+#' use `effects = "fixed"`. There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
 #'
 #' @examples
 #' library(parameters)
@@ -74,11 +87,12 @@ model_parameters.merMod <- function(model,
                                     parameters = keep,
                                     verbose = TRUE,
                                     df_method = ci_method,
+                                    include_sigma = FALSE,
                                     ...) {
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    message(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."))
+    warning(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."), call. = FALSE)
     ci_method <- df_method
   }
 
@@ -88,8 +102,8 @@ model_parameters.merMod <- function(model,
       ci_method <- "quantile"
     } else {
       ci_method <- switch(insight::find_statistic(model),
-                          "t-statistic" = "residual",
-                          "wald"
+        "t-statistic" = "residual",
+        "wald"
       )
     }
   }
@@ -107,14 +121,6 @@ model_parameters.merMod <- function(model,
   effects <- match.arg(effects, choices = c("fixed", "random", "all"))
   params <- params_random <- params_variance <- NULL
 
-  # check if standardization is required and package available
-  if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
-    if (verbose) {
-      warning("Package 'effectsize' required to calculate standardized coefficients. Please install it.", call. = FALSE)
-    }
-    standardize <- NULL
-  }
-
   # post hoc standardize only works for fixed effects...
   if (!is.null(standardize) && standardize != "refit") {
     if (!missing(effects) && effects != "fixed" && verbose) {
@@ -126,7 +132,7 @@ model_parameters.merMod <- function(model,
   # for refit, we completely refit the model, than extract parameters,
   # ci etc. as usual - therefor, we set "standardize" to NULL
   if (!is.null(standardize) && standardize == "refit") {
-    model <- effectsize::standardize(model, verbose = FALSE)
+    model <- datawizard::standardize(model, verbose = FALSE)
     standardize <- NULL
   }
 
@@ -157,6 +163,8 @@ model_parameters.merMod <- function(model,
         keep_parameters = keep,
         drop_parameters = drop,
         verbose = verbose,
+        include_sigma = include_sigma,
+        summary = summary,
         ...
       )
     }
@@ -205,7 +213,7 @@ model_parameters.merMod <- function(model,
   params <- .add_model_parameters_attributes(
     params,
     model,
-    ci = ifelse(effects == "random" && isFALSE(group_level), NA, ci),
+    ci = ci,
     exponentiate,
     bootstrap,
     iterations,
@@ -214,6 +222,7 @@ model_parameters.merMod <- function(model,
     verbose = verbose,
     summary = summary,
     group_level = group_level,
+    wb_component = wb_component,
     ...
   )
 
@@ -232,16 +241,18 @@ ci.merMod <- function(x,
                       dof = NULL,
                       method = "wald",
                       robust = FALSE,
+                      iterations = 500,
                       ...) {
-
   method <- tolower(method)
-  method <- match.arg(method, choices = c("wald", "ml1", "betwithin", "kr",
-                                          "satterthwaite", "kenward", "boot",
-                                          "profile", "residual", "normal"))
+  method <- match.arg(method, choices = c(
+    "wald", "ml1", "betwithin", "kr",
+    "satterthwaite", "kenward", "boot",
+    "profile", "residual", "normal"
+  ))
 
   # bootstrapping
   if (method == "boot") {
-    out <- lapply(ci, function(ci, x) .ci_boot_merMod(x, ci, ...), x = x)
+    out <- lapply(ci, function(ci, x) .ci_boot_merMod(x, ci, iterations, ...), x = x)
     out <- do.call(rbind, out)
     row.names(out) <- NULL
 

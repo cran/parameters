@@ -3,11 +3,19 @@
 
 #' Parameters from BayesFactor objects
 #'
-#' Parameters from BayesFactor objects.
+#' Parameters from `BFBayesFactor` objects from `{BayesFactor}` package.
 #'
 #' @param model Object of class `BFBayesFactor`.
+#' @param cohens_d If `TRUE`, compute Cohens' *d* as index of effect size. Only
+#'   applies to objects from `ttestBF()`. See `effectsize::cohens_d()` for
+#'   details.
+#' @param include_proportions Logical that decides whether to include posterior
+#'   cell proportions/counts for Bayesian contingency table analysis (from
+#'   `BayesFactor::contingencyTableBF()`). Defaults to `FALSE`, as this
+#'   information is often redundant.
 #' @inheritParams bayestestR::describe_posterior
 #' @inheritParams p_value
+#' @inheritParams model_parameters.htest
 #'
 #' @details
 #' The meaning of the extracted parameters:
@@ -28,8 +36,20 @@
 #' @examples
 #' \donttest{
 #' if (require("BayesFactor")) {
+#'   # Bayesian t-test
 #'   model <- ttestBF(x = rnorm(100, 1, 1))
 #'   model_parameters(model)
+#'   model_parameters(model, cohens_d = TRUE, ci = .9)
+#'
+#'   # Bayesian contingency table analysis
+#'   data(raceDolls)
+#'   bf <- contingencyTableBF(raceDolls, sampleType = "indepMulti", fixedMargin = "cols")
+#'   model_parameters(bf,
+#'     centrality = "mean",
+#'     dispersion = TRUE,
+#'     verbose = FALSE,
+#'     cramers_v = TRUE
+#'   )
 #' }
 #' }
 #' @return A data frame of indices related to the model's parameters.
@@ -43,6 +63,9 @@ model_parameters.BFBayesFactor <- function(model,
                                            rope_range = "default",
                                            rope_ci = 0.95,
                                            priors = TRUE,
+                                           cohens_d = NULL,
+                                           cramers_v = NULL,
+                                           include_proportions = FALSE,
                                            verbose = TRUE,
                                            ...) {
   if (any(grepl("^Null", names(model@numerator)))) {
@@ -102,8 +125,17 @@ model_parameters.BFBayesFactor <- function(model,
     }
   )
 
+  # leave out redundant posterior cell proportions/counts
+  if (bf_type == "xtable" && isFALSE(include_proportions)) {
+    out <- out[which(!grepl("^cell\\[", out$Parameter)), , drop = FALSE]
+  }
+
   # Effect size?
-  if (requireNamespace("effectsize", quietly = TRUE) && bf_type %in% c("ttest1", "ttest2", "xtable")) {
+  if (bf_type %in% c("ttest1", "ttest2") && !is.null(cohens_d) ||
+    bf_type == "xtable" && !is.null(cramers_v)) {
+    # needs {effectsize} to be installed
+    insight::check_if_installed("effectsize")
+
     tryCatch(
       {
         effsize <- effectsize::effectsize(model,
@@ -113,15 +145,26 @@ model_parameters.BFBayesFactor <- function(model,
           ci_method = ci_method,
           rope_ci = rope_ci
         )
-        out <- merge(out, effsize, sort = FALSE, all = TRUE)
+
+        if (bf_type == "xtable" && isTRUE(include_proportions)) {
+          out <- merge(out, effsize, sort = FALSE, all = TRUE)
+        } else {
+          if (bf_type == "xtable") {
+            prefix <- "Cramers_"
+          } else {
+            prefix <- "d_"
+          }
+          ci_cols <- grepl("^CI_", colnames(effsize))
+          colnames(effsize)[ci_cols] <- paste0(prefix, colnames(effsize)[ci_cols])
+          out$CI <- NULL
+          out <- cbind(out, effsize)
+        }
       },
       error = function(e) {
         NULL
       }
     )
   }
-
-
 
   # # Remove unnecessary columns
   # if ("CI" %in% names(out) && length(stats::na.omit(unique(out$CI))) == 1) {
@@ -159,9 +202,21 @@ model_parameters.BFBayesFactor <- function(model,
     out$Method <- .method_BFBayesFactor(model)
   }
 
+  # reorder
+  col_order <- c(
+    "Parameter", "Mean", "Median", "MAD",
+    "CI", "CI_low", "CI_high", "SD", "Cohens_d", "Cramers_v", "d_CI_low", "d_CI_high",
+    "Cramers_CI_low", "Cramers_CI_high", "pd", "ROPE_Percentage", "Prior_Distribution",
+    "Prior_Location", "Prior_Scale", "Effects", "Component", "BF", "Method"
+  )
+  out <- out[col_order[col_order %in% names(out)]]
+
+
   attr(out, "title") <- unique(out$Method)
   attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   attr(out, "pretty_names") <- pretty_names
+  attr(out, "ci_test") <- ci
+
   out <- .add_model_parameters_attributes(
     params = out,
     model = model,
@@ -169,8 +224,8 @@ model_parameters.BFBayesFactor <- function(model,
     ci_method = ci_method,
     verbose = verbose
   )
-  class(out) <- c("parameters_model", "see_parameters_model", class(out))
 
+  class(out) <- c("parameters_model", "see_parameters_model", class(out))
   out
 }
 
@@ -182,7 +237,11 @@ model_parameters.BFBayesFactor <- function(model,
 #' @param model A statistical model.
 #' @inheritParams p_value
 #'
-#' @details For Bayesian models, the p-values corresponds to the *probability of direction* ([bayestestR::p_direction()]), which is converted to a p-value using `bayestestR::convert_pd_to_p()`.
+#' @details
+#'
+#' For Bayesian models, the p-values corresponds to the *probability of
+#' direction* ([bayestestR::p_direction()]), which is converted to a p-value
+#' using `bayestestR::convert_pd_to_p()`.
 #'
 #' @return The p-values.
 #'

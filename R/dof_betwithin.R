@@ -1,7 +1,7 @@
 #' @rdname p_value_betwithin
 #' @export
 dof_betwithin <- function(model) {
-  if (!insight::model_info(model)$is_mixed) {
+  if (!insight::model_info(model, verbose = FALSE)$is_mixed) {
     stop("Model must be a mixed model.")
   }
 
@@ -11,7 +11,7 @@ dof_betwithin <- function(model) {
   has_intcp <- insight::has_intercept(model)
 
   ddf_within <- ngrps - n_parameters(model)
-  ddf_between <- insight::n_obs(model) - ngrps - n_parameters(model)
+  ddf_between <- insight::n_obs(model, disaggregate = TRUE) - ngrps - n_parameters(model)
 
   if (has_intcp) {
     ddf_between <- ddf_between - 1

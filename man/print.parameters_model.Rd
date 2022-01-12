@@ -19,6 +19,8 @@
   show_formula = FALSE,
   zap_small = FALSE,
   groups = NULL,
+  column_width = NULL,
+  ci_brackets = c("[", "]"),
   ...
 )
 
@@ -69,6 +71,16 @@ row". A possible use case might be to emphasize focal predictors and control
 variables, see 'Examples'. Parameters will be re-ordered according to the
 order used in \code{groups}, while all non-matching parameters will be added
 to the end.}
+
+\item{column_width}{Width of table columns. Can be either \code{NULL}, a named
+numeric vector, or \code{"fixed"}. If \code{NULL}, the width for each table column is
+adjusted to the minimum required width. If a named numeric vector, value
+names are matched against column names, and for each match, the specified
+width is used. If \code{"fixed"}, and table is split into multiple components,
+columns across all table components are adjusted to have the same width.}
+
+\item{ci_brackets}{Logical, if \code{TRUE} (default), CI-values are
+encompassed in square brackets (else in parentheses).}
 
 \item{...}{Arguments passed to or from other methods.}
 }

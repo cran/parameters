@@ -28,14 +28,16 @@
 #' }
 #' For models with z-statistic, the returned degrees of freedom for model parameters is `Inf` (unless `method = "ml1"` or `method = "betwithin"`), because there is only one distribution for the related test statistic.
 #'
-#' @note In many cases, `degrees_of_freedom()` returns the same as
-#' `df.residuals()`, or `n-k` (number of observations minus number of
-#' parameters). However, `degrees_of_freedom()` refers to the model's
-#' *parameters* degrees of freedom of the distribution for the related test
-#' statistic. Thus, for models with z-statistic, results from `degrees_of_freedom()`
-#' and `df.residuals()` differ. Furthermore, for other approximation methods
-#' like `"kenward"` or `"satterthwaite"`, each model parameter can have
-#' a different degree of freedom.
+#' @note
+#'
+#' In many cases, `degrees_of_freedom()` returns the same as `df.residuals()`,
+#' or `n-k` (number of observations minus number of parameters). However,
+#' `degrees_of_freedom()` refers to the model's *parameters* degrees of freedom
+#' of the distribution for the related test statistic. Thus, for models with
+#' z-statistic, results from `degrees_of_freedom()` and `df.residuals()` differ.
+#' Furthermore, for other approximation methods like `"kenward"` or
+#' `"satterthwaite"`, each model parameter can have a different degree of
+#' freedom.
 #'
 #' @examples
 #' model <- lm(Sepal.Length ~ Petal.Length * Species, data = iris)
@@ -70,7 +72,6 @@ degrees_of_freedom <- function(model, ...) {
 #' @rdname degrees_of_freedom
 #' @export
 degrees_of_freedom.default <- function(model, method = "analytical", ...) {
-
   if (is.null(method)) {
     method <- "wald"
   }
@@ -86,12 +87,7 @@ degrees_of_freedom.default <- function(model, method = "analytical", ...) {
     method <- "any"
   }
 
-  dot_args <- list(...)
-  if ("statistic" %in% names(dot_args)) {
-    stat <- dot_args[["statistic"]]
-  } else {
-    stat <- insight::find_statistic(model)
-  }
+  stat <- insight::find_statistic(model)
 
   # for z-statistic, always return Inf
   if (!is.null(stat) && stat == "z-statistic" && !(method %in% c("ml1", "betwithin"))) {
@@ -181,9 +177,7 @@ dof <- degrees_of_freedom
 
 #' @keywords internal
 .degrees_of_freedom_residual <- function(model, verbose = TRUE) {
-  info <- insight::model_info(model, verbose = FALSE)
-
-  if (!is.null(info) && info$is_bayesian && !inherits(model, c("bayesx", "blmerMod", "bglmerMod"))) {
+  if (.is_bayesian_model(model) && !inherits(model, c("bayesx", "blmerMod", "bglmerMod"))) {
     model <- bayestestR::bayesian_as_frequentist(model)
   }
 
@@ -309,4 +303,19 @@ dof <- degrees_of_freedom
   }
 
   return(TRUE)
+}
+
+
+
+
+# helper
+
+.is_bayesian_model <- function(x) {
+  inherits(x, c(
+    "brmsfit", "stanfit", "MCMCglmm", "stanreg",
+    "stanmvreg", "bmerMod", "BFBayesFactor", "bamlss",
+    "bayesx", "mcmc", "bcplm", "bayesQR", "BGGM",
+    "meta_random", "meta_fixed", "meta_bma", "blavaan",
+    "blrm"
+  ))
 }

@@ -151,6 +151,7 @@
                                            split_column,
                                            is_zero_inflated,
                                            is_ordinal_model,
+                                           is_multivariate = FALSE,
                                            ran_pars,
                                            formatted_table = NULL) {
   component_name <- switch(type,
@@ -192,6 +193,9 @@
     "correlation" = "Correlation",
     "SD/Cor" = "SD / Correlation",
     "Loading" = "Loading",
+    "location" = ,
+    "location.fixed" = ,
+    "location.fixed." = "Location Parameters",
     "scale" = ,
     "scale.fixed" = ,
     "scale.fixed." = "Scale Parameters",
@@ -265,6 +269,14 @@
       s1 <- component_name
       s2 <- ""
     }
+  } else if (length(split_column) > 1 && "Response" %in% split_column && is_multivariate) {
+    # This here only applies to brms multivariate response models
+    component_name <- gsub("^conditional\\.(.*)", "Response level: \\1", component_name)
+    component_name <- gsub("^sigma\\.(.*)", "Auxilliary parameters, response level: \\1", component_name)
+    component_name <- gsub("(.*)fixed\\.(.*)", "\\1\\2", component_name)
+    component_name <- gsub("(.*)random\\.(.*)", "Random effects, \\1\\2", component_name)
+    s1 <- component_name
+    s2 <- ""
   } else if (length(split_column) > 1 ||
     split_column %in% c("Subgroup", "Type", "Group") ||
     grepl(tolower(split_column), tolower(component_name), fixed = TRUE) ||
@@ -478,18 +490,18 @@
 # or edge cases...
 
 #' @keywords internal
-.print_model_parms_components <- function(x,
-                                          pretty_names,
-                                          split_column = "Component",
-                                          digits = 2,
-                                          ci_digits = 2,
-                                          p_digits = 3,
-                                          coef_column = NULL,
-                                          format = NULL,
-                                          ci_width = "auto",
-                                          ci_brackets = TRUE,
-                                          zap_small = FALSE,
-                                          ...) {
+.format_columns_multiple_components <- function(x,
+                                                pretty_names,
+                                                split_column = "Component",
+                                                digits = 2,
+                                                ci_digits = 2,
+                                                p_digits = 3,
+                                                coef_column = NULL,
+                                                format = NULL,
+                                                ci_width = "auto",
+                                                ci_brackets = TRUE,
+                                                zap_small = FALSE,
+                                                ...) {
   final_table <- list()
 
   ignore_group <- isTRUE(attributes(x)$ignore_group)
@@ -514,13 +526,16 @@
   }
 
 
-  # check if user supplied digits attributes
-  is_ordinal_model <- attributes(x)$ordinal_model
-  if (is.null(is_ordinal_model)) is_ordinal_model <- FALSE
+  # check ordinal / multivariate
+  is_ordinal_model <- isTRUE(attributes(x)$ordinal_model)
+  is_multivariate <- isTRUE(attributes(x)$multivariate_response)
 
   # zero-inflated stuff
   is_zero_inflated <- (!is.null(x$Component) & "zero_inflated" %in% x$Component)
   zi_coef_name <- attributes(x)$zi_coefficient_name
+
+  # other special model-components, like emm_list
+  coef_name2 <- attributes(x)$coefficient_name2
 
   # make sure we have correct order of levels from split-factor
   if (!is.null(attributes(x)$model_class) && all(attributes(x)$model_class == "mediate")) {
@@ -577,6 +592,11 @@
 
   for (type in names(tables)) {
 
+    # do we have emmeans emlist? and contrasts?
+    model_class <- attributes(tables[[type]])$model_class
+    em_list_coef_name <- (!is.null(model_class) && "emm_list" %in% model_class &&
+      "contrasts" %in% tables[[type]]$Component)
+
     # Don't print Component column
     for (i in split_column) {
       tables[[type]][[i]] <- NULL
@@ -606,12 +626,17 @@
 
     # Don't print se and ci if all are missing
     if (all(is.na(tables[[type]]$SE))) tables[[type]]$SE <- NULL
-    if (all(is.na(tables[[type]]$CI_low))) tables[[type]]$CI_low <- NULL
-    if (all(is.na(tables[[type]]$CI_high))) tables[[type]]$CI_high <- NULL
+    if (all(is.na(tables[[type]]$CI_low)) && all(is.na(tables[[type]]$CI_high))) {
+      tables[[type]]$CI_low <- NULL
+      tables[[type]]$CI_high <- NULL
+    }
+    # if (all(is.na(tables[[type]]$CI_low))) tables[[type]]$CI_low <- NULL
+    # if (all(is.na(tables[[type]]$CI_high))) tables[[type]]$CI_high <- NULL
 
     # Don't print if empty col
-    tables[[type]][sapply(tables[[type]], function(x) {
-      all(x == "") | all(is.na(x))
+    tables[[type]][sapply(colnames(tables[[type]]), function(x) {
+      col <- tables[[type]][[x]]
+      (all(col == "") | all(is.na(col))) && !grepl("_CI_(high|low)$", x)
     })] <- NULL
 
     attr(tables[[type]], "digits") <- digits
@@ -622,6 +647,11 @@
     if (all(c("Parameter", "Level") %in% colnames(tables[[type]]))) {
       tables[[type]]$Parameter <- paste0(tables[[type]]$Parameter, " ", ci_brackets[1], tables[[type]]$Level, ci_brackets[2])
       tables[[type]]$Level <- NULL
+    }
+
+    # rename columns for emmeans contrast part
+    if (em_list_coef_name && !is.null(coef_column)) {
+      colnames(tables[[type]])[which(colnames(tables[[type]]) == coef_column)] <- coef_name2
     }
 
     # rename columns for zero-inflation part
@@ -660,7 +690,7 @@
     }
 
     formatted_table <- insight::format_table(tables[[type]], digits = digits, ci_digits = ci_digits, p_digits = p_digits, pretty_names = pretty_names, ci_width = ci_width, ci_brackets = ci_brackets, zap_small = zap_small, ...)
-    component_header <- .format_model_component_header(x, type, split_column, is_zero_inflated, is_ordinal_model, ran_pars, formatted_table)
+    component_header <- .format_model_component_header(x, type, split_column, is_zero_inflated, is_ordinal_model, is_multivariate, ran_pars, formatted_table)
 
     # exceptions for random effects
     if (.n_unique(formatted_table$Group) == 1) {

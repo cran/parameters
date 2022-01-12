@@ -18,6 +18,7 @@ format.parameters_model <- function(x,
                                     ...) {
   # save attributes
   coef_name <- attributes(x)$coefficient_name
+  coef_name2 <- attributes(x)$coefficient_name2
   s_value <- attributes(x)$s_value
   m_class <- attributes(x)$model_class
   htest_type <- attributes(x)$htest_type
@@ -32,7 +33,9 @@ format.parameters_model <- function(x,
 
   if (identical(format, "html")) {
     coef_name <- NULL
+    coef_name2 <- NULL
     attr(x, "coefficient_name") <- NULL
+    attr(x, "coefficient_name2") <- NULL
     attr(x, "zi_coefficient_name") <- NULL
   }
 
@@ -90,7 +93,7 @@ format.parameters_model <- function(x,
 
   # print everything now...
   if (split_components && !is.null(split_by) && length(split_by)) {
-    formatted_table <- .print_model_parms_components(x, pretty_names, split_column = split_by, digits = digits, ci_digits = ci_digits, p_digits = p_digits, coef_column = coef_name, format = format, ci_width = ci_width, ci_brackets = ci_brackets, zap_small = zap_small, ...)
+    formatted_table <- .format_columns_multiple_components(x, pretty_names, split_column = split_by, digits = digits, ci_digits = ci_digits, p_digits = p_digits, coef_column = coef_name, format = format, ci_width = ci_width, ci_brackets = ci_brackets, zap_small = zap_small, ...)
   } else {
     formatted_table <- .format_columns_single_component(x, pretty_names = pretty_names, digits = digits, ci_width = ci_width, ci_brackets = ci_brackets, ci_digits = ci_digits, p_digits = p_digits, format = format, coef_name = coef_name, zap_small = zap_small, ...)
   }
@@ -312,7 +315,7 @@ format.parameters_sem <- function(x,
   if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
   if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
   if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
-  .print_model_parms_components(x, pretty_names = TRUE, split_column = "Component", digits = digits, ci_digits = ci_digits, p_digits = p_digits, format = format, ci_width = ci_width, ci_brackets = ci_brackets, ...)
+  .format_columns_multiple_components(x, pretty_names = TRUE, split_column = "Component", digits = digits, ci_digits = ci_digits, p_digits = p_digits, format = format, ci_width = ci_width, ci_brackets = ci_brackets, ...)
 }
 
 
@@ -646,6 +649,8 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
   test_statistic <- .additional_arguments(x, "test_statistic", NULL)
   bootstrap <- .additional_arguments(x, "bootstrap", FALSE)
   residual_df <- .additional_arguments(x, "residual_df", NULL)
+  random_variances <- .additional_arguments(x, "ran_pars", FALSE)
+  model_class <- .additional_arguments(x, "model_class", NULL)
 
   # prepare strings
   if (!is.null(ci_method)) {
@@ -656,22 +661,24 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
     }
 
     string_tailed <- switch(toupper(ci_method),
-                            "HDI" = "highest-density",
-                            "UNIROOT" = ,
-                            "PROFILE" = "profile-likelihood",
-                            "equal-tailed")
+      "HDI" = "highest-density",
+      "UNIROOT" = ,
+      "PROFILE" = "profile-likelihood",
+      "equal-tailed"
+    )
 
     string_method <- switch(toupper(ci_method),
-                            "BCI" = ,
-                            "BCAI" = "bias-corrected accelerated bootstrap",
-                            "SI" = ,
-                            "CI" = ,
-                            "QUANTILE" = ,
-                            "ETI" = ,
-                            "HDI" = ifelse(isTRUE(bootstrap), "na\u0131ve bootstrap", "MCMC"),
-                            "NORMAL" = "Wald normal",
-                            "BOOT" = "parametric bootstrap",
-                            "Wald")
+      "BCI" = ,
+      "BCAI" = "bias-corrected accelerated bootstrap",
+      "SI" = ,
+      "CI" = ,
+      "QUANTILE" = ,
+      "ETI" = ,
+      "HDI" = ifelse(isTRUE(bootstrap), "na\u0131ve bootstrap", "MCMC"),
+      "NORMAL" = "Wald normal",
+      "BOOT" = "parametric bootstrap",
+      "Wald"
+    )
 
     if (toupper(ci_method) %in% c("KENWARD", "KR", "KENWARD-ROGER", "KENWARD-ROGERS", "SATTERTHWAITE")) {
       string_approx <- paste0("with ", format_df_adjust(ci_method, approx_string = "", dof_string = ""), " ")
@@ -681,10 +688,11 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
 
     if (!is.null(test_statistic) && !ci_method %in% c("normal") && !isTRUE(bootstrap)) {
       string_statistic <- switch(tolower(test_statistic),
-                                 "t-statistic" = "t",
-                                 "chi-squared statistic" = ,
-                                 "z-statistic" = "z",
-                                 "")
+        "t-statistic" = "t",
+        "chi-squared statistic" = ,
+        "z-statistic" = "z",
+        ""
+      )
       string_method <- paste0(string_method, " ", string_statistic, "-")
     } else {
       string_method <- paste0(string_method, " ")
@@ -692,9 +700,16 @@ format.parameters_distribution <- function(x, digits = 2, format = NULL, ci_widt
 
     # bootstrapped intervals
     if (isTRUE(bootstrap)) {
-      message(insight::format_message(paste0("\nUncertainty intervals (", string_tailed, ") are ", string_method, "intervals.")))
+      msg <- paste0("\nUncertainty intervals (", string_tailed, ") are ", string_method, "intervals.")
     } else {
-      message(insight::format_message(paste0("\nUncertainty intervals (", string_tailed, ") and p values (two-tailed) computed using a ", string_method, "distribution ", string_approx, "approximation.")))
+      msg <- paste0("\nUncertainty intervals (", string_tailed, ") and p values (two-tailed) computed using a ", string_method, "distribution ", string_approx, "approximation.")
     }
+
+    # do we have random effect variances from glmmTMB?
+    if (identical(model_class, "glmmTMB") && isTRUE(random_variances) && !is.null(x$Effects) && "random" %in% x$Effects && (string_method != "Wald z-" || ci_method != "wald")) {
+      msg <- paste(msg, "Uncertainty intervals for random effect variances computed using a Wald z-distribution approximation.")
+    }
+
+    message(insight::format_message(msg))
   }
 }

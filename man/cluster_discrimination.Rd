@@ -4,24 +4,26 @@
 \alias{cluster_discrimination}
 \title{Compute a linear discriminant analysis on classified cluster groups}
 \usage{
-cluster_discrimination(x, cluster_groups)
+cluster_discrimination(x, cluster_groups = NULL, ...)
 }
 \arguments{
 \item{x}{A data frame}
 
 \item{cluster_groups}{Group classification of the cluster analysis, which can
 be retrieved from the \code{\link[=cluster_analysis]{cluster_analysis()}} function.}
+
+\item{...}{Other arguments to be passed to or from.}
 }
 \description{
 Computes linear discriminant analysis (LDA) on classified cluster groups, and determines the goodness of classification for each cluster group. See \code{MASS::lda()} for details.
 }
 \examples{
 if (requireNamespace("MASS", quietly = TRUE)) {
-  # retrieve group classification from hierarchical cluster analysis
-  groups <- cluster_analysis(iris[, 1:4], n = 2)
+  # Retrieve group classification from hierarchical cluster analysis
+  clustering <- cluster_analysis(iris[, 1:4], n = 3)
 
-  # goodness of group classificatoin
-  cluster_discrimination(iris[, 1:4], cluster_groups = groups)
+  # Goodness of group classification
+  cluster_discrimination(clustering)
 }
 }
 \seealso{

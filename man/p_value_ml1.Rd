@@ -6,16 +6,23 @@
 \alias{p_value_ml1}
 \title{"m-l-1" approximation for SEs, CIs and p-values}
 \usage{
-ci_ml1(model, ci = 0.95)
+ci_ml1(model, ci = 0.95, robust = FALSE, ...)
 
 dof_ml1(model)
 
-p_value_ml1(model, dof = NULL)
+p_value_ml1(model, dof = NULL, robust = FALSE, ...)
 }
 \arguments{
 \item{model}{A mixed model.}
 
 \item{ci}{Confidence Interval (CI) level. Default to \code{0.95} (\verb{95\%}).}
+
+\item{robust}{Logical, if \code{TRUE}, computes confidence intervals (or p-values)
+based on robust standard errors. See \code{\link[=standard_error_robust]{standard_error_robust()}}.}
+
+\item{...}{Arguments passed down to \code{\link[=standard_error_robust]{standard_error_robust()}}
+when confidence intervals or p-values based on robust standard errors
+should be computed.}
 
 \item{dof}{Degrees of Freedom.}
 }
@@ -23,7 +30,8 @@ p_value_ml1(model, dof = NULL)
 A data frame.
 }
 \description{
-Approximation of degrees of freedom based on a "m-l-1" heuristic as suggested by Elff et al. (2019).
+Approximation of degrees of freedom based on a "m-l-1" heuristic
+as suggested by Elff et al. (2019).
 }
 \details{
 \subsection{Small Sample Cluster corrected Degrees of Freedom}{
@@ -61,8 +69,14 @@ if (require("lme4")) {
 }
 \references{
 \itemize{
-\item Elff, M.; Heisig, J.P.; Schaeffer, M.; Shikano, S. (2019). Multilevel Analysis with Few Clusters: Improving Likelihood-based Methods to Provide Unbiased Estimates and Accurate Inference, British Journal of Political Science.
-\item Li, P., Redden, D. T. (2015). Comparing denominator degrees of freedom approximations for the generalized linear mixed model in analyzing binary outcome in small sample cluster-randomized trials. BMC Medical Research Methodology, 15(1), 38. \doi{10.1186/s12874-015-0026-x}
+\item Elff, M.; Heisig, J.P.; Schaeffer, M.; Shikano, S. (2019). Multilevel
+Analysis with Few Clusters: Improving Likelihood-based Methods to Provide
+Unbiased Estimates and Accurate Inference, British Journal of Political
+Science.
+\item Li, P., Redden, D. T. (2015). Comparing denominator degrees of freedom
+approximations for the generalized linear mixed model in analyzing binary
+outcome in small sample cluster-randomized trials. BMC Medical Research
+Methodology, 15(1), 38. \doi{10.1186/s12874-015-0026-x}
 }
 }
 \seealso{

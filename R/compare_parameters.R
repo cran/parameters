@@ -18,19 +18,20 @@
 #'   in [model_parameters()].
 #' @param style String, indicating which style of output is requested. Following
 #'   templates are possible:
-#'   \itemize{
-#'     \item `"ci"`: Estimate and confidence intervals, no asterisks for p-values.
-#'     \item `"se"`: Estimate and standard errors, no asterisks for p-values.
-#'     \item `"ci_p"`: Estimate, confidence intervals and asterisks for p-values.
-#'     \item `"se_p"`: Estimate, standard errors and asterisks for p-values.
-#'     \item `"ci_p2"`: Estimate, confidence intervals and numeric p-values, in two columns.
-#'     \item `"se_p2"`: Estimate, standard errors and numeric p-values, in two columns.
-#'   }
+#'
+#'  - `"ci"`: Estimate and confidence intervals, no asterisks for p-values.
+#'  - `"se"`: Estimate and standard errors, no asterisks for p-values.
+#'  - `"ci_p"`: Estimate, confidence intervals and asterisks for p-values.
+#'  - `"se_p"`: Estimate, standard errors and asterisks for p-values.
+#'  - `"ci_p2"`: Estimate, confidence intervals and numeric p-values, in two columns.
+#'  - `"se_p2"`: Estimate, standard errors and numeric p-values, in two columns.
+#'
 #' @inheritParams model_parameters.default
 #' @inheritParams model_parameters.cpglmm
 #' @inheritParams print.parameters_model
 #'
 #' @details
+#'
 #' This function is in an early stage and does not yet cope with more complex
 #' models, and probably does not yet properly render all model components. It
 #' should also be noted that when including models with interaction terms, not
@@ -83,7 +84,7 @@ compare_parameters <- function(...,
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    message(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."))
+    warning(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."), call. = FALSE)
     ci_method <- df_method
   }
 
@@ -147,10 +148,21 @@ compare_parameters <- function(...,
   m <- lapply(1:length(models), function(i) {
     model <- models[[i]]
     model_name <- model_names[[i]]
-    # model parameters
+
     if (inherits(model, "parameters_model")) {
+
+      # we already have model parameters object...
       dat <- model
     } else {
+
+      # set default-ci_type for Bayesian models
+      if (.is_bayesian_model(model) && !ci_method %in% c("hdi", "quantile", "ci", "eti", "si", "bci", "bcai")) {
+        ci_method_tmp <- "hdi"
+      } else {
+        ci_method_tmp <- ci_method
+      }
+
+      # here we have a model object that needs to be passed to model_parameters
       dat <- model_parameters(
         model,
         ci = ci,
@@ -158,7 +170,7 @@ compare_parameters <- function(...,
         component = component,
         standardize = standardize,
         exponentiate = exponentiate,
-        ci_method = ci_method,
+        ci_method = ci_method_tmp,
         p_adjust = p_adjust,
         keep = keep,
         drop = drop,
@@ -186,22 +198,33 @@ compare_parameters <- function(...,
     # save model number, for sorting
     dat$model <- i
     dat$model[.in_intercepts(dat$Parameter)] <- 0
+
+    ## NOT SURE why we needed this? It duplicates parameters when
+    ## these are in different order in different models
+
     # add index for row order. needed later, because "merge()" sometimes
     # messes up the correct row sorting, despite setting "sort = FALSE"
-    dat$.row_index <- 1:nrow(dat)
+    # dat$.row_index <- 1:nrow(dat)
+
     dat
   })
 
   object_attributes <- lapply(m, attributes)
   names(object_attributes) <- model_names
 
-  # merge all data frames
-  all_models <- suppressWarnings(Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component", ".row_index")), m))
+  ## NOT SURE why we needed this? It duplicates parameters when
+  ## these are in different order in different models
 
-  # fix row order
-  row_order <- order(all_models$.row_index)
-  all_models <- all_models[row_order, ]
-  all_models$.row_index <- NULL
+  # # merge all data frames
+  # all_models <- suppressWarnings(Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component", ".row_index")), m))
+  #
+  # # fix row order
+  # row_order <- order(all_models$.row_index)
+  # all_models <- all_models[row_order, ]
+  # all_models$.row_index <- NULL
+
+  # merge all data frames
+  all_models <- suppressWarnings(Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component")), m))
 
   # find columns with model numbers and create new variable "params_order",
   # which is pasted together of all model-column indices. Take lowest index of

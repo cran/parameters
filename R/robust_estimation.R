@@ -16,7 +16,10 @@
 #' @param vcov_type Character vector, specifying the estimation type for the
 #'   robust covariance matrix estimation (see
 #'   [sandwich::vcovHC()] or `clubSandwich::vcovCR()`
-#'   for details).
+#'   for details). Passed down as `type` argument to the related `vcov*()`-function
+#'   from the  \pkg{sandwich} or \pkg{clubSandwich} package and hence will be
+#'   ignored if there is no `type` argument (e.g., `sandwich::vcovHAC()` will
+#'   ignore that argument).
 #' @param vcov_args List of named vectors, used as additional arguments that are
 #'   passed down to the \pkg{sandwich}-function specified in
 #'   `vcov_estimation`.
@@ -61,8 +64,13 @@ standard_error_robust <- function(model,
                                   ...) {
   # exceptions
   if (inherits(model, "gee")) {
-    return(standard_error(model, method = "robust", ...))
+    return(standard_error(model, robust = TRUE, ...))
   }
+
+  if (inherits(model, "MixMod")) {
+    return(standard_error(model, robust = TRUE, ...))
+  }
+
 
   # check for existing vcov-prefix
   if (!grepl("^(vcov|kernHAC|NeweyWest)", vcov_estimation)) {
@@ -98,8 +106,13 @@ p_value_robust <- function(model,
                            ...) {
   # exceptions
   if (inherits(model, "gee")) {
-    return(p_value(model, method = "robust", ...))
+    return(p_value(model, robust = TRUE, ...))
   }
+
+  if (inherits(model, "MixMod")) {
+    return(p_value(model, robust = TRUE, ...))
+  }
+
 
   # check for existing vcov-prefix
   if (!grepl("^(vcov|kernHAC|NeweyWest)", vcov_estimation)) {
@@ -171,23 +184,11 @@ ci_robust <- function(model,
   # check if required package is available
   if (vcov_fun == "vcovCR") {
     insight::check_if_installed("clubSandwich", reason = "to get cluster-robust standard errors")
-    .vcov <- do.call(
-      clubSandwich::vcovCR,
-      c(
-        list(obj = x, type = vcov_type),
-        vcov_args
-      )
-    )
+    .vcov <- do.call(clubSandwich::vcovCR, c(list(obj = x, type = vcov_type), vcov_args))
   } else {
     insight::check_if_installed("sandwich", reason = "to get robust standard errors")
     vcov_fun <- get(vcov_fun, asNamespace("sandwich"))
-    .vcov <- do.call(
-      vcov_fun,
-      c(
-        list(x = x, type = vcov_type),
-        vcov_args
-      )
-    )
+    .vcov <- do.call(vcov_fun, c(list(x = x, type = vcov_type), vcov_args))
   }
 
   # get coefficients

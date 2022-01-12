@@ -16,7 +16,8 @@ model_parameters.glmmTMB <- function(model,
                                      group_level = FALSE,
                                      standardize = NULL,
                                      exponentiate = FALSE,
-                                     ci_method = NULL,
+                                     ci_method = "wald",
+                                     robust = FALSE,
                                      p_adjust = NULL,
                                      wb_component = TRUE,
                                      summary = FALSE,
@@ -25,11 +26,12 @@ model_parameters.glmmTMB <- function(model,
                                      parameters = keep,
                                      verbose = TRUE,
                                      df_method = ci_method,
+                                     include_sigma = FALSE,
                                      ...) {
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    message(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."))
+    warning(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."), call. = FALSE)
     ci_method <- df_method
   }
 
@@ -50,7 +52,7 @@ model_parameters.glmmTMB <- function(model,
 
   # fix argument, if model has only conditional component
   cs <- stats::coef(summary(model))
-  has_zeroinf <- insight::model_info(model)$is_zero_inflated
+  has_zeroinf <- insight::model_info(model, verbose = FALSE)$is_zero_inflated
   has_disp <- is.list(cs) && !is.null(cs$disp)
 
   if (!has_zeroinf && !has_disp && component != "conditional") {
@@ -80,13 +82,15 @@ model_parameters.glmmTMB <- function(model,
         ci = ci,
         component = component,
         standardize = standardize,
-        robust = FALSE,
+        robust = robust,
         ci_method = ci_method,
         p_adjust = p_adjust,
         wb_component = wb_component,
         keep_parameters = NULL,
         drop_parameters = NULL,
         keep_component_column = component != "conditional",
+        include_sigma = include_sigma,
+        summary = summary,
         ...
       )
     }
@@ -112,10 +116,13 @@ model_parameters.glmmTMB <- function(model,
 
   if (effects %in% c("random", "all") && isTRUE(group_level)) {
     params_random <- .extract_random_parameters(model, ci = ci, effects = effects, component = component)
+    if (length(insight::find_random(model, flatten = TRUE)) > 1) {
+      warning(insight::format_message("Cannot extract confidence intervals for random variance parameters from models with more than one grouping factor."), call. = FALSE)
+    }
   }
 
   if (effects %in% c("random", "all") && isFALSE(group_level)) {
-    params_variance <- .extract_random_variances(model, ci = ci, effects = effects, component = component, ci_method = ci_method)
+    params_variance <- .extract_random_variances(model, ci = ci, effects = effects, component = component, ci_method = ci_method, verbose = verbose)
   }
 
 
@@ -157,13 +164,14 @@ model_parameters.glmmTMB <- function(model,
   params <- .add_model_parameters_attributes(
     params,
     model,
-    ci = ifelse(effects == "random" && isFALSE(group_level), NA, ci),
+    ci = ci,
     exponentiate,
     ci_method = ci_method,
     p_adjust = p_adjust,
     verbose = verbose,
     group_level = group_level,
     summary = summary,
+    wb_component = wb_component,
     ...
   )
 
@@ -187,7 +195,6 @@ ci.glmmTMB <- function(x,
                        component = "all",
                        verbose = TRUE,
                        ...) {
-
   method <- tolower(method)
   method <- match.arg(method, choices = c("wald", "normal", "ml1", "betwithin", "profile", "uniroot"))
   component <- match.arg(component, choices = c("all", "conditional", "zi", "zero_inflated", "dispersion"))

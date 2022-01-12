@@ -124,6 +124,7 @@ model_parameters.aov <- function(model,
                                  ...) {
   # save model object, for later checks
   original_model <- model
+  object_name <- deparse(substitute(model), width.cutoff = 500)
 
   if (inherits(model, "aov") && !is.null(type) && type > 1) {
     if (!requireNamespace("car", quietly = TRUE)) {
@@ -186,6 +187,7 @@ model_parameters.aov <- function(model,
   params <- .add_anova_attributes(params, model, ci, test = test, ...)
 
   class(params) <- c("parameters_model", "see_parameters_model", class(params))
+  attr(params, "object_name") <- object_name
   params
 }
 
@@ -306,6 +308,7 @@ model_parameters.afex_aov <- function(model,
   }
 
   attr(out, "title") <- unique(out$Method)
+  attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   class(out) <- unique(c("parameters_model", "see_parameters_model", class(out)))
 
   out
@@ -441,7 +444,7 @@ model_parameters.maov <- model_parameters.aov
     return(parameters)
   }
 
-  insight::check_if_installed("effectsize")
+  insight::check_if_installed("effectsize", minimum_version = "0.5.0")
 
   # set error-df, when provided.
   if (!is.null(df_error) && is.data.frame(model) && !any(c("DenDF", "den Df", "denDF", "df_error") %in% colnames(model))) {
@@ -529,25 +532,52 @@ model_parameters.maov <- model_parameters.aov
 # add effect size column and related CI to the parameters
 # data frame, automatically detecting the effect size name
 .add_effectsize_to_parameters <- function(fx, params) {
-  fx_params <- fx$Parameter
-  if (is.null(fx_params)) {
-    fx_params <- params$Parameter
-  }
-  fx$Parameter <- NULL
-  fx$Response <- NULL
-  fx$Group <- NULL
-  es <- colnames(fx)[1]
-  valid_rows <- .valid_effectsize_rows(params, fx_params)
-  params[[es]][valid_rows] <- fx[[es]]
 
   if (!is.null(fx$CI_low)) {
+
+    # find name of current effect size
+    es <- effectsize::get_effectsize_name(colnames(fx))
+
+    # and add CI-name to effect size, to have specific
+    # CI columns for this particular effect size
     ci_low <- paste0(gsub("_partial$", "", es), "_CI_low")
     ci_high <- paste0(gsub("_partial$", "", es), "_CI_high")
-    params[[ci_low]][valid_rows] <- fx$CI_low
-    params[[ci_high]][valid_rows] <- fx$CI_high
+
+    # rename columns
+    fx[[ci_low]] <- fx$CI_low
+    fx[[ci_high]] <- fx$CI_high
+
+    # delete old or duplicated columns
+    fx$CI_low <- NULL
+    fx$CI_high <- NULL
+    fx$CI <- NULL
   }
 
+  params$.id  <- 1:nrow(params)
+  params <- merge(params, fx, all.x = TRUE, sort = FALSE, by = intersect(c("Response", "Group", "Parameter"), intersect(colnames(params), colnames(fx))))
+  params <- params[order(params$.id), ]
+  params$.id <- NULL
   params
+
+  # fx_params <- fx$Parameter
+  # if (is.null(fx_params)) {
+  #   fx_params <- params$Parameter
+  # }
+  # fx$Parameter <- NULL
+  # fx$Response <- NULL
+  # fx$Group <- NULL
+  # es <- colnames(fx)[1]
+  # valid_rows <- .valid_effectsize_rows(params, fx_params)
+  # params[[es]][valid_rows] <- fx[[es]]
+  #
+  # if (!is.null(fx$CI_low)) {
+  #   ci_low <- paste0(gsub("_partial$", "", es), "_CI_low")
+  #   ci_high <- paste0(gsub("_partial$", "", es), "_CI_high")
+  #   params[[ci_low]][valid_rows] <- fx$CI_low
+  #   params[[ci_high]][valid_rows] <- fx$CI_high
+  # }
+  #
+  # params
 }
 
 
@@ -555,7 +585,7 @@ model_parameters.maov <- model_parameters.aov
   inherits(x, "anova") && !is.null(attributes(x)$heading) && all(isTRUE(grepl("Levene's Test", attributes(x)$heading, fixed = TRUE)))
 }
 
-# TODO: decide whether to move to `datawizard`?
+
 # data: A dataframe from `model_parameters`
 # ... Currently ignored
 

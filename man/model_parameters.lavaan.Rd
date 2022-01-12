@@ -39,7 +39,7 @@ describes the parameters that should be included (for \code{keep}) or excluded
 named list of regular expressions. All non-matching parameters will be
 removed from the output. If \code{keep} is a character vector, every parameter
 name in the \emph{"Parameter"} column that matches the regular expression in
-\code{parameters} will be selected from the returned data frame (and vice versa,
+\code{keep} will be selected from the returned data frame (and vice versa,
 all parameter names matching \code{drop} will be excluded). Furthermore, if
 \code{keep} has more than one element, these will be merged with an \code{OR}
 operator into a regular expression pattern like this: \code{"(one|two|three)"}.
@@ -59,7 +59,7 @@ describes the parameters that should be included (for \code{keep}) or excluded
 named list of regular expressions. All non-matching parameters will be
 removed from the output. If \code{keep} is a character vector, every parameter
 name in the \emph{"Parameter"} column that matches the regular expression in
-\code{parameters} will be selected from the returned data frame (and vice versa,
+\code{keep} will be selected from the returned data frame (and vice versa,
 all parameter names matching \code{drop} will be excluded). Furthermore, if
 \code{keep} has more than one element, these will be merged with an \code{OR}
 operator into a regular expression pattern like this: \code{"(one|two|three)"}.
@@ -138,7 +138,6 @@ if (require("lavaan", quietly = TRUE)) {
 \itemize{
 \item Rosseel Y (2012). lavaan: An R Package for Structural Equation
 Modeling. Journal of Statistical Software, 48(2), 1-36.
-
 \item Merkle EC , Rosseel Y (2018). blavaan: Bayesian Structural Equation
 Models via Parameter Expansion. Journal of Statistical Software, 85(4),
 1-30. http://www.jstatsoft.org/v85/i04/
