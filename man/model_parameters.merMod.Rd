@@ -37,10 +37,9 @@
   standardize = NULL,
   exponentiate = FALSE,
   ci_method = "wald",
-  robust = FALSE,
   p_adjust = NULL,
   wb_component = TRUE,
-  summary = FALSE,
+  summary = getOption("parameters_mixed_summary", FALSE),
   keep = NULL,
   drop = NULL,
   parameters = keep,
@@ -60,16 +59,17 @@
   effects = "all",
   group_level = FALSE,
   exponentiate = FALSE,
-  robust = FALSE,
   p_adjust = NULL,
   wb_component = TRUE,
-  summary = FALSE,
+  summary = getOption("parameters_mixed_summary", FALSE),
   keep = NULL,
   drop = NULL,
   parameters = keep,
   verbose = TRUE,
   df_method = ci_method,
   include_sigma = FALSE,
+  vcov = NULL,
+  vcov_args = NULL,
   ...
 )
 
@@ -127,7 +127,7 @@ such behaviours, either use \code{standardize="basic"} or standardize the data
 with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed
 effects will be returned.
-\item Robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
+\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of standardized parameters only
 works when \code{standardize="refit"}.
 }}
 
@@ -188,14 +188,6 @@ with zero-inflated component. \code{component} may be one of \code{"conditional"
 \code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or \code{"all"}
 (default). May be abbreviated.}
 
-\item{robust}{Logical, if \code{TRUE}, robust standard errors are calculated
-(if possible), and confidence intervals and p-values are based on these
-robust standard errors. Additional arguments like \code{vcov_estimation} or
-\code{vcov_type} are passed down to other methods, see
-\code{\link[=standard_error_robust]{standard_error_robust()}} for details
-and \href{https://easystats.github.io/parameters/articles/model_parameters_robust.html}{this vignette}
-for working examples.}
-
 \item{wb_component}{Logical, if \code{TRUE} and models contains within- and
 between-effects (see \code{datawizard::demean()}), the \code{Component} column
 will indicate which variables belong to the within-effects,
@@ -227,27 +219,30 @@ frame, which can be different from how they are printed. Inspect the
 \verb{$Parameter} column of the parameters table to get the exact parameter
 names.}
 
-\item{drop}{Character containing a regular expression pattern that
-describes the parameters that should be included (for \code{keep}) or excluded
-(for \code{drop}) in the returned data frame. \code{keep} may also be a
-named list of regular expressions. All non-matching parameters will be
-removed from the output. If \code{keep} is a character vector, every parameter
-name in the \emph{"Parameter"} column that matches the regular expression in
-\code{keep} will be selected from the returned data frame (and vice versa,
-all parameter names matching \code{drop} will be excluded). Furthermore, if
-\code{keep} has more than one element, these will be merged with an \code{OR}
-operator into a regular expression pattern like this: \code{"(one|two|three)"}.
-If \code{keep} is a named list of regular expression patterns, the names of the
-list-element should equal the column name where selection should be
-applied. This is useful for model objects where \code{model_parameters()}
-returns multiple columns with parameter components, like in
-\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
-should match the parameter names as they are stored in the returned data
-frame, which can be different from how they are printed. Inspect the
-\verb{$Parameter} column of the parameters table to get the exact parameter
-names.}
+\item{drop}{See \code{keep}.}
 
 \item{parameters}{Deprecated, alias for \code{keep}.}
+
+\item{vcov}{Variance-covariance matrix used to compute uncertainty estimates
+(e.g., for robust standard errors). This argument accepts a covariance matrix,
+a function which returns a covariance matrix, or a string which identifies
+the function to be used to compute the covariance matrix.
+\itemize{
+\item A covariance matrix
+\item A function which returns a covariance matrix (e.g., \code{stats::vcov()})
+\item A string which indicates the kind of uncertainty estimates to return.
+\itemize{
+\item Heteroskedasticity-consistent: \code{"vcovHC"}, \code{"HC"}, \code{"HC0"}, \code{"HC1"}, \code{"HC2"}, \code{"HC3"}, \code{"HC4"}, \code{"HC4m"}, \code{"HC5"}. See \code{?sandwich::vcovHC}.
+\item Cluster-robust: \code{"vcovCR"}, \code{"CR0"}, \code{"CR1"}, \code{"CR1p"}, \code{"CR1S"}, \code{"CR2"}, \code{"CR3"}. See \code{?clubSandwich::vcovCR}.
+\item Bootstrap: \code{"vcovBS"}, \code{"xy"}, \code{"residual"}, \code{"wild"}, \code{"mammen"}, \code{"webb"}. See \code{?sandwich::vcovBS}.
+\item Other \code{sandwich} package functions: \code{"vcovHAC"}, \code{"vcovPC"}, \code{"vcovCL"}, \code{"vcovPL"}.
+}
+}}
+
+\item{vcov_args}{List of arguments to be passed to the function identified by
+the \code{vcov} argument. This function is typically supplied by the \emph{sandwich}
+or \emph{clubSandwich} packages. Please refer to their documentation (e.g.,
+\code{?sandwich::vcovHAC}) to see the list of available arguments.}
 }
 \value{
 A data frame of indices related to the model's parameters.
@@ -262,13 +257,26 @@ use \code{effects = "fixed"}. There is also a \href{https://easystats.github.io/
 \section{Confidence intervals for random effect variances}{
 
 For models of class \code{merMod} and \code{glmmTMB}, confidence intervals for random
-effect variances can be calculated. For models of class \code{lme4}, when
+effect variances can be calculated. For models of from package \strong{lme4}, when
 \code{ci_method} is either \code{"profile"} or \code{"boot"}, and \code{effects} is either
 \code{"random"} or \code{"all"}, profiled resp. bootstrapped confidence intervals are
 computed for the random effects. For all other options of \code{ci_method},
 confidence intervals for random effects will be missing. For models of class
 \code{glmmTMB}, confidence intervals for random effect variances always use a
 Wald t-distribution approximation.
+}
+
+\section{Dispersion parameters in \emph{glmmTMB}}{
+
+For some models from package \strong{glmmTMB}, both the dispersion parameter and
+the residual variance from the random effects parameters are shown. Usually,
+these are the same but presented on different scales, e.g.\preformatted{model <- glmmTMB(Sepal.Width ~ Petal.Length + (1|Species), data = iris)
+exp(fixef(model)$disp) # 0.09902987
+sigma(model)^2         # 0.09902987
+}
+
+For models where the dispersion parameter and the residual variance are
+the same, only the residual variance is shown in the output.
 }
 
 \section{Confidence intervals and approximation of degrees of freedom}{

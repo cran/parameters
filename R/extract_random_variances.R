@@ -4,6 +4,8 @@
 }
 
 
+# default method -------------------
+
 .extract_random_variances.default <- function(model,
                                               ci = .95,
                                               effects = "random",
@@ -34,10 +36,7 @@
 }
 
 
-
-
-
-
+# glmmTMB -------------------
 
 .extract_random_variances.glmmTMB <- function(model,
                                               ci = .95,
@@ -102,16 +101,13 @@
 }
 
 
+# GLMMadpative -------------------
+
 .extract_random_variances.MixMod <- .extract_random_variances.glmmTMB
 
 
 
-
-
-
-
 # workhorse ------------------------
-
 
 .extract_random_variances_helper <- function(model,
                                              ci = .95,
@@ -148,7 +144,7 @@
     }
   )
 
-  # sigma/dispersion only once
+  # sigma/dispersion only once,
   if (component == "conditional") {
     ran_sigma <- data.frame(insight::get_sigma(model, ci = NULL, verbose = FALSE))
   } else {
@@ -161,16 +157,14 @@
     ran_intercept$Group <- rownames(ran_intercept)
     ran_intercept$Parameter <- "SD (Intercept)"
   }
-  ran_groups <- ran_intercept$Group
+  ran_groups_int <- ran_intercept$Group
 
   # random slope - tau11
   if (!is.null(ran_slope) && nrow(ran_slope) > 0) {
     colnames(ran_slope) <- "Coefficient"
     ran_slope$Group <- rownames(ran_slope)
-    if (is.null(ran_groups)) {
-      ran_groups <- gsub("\\..*", "", ran_slope$Group)
-    }
-    for (i in unique(ran_groups)) {
+    ran_groups_slp <- gsub("\\..*", "", ran_slope$Group)
+    for (i in unique(ran_groups_slp)) {
       slopes <- which(grepl(paste0("^\\Q", i, "\\E"), ran_slope$Group))
       if (length(slopes)) {
         ran_slope$Parameter[slopes] <- paste0(
@@ -179,7 +173,11 @@
         ran_slope$Group[slopes] <- i
       }
     }
+  } else {
+    ran_groups_slp <- NULL
   }
+
+  ran_groups <- unique(c(ran_groups_int, ran_groups_slp))
 
   # random slope-intercept correlation - rho01
   if (!is.null(ran_corr) && nrow(ran_corr) > 0) {
@@ -219,7 +217,7 @@
   # row bind all random effect variances, if possible
   out <- tryCatch(
     {
-      out_list <- .compact_list(list(ran_intercept, ran_slope, ran_corr, ran_sigma))
+      out_list <- datawizard::compact_list(list(ran_intercept, ran_slope, ran_corr, ran_sigma))
       do.call(rbind, out_list)
     },
     error = function(e) {
@@ -282,10 +280,7 @@
 
 
 
-
-
 # extract CI for random SD ------------------------
-
 
 .random_sd_ci <- function(model, out, ci_method, ci, corr_param, sigma_param, component = NULL) {
   if (inherits(model, c("merMod", "glmerMod", "lmerMod"))) {
@@ -343,6 +338,10 @@
           var_ci$Group[var_ci$Component == "zi"] <- gsub(paste0("^", group_factor2, "\\.zi\\.(.*)"), "\\1", var_ci$Parameter[var_ci$Component == "zi"])
         } else {
           var_ci$Group <- group_factor
+          # check if sigma was properly identified
+          if (!"sigma" %in% var_ci$Group && "sigma" %in% rownames(var_ci)) {
+            var_ci$Group[rownames(var_ci) == "sigma"] <- "Residual"
+          }
         }
         var_ci$Group[var_ci$Group == "sigma"] <- "Residual"
 
@@ -460,11 +459,6 @@
 
 
 
-
-
-
-
-
 # Extract Variance and Correlation Components ----
 
 # store essential information about variance components...
@@ -534,7 +528,7 @@
       attr(vc2, "sc") <- sqrt(insight::get_deviance(model, verbose = FALSE) / insight::get_df(model, type = "residual", verbose = FALSE))
     }
 
-    varcorr <- .compact_list(list(vc1, vc2))
+    varcorr <- datawizard::compact_list(list(vc1, vc2))
     names(varcorr) <- c("cond", "zi")[1:length(varcorr)]
 
     # joineRML
@@ -588,7 +582,7 @@
       }
       out
     })
-    varcorr <- .compact_list(varcorr)
+    varcorr <- datawizard::compact_list(varcorr)
     names(varcorr) <- setdiff(names(lme4::VarCorr(model)), "residual__")
     attr(varcorr, "sc") <- lme4::VarCorr(model)$residual__$sd[1, 1]
 
@@ -616,7 +610,6 @@
 
   varcorr
 }
-
 
 
 
@@ -676,7 +669,6 @@
 
 
 
-
 # glmmTMB returns a list of model information, one for conditional
 # and one for zero-inflated part, so here we "unlist" it, returning
 # only the conditional part.
@@ -687,8 +679,6 @@
     x
   }
 }
-
-
 
 
 .collapse_zi <- function(x) {
@@ -702,12 +692,7 @@
 
 
 
-
-
-
-
 #### helper to extract various random effect variances -----------------------
-
 
 
 # random slope-variances (tau 11) ----
@@ -731,7 +716,6 @@
 
 
 
-
 # random intercept-variances, i.e.
 # between-subject-variance (tau 00) ----
 # ----------------------------------------------
@@ -745,7 +729,6 @@
 
   sapply(vars, function(i) i)
 }
-
 
 
 
@@ -777,8 +760,6 @@
     unlist(rho01)
   }
 }
-
-
 
 
 

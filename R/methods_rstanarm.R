@@ -24,7 +24,6 @@
 #'   argument - but no auxiliary parameters). For `component = "distributional"`
 #'   (or `"auxiliary"`), components like `sigma`, `dispersion`, or `beta`
 #'   (and other auxiliary parameters) are returned.
-#'
 #' @inheritParams model_parameters.default
 #' @inheritParams bayestestR::describe_posterior
 #' @inheritParams insight::get_parameters

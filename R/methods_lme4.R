@@ -29,13 +29,27 @@
 #'
 #' @section Confidence intervals for random effect variances:
 #' For models of class `merMod` and `glmmTMB`, confidence intervals for random
-#' effect variances can be calculated. For models of class `lme4`, when
+#' effect variances can be calculated. For models of from package **lme4**, when
 #' `ci_method` is either `"profile"` or `"boot"`, and `effects` is either
 #' `"random"` or `"all"`, profiled resp. bootstrapped confidence intervals are
 #' computed for the random effects. For all other options of `ci_method`,
 #' confidence intervals for random effects will be missing. For models of class
 #' `glmmTMB`, confidence intervals for random effect variances always use a
 #' Wald t-distribution approximation.
+#'
+#' @section Dispersion parameters in *glmmTMB*:
+#' For some models from package **glmmTMB**, both the dispersion parameter and
+#' the residual variance from the random effects parameters are shown. Usually,
+#' these are the same but presented on different scales, e.g.
+#'
+#' ```
+#' model <- glmmTMB(Sepal.Width ~ Petal.Length + (1|Species), data = iris)
+#' exp(fixef(model)$disp) # 0.09902987
+#' sigma(model)^2         # 0.09902987
+#' ```
+#'
+#' For models where the dispersion parameter and the residual variance are
+#' the same, only the residual variance is shown in the output.
 #'
 #' @seealso [insight::standardize_names()] to
 #'   rename columns into a consistent, standardized naming scheme.
@@ -78,17 +92,20 @@ model_parameters.merMod <- function(model,
                                     effects = "all",
                                     group_level = FALSE,
                                     exponentiate = FALSE,
-                                    robust = FALSE,
                                     p_adjust = NULL,
                                     wb_component = TRUE,
-                                    summary = FALSE,
+                                    summary = getOption("parameters_mixed_summary", FALSE),
                                     keep = NULL,
                                     drop = NULL,
                                     parameters = keep,
                                     verbose = TRUE,
                                     df_method = ci_method,
                                     include_sigma = FALSE,
+                                    vcov = NULL,
+                                    vcov_args = NULL,
                                     ...) {
+
+  dots <- list(...)
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
@@ -152,11 +169,10 @@ model_parameters.merMod <- function(model,
         }
       }
     } else {
-      params <- .extract_parameters_mixed(
+      args <- list(
         model,
         ci = ci,
         ci_method = ci_method,
-        robust = robust,
         standardize = standardize,
         p_adjust = p_adjust,
         wb_component = wb_component,
@@ -165,8 +181,10 @@ model_parameters.merMod <- function(model,
         verbose = verbose,
         include_sigma = include_sigma,
         summary = summary,
-        ...
-      )
+        vcov = vcov,
+        vcov_args = vcov_args)
+      args <- c(args, dots)
+      params <- do.call(".extract_parameters_mixed", args)
     }
 
     params$Effects <- "fixed"
@@ -240,7 +258,6 @@ ci.merMod <- function(x,
                       ci = 0.95,
                       dof = NULL,
                       method = "wald",
-                      robust = FALSE,
                       iterations = 500,
                       ...) {
   method <- tolower(method)
@@ -264,7 +281,7 @@ ci.merMod <- function(x,
 
     # all others
   } else {
-    out <- .ci_generic(model = x, ci = ci, dof = dof, method = method, robust = robust, ...)
+    out <- .ci_generic(model = x, ci = ci, dof = dof, method = method, ...)
   }
 
   out
@@ -276,26 +293,45 @@ ci.merMod <- function(x,
 standard_error.merMod <- function(model,
                                   effects = c("fixed", "random"),
                                   method = NULL,
+                                  vcov = NULL,
+                                  vcov_args = NULL,
                                   ...) {
+
+
+  dots <- list(...)
+
   effects <- match.arg(effects)
 
   if (effects == "random") {
-    .standard_errors_random(model)
-  } else {
-    if (is.null(method)) method <- "wald"
-    robust <- !is.null(method) && method == "robust"
+    out <- .standard_errors_random(model)
+    return(out)
+  }
 
-    if (isTRUE(robust)) {
-      standard_error_robust(model, ...)
-    } else {
-      # kenward approx
-      if (method %in% c("kenward", "kr")) {
-        se_kenward(model)
-      } else {
-        # Classic and Satterthwaite SE
-        se_mixed_default(model)
-      }
-    }
+  if (is.null(method)) {
+    method <- "wald"
+  } else if ((method == "robust" && is.null(vcov)) ||
+             # deprecated argument
+             isTRUE(list(...)[["robust"]])) {
+    vcov <- "vcovHC"
+  }
+
+  if (!is.null(vcov) || isTRUE(dots[["robust"]])) {
+    args <- list(model,
+                 vcov = vcov,
+                 vcov_args = vcov_args)
+    args <- c(args, dots)
+    out <- do.call("standard_error.default", args)
+    return(out)
+  }
+
+  # kenward approx
+  if (method %in% c("kenward", "kr")) {
+    out <- se_kenward(model)
+    return(out)
+  } else {
+    # Classic and Satterthwaite SE
+    out <- se_mixed_default(model)
+    return(out)
   }
 }
 

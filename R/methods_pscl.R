@@ -47,11 +47,11 @@ standard_error.zeroinfl <- function(model,
   }
 
   robust <- !is.null(method) && method == "robust"
-  if (isTRUE(robust)) {
-    return(standard_error_robust(model, ...))
+  if (.check_vcov_args(robust, ...)) {
+    return(standard_error.default(model, component = component, ...))
   }
 
-  cs <- .compact_list(stats::coef(summary(model)))
+  cs <- datawizard::compact_list(stats::coef(summary(model)))
   x <- lapply(names(cs), function(i) {
     comp <- ifelse(i == "count", "conditional", "zi")
 
@@ -100,11 +100,11 @@ p_value.zeroinfl <- function(model, component = c("all", "conditional", "zi", "z
   }
 
   robust <- !is.null(method) && method == "robust"
-  if (isTRUE(robust)) {
-    return(p_value_robust(model, ...))
+  if (.check_vcov_args(robust, ...)) {
+    return(p_value.default(model, component = component, ...))
   }
 
-  cs <- .compact_list(stats::coef(summary(model)))
+  cs <- datawizard::compact_list(stats::coef(summary(model)))
   x <- lapply(names(cs), function(i) {
     comp <- ifelse(i == "count", "conditional", "zi")
     stats <- cs[[i]]
@@ -193,6 +193,8 @@ simulate_parameters.zeroinfl <- function(model,
   attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   attr(out, "iterations") <- iterations
   attr(out, "ci") <- ci
+  attr(out, "ci_method") <- ci_method
+  attr(out, "centrality") <- centrality
 
   out
 }

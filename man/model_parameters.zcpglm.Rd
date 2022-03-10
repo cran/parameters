@@ -12,11 +12,11 @@
   component = c("all", "conditional", "zi", "zero_inflated"),
   standardize = NULL,
   exponentiate = FALSE,
-  robust = FALSE,
   p_adjust = NULL,
   keep = NULL,
   drop = NULL,
   parameters = keep,
+  summary = getOption("parameters_summary", FALSE),
   verbose = TRUE,
   ...
 )
@@ -52,7 +52,7 @@ such behaviours, either use \code{standardize="basic"} or standardize the data
 with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed
 effects will be returned.
-\item Robust estimation (i.e. \code{robust=TRUE}) of standardized parameters only
+\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of standardized parameters only
 works when \code{standardize="refit"}.
 }}
 
@@ -67,14 +67,6 @@ transformed coefficient. The transformed confidence interval more clearly
 captures this uncertainty. For \code{compare_parameters()},
 \code{exponentiate = "nongaussian"} will only exponentiate coefficients
 from non-Gaussian families.}
-
-\item{robust}{Logical, if \code{TRUE}, robust standard errors are calculated
-(if possible), and confidence intervals and p-values are based on these
-robust standard errors. Additional arguments like \code{vcov_estimation} or
-\code{vcov_type} are passed down to other methods, see
-\code{\link[=standard_error_robust]{standard_error_robust()}} for details
-and \href{https://easystats.github.io/parameters/articles/model_parameters_robust.html}{this vignette}
-for working examples.}
 
 \item{p_adjust}{Character vector, if not \code{NULL}, indicates the method to
 adjust p-values. See \code{\link[stats:p.adjust]{stats::p.adjust()}} for details. Further
@@ -102,27 +94,13 @@ frame, which can be different from how they are printed. Inspect the
 \verb{$Parameter} column of the parameters table to get the exact parameter
 names.}
 
-\item{drop}{Character containing a regular expression pattern that
-describes the parameters that should be included (for \code{keep}) or excluded
-(for \code{drop}) in the returned data frame. \code{keep} may also be a
-named list of regular expressions. All non-matching parameters will be
-removed from the output. If \code{keep} is a character vector, every parameter
-name in the \emph{"Parameter"} column that matches the regular expression in
-\code{keep} will be selected from the returned data frame (and vice versa,
-all parameter names matching \code{drop} will be excluded). Furthermore, if
-\code{keep} has more than one element, these will be merged with an \code{OR}
-operator into a regular expression pattern like this: \code{"(one|two|three)"}.
-If \code{keep} is a named list of regular expression patterns, the names of the
-list-element should equal the column name where selection should be
-applied. This is useful for model objects where \code{model_parameters()}
-returns multiple columns with parameter components, like in
-\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
-should match the parameter names as they are stored in the returned data
-frame, which can be different from how they are printed. Inspect the
-\verb{$Parameter} column of the parameters table to get the exact parameter
-names.}
+\item{drop}{See \code{keep}.}
 
 \item{parameters}{Deprecated, alias for \code{keep}.}
+
+\item{summary}{Logical, if \code{TRUE}, prints summary information about the
+model (model formula, number of observations, residual standard deviation
+and more).}
 
 \item{verbose}{Toggle warnings and messages.}
 
