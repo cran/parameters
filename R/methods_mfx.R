@@ -219,10 +219,9 @@ standard_error.poissonirr <- standard_error.logitor
 standard_error.negbinirr <- standard_error.logitor
 
 
-#' @rdname standard_error
 #' @export
 standard_error.poissonmfx <- function(model,
-                                      component = c("all", "conditional", "marginal"),
+                                      component = "all",
                                       ...) {
   parms <- insight::get_parameters(model, component = "all")
   cs <- stats::coef(summary(model$fit))
@@ -234,7 +233,7 @@ standard_error.poissonmfx <- function(model,
     Component = parms$Component
   )
 
-  component <- match.arg(component)
+  component <- match.arg(component, choices = c("all", "conditional", "marginal"))
   if (component != "all") {
     out <- out[out$Component == component, ]
   }
@@ -264,10 +263,9 @@ standard_error.betaor <- function(model,
 }
 
 
-#' @rdname standard_error
 #' @export
 standard_error.betamfx <- function(model,
-                                   component = c("all", "conditional", "precision", "marginal"),
+                                   component = "all",
                                    ...) {
   parms <- insight::get_parameters(model, component = "all")
   cs <- do.call(rbind, stats::coef(summary(model$fit)))
@@ -279,7 +277,7 @@ standard_error.betamfx <- function(model,
     Component = parms$Component
   )
 
-  component <- match.arg(component)
+  component <- match.arg(component, choices = c("all", "conditional", "precision", "marginal"))
   if (component != "all") {
     out <- out[out$Component == component, ]
   }
@@ -339,7 +337,7 @@ degrees_of_freedom.betamfx <- degrees_of_freedom.logitor
 #' p-values for Marginal Effects Models
 #'
 #' This function attempts to return, or compute, p-values of marginal effects
-#' models from package \pkg{mfx}.
+#' models from package **mfx**.
 #'
 #' @param model A statistical model.
 #' @param component Should all parameters, parameters for the conditional model,

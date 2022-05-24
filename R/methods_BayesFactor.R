@@ -13,6 +13,9 @@
 #'   cell proportions/counts for Bayesian contingency table analysis (from
 #'   `BayesFactor::contingencyTableBF()`). Defaults to `FALSE`, as this
 #'   information is often redundant.
+#' @param cramers_v Compute Cramer's V or phi as index of effect size.
+#'   Can be `"raw"` or `"adjusted"` (effect size will be bias-corrected).
+#'   Only applies to objects from `chisq.test()`.
 #' @inheritParams bayestestR::describe_posterior
 #' @inheritParams p_value
 #' @inheritParams model_parameters.htest
@@ -58,7 +61,7 @@ model_parameters.BFBayesFactor <- function(model,
                                            centrality = "median",
                                            dispersion = FALSE,
                                            ci = 0.95,
-                                           ci_method = "hdi",
+                                           ci_method = "eti",
                                            test = c("pd", "rope"),
                                            rope_range = "default",
                                            rope_ci = 0.95,
@@ -180,8 +183,8 @@ model_parameters.BFBayesFactor <- function(model,
 
   # ==== remove Component column if not needed
 
-  if (!is.null(out$Component) && .n_unique(out$Component) == 1) out$Component <- NULL
-  if (!is.null(out$Effects) && .n_unique(out$Effects) == 1) out$Effects <- NULL
+  if (!is.null(out$Component) && insight::n_unique(out$Component) == 1) out$Component <- NULL
+  if (!is.null(out$Effects) && insight::n_unique(out$Effects) == 1) out$Effects <- NULL
 
 
   # ==== pretty parameter names

@@ -1,9 +1,10 @@
 .runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
 
 if (.runThisTest &&
-  requiet("testthat") &&
-  requiet("parameters") &&
-  requiet("lme4")) {
+    getRversion() >= "3.6.0" &&
+    requiet("testthat") &&
+    requiet("parameters") &&
+    requiet("lme4")) {
   data(mtcars)
   m1 <- lme4::lmer(wt ~ cyl + (1 | gear), data = mtcars)
   m2 <- lme4::glmer(vs ~ cyl + (1 | gear), data = mtcars, family = "binomial")
@@ -148,10 +149,10 @@ if (.runThisTest &&
         "",
         "# Random Effects",
         "",
-        "Parameter            | Coefficient",
-        "----------------------------------",
-        "SD (Intercept: gear) |        0.27",
-        "SD (Residual)        |        0.59"
+        "Parameter            | Coefficient |   SE |       95% CI",
+        "--------------------------------------------------------",
+        "SD (Intercept: gear) |        0.27 | 0.24 | [0.05, 1.54]",
+        "SD (Residual)        |        0.59 | 0.08 | [0.46, 0.77]"
       )
     )
 

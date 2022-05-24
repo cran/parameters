@@ -117,12 +117,12 @@
 \item{standardize}{The method used for standardizing the parameters. Can be
 \code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
 on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
-\code{"pseudo"}. See 'Details' in \code{\link[effectsize:standardize_parameters]{effectsize::standardize_parameters()}}.
+\code{"pseudo"}. See 'Details' in \code{\link[=standardize_parameters]{standardize_parameters()}}.
 \strong{Important:}
 \itemize{
 \item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
 factors), which may be a different behaviour compared to other R packages
-(such as \pkg{lm.beta}) or other software packages (like SPSS). to mimic
+(such as \strong{lm.beta}) or other software packages (like SPSS). to mimic
 such behaviours, either use \code{standardize="basic"} or standardize the data
 with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed
@@ -168,7 +168,7 @@ cases \code{"wald"} is used then.}
 adjust p-values. See \code{\link[stats:p.adjust]{stats::p.adjust()}} for details. Further
 possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
 \code{"sidak"} and \code{"none"} to explicitly disable adjustment for
-\code{emmGrid} objects (from \pkg{emmeans}).}
+\code{emmGrid} objects (from \strong{emmeans}).}
 
 \item{verbose}{Toggle warnings and messages.}
 
@@ -183,10 +183,10 @@ due to the longer computation time.}
 \item{...}{Arguments passed to or from other methods.}
 
 \item{component}{Should all parameters, parameters for the conditional model,
-or for the zero-inflated part of the model be returned? Applies to models
-with zero-inflated component. \code{component} may be one of \code{"conditional"},
-\code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or \code{"all"}
-(default). May be abbreviated.}
+for the zero-inflated part of the model, or the dispersion model be returned?
+Applies to models with zero-inflated and/or dispersion component. \code{component}
+may be one of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or
+\code{"all"} (default). May be abbreviated.}
 
 \item{wb_component}{Logical, if \code{TRUE} and models contains within- and
 between-effects (see \code{datawizard::demean()}), the \code{Component} column
@@ -240,8 +240,8 @@ the function to be used to compute the covariance matrix.
 }}
 
 \item{vcov_args}{List of arguments to be passed to the function identified by
-the \code{vcov} argument. This function is typically supplied by the \emph{sandwich}
-or \emph{clubSandwich} packages. Please refer to their documentation (e.g.,
+the \code{vcov} argument. This function is typically supplied by the \strong{sandwich}
+or \strong{clubSandwich} packages. Please refer to their documentation (e.g.,
 \code{?sandwich::vcovHAC}) to see the list of available arguments.}
 }
 \value{
@@ -252,28 +252,40 @@ Parameters from (linear) mixed models.
 }
 \note{
 If the calculation of random effects parameters takes too long, you may
-use \code{effects = "fixed"}. There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+use \code{effects = "fixed"}. There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\strong{see}-package}.
 }
 \section{Confidence intervals for random effect variances}{
 
 For models of class \code{merMod} and \code{glmmTMB}, confidence intervals for random
-effect variances can be calculated. For models of from package \strong{lme4}, when
-\code{ci_method} is either \code{"profile"} or \code{"boot"}, and \code{effects} is either
-\code{"random"} or \code{"all"}, profiled resp. bootstrapped confidence intervals are
-computed for the random effects. For all other options of \code{ci_method},
-confidence intervals for random effects will be missing. For models of class
-\code{glmmTMB}, confidence intervals for random effect variances always use a
-Wald t-distribution approximation.
+effect variances can be calculated.
+\itemize{
+\item For models of from package \strong{lme4}, when \code{ci_method} is either \code{"profile"}
+or \code{"boot"}, and \code{effects} is either \code{"random"} or \code{"all"}, profiled resp.
+bootstrapped confidence intervals are computed for the random effects.
+\item For all other options of \code{ci_method}, and only when the \strong{merDeriv}
+package is installed, confidence intervals for random effects are based on
+normal-distribution approximation, using the delta-method to transform
+standard errors for constructing the intervals around the log-transformed
+SD parameters. These are than back-transformed, so that random effect
+variances, standard errors and confidence intervals are shown on the original
+scale. Due to the transformation, the intervals are asymmetrical, however,
+they are within the correct bounds (i.e. no negative interval for the SD,
+and the interval for the correlations is within the range from -1 to +1).
+\item For models of class \code{glmmTMB}, confidence intervals for random effect
+variances always use a Wald t-distribution approximation.
+}
 }
 
 \section{Dispersion parameters in \emph{glmmTMB}}{
 
 For some models from package \strong{glmmTMB}, both the dispersion parameter and
 the residual variance from the random effects parameters are shown. Usually,
-these are the same but presented on different scales, e.g.\preformatted{model <- glmmTMB(Sepal.Width ~ Petal.Length + (1|Species), data = iris)
+these are the same but presented on different scales, e.g.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{model <- glmmTMB(Sepal.Width ~ Petal.Length + (1|Species), data = iris)
 exp(fixef(model)$disp) # 0.09902987
 sigma(model)^2         # 0.09902987
-}
+}\if{html}{\out{</div>}}
 
 For models where the dispersion parameter and the residual variance are
 the same, only the residual variance is shown in the output.

@@ -8,34 +8,6 @@
 
 
 #' Safe transformation from factor/character to numeric
-#' @keywords internal
-.factor_to_numeric <- function(x, lowest = NULL) {
-  if (is.numeric(x)) {
-    return(x)
-  }
-  if (is.logical(x)) {
-    return(as.numeric(x))
-  }
-
-  if (anyNA(suppressWarnings(as.numeric(as.character(stats::na.omit(x)))))) {
-    if (is.character(x)) {
-      x <- as.factor(x)
-    }
-    x <- droplevels(x)
-    levels(x) <- 1:nlevels(x)
-  }
-
-  out <- as.numeric(as.character(x))
-  if (!is.null(lowest)) {
-    difference <- min(out) - lowest
-    out <- out - difference
-  }
-  out
-}
-
-
-
-#' Safe transformation from factor/character to numeric
 #'
 #' @keywords internal
 .factor_to_dummy <- function(x) {
@@ -102,21 +74,6 @@
 }
 
 
-#' @keywords internal
-.safe_deparse <- function(string) {
-  paste0(sapply(deparse(string, width.cutoff = 500), trimws, simplify = TRUE), collapse = " ")
-}
-
-
-#' @keywords internal
-.n_unique <- function(x, na.rm = TRUE) {
-  if (is.null(x)) {
-    return(0)
-  }
-  if (isTRUE(na.rm)) x <- stats::na.omit(x)
-  length(unique(x))
-}
-
 
 #' @keywords internal
 .get_object <- function(x, attribute_name = "object_name") {
@@ -131,7 +88,7 @@
         NULL
       }
     )
-    if (is.null(model)) {
+    if (is.null(model) || inherits(model, "parameters_model")) { # prevent self reference
       model <- tryCatch(
         {
           get(obj_name, envir = globalenv())
@@ -149,4 +106,3 @@
 .is_semLme <- function(x) {
   all(inherits(x, c("sem", "lme")))
 }
-

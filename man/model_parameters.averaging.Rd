@@ -49,9 +49,9 @@
 \item{ci}{Confidence Interval (CI) level. Default to \code{0.95} (\verb{95\%}).}
 
 \item{component}{Model component for which parameters should be shown. May be
-one of \code{"conditional"}, \code{"precision"} (\pkg{betareg}),
-\code{"scale"} (\pkg{ordinal}), \code{"extra"} (\pkg{glmx}),
-\code{"marginal"} (\pkg{mfx}), \code{"conditional"} or \code{"full"} (for
+one of \code{"conditional"}, \code{"precision"} (\strong{betareg}),
+\code{"scale"} (\strong{ordinal}), \code{"extra"} (\strong{glmx}),
+\code{"marginal"} (\strong{mfx}), \code{"conditional"} or \code{"full"} (for
 \code{MuMIn::model.avg()}) or \code{"all"}.}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
@@ -70,7 +70,7 @@ from non-Gaussian families.}
 adjust p-values. See \code{\link[stats:p.adjust]{stats::p.adjust()}} for details. Further
 possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
 \code{"sidak"} and \code{"none"} to explicitly disable adjustment for
-\code{emmGrid} objects (from \pkg{emmeans}).}
+\code{emmGrid} objects (from \strong{emmeans}).}
 
 \item{verbose}{Toggle warnings and messages.}
 
@@ -89,12 +89,12 @@ case of bootstrapped frequentist models.}
 \item{standardize}{The method used for standardizing the parameters. Can be
 \code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
 on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
-\code{"pseudo"}. See 'Details' in \code{\link[effectsize:standardize_parameters]{effectsize::standardize_parameters()}}.
+\code{"pseudo"}. See 'Details' in \code{\link[=standardize_parameters]{standardize_parameters()}}.
 \strong{Important:}
 \itemize{
 \item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
 factors), which may be a different behaviour compared to other R packages
-(such as \pkg{lm.beta}) or other software packages (like SPSS). to mimic
+(such as \strong{lm.beta}) or other software packages (like SPSS). to mimic
 such behaviours, either use \code{standardize="basic"} or standardize the data
 with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed

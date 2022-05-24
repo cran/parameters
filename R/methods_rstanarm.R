@@ -2,8 +2,9 @@
 #'
 #' Parameters from Bayesian models.
 #'
-#' @param model Bayesian model (including SEM from \pkg{blavaan}. May also be
-#'   a data frame with posterior samples.
+#' @param model Bayesian model (including SEM from **blavaan**. May also be
+#'   a data frame with posterior samples, however, `as_draws` must be set to
+#'   `TRUE` (else, for data frames `NULL` is returned).
 #' @param ci Credible Interval (CI) level. Default to `0.95` (`95%`). See
 #'   [bayestestR::ci()] for further details.
 #' @param group_level Logical, for multilevel models (i.e. models with random
@@ -24,6 +25,10 @@
 #'   argument - but no auxiliary parameters). For `component = "distributional"`
 #'   (or `"auxiliary"`), components like `sigma`, `dispersion`, or `beta`
 #'   (and other auxiliary parameters) are returned.
+#' @param as_draws Logical, if `TRUE` and `model` is of class `data.frame`,
+#'   the data frame is treated as posterior samples and handled similar to
+#'   Bayesian models. All arguments in `...` are passed to
+#'   `model_parameters.draws()`.
 #' @inheritParams model_parameters.default
 #' @inheritParams bayestestR::describe_posterior
 #' @inheritParams insight::get_parameters
@@ -37,7 +42,7 @@
 #'   `bf_prior` and `priors` are ignored. \cr \cr There is also a
 #'   [`plot()`-method](https://easystats.github.io/see/articles/parameters.html)
 #'   implemented in the
-#'   \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#'   [**see**-package](https://easystats.github.io/see/).
 #'
 #' @inheritSection model_parameters Confidence intervals and approximation of degrees of freedom
 #'
@@ -58,7 +63,7 @@ model_parameters.stanreg <- function(model,
                                      centrality = "median",
                                      dispersion = FALSE,
                                      ci = .95,
-                                     ci_method = "hdi",
+                                     ci_method = "eti",
                                      test = c("pd", "rope"),
                                      rope_range = "default",
                                      rope_ci = 0.95,
@@ -130,7 +135,7 @@ model_parameters.stanmvreg <- function(model,
                                        centrality = "median",
                                        dispersion = FALSE,
                                        ci = .95,
-                                       ci_method = "hdi",
+                                       ci_method = "eti",
                                        test = "pd",
                                        rope_range = "default",
                                        rope_ci = 0.95,

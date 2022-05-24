@@ -1,9 +1,10 @@
 .runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
 
 if (.runThisTest &&
-  requiet("testthat") &&
-  requiet("parameters") &&
-  requiet("glmmTMB")) {
+    getRversion() >= "3.6.0" &&
+    requiet("testthat") &&
+    requiet("parameters") &&
+    requiet("glmmTMB")) {
   data("fish")
   data("Salamanders")
 
@@ -40,6 +41,11 @@ if (.runThisTest &&
     family = nbinom2,
     data = Salamanders
   ))
+
+  test_that("unsupported args", {
+    expect_warning(model_parameters(m1, vcov = "HC3", effects = "fixed", component = "conditional"))
+    expect_warning(model_parameters(m1, vcov = "HC3"))
+  })
 
   test_that("ci", {
     expect_equal(
@@ -159,9 +165,11 @@ if (.runThisTest &&
     )
     expect_equal(
       model_parameters(m3, effects = "fixed")$Coefficient,
-      c(-0.61038, -0.9637, 0.17068, -0.38706, 0.48795, 0.58949, -0.11327,
+      c(
+        -0.61038, -0.9637, 0.17068, -0.38706, 0.48795, 0.58949, -0.11327,
         1.42935, 0.91004, 1.16141, -0.93932, 1.04243, -0.56231, -0.893,
-        -2.53981, -2.56303, 1.51165),
+        -2.53981, -2.56303, 1.51165
+      ),
       tolerance = 1e-2
     )
     expect_equal(
@@ -325,7 +333,7 @@ if (.runThisTest &&
 
 
   data(mtcars)
-  mdisp <- glmmTMB(hp ~ 0 + wt/mpg, mtcars)
+  mdisp <- glmmTMB(hp ~ 0 + wt / mpg, mtcars)
   test_that("model_parameters, dispersion", {
     mp <- model_parameters(mdisp)
     expect_equal(mp$Coefficient, c(59.50992, -0.80396, 48.97731), tolerance = 1e-2)
@@ -333,7 +341,7 @@ if (.runThisTest &&
     expect_equal(mp$Component, c("conditional", "conditional", "dispersion"))
   })
 
-  mdisp <- glmmTMB(hp ~ 0 + wt/mpg + (1 | gear), mtcars)
+  mdisp <- glmmTMB(hp ~ 0 + wt / mpg + (1 | gear), mtcars)
   test_that("model_parameters, dispersion", {
     mp <- model_parameters(mdisp)
     expect_equal(mp$Coefficient, c(58.25869, -0.87868, 47.01676, 36.99492), tolerance = 1e-2)
@@ -378,9 +386,38 @@ if (.runThisTest &&
   })
 
 
+  # exponentiate for dispersion = sigma parameters -----------------------
+
+  set.seed(101)
+  ## rbeta() function parameterized by mean and shape
+  my_rbeta <- function(n, mu, shape0) {
+    rbeta(n, shape1 = mu * shape0, shape2 = (1 - mu) * shape0)
+  }
+  n <- 100
+  ng <- 10
+  dd <- data.frame(x = rnorm(n), f = factor(rep(1:(n / ng), ng)))
+  dd <- transform(dd, y = my_rbeta(n, mu = plogis(-1 + 2 * x + rnorm(ng)[f]), shape0 = 5))
+
+  m_exp <- glmmTMB(y ~ x + (1 | f), family = "beta_family", dd)
+
+  test_that("model_parameters, exp, glmmTMB", {
+    mp1 <- model_parameters(m_exp, exponentiate = TRUE)
+    mp2 <- model_parameters(m_exp, exponentiate = FALSE)
+    expect_equal(mp1$Coefficient, c(0.49271, 6.75824, 1.14541, 5.56294), tolerance = 1e-3)
+    expect_equal(mp1$Coefficient[3:4], mp2$Coefficient[3:4], tolerance = 1e-3)
+  })
+
+  test_that("model_parameters, no dispersion, glmmTMB", {
+    mp1 <- model_parameters(m_exp, effects = "fixed", component = "conditional", exponentiate = TRUE)
+    mp2 <- model_parameters(m_exp, effects = "fixed", component = "conditional", exponentiate = FALSE)
+    expect_equal(mp1$Coefficient, unname(exp(unlist(fixef(m_exp)$cond))), tolerance = 1e-3)
+    expect_equal(mp2$Coefficient, unname(unlist(fixef(m_exp)$cond)), tolerance = 1e-3)
+  })
+
+
   # proper printing ---------------------
 
-  if (win_os) {
+  if (win_os && getRversion() <= "4.2.0") {
     test_that("print-model_parameters glmmTMB", {
       mp <- model_parameters(m4, effects = "fixed", component = "conditional")
       out <- utils::capture.output(print(mp))

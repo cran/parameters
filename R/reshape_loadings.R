@@ -4,14 +4,13 @@
 #'
 #'
 #' @examples
-#' library(parameters)
-#' library(psych)
+#' if (require("psych")) {
+#'   pca <- model_parameters(psych::fa(attitude, nfactors = 3))
+#'   loadings <- reshape_loadings(pca)
 #'
-#' pca <- model_parameters(psych::fa(attitude, nfactors = 3))
-#' loadings <- reshape_loadings(pca)
-#'
-#' loadings
-#' reshape_loadings(loadings)
+#'   loadings
+#'   reshape_loadings(loadings)
+#' }
 #' @export
 reshape_loadings <- function(x, ...) {
   UseMethod("reshape_loadings")
@@ -98,7 +97,7 @@ reshape_loadings.data.frame <- function(x, threshold = NULL, loadings_columns = 
   )
 
   # Restore component names
-  for (i in 1:.n_unique(long$Component)) {
+  for (i in 1:insight::n_unique(long$Component)) {
     component <- unique(long$Component)[[i]]
     name <- names(loadings)[loadings_columns][[i]]
     long[long$Component == component, "Component"] <- name

@@ -39,9 +39,10 @@ simulate_parameters(model, ...)
 to be estimated. Default to \code{.95} (\verb{95\%}).}
 
 \item{ci_method}{The type of index used for Credible Interval. Can be
-\code{"HDI"} (default, see \code{\link[bayestestR:hdi]{hdi()}}), \code{"ETI"}
-(see \code{\link[bayestestR:eti]{eti()}}), \code{"BCI"} (see
-\code{\link[bayestestR:bci]{bci()}}) or \code{"SI"} (see \code{\link[bayestestR:si]{si()}}).}
+\code{"ETI"} (default, see \code{\link[bayestestR:eti]{eti()}}), \code{"HDI"}
+(see \code{\link[bayestestR:hdi]{hdi()}}), \code{"BCI"} (see
+\code{\link[bayestestR:bci]{bci()}}), \code{"SPI"} (see \code{\link[bayestestR:spi]{spi()}}), or
+\code{"SI"} (see \code{\link[bayestestR:si]{si()}}).}
 
 \item{test}{The indices of effect existence to compute. Character (vector) or
 list with one or more of these options: \code{"p_direction"} (or \code{"pd"}),
@@ -67,23 +68,22 @@ on a multivariate normal distribution (\code{MASS::mvrnorm()}) with mean
 \code{mu = coef(model)} and variance \code{Sigma = vcov(model)}.
 }
 \subsection{Models with Zero-Inflation Component}{
-For models from packages \pkg{glmmTMB}, \pkg{pscl}, \pkg{GLMMadaptive} and
-\pkg{countreg}, the \code{component} argument can be used to specify
+For models from packages \strong{glmmTMB}, \strong{pscl}, \strong{GLMMadaptive} and
+\strong{countreg}, the \code{component} argument can be used to specify
 which parameters should be simulated. For all other models, parameters
 from the conditional component (fixed effects) are simulated. This may
 include smooth terms, but not random effects.
 }
 }
 \note{
-There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\strong{see}-package}.
 }
 \examples{
-library(parameters)
-
 model <- lm(Sepal.Length ~ Species * Petal.Width + Petal.Length, data = iris)
 simulate_parameters(model)
+
 \dontrun{
-if (require("glmmTMB")) {
+if (require("glmmTMB", quietly = TRUE)) {
   model <- glmmTMB(
     count ~ spp + mined + (1 | site),
     ziformula = ~mined,

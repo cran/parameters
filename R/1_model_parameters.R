@@ -9,19 +9,19 @@
 #'  \item{[Correlations, t-tests, ...][model_parameters.htest] (`htest`, `pairwise.htest`)}
 #'  \item{[ANOVAs][model_parameters.aov] (`aov`, `anova`, **afex**, ...)}
 #'  \item{[Regression models][model_parameters.default] (`lm`, `glm`, **survey**, ...)}
+#'  \item{[Mixed models][model_parameters.merMod] (**lme4**, **nlme**, **glmmTMB**, **afex**, ...)}
 #'  \item{[Additive models][model_parameters.cgam] (`gam`, `gamm`, ...)}
 #'  \item{[Zero-inflated models][model_parameters.zcpglm] (`hurdle`, `zeroinfl`, `zerocount`)}
-#'  \item{[Multinomial, ordinal and cumulative link models][model_parameters.mlm] (`bracl`, `multinom`, `mlm`, ...)}
+#'  \item{[Multinomial, ordinal and cumulative link models][model_parameters.mlm] (`bracl`, `multinom`, `mlm`, **ordinal**, ...)}
 #'  \item{[Other special models][model_parameters.averaging] (`model.avg`, `betareg`, `glmx`, ...)}
-#'  \item{[Mixed models][model_parameters.merMod] (\pkg{lme4}, \pkg{nlme}, \pkg{glmmTMB}, \pkg{afex}, ...)}
-#'  \item{[Bayesian tests][model_parameters.BFBayesFactor] (\pkg{BayesFactor})}
-#'  \item{[Bayesian models][model_parameters.stanreg] (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, \pkg{blavaan}, ...)}
-#'  \item{[PCA and FA][model_parameters.principal] (\pkg{psych})}
-#'  \item{[CFA and SEM][model_parameters.lavaan] (\pkg{lavaan})}
+#'  \item{[Bayesian tests][model_parameters.BFBayesFactor] (**BayesFactor**)}
+#'  \item{[Bayesian models][model_parameters.stanreg] (**rstanarm**, **brms**, **MCMCglmm**, **blavaan**, ...)}
+#'  \item{[PCA and FA][model_parameters.principal] (**psych**)}
+#'  \item{[CFA and SEM][model_parameters.lavaan] (**lavaan**)}
 #'  \item{[Cluster models][model_parameters.kmeans] (k-means, ...)}
-#'  \item{[Meta-Analysis via linear (mixed) models][model_parameters.rma] (`rma`, `metaplus`, \pkg{metaBMA}, ...)}
-#'  \item{[Hypothesis testing][model_parameters.glht] (`glht`, \pkg{PMCMRplus})}
-#'  \item{[Robust statistical tests][model_parameters.t1way] (\pkg{WRS2})}
+#'  \item{[Meta-Analysis via linear (mixed) models][model_parameters.rma] (`rma`, `metaplus`, **metaBMA**, ...)}
+#'  \item{[Hypothesis testing][model_parameters.glht] (`glht`, **PMCMRplus**)}
+#'  \item{[Robust statistical tests][model_parameters.t1way] (**WRS2**)}
 #'  \item{[Multiply imputed repeated analyses][model_parameters.mira] (`mira`)}
 #'  }
 #'
@@ -42,17 +42,21 @@
 #'   implemented in the
 #'   [**see**-package](https://easystats.github.io/see/), and a dedicated
 #'   method for use inside rmarkdown files,
-#'   [`print_md()`][print_md.parameters_model].
+#'   [`print_md()`][print_md.parameters_model]. \cr \cr **For developers**, if
+#'   speed performance is an issue, you can use the (undocumented) `pretty_names`
+#'   argument, e.g. `model_parameters(..., pretty_names = FALSE)`. This will
+#'   skip the formatting of the coefficient names and make `model_parameters()`
+#'   faster.
 #'
 #' @section Standardization of model coefficients:
-#' Standardization is based on [effectsize::standardize_parameters()]. In case
+#' Standardization is based on [standardize_parameters()]. In case
 #' of `standardize = "refit"`, the data used to fit the model will be
 #' standardized and the model is completely refitted. In such cases, standard
 #' errors and confidence intervals refer to the standardized coefficient. The
 #' default, `standardize = "refit"`, never standardizes categorical predictors
 #' (i.e. factors), which may be a different behaviour compared to other R
 #' packages or other software packages (like SPSS). To mimic behaviour of SPSS
-#' or packages such as \pkg{lm.beta}, use `standardize = "basic"`.
+#' or packages such as **lm.beta**, use `standardize = "basic"`.
 #'
 #' @section
 #'
@@ -114,7 +118,7 @@
 #' within-group variable is found to have access between-group variance.
 #'
 #' @section Labeling the Degrees of Freedom:
-#' Throughout the \pkg{parameters} package, we decided to label the residual
+#' Throughout the **parameters** package, we decided to label the residual
 #' degrees of freedom *df_error*. The reason for this is that these degrees
 #' of freedom not always refer to the residuals. For certain models, they refer
 #' to the estimate error - in a linear model these are the same, but in - for
@@ -308,11 +312,11 @@ parameters <- model_parameters
 #' @param standardize The method used for standardizing the parameters. Can be
 #'   `NULL` (default; no standardization), `"refit"` (for re-fitting the model
 #'   on standardized data) or one of `"basic"`, `"posthoc"`, `"smart"`,
-#'   `"pseudo"`. See 'Details' in [effectsize::standardize_parameters()].
+#'   `"pseudo"`. See 'Details' in [standardize_parameters()].
 #'   **Important:**
 #'   - The `"refit"` method does *not* standardized categorical predictors (i.e.
 #'   factors), which may be a different behaviour compared to other R packages
-#'   (such as \pkg{lm.beta}) or other software packages (like SPSS). to mimic
+#'   (such as **lm.beta**) or other software packages (like SPSS). to mimic
 #'   such behaviours, either use `standardize="basic"` or standardize the data
 #'   with `datawizard::standardize(force=TRUE)` *before* fitting the model.
 #'   - For mixed models, when using methods other than `"refit"`, only the fixed
@@ -331,15 +335,15 @@ parameters <- model_parameters
 #'   `exponentiate = "nongaussian"` will only exponentiate coefficients
 #'   from non-Gaussian families.
 #' @param component Model component for which parameters should be shown. May be
-#'   one of `"conditional"`, `"precision"` (\pkg{betareg}),
-#'   `"scale"` (\pkg{ordinal}), `"extra"` (\pkg{glmx}),
-#'   `"marginal"` (\pkg{mfx}), `"conditional"` or `"full"` (for
+#'   one of `"conditional"`, `"precision"` (**betareg**),
+#'   `"scale"` (**ordinal**), `"extra"` (**glmx**),
+#'   `"marginal"` (**mfx**), `"conditional"` or `"full"` (for
 #'   `MuMIn::model.avg()`) or `"all"`.
 #' @param p_adjust Character vector, if not `NULL`, indicates the method to
 #'   adjust p-values. See [stats::p.adjust()] for details. Further
 #'   possible adjustment methods are `"tukey"`, `"scheffe"`,
 #'   `"sidak"` and `"none"` to explicitly disable adjustment for
-#'   `emmGrid` objects (from \pkg{emmeans}).
+#'   `emmGrid` objects (from **emmeans**).
 #' @param ci_method Method for computing degrees of freedom for
 #'   confidence intervals (CI) and the related p-values. Allowed are following
 #'   options (which vary depending on the model class): `"residual"`,
@@ -393,17 +397,22 @@ parameters <- model_parameters
 #' model_parameters(model)
 #'
 #' # bootstrapped parameters
-#' model_parameters(model, bootstrap = TRUE)
+#' if (require("boot", quietly = TRUE)) {
+#'   model_parameters(model, bootstrap = TRUE)
+#' }
 #'
 #' # standardized parameters
 #' model_parameters(model, standardize = "refit")
 #'
 #' # robust, heteroskedasticity-consistent standard errors
-#' model_parameters(model, vcov = "HC3")
+#' if (require("sandwich") && require("clubSandwich")) {
+#'   model_parameters(model, vcov = "HC3")
 #'
-#' model_parameters(model,
-#'                  vcov = "vcovCL",
-#'                  vcov_args = list(cluster = mtcars$cyl))
+#'   model_parameters(model,
+#'     vcov = "vcovCL",
+#'     vcov_args = list(cluster = mtcars$cyl)
+#'   )
+#' }
 #'
 #' # different p-value style in output
 #' model_parameters(model, p_digits = 5)
@@ -434,8 +443,13 @@ model_parameters.default <- function(model,
                                      vcov = NULL,
                                      vcov_args = NULL,
                                      ...) {
-
-  dots <- list(...)
+  # sanity check, warn if unsupported argument is used.
+  dots <- .check_dots(
+    dots = list(...),
+    not_allowed = c("include_sigma", "wb_component"),
+    class(model)[1],
+    verbose = verbose
+  )
 
   out <- tryCatch(
     {
@@ -499,8 +513,6 @@ model_parameters.default <- function(model,
                                       vcov = NULL,
                                       vcov_args = NULL,
                                       ...) {
-
-
   dots <- list(...)
 
   ## TODO remove later
@@ -520,7 +532,8 @@ model_parameters.default <- function(model,
       model,
       iterations = iterations,
       ci = ci,
-      ci_method = ci_method)
+      ci_method = ci_method
+    )
     args <- c(args, dots)
     params <- do.call("bootstrap_parameters", args)
   } else {
@@ -592,8 +605,6 @@ model_parameters.glm <- function(model,
                                  vcov_args = NULL,
                                  verbose = TRUE,
                                  ...) {
-
-
   dots <- list(...)
 
   # set default

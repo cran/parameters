@@ -47,7 +47,7 @@
 #'   as `nrow(x)`.
 #'
 #' @note
-#' There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#' There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the [**see**-package](https://easystats.github.io/see/).
 #'
 #' @details
 #' The `print()` and `plot()` methods show the (standardized) mean value for
@@ -71,7 +71,9 @@
 #' rez # Show results
 #' predict(rez) # Get clusters
 #' summary(rez) # Extract the centers values (can use 'plot()' on that)
-#' cluster_discrimination(rez) # Perform LDA
+#' if (requireNamespace("MASS", quietly = TRUE)) {
+#'   cluster_discrimination(rez) # Perform LDA
+#' }
 #'
 #' # Hierarchical k-means (more robust k-means)
 #' if (require("factoextra", quietly = TRUE)) {
@@ -130,13 +132,21 @@ cluster_analysis <- function(x,
                              ...) {
 
 
-  # Sanity checks -----------------------------------------------------------
-  insight::check_if_installed("performance")
-
   # match arguments
   method <- match.arg(method, choices = c("kmeans", "hkmeans", "pam", "pamk", "hclust", "dbscan", "hdbscan", "mixture"), several.ok = TRUE)
 
   # Preparation -------------------------------------------------------------
+
+  # coerce to data frame if input is a matrix
+  if (is.matrix(x)) {
+    x <- as.data.frame(x)
+  }
+
+  # check if we have a correlation/covariance or distance matrix?
+  if (nrow(x) == ncol(x) && identical(round(x[lower.tri(x)], 10), round(x[upper.tri(x)], 10))) {
+    ## TODO: special handling
+    warning(insight::format_message("Input data seems to be a correlation, covariance or similar matrix."), call. = FALSE)
+  }
 
   # Preprocess data
   data <- .prepare_data_clustering(x, include_factors = include_factors, standardize = standardize, ...)
@@ -284,7 +294,7 @@ cluster_analysis <- function(x,
 .cluster_analysis_mixture <- function(data = NULL, n = NULL, ...) {
   insight::check_if_installed("mclust")
 
-  model <- mclust::Mclust(data, G=n, verbose = FALSE, ...)
+  model <- mclust::Mclust(data, G = n, verbose = FALSE, ...)
 
   list(model = model, clusters = model$classification)
 }

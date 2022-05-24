@@ -11,7 +11,7 @@
 #'
 #' @seealso [bootstrap_model()], [bootstrap_parameters()], [simulate_model()]
 #'
-#' @note There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#' @note There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the [**see**-package](https://easystats.github.io/see/).
 #'
 #' @details
 #'   \subsection{Technical Details}{
@@ -21,20 +21,19 @@
 #'     `mu = coef(model)` and variance `Sigma = vcov(model)`.
 #'   }
 #'   \subsection{Models with Zero-Inflation Component}{
-#'     For models from packages \pkg{glmmTMB}, \pkg{pscl}, \pkg{GLMMadaptive} and
-#'     \pkg{countreg}, the `component` argument can be used to specify
+#'     For models from packages **glmmTMB**, **pscl**, **GLMMadaptive** and
+#'     **countreg**, the `component` argument can be used to specify
 #'     which parameters should be simulated. For all other models, parameters
 #'     from the conditional component (fixed effects) are simulated. This may
 #'     include smooth terms, but not random effects.
 #'   }
 #'
 #' @examples
-#' library(parameters)
-#'
 #' model <- lm(Sepal.Length ~ Species * Petal.Width + Petal.Length, data = iris)
 #' simulate_parameters(model)
+#'
 #' \dontrun{
-#' if (require("glmmTMB")) {
+#' if (require("glmmTMB", quietly = TRUE)) {
 #'   model <- glmmTMB(
 #'     count ~ spp + mined + (1 | site),
 #'     ziformula = ~mined,
@@ -73,7 +72,7 @@ simulate_parameters.default <- function(model,
   )
 
   params <- insight::get_parameters(model, verbose = FALSE)
-  if ("Effects" %in% colnames(params) && .n_unique(params$Effects) > 1) {
+  if ("Effects" %in% colnames(params) && insight::n_unique(params$Effects) > 1) {
     out$Effects <- params$Effects
   }
 

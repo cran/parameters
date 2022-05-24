@@ -20,8 +20,8 @@
 #'   _Confidence intervals and approximation of degrees of freedom_ in
 #'   [`model_parameters()`] for further details.
 #' @param component Model component for which parameters should be shown. See
-#'   the documentation for your object's class in [`model_parameters()`] for
-#'   further details.
+#'   the documentation for your object's class in [`model_parameters()`] or
+#'   [`p_value()`] for further details.
 #' @param iterations The number of bootstrap replicates. Only applies to models
 #'   of class `merMod` when `method=boot`.
 #' @param verbose Toggle warnings and messages.
@@ -61,7 +61,6 @@ ci.glm <- function(x,
                    vcov_args = NULL,
                    verbose = TRUE,
                    ...) {
-
   method <- match.arg(method, choices = c("profile", "wald", "normal", "residual"))
 
   if (method == "profile") {
@@ -71,14 +70,16 @@ ci.glm <- function(x,
     out <- lapply(ci, function(i) .ci_profiled(model = x, ci = i))
     out <- do.call(rbind, out)
   } else {
-    out <- .ci_generic(model = x,
-                       ci = ci,
-                       dof = dof,
-                       method = method,
-                       vcov = vcov,
-                       vcov_args = vcov_args,
-                       verbose = verbose,
-                       ...)
+    out <- .ci_generic(
+      model = x,
+      ci = ci,
+      dof = dof,
+      method = method,
+      vcov = vcov,
+      vcov_args = vcov_args,
+      verbose = verbose,
+      ...
+    )
   }
 
   row.names(out) <- NULL

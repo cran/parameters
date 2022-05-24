@@ -71,10 +71,9 @@ ci.clmm2 <- ci.clm2
 # standard errors -----------------
 
 
-#' @rdname standard_error
 #' @export
-standard_error.clm2 <- function(model, component = c("all", "conditional", "scale"), ...) {
-  component <- match.arg(component)
+standard_error.clm2 <- function(model, component = "all", ...) {
+  component <- match.arg(component, choices = c("all", "conditional", "scale"))
   stats <- .get_se_from_summary(model)
   parms <- insight::get_parameters(model, component = component)
 
@@ -133,7 +132,7 @@ simulate_model.clm2 <- function(model,
   out <- .simulate_model(model, iterations, component = component)
 
   class(out) <- c("parameters_simulate_model", class(out))
-  attr(out, "object_name") <- .safe_deparse(substitute(model))
+  attr(out, "object_name") <- insight::safe_deparse(substitute(model))
   out
 }
 

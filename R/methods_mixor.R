@@ -47,7 +47,6 @@ ci.mixor <- function(x, ci = .95, effects = "all", ...) {
 }
 
 
-#' @rdname standard_error
 #' @export
 standard_error.mixor <- function(model, effects = "all", ...) {
   effects <- match.arg(effects, choices = c("all", "fixed", "random"))
@@ -82,6 +81,6 @@ simulate_model.mixor <- function(model, iterations = 1000, effects = "all", ...)
   out <- .simulate_model(model, iterations, component = "conditional", effects = effects)
 
   class(out) <- c("parameters_simulate_model", class(out))
-  attr(out, "object_name") <- .safe_deparse(substitute(model))
+  attr(out, "object_name") <- insight::safe_deparse(substitute(model))
   out
 }

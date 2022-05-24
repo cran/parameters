@@ -102,7 +102,7 @@ model_parameters.htest <- function(model,
   }
 
   if (!is.null(parameters$Method)) {
-    parameters$Method <- trimws(gsub("with continuity correction", "", parameters$Method))
+    parameters$Method <- insight::trim_ws(gsub("with continuity correction", "", parameters$Method, fixed = TRUE))
   }
 
   # save alternative
@@ -146,6 +146,15 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
   parameters <- .add_htest_attributes(parameters, model, p_adjust = model$p.adjust.method)
   class(parameters) <- c("parameters_model", "see_parameters_model", class(parameters))
   parameters
+}
+
+
+
+# survey-table --------------------
+
+#' @export
+model_parameters.svytable <- function(model, verbose = TRUE, ...) {
+  model_parameters(summary(model)$statistic, verbose = verbose, ...)
 }
 
 
@@ -270,6 +279,10 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
 
     # exact binomial test --------------
     out <- .extract_htest_binom(model)
+  } else if (m_info$is_ftest) {
+
+    # F test for equal variances --------------
+    out <- .extract_htest_vartest(model)
   } else {
     stop("model_parameters not implemented for such h-tests yet.")
   }
@@ -383,6 +396,7 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
 
 
 
+
 # extract htest leveneTest ----------------------
 
 
@@ -393,6 +407,26 @@ model_parameters.pairwise.htest <- function(model, verbose = TRUE, ...) {
     `F` = model$`F value`[1],
     p = model$`Pr(>F)`[1],
     Method = "Levene's Test for Homogeneity of Variance",
+    stringsAsFactors = FALSE
+  )
+}
+
+
+
+# extract htest var.test ----------------------
+
+
+.extract_htest_vartest <- function(model) {
+  data.frame(
+    "Parameter" = model$data.name,
+    "Estimate" = model$estimate,
+    "df" = model$parameter[1],
+    "df_error" = model$parameter[2],
+    `F` = model$statistic,
+    "CI_low" = model$conf.int[1],
+    "CI_high" = model$conf.int[2],
+    p = model$p.value,
+    Method = "F test to compare two variances",
     stringsAsFactors = FALSE
   )
 }

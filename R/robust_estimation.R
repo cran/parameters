@@ -22,14 +22,15 @@ standard_error_robust <- function(model,
   }
 
   standard_error(model,
-                 vcov = vcov,
-                 vcov_args = vcov_args,
-                 ...)
+    vcov = vcov,
+    vcov_args = vcov_args,
+    ...
+  )
 }
 
 
 
-#' Robust p values. Superseded by the `vcov*` arguments in `p_value()`
+#' Robust p-values. Superseded by the `vcov*` arguments in `p_value()`
 #'
 #' @inheritParams p_value
 #' @keywords internal
@@ -55,7 +56,8 @@ p_value_robust <- function(model,
     vcov = vcov,
     vcov_args = vcov_args,
     component = component,
-    ...)
+    ...
+  )
 }
 
 
@@ -82,7 +84,7 @@ ci_robust <- function(model,
     ...
   )
 
-  if ("Component" %in% colnames(out) && .n_unique(out$Component) == 1) {
+  if ("Component" %in% colnames(out) && insight::n_unique(out$Component) == 1) {
     out$Component <- NULL
   }
   out

@@ -1,42 +1,14 @@
 #' @rdname model_parameters.stanreg
 #' @export
-model_parameters.data.frame <- function(model,
-                                        centrality = "median",
-                                        dispersion = FALSE,
-                                        ci = .95,
-                                        ci_method = "hdi",
-                                        test = c("pd", "rope"),
-                                        rope_range = "default",
-                                        rope_ci = 0.95,
-                                        keep = NULL,
-                                        drop = NULL,
-                                        parameters = keep,
-                                        verbose = TRUE,
-                                        ...) {
-  # Processing
-  params <- .extract_parameters_bayesian(
-    model,
-    centrality = centrality,
-    dispersion = dispersion,
-    ci = ci,
-    ci_method = ci_method,
-    test = test,
-    rope_range = rope_range,
-    rope_ci = rope_ci,
-    bf_prior = NULL,
-    diagnostic = NULL,
-    priors = FALSE,
-    keep_parameters = keep,
-    drop_parameters = drop,
-    verbose = verbose,
-    ...
-  )
-
-  attr(params, "ci") <- ci
-  attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
-  class(params) <- c("parameters_model", "see_parameters_model", class(params))
-
-  params
+model_parameters.data.frame <- function(model, as_draws = FALSE, verbose = TRUE, ...) {
+  # treat data frame as bootstraps/posteriors?
+  if (isTRUE(as_draws)) {
+    return(model_parameters.draws(model, verbose = verbose, ...))
+  }
+  if (isTRUE(verbose)) {
+    warning(insight::format_message("A `data.frame` object is no valid regression model object and cannot be used with `model_parameters()`."), call. = FALSE)
+  }
+  NULL
 }
 
 
@@ -114,7 +86,7 @@ standard_error.xtabs <- standard_error.table
 
 
 #' @export
-standard_error.effectsize_std_params <- function(model, verbose = TRUE, ...) {
+standard_error.parameters_standardized <- function(model, verbose = TRUE, ...) {
   se <- attr(model, "standard_error")
 
   if (is.null(se)) {
@@ -153,12 +125,8 @@ p_value.numeric <- function(model, null = 0, ...) {
   # https://stats.stackexchange.com/a/28725/293056
   x <- stats::na.omit(model)
   xM <- mean(x)
-  if (is.null(null) || all(is.na(null))) {
-    x0 <- x - xM
-  } else {
-    x0 <- null
-  }
-  k <- sum(x > x0)
+  x0 <- x - xM
+  k <- sum(abs(x0) > abs(xM - null)) # two tailed p-value
   N <- length(x)
   (k + 1) / (N + 1)
 }

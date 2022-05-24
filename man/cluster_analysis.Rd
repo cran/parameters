@@ -87,7 +87,7 @@ specific cluster (as compared to other cluster groups with lower absolute
 mean values).
 }
 \note{
-There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\strong{see}-package}.
 }
 \examples{
 set.seed(33)
@@ -96,7 +96,9 @@ rez <- cluster_analysis(iris[1:4], n = 3, method = "kmeans")
 rez # Show results
 predict(rez) # Get clusters
 summary(rez) # Extract the centers values (can use 'plot()' on that)
-cluster_discrimination(rez) # Perform LDA
+if (requireNamespace("MASS", quietly = TRUE)) {
+  cluster_discrimination(rez) # Perform LDA
+}
 
 # Hierarchical k-means (more robust k-means)
 if (require("factoextra", quietly = TRUE)) {

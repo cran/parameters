@@ -13,7 +13,7 @@
 #'   documentation for related model class in [model_parameters()].
 #' @param column_names Character vector with strings that should be used as
 #'   column headers. Must be of same length as number of models in `...`.
-#' @param ci_method Method for computing degrees of freedom for p values
+#' @param ci_method Method for computing degrees of freedom for p-values
 #'   and confidence intervals (CI). See documentation for related model class
 #'   in [model_parameters()].
 #' @param style String, indicating which style of output is requested. Following
@@ -157,7 +157,7 @@ compare_parameters <- function(...,
 
       # set default-ci_type for Bayesian models
       if (.is_bayesian_model(model) && !ci_method %in% c("hdi", "quantile", "ci", "eti", "si", "bci", "bcai")) {
-        ci_method_tmp <- "hdi"
+        ci_method_tmp <- "eti"
       } else {
         ci_method_tmp <- ci_method
       }
@@ -177,51 +177,39 @@ compare_parameters <- function(...,
         verbose = verbose
       )
     }
+
     # set specific names for coefficient column
     coef_name <- attributes(dat)$coefficient_name
     if (!is.null(coef_name)) {
       colnames(dat)[colnames(dat) == "Coefficient"] <- coef_name
     }
+
     # set pretty parameter names
     dat <- .set_pretty_names(dat)
+
     # make sure we have a component-column, for merging
     if (!"Component" %in% colnames(dat)) {
       dat$Component <- "conditional"
     }
+
     # add zi-suffix to parameter names
     if (any(dat$Component == "zero_inflated")) {
       dat$Parameter[dat$Component == "zero_inflated"] <- paste0(dat$Parameter[dat$Component == "zero_inflated"], " (zi)")
     }
+
     # add suffix
     ignore <- colnames(dat) %in% c("Parameter", "Component")
     colnames(dat)[!ignore] <- paste0(colnames(dat)[!ignore], ".", model_name)
+
     # save model number, for sorting
     dat$model <- i
     dat$model[.in_intercepts(dat$Parameter)] <- 0
-
-    ## NOT SURE why we needed this? It duplicates parameters when
-    ## these are in different order in different models
-
-    # add index for row order. needed later, because "merge()" sometimes
-    # messes up the correct row sorting, despite setting "sort = FALSE"
-    # dat$.row_index <- 1:nrow(dat)
 
     dat
   })
 
   object_attributes <- lapply(m, attributes)
   names(object_attributes) <- model_names
-
-  ## NOT SURE why we needed this? It duplicates parameters when
-  ## these are in different order in different models
-
-  # # merge all data frames
-  # all_models <- suppressWarnings(Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component", ".row_index")), m))
-  #
-  # # fix row order
-  # row_order <- order(all_models$.row_index)
-  # all_models <- all_models[row_order, ]
-  # all_models$.row_index <- NULL
 
   # merge all data frames
   all_models <- suppressWarnings(Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component")), m))
@@ -235,7 +223,7 @@ compare_parameters <- function(...,
   all_models <- all_models[order(params_order), ]
   all_models[model_cols] <- NULL
 
-  attr(all_models, "model_names") <- gsub("\"", "", unlist(lapply(model_names, .safe_deparse)), fixed = TRUE)
+  attr(all_models, "model_names") <- gsub("\"", "", unlist(lapply(model_names, insight::safe_deparse)), fixed = TRUE)
   attr(all_models, "output_style") <- style
   attr(all_models, "all_attributes") <- object_attributes
   class(all_models) <- c("compare_parameters", "see_compare_parameters", unique(class(all_models)))
@@ -249,14 +237,12 @@ compare_parameters <- function(...,
 compare_models <- compare_parameters
 
 
-
-
-
 # helper ----------------------------
 
 
 .set_pretty_names <- function(x) {
   att <- attributes(x)
+
   if (!is.null(att$pretty_names)) {
     # remove strings with NA names
     att$pretty_names <- att$pretty_names[!is.na(names(att$pretty_names))]
@@ -281,5 +267,6 @@ compare_models <- compare_parameters
   if (!is.null(x$Parameter)) {
     x$Parameter <- gsub("]", ")", gsub("[", "(", x$Parameter, fixed = TRUE), fixed = TRUE)
   }
+
   x
 }

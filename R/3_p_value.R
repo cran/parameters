@@ -3,21 +3,20 @@
 #' This function attempts to return, or compute, p-values of a model's
 #' parameters. See the documentation for your object's class:
 #' \itemize{
-#'  \item{[Bayesian models][p_value.BFBayesFactor] (\pkg{rstanarm}, \pkg{brms}, \pkg{MCMCglmm}, ...)}
+#'  \item{[Bayesian models][p_value.BFBayesFactor] (**rstanarm**, **brms**, **MCMCglmm**, ...)}
 #'  \item{[Zero-inflated models][p_value.zeroinfl] (`hurdle`, `zeroinfl`, `zerocount`, ...)}
-#'  \item{[Marginal effects models][p_value.poissonmfx] (\pkg{mfx})}
+#'  \item{[Marginal effects models][p_value.poissonmfx] (**mfx**)}
 #'  \item{[Models with special components][p_value.DirichletRegModel] (`DirichletRegModel`, `clm2`, `cgam`, ...)}
 #'  }
 #'
 #' @param model A statistical model.
-#' @param method For linear mixed models, `method` can be
-#'   [`"kenward"`][p_value_kenward] or
-#'   [`"satterthwaite"`][p_value_satterthwaite].
 #' @param adjust Character value naming the method used to adjust p-values or
 #'   confidence intervals. See `?emmeans::summary.emmGrid` for details.
 #' @param ... Additional arguments
 #' @inheritParams ci.default
 #' @inheritParams standard_error.default
+#'
+#' @inheritSection model_parameters Confidence intervals and approximation of degrees of freedom
 #'
 #' @return A data frame with at least two columns: the parameter names and the
 #'   p-values. Depending on the model, may also include columns for model
@@ -46,8 +45,6 @@ p_value.default <- function(model,
                             vcov_args = NULL,
                             verbose = TRUE,
                             ...) {
-
-
   dots <- list(...)
 
   if (is.character(method)) {
@@ -86,7 +83,8 @@ p_value.default <- function(model,
       method = method,
       component = component,
       verbose = verbose,
-      ...)
+      ...
+    )
     return(p)
   }
 
@@ -106,9 +104,10 @@ p_value.default <- function(model,
       se <- vcov
     } else {
       args <- list(model,
-                   vcov_args = vcov_args,
-                   vcov = vcov,
-                   verbose = verbose)
+        vcov_args = vcov_args,
+        vcov = vcov,
+        verbose = verbose
+      )
       args <- c(args, dots)
       se <- do.call("standard_error", args)
     }
@@ -125,14 +124,15 @@ p_value.default <- function(model,
     p <- tryCatch(
       {
         # Zelig-models are weird
-        if (grepl("^Zelig-", class(model)[1])) {
+        if (grepl("Zelig-", class(model)[1], fixed = TRUE)) {
           unlist(model$get_pvalue())
         } else {
           # try to get p-value from classical summary for default models
           .get_pval_from_summary(model)
         }
       },
-      error = function(e) NULL)
+      error = function(e) NULL
+    )
   }
 
   # default 2nd try: p value from test-statistic
@@ -144,7 +144,8 @@ p_value.default <- function(model,
         names(p_from_stat) <- stat$Parameter
         p_from_stat
       },
-      error = function(e) NULL)
+      error = function(e) NULL
+    )
   }
 
   # output
@@ -169,7 +170,7 @@ p_value.default <- function(model,
 
 
 .get_pval_from_summary <- function(model, cs = NULL) {
-  if (is.null(cs)) cs <- stats::coef(summary(model))
+  if (is.null(cs)) cs <- suppressWarnings(stats::coef(summary(model)))
   p <- NULL
 
   if (ncol(cs) >= 4) {

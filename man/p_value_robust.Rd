@@ -2,7 +2,7 @@
 % Please edit documentation in R/robust_estimation.R
 \name{p_value_robust}
 \alias{p_value_robust}
-\title{Robust p values. Superseded by the \verb{vcov*} arguments in \code{p_value()}}
+\title{Robust p-values. Superseded by the \verb{vcov*} arguments in \code{p_value()}}
 \usage{
 p_value_robust(
   model,
@@ -33,21 +33,26 @@ the function to be used to compute the covariance matrix.
 }}
 
 \item{vcov_args}{List of arguments to be passed to the function identified by
-the \code{vcov} argument. This function is typically supplied by the \emph{sandwich}
-or \emph{clubSandwich} packages. Please refer to their documentation (e.g.,
+the \code{vcov} argument. This function is typically supplied by the \strong{sandwich}
+or \strong{clubSandwich} packages. Please refer to their documentation (e.g.,
 \code{?sandwich::vcovHAC}) to see the list of available arguments.}
 
 \item{component}{Model component for which parameters should be shown. See
-the documentation for your object's class in \code{\link[=model_parameters]{model_parameters()}} for
-further details.}
+the documentation for your object's class in \code{\link[=model_parameters]{model_parameters()}} or
+\code{\link[=p_value]{p_value()}} for further details.}
 
-\item{method}{For linear mixed models, \code{method} can be
-\code{\link[=p_value_kenward]{"kenward"}} or
-\code{\link[=p_value_satterthwaite]{"satterthwaite"}}.}
+\item{method}{Method for computing degrees of freedom for
+confidence intervals (CI) and the related p-values. Allowed are following
+options (which vary depending on the model class): \code{"residual"},
+\code{"normal"}, \code{"likelihood"}, \code{"satterthwaite"}, \code{"kenward"}, \code{"wald"},
+\code{"profile"}, \code{"boot"}, \code{"uniroot"}, \code{"ml1"}, \code{"betwithin"}, \code{"hdi"},
+\code{"quantile"}, \code{"ci"}, \code{"eti"}, \code{"si"}, \code{"bci"}, or \code{"bcai"}. See section
+\emph{Confidence intervals and approximation of degrees of freedom} in
+\code{\link[=model_parameters]{model_parameters()}} for further details.}
 
 \item{...}{Additional arguments}
 }
 \description{
-Robust p values. Superseded by the \verb{vcov*} arguments in \code{p_value()}
+Robust p-values. Superseded by the \verb{vcov*} arguments in \code{p_value()}
 }
 \keyword{internal}

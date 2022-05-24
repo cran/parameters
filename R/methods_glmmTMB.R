@@ -34,6 +34,14 @@ model_parameters.glmmTMB <- function(model,
     ci_method <- df_method
   }
 
+  # sanity check, warn if unsupported argument is used.
+  dot_args <- .check_dots(
+    dots = list(...),
+    not_allowed = c("vcov", "vcov_args"),
+    class(model)[1],
+    verbose = verbose
+  )
+
   # p-values, CI and se might be based on different df-methods
   ci_method <- .check_df_method(ci_method)
 
@@ -77,31 +85,39 @@ model_parameters.glmmTMB <- function(model,
         }
       }
     } else {
-      params <- .extract_parameters_generic(
+      args <- list(
         model,
         ci = ci,
         component = component,
+        merge_by = c("Parameter", "Component"),
         standardize = standardize,
+        effects = "fixed",
         ci_method = ci_method,
         p_adjust = p_adjust,
-        wb_component = wb_component,
         keep_parameters = NULL,
         drop_parameters = NULL,
+        verbose = verbose,
+        vcov = NULL,
+        vcov_args = NULL,
         keep_component_column = component != "conditional",
         include_sigma = include_sigma,
-        summary = summary,
-        ...
+        wb_component = wb_component,
+        summary = summary
       )
+      args <- c(args, dot_args)
+      params <- do.call(".extract_parameters_generic", args)
     }
 
     # add dispersion parameter
     if (
       # must be glmmTMB
       inherits(model, "glmmTMB") &&
-      # don't print dispersion if already present
-      (is.null(component) || !"dispersion" %in% params$Component) &&
-      # don't print dispersion for zi-component
-      component %in% c("conditional", "all", "dispersion")
+        # don't print dispersion if already present
+        (is.null(component) || !"dispersion" %in% params$Component) &&
+        # don't print dispersion for zi-component
+        component %in% c("conditional", "all", "dispersion") &&
+        # if effects = "fixed" and component = "conditional", don't include dispersion
+        !(component == "conditional" && effects == "fixed")
     ) {
       dispersion_param <- insight::get_parameters(model, component = "dispersion")
       if (!is.null(dispersion_param)) {
@@ -143,9 +159,11 @@ model_parameters.glmmTMB <- function(model,
         resid <- which(params_variance$Group == "Residual")
         # check if we have dispersion parameter, and either no sigma
         # or sigma equals dispersion
-        if (length(disp) && length(resid) && all.equal(params_variance$Coefficient[resid],
-                                                       params$Coefficient[disp],
-                                                       tolerance = 1e-5)) {
+        if (length(disp) > 0 &&
+            length(resid) > 0 &&
+            isTRUE(all.equal(params_variance$Coefficient[resid],
+                             params$Coefficient[disp],
+                             tolerance = 1e-5))) {
           params <- params[-disp, ]
         }
       }
@@ -228,6 +246,15 @@ ci.glmmTMB <- function(x,
     return(NULL)
   }
 
+  # sanity check, warn if unsupported argument is used.
+  dot_args <- .check_dots(
+    dots = list(...),
+    not_allowed = c("vcov", "vcov_args"),
+    class(x)[1],
+    function_name = "ci",
+    verbose = verbose
+  )
+
   # profiled CIs
   if (method == "profile") {
     pp <- stats::profile(x)
@@ -252,12 +279,20 @@ ci.glmmTMB <- function(x,
 #' @rdname standard_error
 #' @export
 standard_error.glmmTMB <- function(model,
-                                   effects = c("fixed", "random"),
-                                   component = c("all", "conditional", "zi", "zero_inflated", "dispersion"),
+                                   effects = "fixed",
+                                   component = "all",
                                    verbose = TRUE,
                                    ...) {
-  component <- match.arg(component)
-  effects <- match.arg(effects)
+  component <- match.arg(component, choices = c("all", "conditional", "zi", "zero_inflated", "dispersion"))
+  effects <- match.arg(effects, choices = c("fixed", "random"))
+
+  dot_args <- .check_dots(
+    dots = list(...),
+    not_allowed = c("vcov", "vcov_args"),
+    class(model)[1],
+    function_name = "standard_error",
+    verbose = verbose
+  )
 
   if (effects == "random") {
     if (requireNamespace("TMB", quietly = TRUE) && requireNamespace("glmmTMB", quietly = TRUE)) {
@@ -368,7 +403,7 @@ simulate_model.glmmTMB <- function(model, iterations = 1000, component = c("all"
   }
 
   class(d) <- c("parameters_simulate_model", class(d))
-  attr(d, "object_name") <- .safe_deparse(substitute(model))
+  attr(d, "object_name") <- insight::safe_deparse(substitute(model))
   d
 }
 
@@ -399,11 +434,11 @@ simulate_parameters.glmmTMB <- function(model,
     )
 
   params <- insight::get_parameters(model, ...)
-  if ("Effects" %in% colnames(params) && .n_unique(params$Effects) > 1) {
+  if ("Effects" %in% colnames(params) && insight::n_unique(params$Effects) > 1) {
     out$Effects <- params$Effects
   }
 
-  if ("Component" %in% colnames(params) && .n_unique(params$Component) > 1) {
+  if ("Component" %in% colnames(params) && insight::n_unique(params$Component) > 1) {
     out$Component <- params$Component
   }
 

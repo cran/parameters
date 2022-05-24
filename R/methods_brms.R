@@ -5,7 +5,7 @@ model_parameters.brmsfit <- function(model,
                                      centrality = "median",
                                      dispersion = FALSE,
                                      ci = .95,
-                                     ci_method = "hdi",
+                                     ci_method = "eti",
                                      test = c("pd", "rope"),
                                      rope_range = "default",
                                      rope_ci = 0.95,
@@ -103,7 +103,7 @@ model_parameters.brmsfit <- function(model,
                                         centrality = "median",
                                         dispersion = FALSE,
                                         ci = .95,
-                                        ci_method = "hdi",
+                                        ci_method = "eti",
                                         test = c("pd", "rope"),
                                         rope_range = "default",
                                         rope_ci = 0.95,
@@ -167,7 +167,7 @@ model_parameters.brmsfit <- function(model,
   # replace dots by white space
   study_names <- gsub(".", " ", study_names, fixed = TRUE)
   # remove "Intercept"
-  study_names <- trimws(gsub(",Intercept", "", study_names, fixed = TRUE))
+  study_names <- insight::trim_ws(gsub(",Intercept", "", study_names, fixed = TRUE))
 
   cleaned_parameters <- c(study_names, "Overall", "tau")
 

@@ -26,29 +26,14 @@ datawizard::demean
 #' @export
 datawizard::rescale_weights
 
-#' @importFrom datawizard data_to_numeric
+#' @importFrom datawizard visualisation_recipe
 #' @export
-datawizard::data_to_numeric
-
-#' @importFrom datawizard convert_data_to_numeric
-#' @export
-datawizard::convert_data_to_numeric
-
-#' @importFrom datawizard skewness
-datawizard::skewness
+datawizard::visualisation_recipe
 
 #' @importFrom datawizard kurtosis
 #' @export
 datawizard::kurtosis
 
-#' @importFrom datawizard smoothness
+#' @importFrom datawizard skewness
 #' @export
-datawizard::smoothness
-
-#' @importFrom datawizard center
-#' @export
-datawizard::center
-
-#' @importFrom datawizard visualisation_recipe
-#' @export
-datawizard::visualisation_recipe
+datawizard::skewness

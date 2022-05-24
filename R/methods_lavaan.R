@@ -22,7 +22,7 @@
 #' @param component What type of links to return. Can be `"all"` or some of `c("regression", "correlation", "loading", "variance", "mean")`.
 #' @param ... Arguments passed to or from other methods.
 #'
-#' @note There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#' @note There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the [**see**-package](https://easystats.github.io/see/).
 #'
 #' @examples
 #' library(parameters)
@@ -117,7 +117,7 @@ model_parameters.blavaan <- function(model,
                                      centrality = "median",
                                      dispersion = FALSE,
                                      ci = .95,
-                                     ci_method = "hdi",
+                                     ci_method = "eti",
                                      test = c("pd", "rope"),
                                      rope_range = "default",
                                      rope_ci = 0.95,

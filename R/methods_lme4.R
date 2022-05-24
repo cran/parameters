@@ -29,13 +29,24 @@
 #'
 #' @section Confidence intervals for random effect variances:
 #' For models of class `merMod` and `glmmTMB`, confidence intervals for random
-#' effect variances can be calculated. For models of from package **lme4**, when
-#' `ci_method` is either `"profile"` or `"boot"`, and `effects` is either
-#' `"random"` or `"all"`, profiled resp. bootstrapped confidence intervals are
-#' computed for the random effects. For all other options of `ci_method`,
-#' confidence intervals for random effects will be missing. For models of class
-#' `glmmTMB`, confidence intervals for random effect variances always use a
-#' Wald t-distribution approximation.
+#' effect variances can be calculated.
+#'
+#' - For models of from package **lme4**, when `ci_method` is either `"profile"`
+#' or `"boot"`, and `effects` is either `"random"` or `"all"`, profiled resp.
+#' bootstrapped confidence intervals are computed for the random effects.
+#'
+#' - For all other options of `ci_method`, and only when the **merDeriv**
+#' package is installed, confidence intervals for random effects are based on
+#' normal-distribution approximation, using the delta-method to transform
+#' standard errors for constructing the intervals around the log-transformed
+#' SD parameters. These are than back-transformed, so that random effect
+#' variances, standard errors and confidence intervals are shown on the original
+#' scale. Due to the transformation, the intervals are asymmetrical, however,
+#' they are within the correct bounds (i.e. no negative interval for the SD,
+#' and the interval for the correlations is within the range from -1 to +1).
+#'
+#' - For models of class `glmmTMB`, confidence intervals for random effect
+#' variances always use a Wald t-distribution approximation.
 #'
 #' @section Dispersion parameters in *glmmTMB*:
 #' For some models from package **glmmTMB**, both the dispersion parameter and
@@ -55,7 +66,7 @@
 #'   rename columns into a consistent, standardized naming scheme.
 #'
 #' @note If the calculation of random effects parameters takes too long, you may
-#' use `effects = "fixed"`. There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the \href{https://easystats.github.io/see/}{\pkg{see}-package}.
+#' use `effects = "fixed"`. There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the [**see**-package](https://easystats.github.io/see/).
 #'
 #' @examples
 #' library(parameters)
@@ -104,7 +115,6 @@ model_parameters.merMod <- function(model,
                                     vcov = NULL,
                                     vcov_args = NULL,
                                     ...) {
-
   dots <- list(...)
 
   ## TODO remove later
@@ -182,7 +192,8 @@ model_parameters.merMod <- function(model,
         include_sigma = include_sigma,
         summary = summary,
         vcov = vcov,
-        vcov_args = vcov_args)
+        vcov_args = vcov_args
+      )
       args <- c(args, dots)
       params <- do.call(".extract_parameters_mixed", args)
     }
@@ -291,16 +302,13 @@ ci.merMod <- function(x,
 #' @rdname standard_error
 #' @export
 standard_error.merMod <- function(model,
-                                  effects = c("fixed", "random"),
+                                  effects = "fixed",
                                   method = NULL,
                                   vcov = NULL,
                                   vcov_args = NULL,
                                   ...) {
-
-
   dots <- list(...)
-
-  effects <- match.arg(effects)
+  effects <- match.arg(effects, choices = c("fixed", "random"))
 
   if (effects == "random") {
     out <- .standard_errors_random(model)
@@ -310,15 +318,16 @@ standard_error.merMod <- function(model,
   if (is.null(method)) {
     method <- "wald"
   } else if ((method == "robust" && is.null(vcov)) ||
-             # deprecated argument
-             isTRUE(list(...)[["robust"]])) {
+    # deprecated argument
+    isTRUE(list(...)[["robust"]])) {
     vcov <- "vcovHC"
   }
 
   if (!is.null(vcov) || isTRUE(dots[["robust"]])) {
     args <- list(model,
-                 vcov = vcov,
-                 vcov_args = vcov_args)
+      vcov = vcov,
+      vcov_args = vcov_args
+    )
     args <- c(args, dots)
     out <- do.call("standard_error.default", args)
     return(out)

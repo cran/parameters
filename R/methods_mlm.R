@@ -37,6 +37,8 @@
 #' @export
 model_parameters.mlm <- function(model,
                                  ci = .95,
+                                 vcov = NULL,
+                                 vcov_args = NULL,
                                  bootstrap = FALSE,
                                  iterations = 1000,
                                  standardize = NULL,
@@ -47,51 +49,95 @@ model_parameters.mlm <- function(model,
   out <- .model_parameters_generic(
     model = model,
     ci = ci,
+    vcov = vcov,
+    vcov_args = vcov_args,
     bootstrap = bootstrap,
     iterations = iterations,
     merge_by = c("Parameter", "Response"),
     standardize = standardize,
     exponentiate = exponentiate,
     p_adjust = p_adjust,
-    ...)
+    ...
+  )
   attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   out
 }
 
 
 #' @export
-standard_error.mlm <- function(model, ...) {
-  cs <- stats::coef(summary(model))
-  se <- lapply(names(cs), function(x) {
-    params <- cs[[x]]
-    .data_frame(
-      Parameter = rownames(params),
-      SE = params[, "Std. Error"],
-      Response = gsub("^Response (.*)", "\\1", x)
-    )
-  })
-  insight::text_remove_backticks(do.call(rbind, se), verbose = FALSE)
+standard_error.mlm <- function(model,
+                               vcov = NULL,
+                               vcov_args = NULL,
+                               ...) {
+
+  se <- standard_error.default(model, vcov = vcov, vcov_args = vcov_args, ...)
+  est <- insight::get_parameters(model, ...)
+  # assumes se and est are sorted the same way
+  if (isTRUE(nrow(se) == nrow(est)) && "Parameter" %in% colnames(est) && "Response" %in% colnames(est)) {
+    se$Parameter <- est$Parameter
+    se$Response <- est$Response
+    return(se)
+
+  # manually
+  } else {
+    if (!is.null(vcov)) {
+      warning(insight::format_message(
+        "Unable to extract the variance-covariance matrix requested in `vcov`."))
+    }
+    cs <- stats::coef(summary(model))
+    se <- lapply(names(cs), function(x) {
+      params <- cs[[x]]
+      .data_frame(
+        Parameter = rownames(params),
+        SE = params[, "Std. Error"],
+        Response = gsub("^Response (.*)", "\\1", x)
+      )})
+    se <- insight::text_remove_backticks(do.call(rbind, se), verbose = FALSE)
+    return(se)
+  }
 }
 
 
 #' @export
-p_value.mlm <- function(model, ...) {
-  cs <- stats::coef(summary(model))
-  p <- lapply(names(cs), function(x) {
-    params <- cs[[x]]
-    .data_frame(
-      Parameter = rownames(params),
-      p = params[, "Pr(>|t|)"],
-      Response = gsub("^Response (.*)", "\\1", x)
-    )
-  })
-  insight::text_remove_backticks(do.call(rbind, p), verbose = FALSE)
+p_value.mlm <- function(model, vcov = NULL, vcov_args = NULL, ...) {
+
+  out <- p_value.default(model, vcov = vcov, vcov_args = vcov_args, ...)
+  est <- insight::get_parameters(model, ...)
+  # assumes out and est are sorted the same way
+  if (isTRUE(nrow(out) == nrow(est)) && "Parameter" %in% colnames(est) && "Response" %in% colnames(est)) {
+    out$Parameter <- est$Parameter
+    out$Response <- est$Response
+
+  # manually
+  } else {
+    if (!is.null(vcov)) {
+      warning(insight::format_message(
+        "Unable to extract the variance-covariance matrix requested in `vcov`."))
+    }
+    cs <- stats::coef(summary(model))
+    p <- lapply(names(cs), function(x) {
+      params <- cs[[x]]
+      .data_frame(
+        Parameter = rownames(params),
+        p = params[, "Pr(>|t|)"],
+        Response = gsub("^Response (.*)", "\\1", x)
+      )
+    })
+    out <- insight::text_remove_backticks(do.call(rbind, p), verbose = FALSE)
+  }
+
+  return(out)
 }
 
 
 #' @export
-ci.mlm <- function(x, ci = .95, ...) {
-  if (is.null(insight::find_weights(x))) {
+ci.mlm <- function(x,
+                   vcov = NULL,
+                   vcov_args = NULL,
+                   ci = .95, ...) {
+
+  # .ci_generic may not handle weights properly (not sure)
+  if (is.null(insight::find_weights(x)) && is.null(vcov)) {
     out <- lapply(ci, function(i) {
       .ci <- stats::confint(x, level = i, ...)
       rn <- rownames(.ci)
@@ -104,8 +150,27 @@ ci.mlm <- function(x, ci = .95, ...) {
       )
     })
     out <- insight::text_remove_backticks(do.call(rbind, out), verbose = FALSE)
+
+  # .ci_generic does handle `vcov` correctly.
   } else {
-    out <- .data_frame(.ci_generic(x, ci = ci, ...), Response = insight::get_parameters(x)$Response)
+    out <- .data_frame(.ci_generic(x,
+                                   ci = ci,
+                                   vcov = vcov,
+                                   vcov_args = vcov_args,
+                                   ...))
+
+    resp <- insight::get_parameters(x)$Response
+    if (!"Reponse" %in% colnames(out) && nrow(out) == length(resp)) {
+      out[["Response"]] <- resp 
+    } else {
+      if (!isTRUE(all(out$Response == resp))) {
+        stop(insight::format_message(
+            "Unable to assign labels to the model's parameters. Please report",
+            "this problem to the `parameters` Issue Tracker:",
+            "https://github.com/easystats/parameters/issues"
+        ), call. = FALSE)
+      }
+    }
   }
   out
 }
@@ -120,7 +185,7 @@ simulate_model.mlm <- function(model, iterations = 1000, ...) {
   colnames(out) <- cn
 
   class(out) <- c("parameters_simulate_model", class(out))
-  attr(out, "object_name") <- .safe_deparse(substitute(model))
+  attr(out, "object_name") <- insight::safe_deparse(substitute(model))
   out
 }
 

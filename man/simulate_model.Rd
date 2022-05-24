@@ -23,10 +23,10 @@ simulate_model(model, iterations = 1000, ...)
 \item{...}{Arguments passed to or from other methods.}
 
 \item{component}{Should all parameters, parameters for the conditional model,
-or for the zero-inflated part of the model be returned? Applies to models
-with zero-inflated component. \code{component} may be one of \code{"conditional"},
-\code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or \code{"all"}
-(default). May be abbreviated.}
+for the zero-inflated part of the model, or the dispersion model be returned?
+Applies to models with zero-inflated and/or dispersion component. \code{component}
+may be one of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or
+\code{"all"} (default). May be abbreviated.}
 
 \item{verbose}{Toggle warnings and messages.}
 }
@@ -44,15 +44,14 @@ on a multivariate normal distribution (\code{MASS::mvrnorm()}) with mean
 \code{mu = coef(model)} and variance \code{Sigma = vcov(model)}.
 }
 \subsection{Models with Zero-Inflation Component}{
-For models from packages \pkg{glmmTMB}, \pkg{pscl}, \pkg{GLMMadaptive} and
-\pkg{countreg}, the \code{component} argument can be used to specify
+For models from packages \strong{glmmTMB}, \strong{pscl}, \strong{GLMMadaptive} and
+\strong{countreg}, the \code{component} argument can be used to specify
 which parameters should be simulated. For all other models, parameters
 from the conditional component (fixed effects) are simulated. This may
 include smooth terms, but not random effects.
 }
 }
 \examples{
-library(parameters)
 model <- lm(Sepal.Length ~ Species * Petal.Width + Petal.Length, data = iris)
 head(simulate_model(model))
 \donttest{

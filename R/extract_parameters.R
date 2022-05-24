@@ -20,8 +20,6 @@
                                         vcov = NULL,
                                         vcov_args = NULL,
                                         ...) {
-
-
   dots <- list(...)
 
   # ==== check if standardization is required and package available
@@ -33,9 +31,9 @@
     standardize <- NULL
   }
 
-  if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
+  if (!is.null(standardize) && !requireNamespace("datawizard", quietly = TRUE)) {
     if (verbose) {
-      insight::format_message(warning("Package 'effectsize' required to calculate standardized coefficients. Please install it.", call. = FALSE))
+      insight::format_message(warning("Package 'datawizard' required to calculate standardized coefficients. Please install it.", call. = FALSE))
     }
     standardize <- NULL
   }
@@ -87,7 +85,7 @@
   #      intercepts (alpha-coefficients) in the component column
 
   if (inherits(model, "polr")) {
-    intercept_groups <- which(grepl("^Intercept:", parameters$Parameter))
+    intercept_groups <- which(grepl("Intercept:", parameters$Parameter, fixed = TRUE))
     parameters$Parameter <- gsub("Intercept: ", "", parameters$Parameter, fixed = TRUE)
   } else if (inherits(model, "clm") && !is.null(model$alpha)) {
     intercept_groups <- rep(c("intercept", "location", "scale"), vapply(model[c("alpha", "beta", "zeta")], length, numeric(1)))
@@ -107,16 +105,17 @@
 
   if (!is.null(ci)) {
     args <- list(model,
-                 ci = ci,
-                 component = component,
-                 vcov = vcov,
-                 vcov_args = vcov_args,
-                 verbose = verbose)
+      ci = ci,
+      component = component,
+      vcov = vcov,
+      vcov_args = vcov_args,
+      verbose = verbose
+    )
     args <- c(args, dots)
     if (!is.null(ci_method)) {
       args[["method"]] <- ci_method
     }
-    ci_df <-  suppressMessages(do.call("ci", args))
+    ci_df <- suppressMessages(do.call("ci", args))
 
     if (!is.null(ci_df)) {
       if (length(ci) > 1) ci_df <- datawizard::reshape_ci(ci_df)
@@ -133,12 +132,13 @@
   # ==== p value
 
   args <- list(model,
-               method = ci_method,
-               effects = effects,
-               verbose = verbose,
-               component = component,
-               vcov = vcov,
-               vcov_args = vcov_args)
+    method = ci_method,
+    effects = effects,
+    verbose = verbose,
+    component = component,
+    vcov = vcov,
+    vcov_args = vcov_args
+  )
   args <- c(args, dots)
   pval <- do.call("p_value", args)
 
@@ -151,11 +151,12 @@
 
   std_err <- NULL
   args <- list(model,
-               effects = effects,
-               component = component,
-               verbose = verbose,
-               vcov = vcov,
-               vcov_args = vcov_args)
+    effects = effects,
+    component = component,
+    verbose = verbose,
+    vcov = vcov,
+    vcov_args = vcov_args
+  )
   args <- c(args, dots)
   if (!is.null(ci_method)) {
     args[["method"]] <- ci_method
@@ -225,8 +226,8 @@
 
   # ==== remove Component column if not needed
 
-  if (!is.null(parameters$Component) && .n_unique(parameters$Component) == 1 && !keep_component_column) parameters$Component <- NULL
-  if ((!is.null(parameters$Effects) && .n_unique(parameters$Effects) == 1) || effects == "fixed") parameters$Effects <- NULL
+  if (!is.null(parameters$Component) && insight::n_unique(parameters$Component) == 1 && !keep_component_column) parameters$Component <- NULL
+  if ((!is.null(parameters$Effects) && insight::n_unique(parameters$Effects) == 1) || effects == "fixed") parameters$Effects <- NULL
 
 
   # ==== adjust p-values?
@@ -257,7 +258,7 @@
     attr(temp_pars, "ci") <- ci
     attr(temp_pars, "object_name") <- model # pass the model as is (this is a cheat - teehee!)
 
-    std_parms <- effectsize::standardize_parameters(temp_pars, method = standardize)
+    std_parms <- standardize_parameters(temp_pars, method = standardize)
     parameters$Std_Coefficient <- std_parms$Std_Coefficient
     parameters$SE <- attr(std_parms, "standard_error")
 
@@ -431,7 +432,6 @@
                                       vcov_args = NULL,
                                       verbose = TRUE,
                                       ...) {
-
   dots <- list(...)
 
   special_ci_methods <- c("betwithin", "satterthwaite", "ml1", "kenward", "kr")
@@ -447,7 +447,7 @@
   original_order <- parameters$.id <- 1:nrow(parameters)
 
   # remove SE column
-  parameters <- datawizard::data_remove(parameters, c("SE", "Std. Error"))
+  parameters <- datawizard::data_remove(parameters, c("SE", "Std. Error"), verbose = FALSE)
 
   # column name for coefficients, non-standardized
   coef_col <- "Coefficient"
@@ -475,10 +475,11 @@
     # robust (current or deprecated)
     if (!is.null(vcov) || isTRUE(list(...)[["robust"]])) {
       args <- list(model,
-                   ci = ci,
-                   vcov = vcov,
-                   vcov_args = vcov_args,
-                   verbose = verbose)
+        ci = ci,
+        vcov = vcov,
+        vcov_args = vcov_args,
+        verbose = verbose
+      )
       args <- c(args, dots)
       ci_df <- suppressMessages(do.call("ci", args))
     } else if (ci_method %in% c("kenward", "kr")) {
@@ -499,12 +500,13 @@
   if (!"SE" %in% colnames(parameters)) {
     if (!is.null(vcov) || isTRUE(dots[["robust"]])) {
       args <- list(model,
-                   vcov = vcov,
-                   vcov_args = vcov_args,
-                   verbose = verbose)
+        vcov = vcov,
+        vcov_args = vcov_args,
+        verbose = verbose
+      )
       args <- c(args, dots)
       parameters <- merge(parameters, do.call("standard_error", args), by = "Parameter", sort = FALSE)
-    # special handling for KR-SEs, which we already have computed from dof
+      # special handling for KR-SEs, which we already have computed from dof
     } else if ("SE" %in% colnames(df_error)) {
       se_kr <- df_error
       se_kr$df_error <- NULL
@@ -518,9 +520,10 @@
   # p value
   if (!is.null(vcov) || isTRUE(list(...)[["robust"]])) {
     args <- list(model,
-                 vcov = vcov,
-                 vcov_args = vcov_args,
-                 verbose = verbose)
+      vcov = vcov,
+      vcov_args = vcov_args,
+      verbose = verbose
+    )
     args <- c(args, dots)
     parameters <- merge(parameters, do.call("p_value", args), by = "Parameter", sort = FALSE)
   } else {
@@ -538,8 +541,8 @@
 
   # adjust standard errors and test-statistic as well
   if ((!is.null(vcov) || ci_method %in% special_ci_methods) ||
-      # deprecated argument
-      isTRUE(list(...)[["robust"]])) {
+    # deprecated argument
+    isTRUE(list(...)[["robust"]])) {
     parameters$Statistic <- parameters$Estimate / parameters$SE
   } else {
     parameters <- merge(parameters, statistic, by = "Parameter", sort = FALSE)
@@ -592,7 +595,7 @@
     attr(temp_pars, "ci") <- ci
     attr(temp_pars, "object_name") <- model # pass the model as is (this is a cheat - teehee!)
 
-    std_parms <- effectsize::standardize_parameters(temp_pars, method = standardize)
+    std_parms <- standardize_parameters(temp_pars, method = standardize)
     parameters$Std_Coefficient <- std_parms$Std_Coefficient
     parameters$SE <- attr(std_parms, "standard_error")
 
@@ -701,7 +704,7 @@
                                          centrality = "median",
                                          dispersion = FALSE,
                                          ci = .95,
-                                         ci_method = "hdi",
+                                         ci_method = "eti",
                                          test = c("pd", "rope"),
                                          rope_range = "default",
                                          rope_ci = 0.95,
@@ -713,12 +716,6 @@
                                          drop_parameters = NULL,
                                          verbose = TRUE,
                                          ...) {
-  # check if standardization is required and package available
-  if (!is.null(standardize) && !requireNamespace("effectsize", quietly = TRUE)) {
-    insight::print_color("Package 'effectsize' required to calculate standardized coefficients. Please install it.\n", "red")
-    standardize <- NULL
-  }
-
   # no ROPE for multi-response models
   if (insight::is_multivariate(model)) {
     test <- setdiff(test, c("rope", "p_rope"))
@@ -760,7 +757,7 @@
     # Don't test BF on standardized params
     test_no_BF <- test[!test %in% c("bf", "bayesfactor", "bayes_factor")]
     if (length(test_no_BF) == 0) test_no_BF <- NULL
-    std_post <- effectsize::standardize_posteriors(model, method = standardize)
+    std_post <- standardize_posteriors(model, method = standardize)
     std_parameters <- bayestestR::describe_posterior(
       std_post,
       centrality = centrality,
@@ -798,10 +795,10 @@
   }
 
   # Remove unnecessary columns
-  if ("CI" %in% names(parameters) && .n_unique(parameters$CI) == 1) {
+  if ("CI" %in% names(parameters) && insight::n_unique(parameters$CI) == 1) {
     parameters$CI <- NULL
   }
-  if ("ROPE_CI" %in% names(parameters) && .n_unique(parameters$ROPE_CI) == 1) {
+  if ("ROPE_CI" %in% names(parameters) && insight::n_unique(parameters$ROPE_CI) == 1) {
     parameters$ROPE_CI <- NULL
   }
   if ("ROPE_low" %in% names(parameters) & "ROPE_high" %in% names(parameters)) {
