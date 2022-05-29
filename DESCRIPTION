@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.18.0
+Version: 0.18.1
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -96,7 +96,7 @@ Language: en-US
 RoxygenNote: 7.2.0
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2022-05-20 08:37:19 UTC; Daniel
+Packaged: 2022-05-27 20:03:37 UTC; DL
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut] (<https://orcid.org/0000-0001-5375-9967>,
@@ -117,4 +117,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
   Douglas Ezra Morrison [ctb] (<https://orcid.org/0000-0002-7195-830X>,
     @demstats1)
 Repository: CRAN
-Date/Publication: 2022-05-24 19:10:05 UTC
+Date/Publication: 2022-05-29 05:50:02 UTC

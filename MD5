@@ -1,6 +1,6 @@
-fa40bb2bd2d6dc80b0dbe5d9ae9cdab9 *DESCRIPTION
+139d449ec63cd6f77a1715932c7e9a8c *DESCRIPTION
 8775712d9d0a1b7e5af60d46ea70dcd5 *NAMESPACE
-6ffe55873317e0784bc878abdb05c7ab *NEWS.md
+7a1f6197f3f86fe07442bedc6d3c124d *NEWS.md
 e663f3e98322c9444d8716840bafe480 *R/1_model_parameters.R
 b0082a510c161eea80f3869cc523d2c8 *R/2_ci.R
 761d14934413366bc97f52fa3d36f1d6 *R/3_p_value.R
@@ -17,7 +17,7 @@ c11b2cd4edd061761ba69bf2c498bb01 *R/ci_betwithin.R
 c820cd28d2048bad0dca860550109655 *R/ci_generic.R
 36dca1b2c7b684f2599f098f4b8154b8 *R/ci_kenward.R
 f321659cbf4562d3f3e9af2b4093d6dd *R/ci_ml1.R
-e78f3ea0b8b47c8121faa92b35dd8f65 *R/ci_profile_boot.R
+09a6ed17b6cdc1244788856f8cdb42eb *R/ci_profile_boot.R
 0c4fd4f2c25f8a87507b0d764fc05867 *R/ci_satterthwaite.R
 0d4a233cd014fa1d2d7cb8e0ad50bdb6 *R/cluster_analysis.R
 87fc063fe5400f7f92ee6aa230f3a4cc *R/cluster_centers.R
@@ -37,9 +37,9 @@ c7ccf42b56f78d67ccaf471c701d0cbc *R/equivalence_test.R
 fa98e0df15ec347bfc477c087a987cb8 *R/extract_parameters.R
 96199a74deb322c614a636a51417a6ec *R/extract_parameters_anova.R
 3c3a97cc8b11bbc4bc65ab1be41ceded *R/extract_random_parameters.R
-e26263e0d5631273415e29429099e876 *R/extract_random_variances.R
+f874cc3880d0ab2cf0dd5d6295078a02 *R/extract_random_variances.R
 5fa45fa3f1455431984e51d9125a4b07 *R/factor_analysis.R
-be855551f9a6cd664ece0d3cbaa1d580 *R/format.R
+da70bbb138ec48f90f74c7f632bc8682 *R/format.R
 d318762029d51a56f42a2f5f6ddbd31c *R/format_df_adjust.R
 67a58958bd8bff1b94769bacf17d11be *R/format_order.R
 35777f1c043d09aa2e3b13be4f1babc0 *R/format_p_adjust.R
@@ -75,7 +75,7 @@ bc4e8889af1594c35998be618be6fa7b *R/methods_car.R
 b37757fbeb09ed92449676646828a5dc *R/methods_coda.R
 7fa96b9399af1fb364d3cfb6c86406bf *R/methods_coxme.R
 8c5bd7595fcbd8cadd2929de291d9c63 *R/methods_coxrobust.R
-5438be1cbc00ad5d018eed231f7c5207 *R/methods_cplm.R
+ade7da45dfd03c63646e6e2426ff7541 *R/methods_cplm.R
 66acde97a92a56af6d335dab18756f35 *R/methods_crch.R
 dab4efac71b5b1c60198024e03fdd8df *R/methods_dbscan.R
 e40f2fc8b3e2002466f94a2f52e3c153 *R/methods_effect_size.R
@@ -95,18 +95,18 @@ a1d19201b05be5d37c59bb98e127e42d *R/methods_gamm4.R
 0a426797bc8dd3ef33541fc16573e1a4 *R/methods_gjrm.R
 f4a2393725bfc40edd943617019e9e40 *R/methods_glm.R
 8e192b54132fd23a8cb60cf79eb76ec4 *R/methods_glmm.R
-160505b3a37dfe9c487bcfab1cc4fa63 *R/methods_glmmTMB.R
+315f9f3a4b330178df5aa55aab131583 *R/methods_glmmTMB.R
 912825dd77b79185fcb914ed49bc38fa *R/methods_glmx.R
 477e6b9dc8dca17b29c912f3422be003 *R/methods_gmnl.R
 176090f1160a194937244a7bb085392d *R/methods_hclust.R
-b5b86c82717ed9b53001e70712d93412 *R/methods_htest.R
+3b00d0d902cccd2bf1944758b7bd04fa *R/methods_htest.R
 6599658518e104f3599b968b01a704c2 *R/methods_ivfixed.R
 a411a7d9a49e3cba4912228675d08bdd *R/methods_ivprobit.R
 55960685d785d71fdaa71a0156b1d955 *R/methods_ivreg.R
 71faec3f6f03292548f39db7ce0db029 *R/methods_kmeans.R
 9fb6b81a925c9ed2ece5559963613dd8 *R/methods_lavaan.R
 efb019fe0e17a92f9d46203dd50c21f9 *R/methods_lm.R
-191c92ba272a7daf067d41d0e17caa6a *R/methods_lme4.R
+5107dc7a012224b5f4f59d292af3280d *R/methods_lme4.R
 30085ce9b3b8ddc2f8cd82ebca63f2e7 *R/methods_lmodel2.R
 875618786ccef9b9f9800b82c5afcde8 *R/methods_lmtest.R
 06f89312c1dff28e7bf4bd96b17266cd *R/methods_logistf.R
@@ -129,7 +129,7 @@ e29f579b385d2f4dd2e8c5ad371b0d88 *R/methods_mice.R
 341b31ce1cb3c0f8718d85b6a80160f4 *R/methods_mixed.R
 848ec421268af8e6dd81590ed1ce35f6 *R/methods_mixmod.R
 394e9dcd3d8d8a017b558e5105c8673c *R/methods_mixor.R
-d6a81bef78e530b451bee5d60f9c6761 *R/methods_mjoint.R
+854d7db47554f1bda6ce651b0a0fa2fd *R/methods_mjoint.R
 7fc9e088023cff0a8702e25920661086 *R/methods_mlm.R
 9e81e1ee1755ad486bbc82ecae57ae49 *R/methods_model_fit.R
 999b8c98da3e5ac6fb78eb13da618a11 *R/methods_multcomp.R
@@ -139,7 +139,7 @@ ebbe931a8579f934f36abc6b8616437b *R/methods_mvord.R
 c1442de1818fc9a96f1e5861e7c4f41d *R/methods_ordinal.R
 3753750647f31bfeaae7267d11eb7e40 *R/methods_other.R
 169bec0664dd783b4cd53bdd6e0297e5 *R/methods_pam.R
-7234471a07dfb755e33de7087ebeeba8 *R/methods_panelr.R
+ea928e6bfe74f32907b2c1d1617e7873 *R/methods_panelr.R
 1d3b9a6ff9f725a708c660c7b908e310 *R/methods_pglm.R
 1f6f73daf00ac503929fd17d717c0d2d *R/methods_plm.R
 95275f14eb8f68f0d8ae0592ddd7c3e1 *R/methods_posterior.R
@@ -211,7 +211,7 @@ d9a675761b0b4ec7816a274c92857f5e *inst/CITATION
 39d9a9e1c98f84fc8d1bf505d3d3edcd *inst/WORDLIST
 7342a6d63f4cc4501afc55be1d148740 *inst/doc/overview_of_vignettes.R
 ab3e7b7308d58b851766e22e89b68f9c *inst/doc/overview_of_vignettes.Rmd
-02770391feef592db403ae809c095ce7 *inst/doc/overview_of_vignettes.html
+7b29cb1bfc159aa877a4dd4ff4d02cac *inst/doc/overview_of_vignettes.html
 690778fb94b8827795bcf627c8309dde *man/bootstrap_model.Rd
 0392297745b144e2e88c2c958d097625 *man/bootstrap_parameters.Rd
 043f32d86cb7006e8177e4dc0d03f668 *man/check_clusterstructure.Rd
@@ -352,7 +352,7 @@ eea064481e53e1a56d67580713d22f41 *tests/testthat/test-model_parameters.fixest.R
 d268c5984e56985e36a954fd1fee9c3a *tests/testthat/test-model_parameters.gam.R
 23b49cba5b055a394c0b8a65b392b298 *tests/testthat/test-model_parameters.glht.R
 a1247863e3e87ba7d1bc279a3777ca3b *tests/testthat/test-model_parameters.glm.R
-8935e111e712a8a03e006e2b5197d7fa *tests/testthat/test-model_parameters.htest.R
+86a0c02807e2799aa7d947943a711ea6 *tests/testthat/test-model_parameters.htest.R
 6debb526f544a3b23f8d452dd5b3d967 *tests/testthat/test-model_parameters.hurdle.R
 9059933ea8e48b5a44a1c360b78700d4 *tests/testthat/test-model_parameters.lme.R
 738f6515ea0cab8e98fce123e4eac75d *tests/testthat/test-model_parameters.lqmm.R
@@ -371,7 +371,7 @@ f0f7e60a3e658fcadf5512d6555012c8 *tests/testthat/test-model_parameters.mle2.R
 82e434b0f26139a9a918244bdb9c9326 *tests/testthat/test-model_parameters_labels.R
 eb6d5fe19c7fa4aa0fcc699471697a1c *tests/testthat/test-model_parameters_mixed_coeforder.R
 8268d49d6ebc42cbb5b9ea844a477a97 *tests/testthat/test-model_parameters_ordinal.R
-953d89323dff226952e1609fbe0d56d6 *tests/testthat/test-model_parameters_random_pars.R
+fa76380bb4ccd9fa38582561b12163a6 *tests/testthat/test-model_parameters_random_pars.R
 a0644d6967c1ed6dbc2d84f0112af6e7 *tests/testthat/test-model_parameters_robust.R
 62c7d0491c4f55f3f898326030396f3c *tests/testthat/test-model_parameters_std.R
 e0068799cd9b8ae5959dbe1867f787d8 *tests/testthat/test-model_parameters_std_mixed.R
@@ -387,6 +387,8 @@ b541af43f09e0de8b2ffdea4de4ed30a *tests/testthat/test-parameters_type.R
 f0b74fd1ba9dd5e4943267d848213731 *tests/testthat/test-plm.R
 0b803d8ec1bb99a3d39d643bf49f5ed4 *tests/testthat/test-posterior.R
 53e635f333bcb66ff318bac5ea7c91ae *tests/testthat/test-quantreg.R
+6732653132de3f551ce7562ab8082342 *tests/testthat/test-random_effects_ci-glmmTMB.R
+3a72385d7e1c0811d4217d7f672ee70f *tests/testthat/test-random_effects_ci.R
 80c05b574e2a697573442b601a229e64 *tests/testthat/test-rank_deficienty.R
 041fb43c60796808f9c1920434939ffa *tests/testthat/test-robust.R
 6e23726092a10d2d3e8f55cf4869bd1c *tests/testthat/test-rstanarm.R

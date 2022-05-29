@@ -129,7 +129,18 @@ model_parameters.glmmTMB <- function(model,
         params[nrow(params), "Parameter"] <- dispersion_param$Parameter[1]
         params[nrow(params), "Coefficient"] <- stats::sigma(model)
         params[nrow(params), "Component"] <- dispersion_param$Component[1]
-        params[nrow(params), c("CI_low", "CI_high")] <- stats::confint(model, parm = "sigma", method = "wald", level = ci)[1:2]
+        params[nrow(params), c("CI_low", "CI_high")] <- tryCatch(
+          suppressWarnings(stats::confint(model, parm = "sigma", method = "wald", level = ci)[1:2]),
+          error = function(e) {
+            if (verbose) {
+              message(insight::format_message(
+                "Cannot compute standard errors and confidence intervals for sigma parameter.",
+                "Your model may suffer from singularity (see '?lme4::isSingular' and '?performance::check_singularity')."
+              ))
+            }
+            c(NA, NA)
+          }
+        )
         dispersion_param <- TRUE
       }
     }
@@ -257,7 +268,11 @@ ci.glmmTMB <- function(x,
 
   # profiled CIs
   if (method == "profile") {
-    pp <- stats::profile(x)
+    if (length(ci) > 1) {
+      pp <- stats::profile(x)
+    } else {
+      pp <- NULL
+    }
     out <- lapply(ci, function(i) .ci_profile_glmmTMB(x, ci = i, profiled = pp, component = component, ...))
     do.call(rbind, out)
 
