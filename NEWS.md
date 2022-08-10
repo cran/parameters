@@ -1,9 +1,51 @@
+# parameters 0.18.2
+
+## New functions
+
+* New function `dominance_analysis()`, to compute dominance analysis 
+  statistics and designations.
+
+## Changes to functions
+
+* Argument `ci_random` in `model_parameters()` defaults to `NULL`. It uses a
+  heuristic to determine if random effects confidence intervals are likely to
+  take a long time to compute, and automatically includes or excludes those
+  confidence intervals. Set `ci_random` to `TRUE` or `FALSE` to explicitly
+  calculate or omit confidence intervals for random effects.
+
+## Bug fixes
+
+* Fix issues in `pool_parameters()` for certain models with special components
+  (like `MASS::polr()`), that failed when argument `component` was set to
+  `"conditional"` (the default).
+
+* Fix issues in `model_parameters()` for multiple imputation models from
+  package *Hmisc*.
+
 # parameters 0.18.1
+
+## General
+
+* It is now possible to hide messages about CI method below tables by specifying
+  `options("parameters_cimethod" = FALSE)` (#722). By default, these messages
+  are displayed.
+
+* `model_parameters()` now supports objects from package _marginaleffects_ and
+  objects returned by `car::linearHypothesis()`.
+
+* Added `predict()` method to `cluster_meta` objects.
+
+* Reorganization of docs for `model_parameters()`.
 
 ## Changes to functions
 
 * `model_parameters()` now also includes standard errors and confidence
   intervals for slope-slope-correlations of random effects variances.
+
+* `model_parameters()` for mixed models gains a `ci_random` argument, to toggle
+  whether confidence intervals for random effects parameters should also be
+  computed. Set to `FALSE` if calculation of confidence intervals for random 
+  effects parameters takes too long.
 
 * `ci()` for *glmmTMB* models with `method = "profile"` is now more robust.
 
@@ -11,6 +53,15 @@
 
 * Fixed issue with *glmmTMB* models when calculating confidence 
   intervals for random effects failed due to singular fits.
+  
+* `display()` now correctly includes custom text and additional information
+  in the footer (#722).
+
+* Fixed issue with argument `column_names` in `compare_parameters()` when 
+  strings contained characters that needed to be escaped for regular expressions.
+
+* Fixed issues with unknown arguments in `model_parameters()` for *lavaan* models
+  when `standardize = TRUE`.
 
 # parameters 0.18.0
 

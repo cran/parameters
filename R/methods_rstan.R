@@ -1,3 +1,4 @@
+#' @rdname model_parameters.stanreg
 #' @export
 model_parameters.stanfit <- function(model,
                                      centrality = "median",
@@ -17,7 +18,6 @@ model_parameters.stanfit <- function(model,
                                      parameters = keep,
                                      verbose = TRUE,
                                      ...) {
-
   # Processing
   params <- .extract_parameters_bayesian(
     model,
@@ -44,9 +44,9 @@ model_parameters.stanfit <- function(model,
     if (length(random_effect_levels) && isFALSE(group_level)) params <- params[-random_effect_levels, ]
   }
 
-  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-    params <- .exponentiate_parameters(params, model, exponentiate)
-  }
+  # exponentiate coefficients and SE/CI, if requested
+  params <- .exponentiate_parameters(params, model, exponentiate)
+
   params <- .add_model_parameters_attributes(
     params,
     model,

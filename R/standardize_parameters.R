@@ -70,7 +70,7 @@
 #' on a fitted random-intercept-model, where `sqrt(random-intercept-variance)`
 #' is used for level 2 predictors, and `sqrt(residual-variance)` is used for
 #' level 1 predictors (Hoffman 2015, page 342). A warning is given when a
-#' within-group varialbe is found to have access between-group variance.
+#' within-group variable is found to have access between-group variance.
 #'
 #' # Transformed Variables
 #' When the model's formula contains transformations (e.g. `y ~ exp(X)`) `method
@@ -209,11 +209,11 @@ standardize_parameters.default <- function(model,
   colnm <- c("Component", "Response", "Group", "Parameter", utils::head(.col_2_scale, -2), "CI", "CI_low", "CI_high")
   pars <- pars[, colnm[colnm %in% colnames(pars)]]
 
-  if (!is.null(coefficient_name) && coefficient_name %in% c("Odds Ratio", "Risk Ratio", "IRR")) {
+  if (!is.null(coefficient_name) && coefficient_name %in% c("Odds Ratio", "Risk Ratio", "IRR", "Prevalence Ratio")) {
     colnames(pars)[colnames(pars) == "Coefficient"] <- gsub(" ", "_", coefficient_name)
   }
 
-  i <- colnames(pars) %in% c("Coefficient", "Median", "Mean", "MAP", c("Odds_Ratio", "Risk_Ratio", "IRR"))
+  i <- colnames(pars) %in% c("Coefficient", "Median", "Mean", "MAP", "Odds_Ratio", "Risk_Ratio", "IRR", "Prevalence_Ratio")
   colnames(pars)[i] <- paste0("Std_", colnames(pars)[i])
 
   ## SE attribute?
@@ -431,14 +431,14 @@ format.parameters_standardized <- function(x,
     footer <- c(footer, "Response is unstandardized.")
   }
 
-  if (format == "text" && !is.null(footer)) {
+  if (format %in% c("markdown", "text") && !is.null(footer)) {
     footer <- lapply(footer, function(ftr) {
       c(paste0("\n- ", ftr), "blue")
     })
   }
   attr(x, "table_footer") <- footer
 
-  if (format == "text" && !is.null(caption)) {
+  if (format %in% c("markdown", "text") && !is.null(caption)) {
     caption <- c(paste0("# ", caption), "blue")
   }
   attr(x, "table_caption") <- caption

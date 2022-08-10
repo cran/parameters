@@ -29,10 +29,9 @@
 
   # for simplicity, we just use the model information from the first formula
   # when we have multivariate response models...
-  if (!is.null(info) && insight::is_multivariate(model) && !"is_zero_inflated" %in% names(info)) {
+  if (insight::is_multivariate(model) && !"is_zero_inflated" %in% names(info)) {
     info <- info[[1]]
   }
-
 
   # add regular attributes
   if (isFALSE(dot.arguments$pretty_names)) {
@@ -42,9 +41,8 @@
   }
 
   attr(params, "ci") <- ci
-  attr(params, "ci_method") <- ci_method
-  attr(params, "df_method") <- ci_method
-  attr(params, "test_statistic") <- insight::find_statistic(model)
+  attr(params, "ci_method") <- .format_ci_method_name(ci_method)
+  attr(params, "df_method") <- .format_ci_method_name(ci_method)
   attr(params, "verbose") <- verbose
   attr(params, "exponentiate") <- exponentiate
   attr(params, "ordinal_model") <- isTRUE(info$is_ordinal) | isTRUE(info$is_multinomial)
@@ -59,6 +57,12 @@
   attr(params, "ignore_group") <- isFALSE(group_level)
   attr(params, "ran_pars") <- isFALSE(group_level)
   attr(params, "show_summary") <- isTRUE(summary)
+  attr(params, "log_link") <- isTRUE(grepl("log", info$link_function, fixed = TRUE))
+
+  # use tryCatch, these might fail...
+  attr(params, "test_statistic") <- tryCatch(insight::find_statistic(model), error = function(e) NULL)
+  attr(params, "log_response") <- tryCatch(isTRUE(grepl("log", insight::find_transformation(model), fixed = TRUE)), error = function(e) NULL)
+  attr(params, "log_predictors") <- tryCatch(any(grepl("log", unlist(insight::find_terms(model)[c("conditional", "zero_inflated", "instruments")]), fixed = TRUE)), error = function(e) NULL)
 
   # save if model is multivariate response model
   if (isTRUE(info$is_multivariate)) {
@@ -80,10 +84,11 @@
   }
 
 
-  # Models for which titles should be removed -
-  # here we add exceptions for objects that should
-  # not have a table headline
-  if (inherits(model, c("emmGrid", "emm_list", "lm", "glm", "coxph", "bfsl", "deltaMethod"))) {
+  # Models for which titles should be removed - here we add exceptions for
+  # objects that should not have a table headline like "# Fixed Effects", when
+  # there is nothing else than fixed effects (redundant title)
+  if (inherits(model, c("mediate", "emmGrid", "emm_list", "lm", "glm", "coxph", "bfsl", "deltaMethod"))) {
+    attr(params, "no_caption") <- TRUE
     attr(params, "title") <- ""
   }
 
@@ -198,6 +203,31 @@
 }
 
 
+#' Format CI method name when stored as an attribute
+#'
+#' @keywords internal
+#' @noRd
+.format_ci_method_name <- function(ci_method) {
+  if (is.null(ci_method)) {
+    return(NULL)
+  }
+
+  switch(tolower(ci_method),
+    # abbreviations
+    "eti" = ,
+    "hdi" = ,
+    "si" = toupper(ci_method),
+    # named after people
+    "satterthwaite" = ,
+    "kenward" = ,
+    "wald" = insight::format_capitalize(ci_method),
+    # special cases
+    "bci" = ,
+    "bcai" = "BCa",
+    # no change otherwise
+    ci_method
+  )
+}
 
 .find_coefficient_type <- function(info, exponentiate, model = NULL) {
   # column name for coefficients
@@ -218,7 +248,9 @@
   } else if (!is.null(info)) {
     if (!info$family == "unknown") {
       if (isTRUE(exponentiate)) {
-        if ((info$is_binomial && info$is_logit) || info$is_ordinal || info$is_multinomial || info$is_categorical) {
+        if (info$is_exponential && identical(info$link_function, "log")) {
+          coef_col <- "Prevalence Ratio"
+        } else if ((info$is_binomial && info$is_logit) || info$is_ordinal || info$is_multinomial || info$is_categorical) {
           coef_col <- "Odds Ratio"
         } else if (info$is_binomial && !info$is_logit) {
           coef_col <- "Risk Ratio"
@@ -226,8 +258,12 @@
           coef_col <- "IRR"
         }
       } else {
-        if (info$is_binomial || info$is_ordinal || info$is_multinomial || info$is_categorical) {
+        if (info$is_exponential && identical(info$link_function, "log")) {
+          coef_col <- "Log-Prevalence"
+        } else if ((info$is_binomial && info$is_logit) || info$is_ordinal || info$is_multinomial || info$is_categorical) {
           coef_col <- "Log-Odds"
+        } else if (info$is_binomial && !info$is_logit) {
+          coef_col <- "Log-Risk"
         } else if (info$is_count) {
           coef_col <- "Log-Mean"
         }
@@ -239,16 +275,30 @@
 }
 
 
+.is_valid_exponentiate_argument <- function(exponentiate) {
+  isTRUE(exponentiate) || identical(exponentiate, "nongaussian")
+}
+
 #' @keywords internal
 .exponentiate_parameters <- function(params, model = NULL, exponentiate = TRUE) {
+  # "exponentiate" must be
+  # - TRUE, will always exponentiate all coefficients
+  # - "nongaussian", will exponentiate all coefficients for models with non-gaussian family
+  if (!.is_valid_exponentiate_argument(exponentiate)) {
+    return(params)
+  }
+
+  # check if non-gaussian applies
   if (!is.null(model) && insight::model_info(model, verbose = FALSE)$is_linear && identical(exponentiate, "nongaussian")) {
     return(params)
   }
+
   columns <- grepl(pattern = "^(Coefficient|Mean|Median|MAP|Std_Coefficient|CI_|Std_CI)", colnames(params))
   if (any(columns)) {
     if (inherits(model, "mvord")) {
       rows <- params$Component != "correlation"
     } else {
+      # don't exponentiate dispersion
       if (!is.null(params$Component)) {
         rows <- !tolower(params$Component) %in% c("dispersion", "residual")
       } else {
@@ -357,9 +407,9 @@
   not_allowed <- not_allowed[which(not_allowed %in% names(dots))]
   if (length(not_allowed)) {
     if (verbose) {
+      not_allowed_string <- datawizard::text_concatenate(not_allowed, enclose = "\"")
       warning(insight::format_message(
-        sprintf("Following arguments are not supported in `%s()` for models of class '%s' and will be ignored:", function_name, model_class),
-        paste0("\"", not_allowed, "\"", collapse = ", "),
+        sprintf("Following arguments are not supported in `%s()` for models of class '%s' and will be ignored: %s", function_name, model_class, not_allowed_string),
         sprintf("Please run `%s()` again without specifying the above mentioned arguments to obtain expected results.", function_name)
       ), call. = FALSE)
     }

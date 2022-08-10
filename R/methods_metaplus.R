@@ -4,6 +4,7 @@
 ###### .metaplus -------------------
 
 
+#' @rdname model_parameters.averaging
 #' @export
 model_parameters.metaplus <- function(model,
                                       ci = .95,
@@ -141,6 +142,7 @@ ci.metaplus <- function(x, ...) {
 ###### .meta_random -------------------
 
 
+#' @rdname model_parameters.averaging
 #' @export
 model_parameters.meta_random <- function(model,
                                          ci = .95,
@@ -149,7 +151,6 @@ model_parameters.meta_random <- function(model,
                                          include_studies = TRUE,
                                          verbose = TRUE,
                                          ...) {
-
   # process arguments
   params <- as.data.frame(model$estimates)
   ci_method <- match.arg(ci_method, choices = c("hdi", "eti", "quantile"))
@@ -215,9 +216,9 @@ model_parameters.meta_random <- function(model,
     out <- out[out$Parameter %in% c("Overall", "tau"), ]
   }
 
-  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-    out <- .exponentiate_parameters(out, model, exponentiate)
-  }
+  # exponentiate coefficients and SE/CI, if requested
+  out <- .exponentiate_parameters(out, model, exponentiate)
+
   out <- .add_model_parameters_attributes(
     params = out,
     model = model,
@@ -283,7 +284,7 @@ ci.meta_random <- function(x, method = "eti", ...) {
 
 ###### .meta_fixed -------------------
 
-
+#' @rdname model_parameters.averaging
 #' @export
 model_parameters.meta_fixed <- model_parameters.meta_random
 
@@ -301,6 +302,7 @@ ci.meta_fixed <- ci.meta_random
 ###### .meta_bma -------------------
 
 
+#' @rdname model_parameters.averaging
 #' @export
 model_parameters.meta_bma <- function(model,
                                       ci = .95,
@@ -309,7 +311,6 @@ model_parameters.meta_bma <- function(model,
                                       include_studies = TRUE,
                                       verbose = TRUE,
                                       ...) {
-
   # process arguments
   params <- as.data.frame(model$estimates)
   ci_method <- match.arg(ci_method, choices = c("hdi", "eti", "quantile"))
@@ -361,9 +362,9 @@ model_parameters.meta_bma <- function(model,
     out <- out[out$Parameter %in% c("averaged", "fixed", "random"), ]
   }
 
-  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-    out <- .exponentiate_parameters(out, model, exponentiate)
-  }
+  # exponentiate coefficients and SE/CI, if requested
+  out <- .exponentiate_parameters(out, model, exponentiate)
+
   out <- .add_model_parameters_attributes(
     params = out,
     model = model,

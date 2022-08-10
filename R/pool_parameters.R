@@ -52,7 +52,6 @@ pool_parameters <- function(x,
                             component = "conditional",
                             verbose = TRUE,
                             ...) {
-
   # check input, save original model -----
 
   original_model <- random_params <- NULL
@@ -60,6 +59,16 @@ pool_parameters <- function(x,
 
   if (all(sapply(x, insight::is_model)) && all(sapply(x, insight::is_model_supported))) {
     original_model <- x[[1]]
+
+    # Add exceptions for models with uncommon components here ---------------
+    exception_model_class <- "polr"
+
+    # exceptions for "component" argument. Eg, MASS::polr has components
+    # "alpha" and "beta", and "component" needs to be set to all by default
+    if (identical(component, "conditional") && inherits(original_model, exception_model_class)) {
+      component <- "all"
+    }
+
     x <- lapply(x, model_parameters, effects = effects, component = component, ...)
   }
 
@@ -92,10 +101,33 @@ pool_parameters <- function(x,
   # preparation ----
 
   params <- do.call(rbind, x)
+
   len <- length(x)
   ci <- attributes(original_x[[1]])$ci
   if (is.null(ci)) ci <- .95
   parameter_values <- x[[1]]$Parameter
+
+  # exceptions ----
+
+  # check for special models, like "htest", which have no "Parameter" columns
+  if (!"Parameter" %in% colnames(params)) {
+    # check for possible column names
+    if (all(c("Parameter1", "Parameter2") %in% colnames(params))) {
+      # create combined Parameter column
+      params$Parameter <- paste0(params$Parameter1, " and ", params$Parameter2)
+      # remove old columns
+      params$Parameter1 <- NULL
+      params$Parameter2 <- NULL
+      # update values
+      parameter_values <- paste0(x[[1]]$Parameter1, " and ", x[[1]]$Parameter2) #
+    }
+    # fix coefficient column
+    colnames(params)[colnames(params) == "r"] <- "Coefficient"
+    colnames(params)[colnames(params) == "rho"] <- "Coefficient"
+    colnames(params)[colnames(params) == "tau"] <- "Coefficient"
+    colnames(params)[colnames(params) == "Estimate"] <- "Coefficient"
+    colnames(params)[colnames(params) == "Difference"] <- "Coefficient"
+  }
 
   # split multiply (imputed) datasets by parameters,
   # but only for fixed effects. Filter random effects,
@@ -124,6 +156,10 @@ pool_parameters <- function(x,
     df_column <- colnames(i)[grepl("(\\bdf\\b|\\bdf_error\\b)", colnames(i))][1]
     if (length(df_column)) {
       pooled_df <- .barnad_rubin(m = nrow(i), b = stats::var(i$Coefficient), t = tmp, dfcom = unique(i[[df_column]]))
+      # sanity check length
+      if (length(pooled_df) > 1 && length(pooled_se) == 1) {
+        pooled_df <- round(mean(pooled_df, na.rm = TRUE))
+      }
     } else {
       pooled_df <- Inf
     }
@@ -135,15 +171,22 @@ pool_parameters <- function(x,
     alpha <- (1 + ci) / 2
     fac <- suppressWarnings(stats::qt(alpha, df = pooled_df))
 
-    data.frame(
+    out <- data.frame(
       Coefficient = pooled_estimate,
       SE = pooled_se,
       CI_low = pooled_estimate - pooled_se * fac,
       CI_high = pooled_estimate + pooled_se * fac,
       Statistic = pooled_statistic,
       df_error = pooled_df,
-      p = 2 * stats::pt(abs(pooled_statistic), df = pooled_df, lower.tail = FALSE)
+      p = 2 * stats::pt(abs(pooled_statistic), df = pooled_df, lower.tail = FALSE),
+      stringsAsFactors = FALSE
     )
+
+    # add component, when pooling for all components
+    if (identical(component, "all") && "Component" %in% colnames(i)) {
+      out$Component <- i$Component[1]
+    }
+    out
   }))
 
 
@@ -167,14 +210,14 @@ pool_parameters <- function(x,
   # reorder ------
 
   pooled_params$Parameter <- parameter_values
-  pooled_params <- pooled_params[c("Parameter", "Coefficient", "SE", "CI_low", "CI_high", "Statistic", "df_error", "p")]
+  columns <- c("Parameter", "Coefficient", "SE", "CI_low", "CI_high", "Statistic", "df_error", "p", "Component")
+  pooled_params <- pooled_params[intersect(columns, colnames(pooled_params))]
 
 
   # final attributes -----
 
-  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-    pooled_params <- .exponentiate_parameters(pooled_params, NULL, exponentiate)
-  }
+  # exponentiate coefficients and SE/CI, if requested
+  pooled_params <- .exponentiate_parameters(pooled_params, NULL, exponentiate)
 
   if (!is.null(pooled_random)) {
     pooled_params <- merge(pooled_params, pooled_random, all = TRUE, sort = FALSE)

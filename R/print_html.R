@@ -65,13 +65,18 @@ print_html.parameters_model <- function(x,
   }
 
   # footer
-  footer <- .print_footer(
+  footer_stats <- .print_footer(
     x,
     digits = footer_digits,
     show_sigma = show_sigma,
     show_formula = show_formula,
     format = "html"
   )
+  if (!is.null(footer)) {
+    footer <- paste0(footer, "<br/>", paste(footer_stats, collapse = "<br/>"))
+  } else {
+    footer <- paste(footer_stats, collapse = "<br/>")
+  }
 
   insight::export_table(
     formatted_table,
@@ -103,7 +108,6 @@ print_html.compare_parameters <- function(x,
                                           footer = NULL,
                                           style = NULL,
                                           ...) {
-
   # check if user supplied digits attributes
   if (missing(digits)) {
     digits <- .additional_arguments(x, "digits", digits)

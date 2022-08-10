@@ -17,7 +17,6 @@
 #' cluster_centers(iris[1:4], clusters = k$cluster, fun = median)
 #' @export
 cluster_centers <- function(data, clusters, fun = mean, ...) {
-
   # Get n obs
   params <- data.frame(table(clusters))
   names(params) <- c("Cluster", "n_Obs")
@@ -54,7 +53,7 @@ cluster_centers <- function(data, clusters, fun = mean, ...) {
 
   # Long means
   means <- datawizard::reshape_longer(params,
-    cols = 4:ncol(params),
+    select = 4:ncol(params),
     values_to = "Mean",
     names_to = "Variable"
   )

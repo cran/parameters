@@ -1,6 +1,5 @@
 #' @keywords internal
 .extract_parameters_anova <- function(model, test = "multivariate") {
-
   # Processing
   if ("manova" %in% class(model)) {
     parameters <- .extract_anova_manova(model)
@@ -69,7 +68,7 @@
 
   # Reorder
   row.names(parameters) <- NULL
-  order <- c("Response", "Group", "Parameter", "Pillai", "AIC", "BIC", "Log_Likelihood", "Chi2", "Chi2_df", "RSS", "Sum_Squares", "Sum_Squares_Partial", "Sum_Squares_Error", "df", "Deviance", "Statistic", "df_num", "df_error", "Deviance_error", "Mean_Square", "F", "Rao", "p")
+  order <- c("Response", "Group", "Parameter", "Coefficient", "SE", "Pillai", "AIC", "BIC", "Log_Likelihood", "Chi2", "Chi2_df", "RSS", "Sum_Squares", "Sum_Squares_Partial", "Sum_Squares_Error", "df", "Deviance", "Statistic", "df_num", "df_error", "Deviance_error", "Mean_Square", "F", "Rao", "p")
   parameters <- parameters[order[order %in% names(parameters)]]
 
   insight::text_remove_backticks(parameters, verbose = FALSE)
@@ -179,6 +178,28 @@
   if (length(df_num) == 0 && length(sumsq) != 0 && "Mean_Square" %in% colnames(parameters) && !("Df" %in% colnames(parameters))) {
     parameters$Df <- round(parameters[[sumsq]] / parameters$Mean_Square)
   }
+
+  # Special catch for car::linearHypothesis
+  m_attr <- attributes(model)
+  if (!is.null(m_attr$value) && isTRUE(grepl("^Linear hypothesis", m_attr$heading[[1]]))) {
+    # Drop unrestricted model (not interesting in linear hypothesis tests)
+    # Use formula to subset if available (e.g. with car::linearHypothesis)
+    if (length(grep("Model", m_attr$heading)) != 0) {
+      idx <- sub(".*: ", "", strsplit(m_attr$heading[grep("Model", m_attr$heading)], "\n")[[1]])
+      idx <- idx != "restricted model"
+      parameters <- parameters[idx, , drop = FALSE]
+    }
+    hypothesis <- m_attr$heading[grep("=", m_attr$heading)]
+    parameters_xtra <- data.frame(
+      Parameter = hypothesis,
+      Coefficient = m_attr$value,
+      SE = sqrt(as.numeric(diag(m_attr$vcov)))
+    )
+    row.names(parameters_xtra) <- row.names(parameters) <- NULL
+    parameters <- cbind(parameters_xtra, parameters)
+    parameters$Parameter <- gsub("  ", " ", parameters$Parameter) ## Annoying extra space sometimes
+  }
+
   parameters
 }
 
@@ -286,7 +307,7 @@
   if (requireNamespace("effectsize", quietly = TRUE)) {
     power <- tryCatch(
       {
-        cohens_f2 <- effectsize::cohens_f_squared(model, partial = TRUE)
+        cohens_f2 <- effectsize::cohens_f_squared(model, partial = TRUE, verbose = FALSE)
 
         f2 <- cohens_f2$Cohens_f2[match(cohens_f2$Parameter, params$Parameter)]
         u <- params$df[params$Parameter != "Residuals"]

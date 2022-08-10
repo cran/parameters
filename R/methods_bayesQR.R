@@ -1,3 +1,4 @@
+#' @rdname model_parameters.stanreg
 #' @export
 model_parameters.bayesQR <- function(model,
                                      centrality = "median",
@@ -15,8 +16,6 @@ model_parameters.bayesQR <- function(model,
                                      parameters = keep,
                                      verbose = TRUE,
                                      ...) {
-
-
   # Processing
   params <- .extract_parameters_bayesian(
     model,

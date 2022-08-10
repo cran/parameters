@@ -47,7 +47,7 @@ model_parameters.cgam <- function(model,
   # sanity check, warn if unsupported argument is used.
   dot_args <- .check_dots(
     dots = list(...),
-    not_allowed = c("vcov", "vcov_args"),
+    not_allowed = c("vcov", "vcov_args", "component"),
     class(model)[1],
     verbose = verbose
   )
@@ -61,7 +61,7 @@ model_parameters.cgam <- function(model,
       ...
     )
   } else {
-    params <- .extract_parameters_generic(
+    args <- list(
       model,
       ci = ci,
       ci_method = ci_method,
@@ -71,8 +71,12 @@ model_parameters.cgam <- function(model,
       p_adjust = p_adjust,
       keep_parameters = keep,
       drop_parameters = drop,
-      ...
+      verbose = verbose,
+      vcov = NULL,
+      vcov_args = NULL
     )
+    args <- c(args, dot_args)
+    params <- do.call(".extract_parameters_generic", args)
   }
 
   # fix statistic column
@@ -99,9 +103,9 @@ model_parameters.cgam <- function(model,
     params$df_error[params$Component == "smooth_terms"] <- NA
   }
 
-  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-    params <- .exponentiate_parameters(params, model, exponentiate)
-  }
+  # exponentiate coefficients and SE/CI, if requested
+  params <- .exponentiate_parameters(params, model, exponentiate)
+
   params <- .add_model_parameters_attributes(
     params,
     model,
@@ -173,8 +177,28 @@ degrees_of_freedom.cgam <- function(model, method = "wald", ...) {
   method <- match.arg(tolower(method), choices = c("analytical", "any", "fit", "wald", "residual", "normal"))
 
   if (method %in% c("wald", "residual", "fit")) {
-    model$resid_df_obs
+    stats::df.residual(model)
   } else {
     degrees_of_freedom.default(model, method = method, ...)
   }
+}
+
+
+#' @export
+degrees_of_freedom.cgamm <- function(model, method = "wald", ...) {
+  if (is.null(method)) {
+    method <- "wald"
+  }
+  method <- match.arg(tolower(method), choices = c("analytical", "any", "fit", "wald", "residual", "normal"))
+
+  if (method %in% c("wald", "residual", "fit")) {
+    dof <- model$resid_df_obs
+    if (is.null(dof)) {
+      dof <- degrees_of_freedom.default(model, method = method, ...)
+    }
+  } else {
+    dof <- degrees_of_freedom.default(model, method = method, ...)
+  }
+
+  dof
 }

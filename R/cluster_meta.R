@@ -31,6 +31,9 @@
 #' # Reordered heatmap
 #' heatmap(m, scale = "none")
 #'
+#' # Extract 3 clusters
+#' predict(m, n = 3)
+#'
 #' # Convert to dissimilarity
 #' d <- as.dist(abs(m - 1))
 #' model <- hclust(d)
@@ -68,19 +71,16 @@ cluster_meta <- function(list_of_clusters, rownames = NULL, ...) {
   if (!is.null(rownames)) row.names(data) <- rownames
 
   # Get probability matrix
-  .cluster_meta_matrix(data)
+  m <- .cluster_meta_matrix(data)
+  class(m) <- c("cluster_meta", class(m))
+  m
 }
-
-
-
-
 
 
 
 
 #' @keywords internal
 .cluster_meta_matrix <- function(data) {
-
   # Internal function
   .get_prob <- function(x) {
     if (any(is.na(x))) {
@@ -106,4 +106,20 @@ cluster_meta <- function(list_of_clusters, rownames = NULL, ...) {
   }
 
   m
+}
+
+
+
+
+# Methods ----------------------------------------------------------------
+
+#' @export
+#' @inheritParams stats::predict
+predict.cluster_meta <- function(object, n = NULL, ...) {
+  if (is.null(n)) {
+    stop("The number of clusters to extract `n` must be entered.", call. = FALSE)
+  }
+  d <- stats::as.dist(abs(object - 1))
+  model <- stats::hclust(d)
+  stats::cutree(model, k = n)
 }

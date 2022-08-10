@@ -1,3 +1,4 @@
+#' @rdname model_parameters.averaging
 #' @export
 model_parameters.mjoint <- function(model,
                                     ci = .95,
@@ -28,14 +29,14 @@ model_parameters.mjoint <- function(model,
       ...
     )
 
-    if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-      params <- .exponentiate_parameters(params, model, exponentiate)
-    }
+    # exponentiate coefficients and SE/CI, if requested
+    params <- .exponentiate_parameters(params, model, exponentiate)
+
     params$Effects <- "fixed"
   }
 
   if (effects %in% c("random", "all")) {
-    params_variance <- .extract_random_variances(model, ci = ci, effects = effects, ci_method = NULL, verbose = verbose)
+    params_variance <- .extract_random_variances(model, ci = ci, effects = effects, ci_method = NULL, ci_random = FALSE, verbose = verbose)
     params_variance$Component <- "conditional"
   }
 

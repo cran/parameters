@@ -33,7 +33,7 @@ using \code{factoextra::hkmeans()}), \code{pam} (K-Medoids using \code{cluster::
 \code{pamk} (K-Medoids that finds out the number of clusters), \code{"hclust"}
 (hierarchical clustering using \code{hclust()} or \code{pvclust::pvclust()}),
 \code{dbscan} (DBSCAN using \code{dbscan::dbscan()}), \code{hdbscan} (Hierarchical DBSCAN
-using \code{dbscan::hdbscan()}), or \code{mixture} (Mixture modelling using
+using \code{dbscan::hdbscan()}), or \code{mixture} (Mixture modeling using
 \code{mclust::Mclust()}, which requires the user to run \code{library(mclust)}
 before).}
 
@@ -85,6 +85,8 @@ each variable within each cluster. Thus, a higher absolute value indicates
 that a certain variable characteristic is more pronounced within that
 specific cluster (as compared to other cluster groups with lower absolute
 mean values).
+
+Clusters classification can be obtained via \code{print(x, newdata = NULL, ...)}.
 }
 \note{
 There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method} implemented in the \href{https://easystats.github.io/see/}{\strong{see}-package}.
@@ -151,10 +153,10 @@ Analysis Basics and Extensions. R package.
 }
 \seealso{
 \itemize{
-\item \code{\link[=n_clusters]{n_clusters()}} to determine the number of clusters to extract,
-\code{\link[=cluster_discrimination]{cluster_discrimination()}} to determine the accuracy of cluster group
-classification via linear discriminant analysis (LDA) and
-\code{\link[=check_clusterstructure]{check_clusterstructure()}} to check suitability of data
+\item \code{\link[=n_clusters]{n_clusters()}} to determine the number of clusters to extract.
+\item \code{\link[=cluster_discrimination]{cluster_discrimination()}} to determine the accuracy of cluster group
+classification via linear discriminant analysis (LDA).
+\item \code{\link[=check_clusterstructure]{check_clusterstructure()}} to check suitability of data
 for clustering.
 \item https://www.datanovia.com/en/lessons/
 }

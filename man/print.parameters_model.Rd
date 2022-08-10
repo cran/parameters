@@ -94,6 +94,31 @@ A \code{print()}-method for objects from \code{\link[=model_parameters]{model_pa
 \code{summary()} is a convenient shortcut for
 \code{print(object, select = "minimal", show_sigma = TRUE, show_formula = TRUE)}.
 }
+\section{Global Options to Customize Messages when Printing}{
+
+The \code{verbose} argument can be used to display or silence messages and
+warnings for the different functions in the \strong{parameters} package. However,
+some messages providing additional information can be displayed or suppressed
+using \code{options()}:
+\itemize{
+\item \code{parameters_summary}: \code{options(parameters_summary = TRUE)} will override the
+\code{summary} argument in \code{model_parameters()} and always show the model summary
+for non-mixed models.
+\item \code{parameters_mixed_summary}: \code{options(parameters_mixed_summary = TRUE)} will
+override the \code{summary} argument in \code{model_parameters()} for mixed models, and
+will then always show the model summary.
+\item \code{parameters_cimethod}: \code{options(parameters_cimethod = TRUE)} will show the
+additional information about the approximation method used to calculate
+confidence intervals and p-values. Set to \code{FALSE} to hide this message when
+printing \code{model_parameters()} objects.
+\item \code{parameters_exponentiate}: \code{options(parameters_exponentiate = TRUE)} will
+show the additional information on how to interpret coefficients of models
+with log-transformed response variables or with log-/logit-links when the
+\code{exponentiate} argument in \code{model_parameters()} is not \code{TRUE}. Set this option
+to \code{FALSE} to hide this message when printing \code{model_parameters()} objects.
+}
+}
+
 \section{Interpretation of Interaction Terms}{
 
 Note that the \emph{interpretation} of interaction terms depends on many
@@ -106,10 +131,10 @@ of covariates, included as main effects or not, etc.). Their interpretation
 depends of the full context of the model, which should not be inferred
 from the parameters table alone - rather, we recommend to use packages
 that calculate estimated marginal means or marginal effects, such as
-\CRANpkg{modelbased}, \CRANpkg{emmeans} or \CRANpkg{ggeffects}. To raise
-awareness for this issue, you may use \code{print(...,show_formula=TRUE)}
-to add the model-specification to the output of the
-\code{\link[=print.parameters_model]{print()}} method for \code{model_parameters()}.
+\CRANpkg{modelbased}, \CRANpkg{emmeans}, \CRANpkg{ggeffects}, or
+\CRANpkg{marginaleffects}. To raise awareness for this issue, you may use
+\code{print(...,show_formula=TRUE)} to add the model-specification to the output
+of the \code{\link[=print.parameters_model]{print()}} method for \code{model_parameters()}.
 }
 
 \section{Labeling the Degrees of Freedom}{

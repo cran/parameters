@@ -21,6 +21,7 @@ p_value.MCMCglmm <- function(model, ...) {
 }
 
 
+#' @rdname model_parameters.stanreg
 #' @export
 model_parameters.MCMCglmm <- function(model,
                                       centrality = "median",
@@ -38,7 +39,6 @@ model_parameters.MCMCglmm <- function(model,
                                       parameters = keep,
                                       verbose = TRUE,
                                       ...) {
-
   # Processing
   params <-
     .extract_parameters_bayesian(

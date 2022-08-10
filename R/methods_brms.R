@@ -45,7 +45,6 @@ model_parameters.brmsfit <- function(model,
       ...
     )
   } else {
-
     # Processing
     params <- .extract_parameters_bayesian(
       model,
@@ -75,9 +74,8 @@ model_parameters.brmsfit <- function(model,
 
     params <- .add_pretty_names(params, model)
 
-    if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-      params <- .exponentiate_parameters(params, model, exponentiate)
-    }
+    # exponentiate coefficients and SE/CI, if requested
+    params <- .exponentiate_parameters(params, model, exponentiate)
 
     params <- .add_model_parameters_attributes(params,
       model,
@@ -115,8 +113,6 @@ model_parameters.brmsfit <- function(model,
                                         drop_parameters = NULL,
                                         verbose = TRUE,
                                         ...) {
-
-
   # parameters
   smd <- insight::get_parameters(model, effects = "fixed", component = "conditional")
   studies <- insight::get_parameters(model, effects = "random", parameters = "^(?!sd_)")

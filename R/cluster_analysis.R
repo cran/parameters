@@ -18,7 +18,7 @@
 #'   `pamk` (K-Medoids that finds out the number of clusters), `"hclust"`
 #'   (hierarchical clustering using `hclust()` or `pvclust::pvclust()`),
 #'   `dbscan` (DBSCAN using `dbscan::dbscan()`), `hdbscan` (Hierarchical DBSCAN
-#'   using `dbscan::hdbscan()`), or `mixture` (Mixture modelling using
+#'   using `dbscan::hdbscan()`), or `mixture` (Mixture modeling using
 #'   `mclust::Mclust()`, which requires the user to run `library(mclust)`
 #'   before).
 #' @param distance_method Distance measure to be used for methods based on
@@ -56,11 +56,13 @@
 #' specific cluster (as compared to other cluster groups with lower absolute
 #' mean values).
 #'
+#' Clusters classification can be obtained via `print(x, newdata = NULL, ...)`.
+#'
 #' @seealso
-#' - [n_clusters()] to determine the number of clusters to extract,
-#' [cluster_discrimination()] to determine the accuracy of cluster group
-#' classification via linear discriminant analysis (LDA) and
-#' [check_clusterstructure()] to check suitability of data
+#' - [n_clusters()] to determine the number of clusters to extract.
+#' - [cluster_discrimination()] to determine the accuracy of cluster group
+#' classification via linear discriminant analysis (LDA).
+#' - [check_clusterstructure()] to check suitability of data
 #' for clustering.
 #' - https://www.datanovia.com/en/lessons/
 #'
@@ -130,8 +132,6 @@ cluster_analysis <- function(x,
                              dbscan_eps = 15,
                              iterations = 100,
                              ...) {
-
-
   # match arguments
   method <- match.arg(method, choices = c("kmeans", "hkmeans", "pam", "pamk", "hclust", "dbscan", "hdbscan", "mixture"), several.ok = TRUE)
 
@@ -342,7 +342,7 @@ summary.cluster_analysis <- function(object, ...) {
 visualisation_recipe.cluster_analysis_summary <- function(x, ...) {
   data <- datawizard::data_to_long(
     x,
-    cols = names(x)[-1], # skip 'Cluster' column
+    select = names(x)[-1], # skip 'Cluster' column
     names_to = "Group",
     values_to = "Center"
   )

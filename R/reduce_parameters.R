@@ -52,10 +52,10 @@
 #' See also [package vignette](https://easystats.github.io/parameters/articles/parameters_reduction.html).
 #'
 #' @references
-#' - Nguyen, L. H., \& Holmes, S. (2019). Ten quick tips for effective
+#' - Nguyen, L. H., and Holmes, S. (2019). Ten quick tips for effective
 #'  dimensionality reduction. PLOS Computational Biology, 15(6).
 #'
-#' - Laparra, V., Malo, J., & Camps-Valls, G. (2015). Dimensionality
+#' - Laparra, V., Malo, J., and Camps-Valls, G. (2015). Dimensionality
 #'  reduction via regression in hyperspectral imagery. IEEE Journal of Selected
 #'  Topics in Signal Processing, 9(6), 1026-1036.
 #'
@@ -86,7 +86,7 @@ reduce_data <- function(x, method = "PCA", n = "max", distance = "euclidean", ..
 
 #' @export
 reduce_parameters.data.frame <- function(x, method = "PCA", n = "max", distance = "euclidean", ...) {
-  x <- datawizard::data_to_numeric(x)
+  x <- datawizard::to_numeric(x)
 
   # N factors
   if (n == "max") {
@@ -143,7 +143,7 @@ reduce_parameters.data.frame <- function(x, method = "PCA", n = "max", distance 
 
 #' @export
 reduce_parameters.lm <- function(x, method = "PCA", n = "max", distance = "euclidean", ...) {
-  data <- reduce_parameters(datawizard::data_to_numeric(insight::get_predictors(x, ...), ...), method = method, n = n, distance = distance)
+  data <- reduce_parameters(datawizard::to_numeric(insight::get_predictors(x, ...), ...), method = method, n = n, distance = distance)
 
   y <- data.frame(.row = 1:length(insight::get_response(x)))
   y[insight::find_response(x)] <- insight::get_response(x)

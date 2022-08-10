@@ -37,7 +37,7 @@ model_parameters.kmeans <- function(model, ...) {
 
   # Long means
   means <- datawizard::reshape_longer(params,
-    cols = 4:ncol(params),
+    select = 4:ncol(params),
     values_to = "Mean",
     names_to = "Variable"
   )
@@ -138,7 +138,6 @@ predict.parameters_clusters <- function(object, newdata = NULL, names = NULL, ..
 
   # Add labels
   if (!is.null(names)) {
-
     # List
     if (is.list(names)) {
       out <- as.factor(out)

@@ -162,7 +162,7 @@ model_parameters.aov <- function(model,
     df_error = df_error,
     ci = ci,
     alternative = alternative,
-    verbose = verbose
+    verbose = FALSE # we get messages for contrasts before
   )
 
   # add power, if possible
@@ -239,6 +239,7 @@ standard_error.anova <- standard_error.aov
 #' @export
 p_value.anova <- p_value.aov
 
+#' @rdname model_parameters.aov
 #' @export
 model_parameters.anova <- model_parameters.aov
 
@@ -252,6 +253,7 @@ standard_error.aovlist <- standard_error.aov
 #' @export
 p_value.aovlist <- p_value.aov
 
+#' @rdname model_parameters.aov
 #' @export
 model_parameters.aovlist <- model_parameters.aov
 
@@ -259,6 +261,7 @@ model_parameters.aovlist <- model_parameters.aov
 
 # .afex_aov  ------
 
+#' @rdname model_parameters.aov
 #' @export
 model_parameters.afex_aov <- function(model,
                                       omega_squared = NULL,
@@ -318,12 +321,15 @@ model_parameters.afex_aov <- function(model,
 
 # others  ------
 
+#' @rdname model_parameters.aov
 #' @export
 model_parameters.anova.rms <- model_parameters.aov
 
+#' @rdname model_parameters.aov
 #' @export
 model_parameters.Anova.mlm <- model_parameters.aov
 
+#' @rdname model_parameters.aov
 #' @export
 model_parameters.maov <- model_parameters.aov
 
@@ -451,7 +457,7 @@ model_parameters.maov <- model_parameters.aov
   # set error-df, when provided.
   if (!is.null(df_error) && is.data.frame(model) && !any(c("DenDF", "den Df", "denDF", "df_error") %in% colnames(model))) {
     if (length(df_error) > nrow(model)) {
-      stop("Number of degrees of freedom in argument 'df_error' is larger than number of parameters.")
+      stop(insight::format_message("Number of degrees of freedom in argument 'df_error' is larger than number of parameters."), call. = FALSE)
     }
     model$df_error <- df_error
   }
@@ -477,6 +483,8 @@ model_parameters.maov <- model_parameters.aov
                                     alternative = alternative,
                                     verbose = verbose)
     parameters <- .add_effectsize_to_parameters(fx, parameters)
+    # avoid multiple messages
+    verbose <- FALSE
   }
 
   # Eta squared
@@ -487,6 +495,8 @@ model_parameters.maov <- model_parameters.aov
                                   alternative = alternative,
                                   verbose = verbose)
     parameters <- .add_effectsize_to_parameters(fx, parameters)
+    # avoid multiple messages
+    verbose <- FALSE
   }
 
   # Epsilon squared
@@ -497,6 +507,8 @@ model_parameters.maov <- model_parameters.aov
                                       alternative = alternative,
                                       verbose = verbose)
     parameters <- .add_effectsize_to_parameters(fx, parameters)
+    # avoid multiple messages
+    verbose <- FALSE
   }
 
   parameters

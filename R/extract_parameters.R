@@ -26,14 +26,18 @@
 
   if (isTRUE(standardize)) {
     if (verbose) {
-      insight::format_message(warning("'standardize' must be on of 'refit', 'posthoc', 'basic', 'smart' or 'pseudo'.", call. = FALSE))
+      warning(insight::format_message(
+        "'standardize' must be on of 'refit', 'posthoc', 'basic', 'smart' or 'pseudo'."
+      ), call. = FALSE)
     }
     standardize <- NULL
   }
 
   if (!is.null(standardize) && !requireNamespace("datawizard", quietly = TRUE)) {
     if (verbose) {
-      insight::format_message(warning("Package 'datawizard' required to calculate standardized coefficients. Please install it.", call. = FALSE))
+      warning(insight::format_message(
+        "Package 'datawizard' required to calculate standardized coefficients. Please install it."
+      ), call. = FALSE)
     }
     standardize <- NULL
   }
@@ -88,14 +92,20 @@
     intercept_groups <- which(grepl("Intercept:", parameters$Parameter, fixed = TRUE))
     parameters$Parameter <- gsub("Intercept: ", "", parameters$Parameter, fixed = TRUE)
   } else if (inherits(model, "clm") && !is.null(model$alpha)) {
-    intercept_groups <- rep(c("intercept", "location", "scale"), vapply(model[c("alpha", "beta", "zeta")], length, numeric(1)))
+    intercept_groups <- rep(
+      c("intercept", "location", "scale"),
+      vapply(model[c("alpha", "beta", "zeta")], length, numeric(1))
+    )
   } else if (inherits(model, "clm2") && !is.null(model$Alpha)) {
-    intercept_groups <- rep(c("intercept", "location", "scale"), vapply(model[c("Alpha", "beta", "zeta")], length, numeric(1)))
+    intercept_groups <- rep(
+      c("intercept", "location", "scale"),
+      vapply(model[c("Alpha", "beta", "zeta")], length, numeric(1))
+    )
   } else {
     intercept_groups <- NULL
   }
 
-  original_order <- parameters$.id <- 1:nrow(parameters)
+  original_order <- parameters$.id <- seq_len(nrow(parameters))
 
   # column name for coefficients, non-standardized
   coef_col <- "Coefficient"
@@ -118,7 +128,11 @@
     ci_df <- suppressMessages(do.call("ci", args))
 
     if (!is.null(ci_df)) {
-      if (length(ci) > 1) ci_df <- datawizard::reshape_ci(ci_df)
+      # for multiple CI columns, reshape CI-dataframe to match parameters df
+      if (length(ci) > 1) {
+        ci_df <- datawizard::reshape_ci(ci_df)
+      }
+      # remember names of CI columns, used for later sorting of columns
       ci_cols <- names(ci_df)[!names(ci_df) %in% c("CI", merge_by)]
       parameters <- merge(parameters, ci_df, by = merge_by, sort = FALSE)
     } else {
@@ -180,6 +194,7 @@
 
 
   # ==== degrees of freedom
+
   if (!is.null(ci_method)) {
     df_error <- degrees_of_freedom(model, method = ci_method, verbose = FALSE)
   } else {
@@ -310,23 +325,13 @@
 
 .add_sigma_residual_df <- function(params, model) {
   if (is.null(params$Component) || !"sigma" %in% params$Component) {
-    sig <- tryCatch(
-      {
-        suppressWarnings(insight::get_sigma(model, ci = NULL, verbose = FALSE))
-      },
-      error = function(e) {
-        NULL
-      }
+    sig <- tryCatch(suppressWarnings(insight::get_sigma(model, ci = NULL, verbose = FALSE)),
+      error = function(e) NULL
     )
     attr(params, "sigma") <- as.numeric(sig)
 
-    resdf <- tryCatch(
-      {
-        suppressWarnings(insight::get_df(model, type = "residual"))
-      },
-      error = function(e) {
-        NULL
-      }
+    resdf <- tryCatch(suppressWarnings(insight::get_df(model, type = "residual")),
+      error = function(e) NULL
     )
     attr(params, "residual_df") <- as.numeric(resdf)
   }
@@ -362,12 +367,13 @@
                                       drop = NULL,
                                       column = NULL,
                                       verbose = TRUE) {
-
   # check pattern
   if (!is.null(keep) && length(keep) > 1) {
     keep <- paste0("(", paste0(keep, collapse = "|"), ")")
     if (verbose) {
-      message(insight::format_message(sprintf("The 'keep' argument has more than 1 element. Merging into following regular expression: '%s'.", keep)))
+      message(insight::format_message(
+        sprintf("The 'keep' argument has more than 1 element. Merging into following regular expression: '%s'.", keep)
+      ))
     }
   }
 
@@ -375,7 +381,9 @@
   if (!is.null(drop) && length(drop) > 1) {
     drop <- paste0("(", paste0(drop, collapse = "|"), ")")
     if (verbose) {
-      message(insight::format_message(sprintf("The 'drop' argument has more than 1 element. Merging into following regular expression: '%s'.", drop)))
+      message(insight::format_message(
+        sprintf("The 'drop' argument has more than 1 element. Merging into following regular expression: '%s'.", drop)
+      ))
     }
   }
 
@@ -444,7 +452,7 @@
   parameters <- .check_rank_deficiency(parameters)
 
   # sometimes, due to merge(), row-order messes up, so we save this here
-  original_order <- parameters$.id <- 1:nrow(parameters)
+  original_order <- parameters$.id <- seq_len(nrow(parameters))
 
   # remove SE column
   parameters <- datawizard::data_remove(parameters, c("SE", "Std. Error"), verbose = FALSE)
@@ -512,7 +520,12 @@
       se_kr$df_error <- NULL
       parameters <- merge(parameters, se_kr, by = "Parameter", sort = FALSE)
     } else {
-      parameters <- merge(parameters, standard_error(model, method = ci_method, effects = "fixed"), by = "Parameter", sort = FALSE)
+      parameters <- merge(
+        parameters,
+        standard_error(model, method = ci_method, effects = "fixed"),
+        by = "Parameter",
+        sort = FALSE
+      )
     }
   }
 
@@ -532,9 +545,19 @@
     } else if (ci_method %in% special_ci_methods) {
       # special handling for KR-p, which we already have computed from dof
       # parameters <- merge(parameters, .p_value_dof_kr(model, params = parameters, dof = df_error), by = "Parameter")
-      parameters <- merge(parameters, .p_value_dof(model, dof = df_error$df_error, method = ci_method, se = df_error$SE), by = "Parameter", sort = FALSE)
+      parameters <- merge(
+        parameters,
+        .p_value_dof(model, dof = df_error$df_error, method = ci_method, se = df_error$SE),
+        by = "Parameter",
+        sort = FALSE
+      )
     } else {
-      parameters <- merge(parameters, p_value(model, dof = df, effects = "fixed"), by = "Parameter", sort = FALSE)
+      parameters <- merge(
+        parameters,
+        p_value(model, dof = df, effects = "fixed"),
+        by = "Parameter",
+        sort = FALSE
+      )
     }
   }
 
@@ -634,7 +657,6 @@
 
 
 .add_within_between_effects <- function(model, parameters) {
-
   # This function checks whether the model contains predictors that were
   # "demeaned" using the "demean()" function. If so, these columns have an
   # attribute indicating the within or between effect, and in such cases,
@@ -673,7 +695,8 @@
     parameters$Component[interactions] <- "interactions"
   }
 
-  if (((!("within" %in% parameters$Component) || !("between" %in% parameters$Component)) && inherits(model, "merMod")) || all(parameters$Component == "rewb-contextual")) {
+  if (((!all(c("within", "between") %in% parameters$Component)) && inherits(model, "merMod")) ||
+      all(parameters$Component == "rewb-contextual")) {
     parameters$Component <- NULL
   }
 
@@ -719,7 +742,10 @@
   # no ROPE for multi-response models
   if (insight::is_multivariate(model)) {
     test <- setdiff(test, c("rope", "p_rope"))
-    warning(insight::format_message("Multivariate response models are not yet supported for tests 'rope' and 'p_rope'."), call. = FALSE)
+    warning(insight::format_message(
+      "Multivariate response models are not yet supported for tests 'rope' and 'p_rope'."),
+      call. = FALSE
+    )
   }
 
   # MCMCglmm need special handling
@@ -771,7 +797,11 @@
       ...
     )
 
-    parameters <- merge(std_parameters, parameters[c("Parameter", setdiff(colnames(parameters), colnames(std_parameters)))], sort = FALSE)
+    parameters <- merge(
+      std_parameters,
+      parameters[c("Parameter", setdiff(colnames(parameters), colnames(std_parameters)))],
+      sort = FALSE
+    )
   } else {
     parameters <- bayestestR::describe_posterior(
       model,
@@ -801,7 +831,7 @@
   if ("ROPE_CI" %in% names(parameters) && insight::n_unique(parameters$ROPE_CI) == 1) {
     parameters$ROPE_CI <- NULL
   }
-  if ("ROPE_low" %in% names(parameters) & "ROPE_high" %in% names(parameters)) {
+  if ("ROPE_low" %in% names(parameters) && "ROPE_high" %in% names(parameters)) {
     parameters$ROPE_low <- NULL
     parameters$ROPE_high <- NULL
   }
@@ -845,7 +875,10 @@
   if (!is.logical(standardize)) {
     if (!(standardize %in% c("all", "std.all", "latent", "std.lv", "no_exogenous", "std.nox"))) {
       if (verbose) {
-        warning(insight::format_message("'standardize' should be one of TRUE, 'all', 'std.all', 'latent', 'std.lv', 'no_exogenous' or 'std.nox'. Returning unstandardized solution."), call. = FALSE)
+        warning(insight::format_message(
+          "'standardize' should be one of TRUE, 'all', 'std.all', 'latent', 'std.lv', 'no_exogenous' or 'std.nox'.",
+          "Returning unstandardized solution."
+        ), call. = FALSE)
       }
       standardize <- FALSE
     }
@@ -855,7 +888,9 @@
   if (length(ci) > 1) {
     ci <- ci[1]
     if (verbose) {
-      warning(insight::format_message(paste0("lavaan models only accept one level of CI :( Keeping the first one: `ci = ", ci, "`.")), call. = FALSE)
+      warning(insight::format_message(
+        paste0("lavaan models only accept one level of CI :( Keeping the first one: `ci = ", ci, "`.")
+      ), call. = FALSE)
     }
   }
 
@@ -906,13 +941,13 @@
       "std.all"
     )
 
-    data <- lavaan::standardizedsolution(model,
-      se = TRUE,
-      level = ci,
-      type = type,
-      ...
-    )
-
+    # this function errors on unknown arguments
+    valid <- names(formals(lavaan::standardizedsolution))
+    dots <- list(...)
+    dots <- dots[names(dots) %in% valid]
+    args <- c(list(model, se = TRUE, level = ci, type = type), dots)
+    f <- utils::getFromNamespace("standardizedsolution", "lavaan")
+    data <- do.call("f", args)
     names(data)[names(data) == "est.std"] <- "est"
   }
 
@@ -972,7 +1007,14 @@
 
 .check_rank_deficiency <- function(p, verbose = TRUE) {
   if (anyNA(p$Estimate)) {
-    if (isTRUE(verbose)) warning(insight::format_message(sprintf("Model matrix is rank deficient. Parameters %s were not estimable.", paste(p$Parameter[is.na(p$Estimate)], collapse = ", "))), call. = FALSE)
+    if (isTRUE(verbose)) {
+      warning(insight::format_message(
+        sprintf(
+          "Model matrix is rank deficient. Parameters %s were not estimable.",
+          paste(p$Parameter[is.na(p$Estimate)], collapse = ", ")
+        )
+      ), call. = FALSE)
+    }
     p <- p[!is.na(p$Estimate), ]
   }
   p

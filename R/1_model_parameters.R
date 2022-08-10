@@ -4,25 +4,21 @@
 
 #' Model Parameters
 #'
-#' Compute and extract model parameters. See the documentation for your object's class:
+#' Compute and extract model parameters. The available options and arguments depend on the modeling **package** and model `class`. Follow one of these links to read the model-specific documentation:
 #' \itemize{
-#'  \item{[Correlations, t-tests, ...][model_parameters.htest] (`htest`, `pairwise.htest`)}
-#'  \item{[ANOVAs][model_parameters.aov] (`aov`, `anova`, **afex**, ...)}
-#'  \item{[Regression models][model_parameters.default] (`lm`, `glm`, **survey**, ...)}
-#'  \item{[Mixed models][model_parameters.merMod] (**lme4**, **nlme**, **glmmTMB**, **afex**, ...)}
-#'  \item{[Additive models][model_parameters.cgam] (`gam`, `gamm`, ...)}
-#'  \item{[Zero-inflated models][model_parameters.zcpglm] (`hurdle`, `zeroinfl`, `zerocount`)}
-#'  \item{[Multinomial, ordinal and cumulative link models][model_parameters.mlm] (`bracl`, `multinom`, `mlm`, **ordinal**, ...)}
-#'  \item{[Other special models][model_parameters.averaging] (`model.avg`, `betareg`, `glmx`, ...)}
-#'  \item{[Bayesian tests][model_parameters.BFBayesFactor] (**BayesFactor**)}
-#'  \item{[Bayesian models][model_parameters.stanreg] (**rstanarm**, **brms**, **MCMCglmm**, **blavaan**, ...)}
-#'  \item{[PCA and FA][model_parameters.principal] (**psych**)}
-#'  \item{[CFA and SEM][model_parameters.lavaan] (**lavaan**)}
-#'  \item{[Cluster models][model_parameters.kmeans] (k-means, ...)}
-#'  \item{[Meta-Analysis via linear (mixed) models][model_parameters.rma] (`rma`, `metaplus`, **metaBMA**, ...)}
-#'  \item{[Hypothesis testing][model_parameters.glht] (`glht`, **PMCMRplus**)}
-#'  \item{[Robust statistical tests][model_parameters.t1way] (**WRS2**)}
-#'  \item{[Multiply imputed repeated analyses][model_parameters.mira] (`mira`)}
+#'  \item{[Default method][model_parameters.default]: `lm`, `glm`, **stats**, **censReg**, **MASS**, **survey**, ... }
+#'  \item{[Additive models][model_parameters.cgam]: **bamlss**, **gamlss**, **mgcv**, **scam**, **VGAM**, `Gam`, `gamm`, ...}
+#'  \item{[ANOVA][model_parameters.aov]: **afex**, `aov`, `anova`, ...}
+#'  \item{[Bayesian][model_parameters.stanreg]: **BayesFactor**, **blavaan**, **brms**, **MCMCglmm**, **posterior**, **rstanarm**, `bayesQR`, `bcplm`, `BGGM`, `blmrm`, `blrm`, `mcmc.list`, `MCMCglmm`, ...}
+#'  \item{[Clustering][model_parameters.kmeans]: **hclust**, **kmeans**, **mclust**, **pam**, ...}
+#'  \item{[Correlations, t-tests, etc.:][model_parameters.htest] **lmtest**, `htest`, `pairwise.htest`, ...}
+#'  \item{[Meta-Analysis][model_parameters.rma]: **metaBMA**, **metafor**, **metaplus**, ...}
+#'  \item{[Mixed models][model_parameters.merMod]: **cplm**, **glmmTMB**, **lme4**, **lmerTest**, **nlme**, **ordinal**, **robustlmm**, **spaMM**, `mixed`, `MixMod`, ...}
+#'  \item{[Multinomial, ordinal and cumulative link][model_parameters.mlm]: **brglm2**, **DirichletReg**, **nnet**, **ordinal**, `mlm`, ...}
+#'  \item{[Multiple imputation][model_parameters.mira]: **mice**}
+#'  \item{[PCA, FA, CFA, SEM][model_parameters.principal]: **FactoMineR**, **lavaan**, **psych**, `sem`, ...}
+#'  \item{[Zero-inflated and hurdle][model_parameters.zcpglm]: **cplm**, **mhurdle**, **pscl**, ...}
+#'  \item{[Other models][model_parameters.averaging]: **aod**, **bbmle**, **betareg**, **emmeans**, **epiR**, **ggeffects**, **glmx**, **ivfixed**, **ivprobit**, **JRM**, **lmodel2**, **logitsf**, **marginaleffects**, **margins**, **maxLik**, **mediation**, **mfx**, **multcomp**, **mvord**, **plm**, **PMCMRplus**, **quantreg**, **selection**, **systemfit**, **tidymodels**, **varEST**, **WRS2**, `bfsl`, `deltaMethod`, `fitdistr`, `mjoint`, `mle`, `model.avg`, ...}
 #'  }
 #'
 #' @param model Statistical Model.
@@ -263,6 +259,7 @@
 #' which is converted into a p-value using [`bayestestR::pd_to_p()`].
 #'
 #' @inheritSection format_parameters Interpretation of Interaction Terms
+#' @inheritSection print.parameters_model Global Options to Customize Messages when Printing
 #'
 #' @references
 #'
@@ -324,21 +321,17 @@ parameters <- model_parameters
 #'   - Robust estimation (i.e., `vcov` set to a value other than `NULL`) of standardized parameters only
 #'   works when `standardize="refit"`.
 #' @param exponentiate Logical, indicating whether or not to exponentiate the
-#'   the coefficients (and related confidence intervals). This is typical for
-#'   logistic regression, or more generally speaking, for models with log
-#'   or logit links. **Note:** Delta-method standard errors are also
-#'   computed (by multiplying the standard errors by the transformed
-#'   coefficients). This is to mimic behaviour of other software packages, such
-#'   as Stata, but these standard errors poorly estimate uncertainty for the
-#'   transformed coefficient. The transformed confidence interval more clearly
-#'   captures this uncertainty. For `compare_parameters()`,
-#'   `exponentiate = "nongaussian"` will only exponentiate coefficients
-#'   from non-Gaussian families.
-#' @param component Model component for which parameters should be shown. May be
-#'   one of `"conditional"`, `"precision"` (**betareg**),
-#'   `"scale"` (**ordinal**), `"extra"` (**glmx**),
-#'   `"marginal"` (**mfx**), `"conditional"` or `"full"` (for
-#'   `MuMIn::model.avg()`) or `"all"`.
+#'   coefficients (and related confidence intervals). This is typical for
+#'   logistic regression, or more generally speaking, for models with log or
+#'   logit links. It is also recommended to use `exponentiate = TRUE` for models
+#'   with log-transformed response values. **Note:** Delta-method standard
+#'   errors are also computed (by multiplying the standard errors by the
+#'   transformed coefficients). This is to mimic behaviour of other software
+#'   packages, such as Stata, but these standard errors poorly estimate
+#'   uncertainty for the transformed coefficient. The transformed confidence
+#'   interval more clearly captures this uncertainty. For `compare_parameters()`,
+#'   `exponentiate = "nongaussian"` will only exponentiate coefficients from
+#'   non-Gaussian families.
 #' @param p_adjust Character vector, if not `NULL`, indicates the method to
 #'   adjust p-values. See [stats::p.adjust()] for details. Further
 #'   possible adjustment methods are `"tukey"`, `"scheffe"`,
@@ -444,6 +437,7 @@ model_parameters.default <- function(model,
                                      vcov_args = NULL,
                                      ...) {
   # sanity check, warn if unsupported argument is used.
+  # unsupported arguments will be removed from the argument list.
   dots <- .check_dots(
     dots = list(...),
     not_allowed = c("include_sigma", "wb_component"),
@@ -451,6 +445,7 @@ model_parameters.default <- function(model,
     verbose = verbose
   )
 
+  # extract model parameters table, as data frame
   out <- tryCatch(
     {
       .model_parameters_generic(
@@ -479,20 +474,33 @@ model_parameters.default <- function(model,
     }
   )
 
+  # tell user if something went wrong...
   if (length(out) == 1 && isTRUE(is.na(out))) {
     msg <- insight::format_message(
-      paste0("Sorry, `model_parameters()` failed with the following error (possible class '", class(model)[1], "' not supported):\n"),
+      paste0("Sorry, `model_parameters()` failed with the following error (possible class '",
+             class(model)[1],
+             "' not supported):\n"),
       attr(out, "error")
     )
     stop(msg, call. = FALSE)
   } else if (is.null(out)) {
-    stop(paste0("Sorry, `model_parameters()` does currently not work for objects of class '", class(model)[1], "'."), call. = FALSE)
+    stop(paste0(
+      "Sorry, `model_parameters()` does currently not work for objects of class '",
+      class(model)[1],
+      "'."), call. = FALSE
+    )
   }
 
   attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
   out
 }
 
+
+
+
+# helper function for the composition of the parameters table,
+# including a bunch of attributes required for further processing
+# (like printing etc.)
 
 .model_parameters_generic <- function(model,
                                       ci = .95,
@@ -517,11 +525,16 @@ model_parameters.default <- function(model,
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    warning(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."), call. = FALSE)
+    warning(insight::format_message(
+      "Argument 'df_method' is deprecated. Please use 'ci_method' instead."
+    ), call. = FALSE)
     ci_method <- df_method
   }
 
-  # Processing
+
+  # ==== 1. first step, extracting (bootstrapped) model parameters -------
+
+  # Processing, bootstrapped parameters
   if (bootstrap) {
     # set default method for bootstrapped CI
     if (is.null(ci_method) || missing(ci_method)) {
@@ -536,6 +549,8 @@ model_parameters.default <- function(model,
     )
     args <- c(args, dots)
     params <- do.call("bootstrap_parameters", args)
+
+  # Processing, non-bootstrapped parameters
   } else {
     # set default method for CI
     if (is.null(ci_method) || missing(ci_method)) {
@@ -561,10 +576,16 @@ model_parameters.default <- function(model,
     params <- do.call(".extract_parameters_generic", args)
   }
 
-  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-    params <- .exponentiate_parameters(params, model, exponentiate)
-  }
 
+  # ==== 2. second step, exponentiate -------
+
+  # exponentiate coefficients and SE/CI, if requested
+  params <- .exponentiate_parameters(params, model, exponentiate)
+
+
+  # ==== 3. third step, add information as attributes -------
+
+  # add further information as attributes
   params <- .add_model_parameters_attributes(
     params,
     model,
@@ -618,8 +639,11 @@ model_parameters.glm <- function(model,
     ci_method <- df_method
   }
 
+  # profiled CIs may take a long time to compute, so we warn the user about it
   if (insight::n_obs(model) > 1e4 && identical(ci_method, "profile")) {
-    message(insight::format_message("Profiled confidence intervals may take longer time to compute. Use 'ci_method=\"wald\"' for faster computation of CIs."))
+    message(insight::format_message(
+      "Profiled confidence intervals may take longer time to compute. Use 'ci_method=\"wald\"' for faster computation of CIs."
+    ))
   }
 
   args <- list(

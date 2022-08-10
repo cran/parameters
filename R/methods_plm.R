@@ -48,6 +48,7 @@ p_value.pggls <- function(model, ...) {
 # pgmm --------------------
 
 
+#' @rdname model_parameters.averaging
 #' @export
 model_parameters.pgmm <- function(model,
                                   ci = .95,
@@ -73,9 +74,8 @@ model_parameters.pgmm <- function(model,
   )
 
 
-  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-    params <- .exponentiate_parameters(params, model, exponentiate)
-  }
+  # exponentiate coefficients and SE/CI, if requested
+  params <- .exponentiate_parameters(params, model, exponentiate)
 
   params <- .add_model_parameters_attributes(
     params,

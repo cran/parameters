@@ -3,6 +3,7 @@
 # model_parameters ----------------
 
 
+#' @rdname model_parameters.averaging
 #' @export
 model_parameters.emmGrid <- function(model,
                                      ci = .95,
@@ -17,7 +18,6 @@ model_parameters.emmGrid <- function(model,
                                      parameters = NULL,
                                      verbose = TRUE,
                                      ...) {
-
   # set default for p-adjust
   emm_padjust <- tryCatch(
     {
@@ -36,7 +36,6 @@ model_parameters.emmGrid <- function(model,
 
   # we assume frequentist here...
   if (!.is_bayesian_emmeans(model)) {
-
     # get statistic, se and p
     statistic <- insight::get_statistic(model, ci = ci, adjust = "none")
     SE <- standard_error(model)
@@ -52,7 +51,6 @@ model_parameters.emmGrid <- function(model,
       params <- .p_adjust(params, p_adjust, model, verbose)
     }
   } else {
-
     # Bayesian models go here...
     params <- bayestestR::describe_posterior(
       model,
@@ -118,9 +116,8 @@ model_parameters.emmGrid <- function(model,
   # rename
   names(params) <- gsub("Estimate", "Coefficient", names(params))
 
-  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-    params <- .exponentiate_parameters(params, model, exponentiate)
-  }
+  # exponentiate coefficients and SE/CI, if requested
+  params <- .exponentiate_parameters(params, model, exponentiate)
 
   # filter parameters
   if (!is.null(parameters)) {
@@ -136,6 +133,7 @@ model_parameters.emmGrid <- function(model,
 }
 
 
+#' @rdname model_parameters.averaging
 #' @export
 model_parameters.emm_list <- function(model,
                                       ci = .95,
@@ -162,9 +160,9 @@ model_parameters.emm_list <- function(model,
   params <- do.call(rbind, params)
   params$Component <- .pretty_emmeans_Component_names(s)
 
-  if (isTRUE(exponentiate) || identical(exponentiate, "nongaussian")) {
-    params <- .exponentiate_parameters(params, model, exponentiate)
-  }
+  # exponentiate coefficients and SE/CI, if requested
+  params <- .exponentiate_parameters(params, model, exponentiate)
+
   params <- .add_model_parameters_attributes(params, model, ci, exponentiate, p_adjust = p_adjust, verbose = verbose, ...)
 
   attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
@@ -335,7 +333,6 @@ p_value.emm_list <- function(model, adjust = "none", ...) {
 
   # any missing values?
   if (anyNA(out$p)) {
-
     # standard errors
     se <- unlist(lapply(s, function(i) {
       if (is.null(i$SE)) {

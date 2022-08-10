@@ -1,3 +1,4 @@
+#' @rdname model_parameters.averaging
 #' @export
 model_parameters.lqmm <- function(model,
                                   ci = .95,
@@ -6,7 +7,6 @@ model_parameters.lqmm <- function(model,
                                   p_adjust = NULL,
                                   verbose = TRUE,
                                   ...) {
-
   # Processing
   if (bootstrap) {
     parameters <- bootstrap_parameters(
