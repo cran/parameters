@@ -127,8 +127,11 @@
 \item{format}{String, indicating the output format. Can be \code{"markdown"}
 or \code{"html"}.}
 
-\item{pretty_names}{Return "pretty" (i.e. more human readable) parameter
-names.}
+\item{pretty_names}{Can be \code{TRUE}, which will return "pretty" (i.e. more human
+readable) parameter names. Or \code{"labels"}, in which case value and variable
+labels will be used as parameters names. The latter only works for "labelled"
+data, i.e. if the data used to fit the model had \code{"label"} and \code{"labels"}
+attributes. See also section \emph{Global Options to Customize Messages when Printing}.}
 
 \item{split_components}{Logical, if \code{TRUE} (default), For models with
 multiple components (zero-inflation, smooth terms, ...), each component is
@@ -140,17 +143,18 @@ be printed. If \code{NULL} (default), all columns are printed. The shortcut
 \code{select = "minimal"} prints coefficient, confidence intervals and p-values,
 while \code{select = "short"} prints coefficient, standard errors and p-values.}
 
-\item{caption}{Table caption as string. If \code{NULL}, no table caption is printed.}
+\item{caption}{Table caption as string. If \code{NULL}, depending on the model,
+either a default caption or no table caption is printed. Use \code{caption = ""}
+to suppress the table caption.}
 
 \item{subtitle}{Table title (same as caption) and subtitle, as strings. If \code{NULL},
 no title or subtitle is printed, unless it is stored as attributes (\code{table_title},
 or its alias \code{table_caption}, and \code{table_subtitle}). If \code{x} is a list of
 data frames, \code{caption} may be a list of table captions, one for each table.}
 
-\item{footer}{Table footer, as string. For markdown-formatted tables, table
-footers, due to the limitation in markdown rendering, are actually just a
-new text line under the table. If \code{x} is a list of data frames, \code{footer}
-may be a list of table captions, one for each table.}
+\item{footer}{Can either be \code{FALSE} or an empty string (i.e. \code{""}) to
+suppress the footer, \code{NULL} to print the default footer, or a string. The
+latter will combine the string value with the default footer.}
 
 \item{align}{Only applies to HTML tables. May be one of \code{"left"},
 \code{"right"} or \code{"center"}.}

@@ -36,6 +36,7 @@
 \alias{model_parameters.comparisons}
 \alias{model_parameters.marginalmeans}
 \alias{model_parameters.deltamethod}
+\alias{model_parameters.predictions}
 \alias{model_parameters.margins}
 \alias{model_parameters.maxLik}
 \alias{model_parameters.maxim}
@@ -142,12 +143,13 @@
   centrality = "median",
   dispersion = FALSE,
   ci_method = "eti",
-  test = c("pd", "rope"),
+  test = "pd",
   rope_range = "default",
   rope_ci = 0.95,
   exponentiate = FALSE,
   p_adjust = NULL,
-  parameters = NULL,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -165,7 +167,7 @@
 
 \method{model_parameters}{fitdistr}(model, exponentiate = FALSE, verbose = TRUE, ...)
 
-\method{model_parameters}{ggeffects}(model, parameters = NULL, verbose = TRUE, ...)
+\method{model_parameters}{ggeffects}(model, keep = NULL, drop = NULL, verbose = TRUE, ...)
 
 \method{model_parameters}{SemiParBIV}(
   model,
@@ -252,6 +254,8 @@
 
 \method{model_parameters}{deltamethod}(model, ci = 0.95, ...)
 
+\method{model_parameters}{predictions}(model, ci = 0.95, ...)
+
 \method{model_parameters}{margins}(
   model,
   ci = 0.95,
@@ -273,7 +277,6 @@
   summary = getOption("parameters_summary", FALSE),
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   vcov = NULL,
   vcov_args = NULL,
@@ -292,7 +295,6 @@
   summary = getOption("parameters_summary", FALSE),
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   vcov = NULL,
   vcov_args = NULL,
@@ -466,7 +468,6 @@
   p_adjust = NULL,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -507,7 +508,6 @@
   p_adjust = NULL,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -523,7 +523,6 @@
   p_adjust = NULL,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -627,17 +626,17 @@ one of \code{"conditional"}, \code{"precision"} (\strong{betareg}),
 \code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
 on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
 \code{"pseudo"}. See 'Details' in \code{\link[=standardize_parameters]{standardize_parameters()}}.
-\strong{Important:}
+\strong{Importantly}:
 \itemize{
-\item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
+\item The \code{"refit"} method does \emph{not} standardize categorical predictors (i.e.
 factors), which may be a different behaviour compared to other R packages
 (such as \strong{lm.beta}) or other software packages (like SPSS). to mimic
 such behaviours, either use \code{standardize="basic"} or standardize the data
 with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed
-effects will be returned.
-\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of standardized parameters only
-works when \code{standardize="refit"}.
+effects will be standardized.
+\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of
+standardized parameters only works when \code{standardize="refit"}.
 }}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
@@ -686,9 +685,12 @@ the function to be used to compute the covariance matrix.
 \item A function which returns a covariance matrix (e.g., \code{stats::vcov()})
 \item A string which indicates the kind of uncertainty estimates to return.
 \itemize{
-\item Heteroskedasticity-consistent: \code{"vcovHC"}, \code{"HC"}, \code{"HC0"}, \code{"HC1"}, \code{"HC2"}, \code{"HC3"}, \code{"HC4"}, \code{"HC4m"}, \code{"HC5"}. See \code{?sandwich::vcovHC}.
-\item Cluster-robust: \code{"vcovCR"}, \code{"CR0"}, \code{"CR1"}, \code{"CR1p"}, \code{"CR1S"}, \code{"CR2"}, \code{"CR3"}. See \code{?clubSandwich::vcovCR}.
-\item Bootstrap: \code{"vcovBS"}, \code{"xy"}, \code{"residual"}, \code{"wild"}, \code{"mammen"}, \code{"webb"}. See \code{?sandwich::vcovBS}.
+\item Heteroskedasticity-consistent: \code{"vcovHC"}, \code{"HC"}, \code{"HC0"}, \code{"HC1"},
+\code{"HC2"}, \code{"HC3"}, \code{"HC4"}, \code{"HC4m"}, \code{"HC5"}. See \code{?sandwich::vcovHC}.
+\item Cluster-robust: \code{"vcovCR"}, \code{"CR0"}, \code{"CR1"}, \code{"CR1p"}, \code{"CR1S"}, \code{"CR2"},
+\code{"CR3"}. See \code{?clubSandwich::vcovCR}.
+\item Bootstrap: \code{"vcovBS"}, \code{"xy"}, \code{"residual"}, \code{"wild"}, \code{"mammen"}, \code{"webb"}.
+See \code{?sandwich::vcovBS}.
 \item Other \code{sandwich} package functions: \code{"vcovHAC"}, \code{"vcovPC"}, \code{"vcovCL"}, \code{"vcovPL"}.
 }
 }}
@@ -717,11 +719,6 @@ the bounds are set to \code{x +- 0.1*SD(response)}.}
 \item{rope_ci}{The Credible Interval (CI) probability, corresponding to the
 proportion of HDI, to use for the percentage in ROPE.}
 
-\item{parameters}{Deprecated, alias for \code{keep}.}
-
-\item{effects}{Should results for fixed effects, random effects or both be
-returned? Only applies to mixed models. May be abbreviated.}
-
 \item{keep}{Character containing a regular expression pattern that
 describes the parameters that should be included (for \code{keep}) or excluded
 (for \code{drop}) in the returned data frame. \code{keep} may also be a
@@ -743,6 +740,9 @@ frame, which can be different from how they are printed. Inspect the
 names.}
 
 \item{drop}{See \code{keep}.}
+
+\item{effects}{Should results for fixed effects, random effects or both be
+returned? Only applies to mixed models. May be abbreviated.}
 
 \item{include_studies}{Logical, if \code{TRUE} (default), includes parameters
 for all studies. Else, only parameters for overall-effects are shown.}

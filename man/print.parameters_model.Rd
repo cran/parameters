@@ -11,6 +11,7 @@
   split_components = TRUE,
   select = NULL,
   caption = NULL,
+  footer = NULL,
   digits = 2,
   ci_digits = 2,
   p_digits = 3,
@@ -29,8 +30,11 @@
 \arguments{
 \item{x, object}{An object returned by \code{\link[=model_parameters]{model_parameters()}}.}
 
-\item{pretty_names}{Return "pretty" (i.e. more human readable) parameter
-names.}
+\item{pretty_names}{Can be \code{TRUE}, which will return "pretty" (i.e. more human
+readable) parameter names. Or \code{"labels"}, in which case value and variable
+labels will be used as parameters names. The latter only works for "labelled"
+data, i.e. if the data used to fit the model had \code{"label"} and \code{"labels"}
+attributes. See also section \emph{Global Options to Customize Messages when Printing}.}
 
 \item{split_components}{Logical, if \code{TRUE} (default), For models with
 multiple components (zero-inflation, smooth terms, ...), each component is
@@ -42,7 +46,13 @@ be printed. If \code{NULL} (default), all columns are printed. The shortcut
 \code{select = "minimal"} prints coefficient, confidence intervals and p-values,
 while \code{select = "short"} prints coefficient, standard errors and p-values.}
 
-\item{caption}{Table caption as string. If \code{NULL}, no table caption is printed.}
+\item{caption}{Table caption as string. If \code{NULL}, depending on the model,
+either a default caption or no table caption is printed. Use \code{caption = ""}
+to suppress the table caption.}
+
+\item{footer}{Can either be \code{FALSE} or an empty string (i.e. \code{""}) to
+suppress the footer, \code{NULL} to print the default footer, or a string. The
+latter will combine the string value with the default footer.}
 
 \item{digits, ci_digits, p_digits}{Number of digits for rounding or
 significant figures. May also be \code{"signif"} to return significant
@@ -116,6 +126,12 @@ show the additional information on how to interpret coefficients of models
 with log-transformed response variables or with log-/logit-links when the
 \code{exponentiate} argument in \code{model_parameters()} is not \code{TRUE}. Set this option
 to \code{FALSE} to hide this message when printing \code{model_parameters()} objects.
+\item \code{parameters_labels}: \code{options(parameters_labels = TRUE)} will use variable
+and value labels for pretty names, if data is labelled. If no labels
+available, default pretty names are used.
+\item \code{parameters_select}: \verb{options(parameters_select = <value>)} will set the
+default for the \code{select} argument. See argument's documentation for available
+options.
 }
 }
 

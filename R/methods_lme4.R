@@ -16,7 +16,7 @@
 #'   will indicate which variables belong to the within-effects,
 #'   between-effects, and cross-level interactions. By default, the
 #'   `Component` column indicates, which parameters belong to the
-#'   conditional or zero-inflated component of the model.
+#'   conditional or zero-inflation component of the model.
 #' @param include_sigma Logical, if `TRUE`, includes the residual standard
 #'   deviation. For mixed models, this is defined as the sum of the distribution-specific
 #'   variance and the variance for the additive overdispersion term (see
@@ -32,6 +32,9 @@
 #'   computed by default, for simpler models or fewer observations, confidence
 #'   intervals will be included. Set explicitly to `TRUE` or `FALSE` to enforce
 #'   or omit calculation of confidence intervals.
+#' @param ... Arguments passed to or from other methods. For instance, when
+#'   `bootstrap = TRUE`, arguments like `type` or `parallel` are
+#'   passed down to `bootstrap_model()`.
 #' @inheritParams model_parameters.default
 #' @inheritParams model_parameters.stanreg
 #'
@@ -76,7 +79,8 @@
 #'   rename columns into a consistent, standardized naming scheme.
 #'
 #' @note If the calculation of random effects parameters takes too long, you may
-#' use `effects = "fixed"`. There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the [**see**-package](https://easystats.github.io/see/).
+#' use `effects = "fixed"`. There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html)
+#' implemented in the [**see**-package](https://easystats.github.io/see/).
 #'
 #' @examples
 #' library(parameters)
@@ -105,7 +109,7 @@
 #' @return A data frame of indices related to the model's parameters.
 #' @export
 model_parameters.merMod <- function(model,
-                                    ci = .95,
+                                    ci = 0.95,
                                     ci_method = NULL,
                                     ci_random = NULL,
                                     bootstrap = FALSE,
@@ -119,7 +123,6 @@ model_parameters.merMod <- function(model,
                                     summary = getOption("parameters_mixed_summary", FALSE),
                                     keep = NULL,
                                     drop = NULL,
-                                    parameters = keep,
                                     verbose = TRUE,
                                     df_method = ci_method,
                                     include_sigma = FALSE,
@@ -130,7 +133,9 @@ model_parameters.merMod <- function(model,
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    warning(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."), call. = FALSE)
+    warning(insight::format_message(
+      "Argument 'df_method' is deprecated. Please use 'ci_method' instead."
+    ), call. = FALSE)
     ci_method <- df_method
   }
 
@@ -150,9 +155,18 @@ model_parameters.merMod <- function(model,
   ci_method <- tolower(ci_method)
 
   if (isTRUE(bootstrap)) {
-    ci_method <- match.arg(ci_method, c("hdi", "quantile", "ci", "eti", "si", "bci", "bcai"))
+    ci_method <- match.arg(
+      ci_method,
+      choices = c("hdi", "quantile", "ci", "eti", "si", "bci", "bcai")
+    )
   } else {
-    ci_method <- match.arg(ci_method, choices = c("wald", "normal", "residual", "ml1", "betwithin", "satterthwaite", "kenward", "kr", "boot", "profile", "uniroot"))
+    ci_method <- match.arg(
+      ci_method,
+      choices = c(
+        "wald", "normal", "residual", "ml1", "betwithin", "satterthwaite",
+        "kenward", "kr", "boot", "profile", "uniroot"
+      )
+    )
   }
 
   # which component to return?
@@ -162,7 +176,9 @@ model_parameters.merMod <- function(model,
   # post hoc standardize only works for fixed effects...
   if (!is.null(standardize) && standardize != "refit") {
     if (!missing(effects) && effects != "fixed" && verbose) {
-      warning(insight::format_message("Standardizing coefficients only works for fixed effects of the mixed model."), call. = FALSE)
+      warning(insight::format_message(
+        "Standardizing coefficients only works for fixed effects of the mixed model."
+      ), call. = FALSE)
     }
     effects <- "fixed"
   }
@@ -186,7 +202,9 @@ model_parameters.merMod <- function(model,
       if (effects != "fixed") {
         effects <- "fixed"
         if (verbose) {
-          warning(insight::format_message("Bootstrapping only returns fixed effects of the mixed model."), call. = FALSE)
+          warning(insight::format_message(
+            "Bootstrapping only returns fixed effects of the mixed model."
+          ), call. = FALSE)
         }
       }
     } else {

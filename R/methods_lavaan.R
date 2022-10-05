@@ -12,7 +12,6 @@ model_parameters.lavaan <- function(model,
                                     component = c("regression", "correlation", "loading", "defined"),
                                     keep = NULL,
                                     drop = NULL,
-                                    parameters = keep,
                                     verbose = TRUE,
                                     ...) {
   params <- .extract_parameters_lavaan(model,
@@ -43,9 +42,9 @@ model_parameters.lavaan <- function(model,
 model_parameters.blavaan <- function(model,
                                      centrality = "median",
                                      dispersion = FALSE,
-                                     ci = .95,
+                                     ci = 0.95,
                                      ci_method = "eti",
-                                     test = c("pd", "rope"),
+                                     test = "pd",
                                      rope_range = "default",
                                      rope_ci = 0.95,
                                      diagnostic = c("ESS", "Rhat"),
@@ -53,7 +52,6 @@ model_parameters.blavaan <- function(model,
                                      standardize = NULL,
                                      keep = NULL,
                                      drop = NULL,
-                                     parameters = keep,
                                      verbose = TRUE,
                                      ...) {
   # Processing
@@ -103,7 +101,7 @@ model_parameters.blavaan <- function(model,
 
 
 #' @export
-ci.lavaan <- function(x, ci = .95, ...) {
+ci.lavaan <- function(x, ci = 0.95, ...) {
   out <- .extract_parameters_lavaan(model = x, ci = ci, ...)
   out$CI <- ci
   out[out$Operator != "~1", c("To", "Operator", "From", "CI", "CI_low", "CI_high")]
@@ -162,7 +160,16 @@ print.parameters_sem <- function(x, digits = 2, ci_digits = 2, p_digits = 3, ...
 
   verbose <- .additional_arguments(x, "verbose", TRUE)
 
-  formatted_table <- format(x = x, digits = digits, ci_digits, p_digits = p_digits, format = "text", ci_brackets = TRUE, ci_width = "auto", ...)
+  formatted_table <- format(
+    x = x,
+    digits = digits,
+    ci_digits,
+    p_digits = p_digits,
+    format = "text",
+    ci_brackets = TRUE,
+    ci_width = "auto",
+    ...
+  )
   cat(insight::export_table(formatted_table, format = "text", ...))
 
   if (isTRUE(verbose)) {

@@ -16,9 +16,9 @@ compare_parameters(
   p_adjust = NULL,
   style = NULL,
   column_names = NULL,
+  pretty_names = TRUE,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   df_method = ci_method
 )
@@ -34,9 +34,9 @@ compare_models(
   p_adjust = NULL,
   style = NULL,
   column_names = NULL,
+  pretty_names = TRUE,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   df_method = ci_method
 )
@@ -62,17 +62,17 @@ documentation for related model class in \code{\link[=model_parameters]{model_pa
 \code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
 on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
 \code{"pseudo"}. See 'Details' in \code{\link[=standardize_parameters]{standardize_parameters()}}.
-\strong{Important:}
+\strong{Importantly}:
 \itemize{
-\item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
+\item The \code{"refit"} method does \emph{not} standardize categorical predictors (i.e.
 factors), which may be a different behaviour compared to other R packages
 (such as \strong{lm.beta}) or other software packages (like SPSS). to mimic
 such behaviours, either use \code{standardize="basic"} or standardize the data
 with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed
-effects will be returned.
-\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of standardized parameters only
-works when \code{standardize="refit"}.
+effects will be standardized.
+\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of
+standardized parameters only works when \code{standardize="refit"}.
 }}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
@@ -112,6 +112,12 @@ templates are possible:
 \item{column_names}{Character vector with strings that should be used as
 column headers. Must be of same length as number of models in \code{...}.}
 
+\item{pretty_names}{Can be \code{TRUE}, which will return "pretty" (i.e. more human
+readable) parameter names. Or \code{"labels"}, in which case value and variable
+labels will be used as parameters names. The latter only works for "labelled"
+data, i.e. if the data used to fit the model had \code{"label"} and \code{"labels"}
+attributes. See also section \emph{Global Options to Customize Messages when Printing}.}
+
 \item{keep}{Character containing a regular expression pattern that
 describes the parameters that should be included (for \code{keep}) or excluded
 (for \code{drop}) in the returned data frame. \code{keep} may also be a
@@ -133,8 +139,6 @@ frame, which can be different from how they are printed. Inspect the
 names.}
 
 \item{drop}{See \code{keep}.}
-
-\item{parameters}{Deprecated, alias for \code{keep}.}
 
 \item{verbose}{Toggle warnings and messages.}
 

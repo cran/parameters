@@ -7,7 +7,7 @@
 # default method -------------------
 
 .extract_random_variances.default <- function(model,
-                                              ci = .95,
+                                              ci = 0.95,
                                               effects = "random",
                                               component = "conditional",
                                               ci_method = NULL,
@@ -30,7 +30,7 @@
   # check for errors
   if (is.null(out)) {
     if (isTRUE(verbose)) {
-      warning(insight::format_message("Something went wrong when calculating random effects parameters. Only showing model's fixed effects now. You may use `effects=\"fixed\"` to speed up the call to `model_parameters()`."), call. = FALSE)
+      insight::format_warning("Something went wrong when calculating random effects parameters. Only showing model's fixed effects now. You may use `effects=\"fixed\"` to speed up the call to `model_parameters()`.")
     }
   }
 
@@ -41,7 +41,7 @@
 # glmmTMB -------------------
 
 .extract_random_variances.glmmTMB <- function(model,
-                                              ci = .95,
+                                              ci = 0.95,
                                               effects = "random",
                                               component = "all",
                                               ci_method = NULL,
@@ -66,7 +66,7 @@
   # check for errors
   if (is.null(out)) {
     if (isTRUE(verbose)) {
-      warning(insight::format_message("Something went wrong when calculating random effects parameters. Only showing model's fixed effects now. You may use `effects=\"fixed\"` to speed up the call to `model_parameters()`."), call. = FALSE)
+      insight::format_warning("Something went wrong when calculating random effects parameters. Only showing model's fixed effects now. You may use `effects=\"fixed\"` to speed up the call to `model_parameters()`.")
     }
     return(NULL)
   }
@@ -117,7 +117,7 @@
 # workhorse ------------------------
 
 .extract_random_variances_helper <- function(model,
-                                             ci = .95,
+                                             ci = 0.95,
                                              effects = "random",
                                              component = "conditional",
                                              ci_method = NULL,
@@ -248,7 +248,7 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
   if (any(grps)) {
     from <- which(grps)
     to <- c(which(grps) - 1, length(grps))[-1]
-    out_sd <- do.call(rbind, lapply(1:length(from), function(i) {
+    out_sd <- do.call(rbind, lapply(seq_along(from), function(i) {
       values <- stddevs[from[i]:to[i]]
       .data_frame(
         grp = gsub("(.*) =$", "\\1", names(values[1])),
@@ -258,7 +258,7 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
       )
     }))
     if (!is.null(corrs)) {
-      out_cor <- do.call(rbind, lapply(1:length(from), function(i) {
+      out_cor <- do.call(rbind, lapply(seq_along(from), function(i) {
         values <- corrs[from[i]:to[i]]
         .data_frame(
           grp = gsub("(.*) =$", "\\1", names(values[1])),
@@ -449,7 +449,7 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
             var_ci$Parameter[var_ci_others] <- gsub("(.*)", "SD (\\1)", var_ci$Parameter[var_ci_others])
 
             # merge with random effect coefficients
-            out$.sort_id <- 1:nrow(out)
+            out$.sort_id <- seq_len(nrow(out))
             tmp <- merge(
               datawizard::data_remove(out, "SE", verbose = FALSE),
               var_ci,
@@ -480,28 +480,28 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
 
             # warn if singular fit
             if (isTRUE(verbose) && insight::check_if_installed("performance", quietly = TRUE) && isTRUE(performance::check_singularity(model))) {
-              message(insight::format_message(
-                "Your model may suffer from singularity (see '?lme4::isSingular' and '?performance::check_singularity').",
+              insight::format_alert(
+                "Your model may suffer from singularity (see see `?lme4::isSingular` and `?performance::check_singularity`).",
                 "Some of the standard errors and confidence intervals of the random effects parameters are probably not meaningful!"
-              ))
+              )
             }
             out
           },
           error = function(e) {
             if (isTRUE(verbose)) {
               if (grepl("nAGQ of at least 1 is required", e$message, fixed = TRUE)) {
-                message(insight::format_message("Argument 'nAGQ' needs to be larger than 0 to compute confidence intervals for random effect parameters."))
+                insight::format_alert("Argument `nAGQ` needs to be larger than 0 to compute confidence intervals for random effect parameters.")
               }
               if (grepl("Multiple cluster variables detected.", e$message, fixed = TRUE)) {
-                message(insight::format_message("Confidence intervals for random effect parameters are currently not supported for multiple grouping variables."))
+                insight::format_alert("Confidence intervals for random effect parameters are currently not supported for multiple grouping variables.")
               }
               if (grepl("exactly singular", e$message, fixed = TRUE) ||
                 grepl("computationally singular", e$message, fixed = TRUE) ||
                 grepl("Exact singular", e$message, fixed = TRUE)) {
-                message(insight::format_message(
+                insight::format_alert(
                   "Cannot compute standard errors and confidence intervals for random effects parameters.",
-                  "Your model may suffer from singularity (see '?lme4::isSingular' and '?performance::check_singularity')."
-                ))
+                  "Your model may suffer from singularity (see see `?lme4::isSingular` and `?performance::check_singularity`)."
+                )
               }
             }
             out
@@ -597,20 +597,20 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
           singular_fit <- insight::check_if_installed("performance", quietly = TRUE) & isTRUE(performance::check_singularity(model))
 
           if (singular_fit) {
-            message(insight::format_message(
-              "Your model may suffer from singularity (see '?lme4::isSingular' and '?performance::check_singularity').",
+            insight::format_alert(
+              "Your model may suffer from singularity (see `?lme4::isSingular` and `?performance::check_singularity`).",
               "Some of the confidence intervals of the random effects parameters are probably not meaningful!"
-            ))
+            )
           } else if (missing_ci) {
-            message(insight::format_message(
-              "Your model may suffer from singularity (see '?lme4::isSingular' and '?performance::check_singularity').",
+            insight::format_alert(
+              "Your model may suffer from singularity (see `?lme4::isSingular` and `?performance::check_singularity`).",
               "Some of the confidence intervals of the random effects parameters could not be calculated or are probably not meaningful!"
-            ))
+            )
           }
         }
 
         # merge and sort
-        out$.sort_id <- 1:nrow(out)
+        out$.sort_id <- seq_len(nrow(out))
         out <- merge(out, var_ci, sort = FALSE, all.x = TRUE)
         out <- out[order(out$.sort_id), ]
         out$.sort_id <- NULL
@@ -618,10 +618,10 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
       },
       error = function(e) {
         if (isTRUE(verbose)) {
-          message(insight::format_message(
+          insight::format_alert(
             "Cannot compute confidence intervals for random effects parameters.",
-            "Your model may suffer from singularity (see '?lme4::isSingular' and '?performance::check_singularity')."
-          ))
+            "Your model may suffer from singularity (see `?lme4::isSingular` and `?performance::check_singularity`)."
+          )
         }
         out
       }
@@ -706,7 +706,7 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
     }
 
     varcorr <- datawizard::compact_list(list(vc1, vc2))
-    names(varcorr) <- c("cond", "zi")[1:length(varcorr)]
+    names(varcorr) <- c("cond", "zi")[seq_along(varcorr)]
 
     # joineRML
     # ---------------------------
@@ -790,7 +790,7 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
 
 
 # glmmTMB returns a list of model information, one for conditional
-# and one for zero-inflated part, so here we "unlist" it, returning
+# and one for zero-inflation part, so here we "unlist" it, returning
 # only the conditional part.
 .collapse_cond <- function(x) {
   if (is.list(x) && "cond" %in% names(x)) {

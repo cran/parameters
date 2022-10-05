@@ -61,7 +61,10 @@
 #'
 #'   # Exploratory Factor Analysis (EFA) ---------
 #'   efa <- psych::fa(attitude, nfactors = 3)
-#'   model_parameters(efa, threshold = "max", sort = TRUE, labels = as.character(1:ncol(attitude)))
+#'   model_parameters(efa,
+#'     threshold = "max", sort = TRUE,
+#'     labels = as.character(1:ncol(attitude))
+#'   )
 #'
 #'
 #'   # Omega ---------
@@ -224,7 +227,11 @@ model_parameters.principal <- function(model,
   # here we match the original columns in the data set with the assigned components
   # for each variable, so we know which column in the original data set belongs
   # to which extracted component...
-  attr(loadings, "closest_component") <- .closest_component(loadings, loadings_columns = loading_cols, variable_names = rownames(model$loadings))
+  attr(loadings, "closest_component") <- .closest_component(
+    loadings,
+    loadings_columns = loading_cols,
+    variable_names = rownames(model$loadings)
+  )
 
   # add class-attribute for printing
   if (model$fn == "principal") {
@@ -262,10 +269,6 @@ model_parameters.omega <- function(model, verbose = TRUE, ...) {
   table_var$General <- table_var$general * 100
   table_var$Group <- table_var$group * 100
   table_var <- table_var[c("Composite", "Total", "General", "Group")]
-
-  # colnames(table_var) <- c("Composite", "Total Variance (%)", "Variance due to General Factor (%)", "Variance due to Group Factor (%)")
-
-  # cor.plot(psych::fa.sort(om), main = title)
 
   out <- table_om
   attr(out, "summary") <- table_var

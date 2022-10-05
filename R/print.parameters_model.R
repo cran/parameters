@@ -15,7 +15,12 @@
 #' @param show_sigma Logical, if `TRUE`, adds information about the residual
 #'   standard deviation.
 #' @param show_formula Logical, if `TRUE`, adds the model formula to the output.
-#' @param caption Table caption as string. If `NULL`, no table caption is printed.
+#' @param caption Table caption as string. If `NULL`, depending on the model,
+#'   either a default caption or no table caption is printed. Use `caption = ""`
+#'   to suppress the table caption.
+#' @param footer Can either be `FALSE` or an empty string (i.e. `""`) to
+#'   suppress the footer, `NULL` to print the default footer, or a string. The
+#'   latter will combine the string value with the default footer.
 #' @param footer_digits Number of decimal places for values in the footer summary.
 #' @param groups Named list, can be used to group parameters in the printed output.
 #'   List elements may either be character vectors that match the name of those
@@ -38,6 +43,11 @@
 #'   number of digits by adding the value as suffix, e.g. `digits = "scientific4"`
 #'   to have scientific notation with 4 decimal places, or `digits = "signif5"`
 #'   for 5 significant figures (see also [signif()]).
+#' @param pretty_names Can be `TRUE`, which will return "pretty" (i.e. more human
+#'   readable) parameter names. Or `"labels"`, in which case value and variable
+#'   labels will be used as parameters names. The latter only works for "labelled"
+#'   data, i.e. if the data used to fit the model had `"label"` and `"labels"`
+#'   attributes. See also section _Global Options to Customize Messages when Printing_.
 #' @inheritParams insight::format_table
 #'
 #' @inheritSection format_parameters Interpretation of Interaction Terms
@@ -67,6 +77,14 @@
 #' with log-transformed response variables or with log-/logit-links when the
 #' `exponentiate` argument in `model_parameters()` is not `TRUE`. Set this option
 #' to `FALSE` to hide this message when printing `model_parameters()` objects.
+#'
+#' - `parameters_labels`: `options(parameters_labels = TRUE)` will use variable
+#' and value labels for pretty names, if data is labelled. If no labels
+#' available, default pretty names are used.
+#'
+#' - `parameters_select`: `options(parameters_select = <value>)` will set the
+#' default for the `select` argument. See argument's documentation for available
+#' options.
 #'
 #' @details `summary()` is a convenient shortcut for
 #'   `print(object, select = "minimal", show_sigma = TRUE, show_formula = TRUE)`.
@@ -140,6 +158,7 @@ print.parameters_model <- function(x,
                                    split_components = TRUE,
                                    select = NULL,
                                    caption = NULL,
+                                   footer = NULL,
                                    digits = 2,
                                    ci_digits = 2,
                                    p_digits = 3,
@@ -153,6 +172,20 @@ print.parameters_model <- function(x,
                                    ...) {
   # save original input
   orig_x <- x
+
+  # check options ---------------
+
+  # check if pretty names should be replaced by value labels
+  # (if we have labelled data)
+  if (isTRUE(getOption("parameters_labels", FALSE)) || identical(pretty_names, "labels")) {
+    attr(x, "pretty_names") <- attr(x, "pretty_labels", exact = TRUE)
+    pretty_names <- TRUE
+  }
+
+  # select which columns to print
+  if (is.null(select)) {
+    select <- getOption("parameters_select")
+  }
 
   # check if user supplied digits attributes
   if (missing(digits)) {
@@ -194,12 +227,24 @@ print.parameters_model <- function(x,
   }
 
   # footer
-  footer <- .print_footer(
+  footer_stats <- .print_footer(
     x,
     digits = footer_digits,
     show_sigma = show_sigma,
     show_formula = show_formula
   )
+
+  # check if footer should be printed at all. can be FALSE, or "" to suppress footer
+  if (isFALSE(footer)) {
+    footer <- ""
+  }
+  if (!identical(footer, "")) {
+    if (!is.null(footer)) {
+      footer <- paste0("\n", footer, "\n", footer_stats)
+    } else {
+      footer <- footer_stats
+    }
+  }
 
   # get attributes
   verbose <- .additional_arguments(x, "verbose", TRUE)
@@ -341,6 +386,7 @@ summary.parameters_stan <- function(object, ...) {
 
 .print_caption <- function(x, caption = NULL, format = "text") {
   no_caption <- attributes(x)$no_caption
+  # no table-title for certain model tables, indicated by the no_caption attribute
   if (isTRUE(no_caption)) {
     return(NULL)
   }
@@ -354,11 +400,12 @@ summary.parameters_stan <- function(object, ...) {
     eff_name <- "Fixed"
   }
   if (!is.null(x$Component) && all(x$Component == "zero_inflated")) {
-    zero_inflated <- " (Zero-Inflated Model)"
+    zero_inflated <- " (Zero-Inflation Component)"
   } else {
     zero_inflated <- ""
   }
 
+  # caption = NULL, set default for HTML tables
   if (identical(format, "html") && is.null(caption)) {
     if (isTRUE(attributes(x)$is_ggeffects)) {
       table_caption <- title_attribute
@@ -367,16 +414,24 @@ summary.parameters_stan <- function(object, ...) {
     }
   } else if (isTRUE(attributes(x)$ordinal_model)) {
     table_caption <- ""
+
+    # caption is NULL, set default title, using title-attribute
   } else if (!is.null(title_attribute) && is.null(caption)) {
     if (length(title_attribute) == 1 && title_attribute == "") {
       table_caption <- NULL
     } else {
       table_caption <- title_attribute
     }
+
+    # if caption is not empty, use it as title
   } else if (!is.null(caption) && caption != "") {
     table_caption <- caption
+
+    # no table-title if caption is empty string
   } else if (!is.null(caption) && caption == "") {
     table_caption <- NULL
+
+    # default title for sub-components of models
   } else if (identical(format, "text")) {
     table_caption <- c(paste0("# ", eff_name, " Effects", zero_inflated), "blue")
   } else {
@@ -400,7 +455,10 @@ summary.parameters_stan <- function(object, ...) {
 
   # format values
   random_params$Value <- format(sprintf("%g", round(random_params$Value, digits = digits)), justify = "right")
-  random_params$SD[var_components] <- format(sprintf("(%g)", round(random_params$SD[var_components], digits = digits)), justify = "right")
+  random_params$SD[var_components] <- format(
+    sprintf("(%g)", round(random_params$SD[var_components], digits = digits)),
+    justify = "right"
+  )
 
   # create summary-information for each component
   random_params$Line <- ""
@@ -425,17 +483,17 @@ summary.parameters_stan <- function(object, ...) {
       cat(sprintf("%s %s\n", i$Value, i$SD))
     } else if ("Between-Group Variance" %in% i$Description) {
       insight::print_color("Between-Group Variance\n", "blue")
-      for (j in 1:nrow(i)) {
+      for (j in seq_len(nrow(i))) {
         cat(sprintf("%s  %s %s\n", i$Line[j], i$Value[j], i$SD[j]))
       }
     } else if ("Correlations" %in% i$Description) {
       insight::print_color("Correlations\n", "blue")
-      for (j in 1:nrow(i)) {
+      for (j in seq_len(nrow(i))) {
         cat(sprintf("%s  %s\n", i$Line[j], i$Value[j]))
       }
     } else if ("N" %in% i$Description) {
       insight::print_color("N (groups per factor)\n", "blue")
-      for (j in 1:nrow(i)) {
+      for (j in seq_len(nrow(i))) {
         cat(sprintf("  %s%s\n", format(i$Term[j], width = max_len - 2), i$Value[j]))
       }
     } else if ("Observations" %in% i$Description) {
@@ -450,7 +508,7 @@ summary.parameters_stan <- function(object, ...) {
 .find_min_colwidth <- function(formatted_table) {
   shared_cols <- unique(unlist(lapply(formatted_table, colnames)))
   col_width <- rep(NA, length(shared_cols))
-  for (i in 1:length(shared_cols)) {
+  for (i in seq_along(shared_cols)) {
     col_width[i] <- max(unlist(lapply(formatted_table, function(j) {
       col <- j[[shared_cols[i]]]
       if (!is.null(col)) {

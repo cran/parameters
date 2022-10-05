@@ -6,7 +6,9 @@ model_parameters.data.frame <- function(model, as_draws = FALSE, verbose = TRUE,
     return(model_parameters.draws(model, verbose = verbose, ...))
   }
   if (isTRUE(verbose)) {
-    warning(insight::format_message("A `data.frame` object is no valid regression model object and cannot be used with `model_parameters()`."), call. = FALSE)
+    warning(insight::format_message(
+      "A `data.frame` object is no valid regression model object and cannot be used with `model_parameters()`."
+    ), call. = FALSE)
   }
   NULL
 }

@@ -5,7 +5,7 @@ ci.mipo <- ci.gam
 
 
 #' @export
-ci.mira <- function(x, ci = .95, ...) {
+ci.mira <- function(x, ci = 0.95, ...) {
   insight::check_if_installed("mice")
   ci(mice::pool(x), ci = ci, ...)
 }
@@ -124,12 +124,13 @@ model_parameters.mipo <- model_parameters.default
 #' }
 #' @export
 model_parameters.mira <- function(model,
-                                  ci = .95,
+                                  ci = 0.95,
                                   exponentiate = FALSE,
                                   p_adjust = NULL,
                                   verbose = TRUE,
                                   ...) {
   insight::check_if_installed("mice")
+
   out <- .model_parameters_generic(
     model = mice::pool(model),
     ci = ci,

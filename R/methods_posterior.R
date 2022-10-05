@@ -3,14 +3,13 @@
 model_parameters.draws <- function(model,
                                    centrality = "median",
                                    dispersion = FALSE,
-                                   ci = .95,
+                                   ci = 0.95,
                                    ci_method = "eti",
-                                   test = c("pd", "rope"),
+                                   test = "pd",
                                    rope_range = "default",
                                    rope_ci = 0.95,
                                    keep = NULL,
                                    drop = NULL,
-                                   parameters = keep,
                                    verbose = TRUE,
                                    ...) {
   out <- .posterior_draws_to_df(model)
@@ -77,7 +76,7 @@ p_value.draws <- function(model, ...) {
 }
 
 .posterior_draws_to_df.default <- function(x) {
-  stop(sprintf("Objects of class '%s' are not yet supported.", class(x)[1]))
+  insight::format_error(sprintf("Objects of class `%s` are not yet supported.", class(x)[1]))
 }
 
 .posterior_draws_to_df.data.frame <- function(x) {

@@ -2,7 +2,6 @@
 #' @export
 model_parameters.PMCMR <- function(model, ...) {
   insight::check_if_installed("PMCMRplus")
-
   parameters <- PMCMRplus::toTidy(model)
 
   names(parameters) <- c(

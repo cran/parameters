@@ -10,7 +10,6 @@ model_parameters.PCA <- function(model,
   loadings <- as.data.frame(model$var$coord)
   n <- model$call$ncp
 
-
   # Get summary
   eig <- as.data.frame(model$eig[1:n, ])
   data_summary <- .data_frame(
@@ -20,7 +19,6 @@ model_parameters.PCA <- function(model,
     Variance_Cumulative = eig$`cumulative percentage of variance` / 100
   )
   data_summary$Variance_Proportion <- data_summary$Variance / sum(data_summary$Variance)
-
 
   # Format
   loadings <- cbind(data.frame(Variable = row.names(loadings)), loadings)

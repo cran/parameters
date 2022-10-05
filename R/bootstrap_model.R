@@ -11,6 +11,8 @@
 #'   `"ordinary"`).
 #' @param parallel The type of parallel operation to be used (if any).
 #' @param n_cpus Number of processes to be used in parallel operation.
+#' @param cluster Optional cluster when `parallel = "snow"`. See `?lme4::bootMer`
+#' for details.
 #' @param ... Arguments passed to or from other methods.
 #' @inheritParams p_value
 #'
@@ -29,14 +31,14 @@
 #' slopes, etc. and their confidence intervals. These can then be passed to
 #' `model_parameter()` to obtain standard errors, p-values, etc. (see
 #' example).
-#' \cr\cr
+#'
 #' Note that that p-values returned here are estimated under the assumption of
 #' *translation equivariance*: that shape of the sampling distribution is
 #' unaffected by the null being true or not. If this assumption does not hold,
 #' p-values can be biased, and it is suggested to use proper permutation tests
 #' to obtain non-parametric p-values.
 #'
-#' @seealso [bootstrap_parameters()], [simulate_model()], [simulate_parameters()]
+#' @seealso [`bootstrap_parameters()`], [`simulate_model()`], [`simulate_parameters()`]
 #'
 #' @examples
 #' \dontrun{
@@ -72,6 +74,9 @@ bootstrap_model.default <- function(model,
                                     n_cpus = 1,
                                     verbose = FALSE,
                                     ...) {
+  # check for valid input
+  .is_model_valid(model)
+
   insight::check_if_installed("boot")
 
   type <- match.arg(type, choices = c("ordinary", "parametric", "balanced", "permutation", "antithetic"))
@@ -152,6 +157,7 @@ bootstrap_model.merMod <- function(model,
                                    type = "parametric",
                                    parallel = c("no", "multicore", "snow"),
                                    n_cpus = 1,
+                                   cluster = NULL,
                                    verbose = FALSE,
                                    ...) {
   insight::check_if_installed("lme4")
@@ -178,7 +184,8 @@ bootstrap_model.merMod <- function(model,
       nsim = iterations,
       type = type,
       parallel = parallel,
-      ncpus = n_cpus
+      ncpus = n_cpus,
+      cl = cluster
     )
   } else {
     results <- suppressMessages(lme4::bootMer(
@@ -188,7 +195,8 @@ bootstrap_model.merMod <- function(model,
       verbose = FALSE,
       type = type,
       parallel = parallel,
-      ncpus = n_cpus
+      ncpus = n_cpus,
+      cl = cluster
     ))
   }
 

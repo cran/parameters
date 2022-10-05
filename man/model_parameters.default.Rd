@@ -23,7 +23,6 @@
   summary = getOption("parameters_summary", FALSE),
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   vcov = NULL,
   vcov_args = NULL,
@@ -59,7 +58,6 @@
   summary = getOption("parameters_summary", FALSE),
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   vcov = NULL,
   vcov_args = NULL,
@@ -141,17 +139,17 @@ case of bootstrapped frequentist models.}
 \code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
 on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
 \code{"pseudo"}. See 'Details' in \code{\link[=standardize_parameters]{standardize_parameters()}}.
-\strong{Important:}
+\strong{Importantly}:
 \itemize{
-\item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
+\item The \code{"refit"} method does \emph{not} standardize categorical predictors (i.e.
 factors), which may be a different behaviour compared to other R packages
 (such as \strong{lm.beta}) or other software packages (like SPSS). to mimic
 such behaviours, either use \code{standardize="basic"} or standardize the data
 with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed
-effects will be returned.
-\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of standardized parameters only
-works when \code{standardize="refit"}.
+effects will be standardized.
+\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of
+standardized parameters only works when \code{standardize="refit"}.
 }}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
@@ -199,8 +197,6 @@ names.}
 
 \item{drop}{See \code{keep}.}
 
-\item{parameters}{Deprecated, alias for \code{keep}.}
-
 \item{verbose}{Toggle warnings and messages.}
 
 \item{vcov}{Variance-covariance matrix used to compute uncertainty estimates
@@ -212,9 +208,12 @@ the function to be used to compute the covariance matrix.
 \item A function which returns a covariance matrix (e.g., \code{stats::vcov()})
 \item A string which indicates the kind of uncertainty estimates to return.
 \itemize{
-\item Heteroskedasticity-consistent: \code{"vcovHC"}, \code{"HC"}, \code{"HC0"}, \code{"HC1"}, \code{"HC2"}, \code{"HC3"}, \code{"HC4"}, \code{"HC4m"}, \code{"HC5"}. See \code{?sandwich::vcovHC}.
-\item Cluster-robust: \code{"vcovCR"}, \code{"CR0"}, \code{"CR1"}, \code{"CR1p"}, \code{"CR1S"}, \code{"CR2"}, \code{"CR3"}. See \code{?clubSandwich::vcovCR}.
-\item Bootstrap: \code{"vcovBS"}, \code{"xy"}, \code{"residual"}, \code{"wild"}, \code{"mammen"}, \code{"webb"}. See \code{?sandwich::vcovBS}.
+\item Heteroskedasticity-consistent: \code{"vcovHC"}, \code{"HC"}, \code{"HC0"}, \code{"HC1"},
+\code{"HC2"}, \code{"HC3"}, \code{"HC4"}, \code{"HC4m"}, \code{"HC5"}. See \code{?sandwich::vcovHC}.
+\item Cluster-robust: \code{"vcovCR"}, \code{"CR0"}, \code{"CR1"}, \code{"CR1p"}, \code{"CR1S"}, \code{"CR2"},
+\code{"CR3"}. See \code{?clubSandwich::vcovCR}.
+\item Bootstrap: \code{"vcovBS"}, \code{"xy"}, \code{"residual"}, \code{"wild"}, \code{"mammen"}, \code{"webb"}.
+See \code{?sandwich::vcovBS}.
 \item Other \code{sandwich} package functions: \code{"vcovHAC"}, \code{"vcovPC"}, \code{"vcovCL"}, \code{"vcovPL"}.
 }
 }}
@@ -226,8 +225,7 @@ or \strong{clubSandwich} packages. Please refer to their documentation (e.g.,
 
 \item{...}{Arguments passed to or from other methods. For instance, when
 \code{bootstrap = TRUE}, arguments like \code{type} or \code{parallel} are
-passed down to \code{bootstrap_model()}, and arguments like \code{ci_method}
-are passed down to \code{\link[bayestestR:describe_posterior]{bayestestR::describe_posterior()}}.}
+passed down to \code{bootstrap_model()}.}
 
 \item{df_method}{Deprecated. Please use \code{ci_method}.}
 }
@@ -329,7 +327,7 @@ to a \eqn{\chi}-squared distribution to compute CIs and p-values.
 
 \code{"profile"}
 \itemize{
-\item Applies to \emph{non-Bayesian models} of class \code{glm}, \code{polr} or \code{glmmTMB}.
+\item Applies to \emph{non-Bayesian models} of class \code{glm}, \code{polr}, \code{merMod} or \code{glmmTMB}.
 CIs computed by \emph{profiling the likelihood curve for a parameter}, using
 linear interpolation to find where likelihood ratio equals a critical value;
 p-values computed using the Wald method with a \emph{normal-distribution} (note:

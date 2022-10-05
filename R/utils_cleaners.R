@@ -22,7 +22,7 @@
     c("as.factor", "as.numeric", "factor", "catg", "asis", "interaction")
   }
 
-  for (j in 1:length(pattern)) {
+  for (j in seq_along(pattern)) {
     # remove possible  namespace
     x <- sub("(.*)::(.*)", "\\2", x)
     if (pattern[j] == "offset") {
@@ -61,6 +61,7 @@
   c(
     "(intercept)_zi",
     "intercept (zero-inflated)",
+    "intercept (zero-inflation)",
     "intercept",
     "zi_intercept",
     "(intercept)",

@@ -36,7 +36,7 @@
 #' @inheritParams simulate_model
 #' @export
 model_parameters.mlm <- function(model,
-                                 ci = .95,
+                                 ci = 0.95,
                                  vcov = NULL,
                                  vcov_args = NULL,
                                  bootstrap = FALSE,
@@ -135,7 +135,7 @@ p_value.mlm <- function(model, vcov = NULL, vcov_args = NULL, ...) {
 ci.mlm <- function(x,
                    vcov = NULL,
                    vcov_args = NULL,
-                   ci = .95, ...) {
+                   ci = 0.95, ...) {
   # .ci_generic may not handle weights properly (not sure)
   if (is.null(insight::find_weights(x)) && is.null(vcov)) {
     out <- lapply(ci, function(i) {
@@ -165,11 +165,11 @@ ci.mlm <- function(x,
       out[["Response"]] <- resp
     } else {
       if (!isTRUE(all(out$Response == resp))) {
-        stop(insight::format_message(
-          "Unable to assign labels to the model's parameters. Please report",
-          "this problem to the `parameters` Issue Tracker:",
-          "https://github.com/easystats/parameters/issues"
-        ), call. = FALSE)
+        insight::format_error(
+          "Unable to assign labels to the model's parameters.",
+          "Please report this problem to the {.pkg parameters} issue tracker:",
+          "{.url https://github.com/easystats/parameters/issues}"
+        )
       }
     }
   }
@@ -180,7 +180,7 @@ ci.mlm <- function(x,
 #' @export
 simulate_model.mlm <- function(model, iterations = 1000, ...) {
   responses <- insight::find_response(model, combine = FALSE)
-  out <- .simulate_model(model, iterations, component = "conditional", effects = "fixed")
+  out <- .simulate_model(model, iterations, component = "conditional", effects = "fixed", ...)
 
   cn <- paste0(colnames(out), rep(responses, each = length(colnames(out)) / length(responses)))
   colnames(out) <- cn
@@ -195,7 +195,7 @@ simulate_model.mlm <- function(model, iterations = 1000, ...) {
 simulate_parameters.mlm <- function(model,
                                     iterations = 1000,
                                     centrality = "median",
-                                    ci = .95,
+                                    ci = 0.95,
                                     ci_method = "quantile",
                                     test = "p-value",
                                     ...) {

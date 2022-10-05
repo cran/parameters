@@ -51,17 +51,13 @@ factor_analysis.data.frame <- function(x,
                                     threshold = NULL,
                                     cor = NULL,
                                     ...) {
-  # if (!(rotation %in% c("varimax", "quartimax", "bentlerT", "promax", "" "oblimin", "simplimax", "cluster", "none"))) {
-  #   stop("`rotation` must be one of \"varimax\", \"quartimax\", \"promax\", \"oblimin\", \"simplimax\", \"cluster\" or \"none\".")
-  # }
-
   if (!inherits(x, "data.frame")) {
     stop("`x` must be a data frame.", call. = FALSE)
   }
 
   # rotate loadings
   if (!requireNamespace("psych", quietly = TRUE)) {
-    stop(sprintf("Package `psych` required for `%s`-rotation.", rotation), call. = FALSE)
+    insight::format_error(sprintf("Package `psych` required for `%s`-rotation.", rotation))
   }
 
   # Pass cor if available
@@ -85,6 +81,6 @@ factor_analysis.data.frame <- function(x,
     )
   }
 
-  attr(out, "data_set") <- x
+  attr(out, "dataset") <- x
   out
 }

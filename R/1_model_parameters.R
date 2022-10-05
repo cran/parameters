@@ -4,22 +4,36 @@
 
 #' Model Parameters
 #'
-#' Compute and extract model parameters. The available options and arguments depend on the modeling **package** and model `class`. Follow one of these links to read the model-specific documentation:
-#' \itemize{
-#'  \item{[Default method][model_parameters.default]: `lm`, `glm`, **stats**, **censReg**, **MASS**, **survey**, ... }
-#'  \item{[Additive models][model_parameters.cgam]: **bamlss**, **gamlss**, **mgcv**, **scam**, **VGAM**, `Gam`, `gamm`, ...}
-#'  \item{[ANOVA][model_parameters.aov]: **afex**, `aov`, `anova`, ...}
-#'  \item{[Bayesian][model_parameters.stanreg]: **BayesFactor**, **blavaan**, **brms**, **MCMCglmm**, **posterior**, **rstanarm**, `bayesQR`, `bcplm`, `BGGM`, `blmrm`, `blrm`, `mcmc.list`, `MCMCglmm`, ...}
-#'  \item{[Clustering][model_parameters.kmeans]: **hclust**, **kmeans**, **mclust**, **pam**, ...}
-#'  \item{[Correlations, t-tests, etc.:][model_parameters.htest] **lmtest**, `htest`, `pairwise.htest`, ...}
-#'  \item{[Meta-Analysis][model_parameters.rma]: **metaBMA**, **metafor**, **metaplus**, ...}
-#'  \item{[Mixed models][model_parameters.merMod]: **cplm**, **glmmTMB**, **lme4**, **lmerTest**, **nlme**, **ordinal**, **robustlmm**, **spaMM**, `mixed`, `MixMod`, ...}
-#'  \item{[Multinomial, ordinal and cumulative link][model_parameters.mlm]: **brglm2**, **DirichletReg**, **nnet**, **ordinal**, `mlm`, ...}
-#'  \item{[Multiple imputation][model_parameters.mira]: **mice**}
-#'  \item{[PCA, FA, CFA, SEM][model_parameters.principal]: **FactoMineR**, **lavaan**, **psych**, `sem`, ...}
-#'  \item{[Zero-inflated and hurdle][model_parameters.zcpglm]: **cplm**, **mhurdle**, **pscl**, ...}
-#'  \item{[Other models][model_parameters.averaging]: **aod**, **bbmle**, **betareg**, **emmeans**, **epiR**, **ggeffects**, **glmx**, **ivfixed**, **ivprobit**, **JRM**, **lmodel2**, **logitsf**, **marginaleffects**, **margins**, **maxLik**, **mediation**, **mfx**, **multcomp**, **mvord**, **plm**, **PMCMRplus**, **quantreg**, **selection**, **systemfit**, **tidymodels**, **varEST**, **WRS2**, `bfsl`, `deltaMethod`, `fitdistr`, `mjoint`, `mle`, `model.avg`, ...}
-#'  }
+#' Compute and extract model parameters. The available options and arguments depend
+#' on the modeling **package** and model `class`. Follow one of these links to read
+#' the model-specific documentation:
+#' - [Default method][model_parameters.default()]: `lm`, `glm`, **stats**, **censReg**,
+#'   **MASS**, **survey**, ...
+#' - [Additive models][model_parameters.cgam()]: **bamlss**, **gamlss**, **mgcv**,
+#'   **scam**, **VGAM**, `Gam`, `gamm`, ...
+#' - [ANOVA][model_parameters.aov()]: **afex**, `aov`, `anova`, ...
+#' - [Bayesian][model_parameters.stanreg()]: **BayesFactor**, **blavaan**, **brms**,
+#'   **MCMCglmm**, **posterior**, **rstanarm**, `bayesQR`, `bcplm`, `BGGM`, `blmrm`,
+#'   `blrm`, `mcmc.list`, `MCMCglmm`, ...
+#' - [Clustering][model_parameters.kmeans()]: **hclust**, **kmeans**, **mclust**, **pam**, ...
+#' - [Correlations, t-tests, etc.][model_parameters.htest()]: **lmtest**, `htest`,
+#'   `pairwise.htest`, ...
+#' - [Meta-Analysis][model_parameters.rma()]: **metaBMA**, **metafor**, **metaplus**, ...
+#' - [Mixed models][model_parameters.merMod()]: **cplm**, **glmmTMB**, **lme4**,
+#'   **lmerTest**, **nlme**, **ordinal**, **robustlmm**, **spaMM**, `mixed`, `MixMod`, ...
+#' - [Multinomial, ordinal and cumulative link][model_parameters.mlm()]: **brglm2**,
+#'   **DirichletReg**, **nnet**, **ordinal**, `mlm`, ...
+#' - [Multiple imputation][model_parameters.mira()]: **mice**
+#' - [PCA, FA, CFA, SEM][model_parameters.principal()]: **FactoMineR**, **lavaan**,
+#'   **psych**, `sem`, ...
+#' - [Zero-inflated and hurdle][model_parameters.zcpglm()]: **cplm**, **mhurdle**,
+#'   **pscl**, ...
+#' - [Other models][model_parameters.averaging()]: **aod**, **bbmle**, **betareg**,
+#'   **emmeans**, **epiR**, **ggeffects**, **glmx**, **ivfixed**, **ivprobit**,
+#'   **JRM**, **lmodel2**, **logitsf**, **marginaleffects**, **margins**, **maxLik**,
+#'   **mediation**, **mfx**, **multcomp**, **mvord**, **plm**, **PMCMRplus**,
+#'   **quantreg**, **selection**, **systemfit**, **tidymodels**, **varEST**,
+#'   **WRS2**, `bfsl`, `deltaMethod`, `fitdistr`, `mjoint`, `mle`, `model.avg`, ...
 #'
 #' @param model Statistical Model.
 #' @param ... Arguments passed to or from other methods. Non-documented
@@ -197,7 +211,7 @@
 #' to a \eqn{\chi}-squared distribution to compute CIs and p-values.
 #'
 #' `"profile"`
-#' - Applies to *non-Bayesian models* of class `glm`, `polr` or `glmmTMB`.
+#' - Applies to *non-Bayesian models* of class `glm`, `polr`, `merMod` or `glmmTMB`.
 #'   CIs computed by *profiling the likelihood curve for a parameter*, using
 #'   linear interpolation to find where likelihood ratio equals a critical value;
 #'   p-values computed using the Wald method with a *normal-distribution* (note:
@@ -287,6 +301,14 @@ model_parameters <- function(model, ...) {
 # https://github.com/easystats/parameters/issues/455
 
 
+# Options -------------------------------------
+
+# getOption("parameters_summary"): show model summary
+# getOption("parameters_mixed_summary"): show model summary for mixed models
+# getOption("parameters_cimethod"): show message about CI approximation
+# getOption("parameters_exponentiate"): show warning about exp for log/logit links
+
+
 
 #' @rdname model_parameters
 #' @export
@@ -310,16 +332,16 @@ parameters <- model_parameters
 #'   `NULL` (default; no standardization), `"refit"` (for re-fitting the model
 #'   on standardized data) or one of `"basic"`, `"posthoc"`, `"smart"`,
 #'   `"pseudo"`. See 'Details' in [standardize_parameters()].
-#'   **Important:**
-#'   - The `"refit"` method does *not* standardized categorical predictors (i.e.
+#'   **Importantly**:
+#'   - The `"refit"` method does *not* standardize categorical predictors (i.e.
 #'   factors), which may be a different behaviour compared to other R packages
 #'   (such as **lm.beta**) or other software packages (like SPSS). to mimic
 #'   such behaviours, either use `standardize="basic"` or standardize the data
 #'   with `datawizard::standardize(force=TRUE)` *before* fitting the model.
 #'   - For mixed models, when using methods other than `"refit"`, only the fixed
-#'   effects will be returned.
-#'   - Robust estimation (i.e., `vcov` set to a value other than `NULL`) of standardized parameters only
-#'   works when `standardize="refit"`.
+#'   effects will be standardized.
+#'   - Robust estimation (i.e., `vcov` set to a value other than `NULL`) of
+#'   standardized parameters only works when `standardize="refit"`.
 #' @param exponentiate Logical, indicating whether or not to exponentiate the
 #'   coefficients (and related confidence intervals). This is typical for
 #'   logistic regression, or more generally speaking, for models with log or
@@ -369,14 +391,12 @@ parameters <- model_parameters
 #'   frame, which can be different from how they are printed. Inspect the
 #'   `$Parameter` column of the parameters table to get the exact parameter
 #'   names.
-#' @param drop See `keep`.
-#' @param parameters Deprecated, alias for `keep`.
-#' @param verbose Toggle warnings and messages.
-#' @inheritParams standard_error
 #' @param ... Arguments passed to or from other methods. For instance, when
 #'   `bootstrap = TRUE`, arguments like `type` or `parallel` are
-#'   passed down to `bootstrap_model()`, and arguments like `ci_method`
-#'   are passed down to [bayestestR::describe_posterior()].
+#'   passed down to `bootstrap_model()`.
+#' @param drop See `keep`.
+#' @param verbose Toggle warnings and messages.
+#' @inheritParams standard_error
 #'
 #' @seealso [insight::standardize_names()] to
 #'   rename columns into a consistent, standardized naming scheme.
@@ -421,7 +441,7 @@ parameters <- model_parameters
 #' @return A data frame of indices related to the model's parameters.
 #' @export
 model_parameters.default <- function(model,
-                                     ci = .95,
+                                     ci = 0.95,
                                      ci_method = NULL,
                                      bootstrap = FALSE,
                                      iterations = 1000,
@@ -431,11 +451,13 @@ model_parameters.default <- function(model,
                                      summary = getOption("parameters_summary", FALSE),
                                      keep = NULL,
                                      drop = NULL,
-                                     parameters = keep,
                                      verbose = TRUE,
                                      vcov = NULL,
                                      vcov_args = NULL,
                                      ...) {
+  # sanity check for inputs
+  .is_model_valid(model)
+
   # sanity check, warn if unsupported argument is used.
   # unsupported arguments will be removed from the argument list.
   dots <- .check_dots(
@@ -476,18 +498,21 @@ model_parameters.default <- function(model,
 
   # tell user if something went wrong...
   if (length(out) == 1 && isTRUE(is.na(out))) {
-    msg <- insight::format_message(
-      paste0("Sorry, `model_parameters()` failed with the following error (possible class '",
-             class(model)[1],
-             "' not supported):\n"),
+    insight::format_error(
+      paste0(
+        "Sorry, `model_parameters()` failed with the following error (possible class `",
+        class(model)[1],
+        "` not supported):\n"
+      ),
       attr(out, "error")
     )
-    stop(msg, call. = FALSE)
   } else if (is.null(out)) {
-    stop(paste0(
-      "Sorry, `model_parameters()` does currently not work for objects of class '",
-      class(model)[1],
-      "'."), call. = FALSE
+    insight::format_error(
+      paste0(
+        "Sorry, `model_parameters()` does not currently work for objects of class `",
+        class(model)[1],
+        "`."
+      )
     )
   }
 
@@ -503,7 +528,7 @@ model_parameters.default <- function(model,
 # (like printing etc.)
 
 .model_parameters_generic <- function(model,
-                                      ci = .95,
+                                      ci = 0.95,
                                       bootstrap = FALSE,
                                       iterations = 1000,
                                       merge_by = "Parameter",
@@ -525,9 +550,7 @@ model_parameters.default <- function(model,
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    warning(insight::format_message(
-      "Argument 'df_method' is deprecated. Please use 'ci_method' instead."
-    ), call. = FALSE)
+    insight::format_warning("Argument `df_method` is deprecated. Please use `ci_method` instead.")
     ci_method <- df_method
   }
 
@@ -550,7 +573,7 @@ model_parameters.default <- function(model,
     args <- c(args, dots)
     params <- do.call("bootstrap_parameters", args)
 
-  # Processing, non-bootstrapped parameters
+    # Processing, non-bootstrapped parameters
   } else {
     # set default method for CI
     if (is.null(ci_method) || missing(ci_method)) {
@@ -613,7 +636,7 @@ model_parameters.default <- function(model,
 #' @rdname model_parameters.default
 #' @export
 model_parameters.glm <- function(model,
-                                 ci = .95,
+                                 ci = 0.95,
                                  ci_method = NULL,
                                  bootstrap = FALSE,
                                  iterations = 1000,
@@ -635,15 +658,16 @@ model_parameters.glm <- function(model,
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    warning(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."), call. = FALSE)
+    insight::format_warning("Argument `df_method` is deprecated. Please use `ci_method` instead.")
     ci_method <- df_method
   }
 
   # profiled CIs may take a long time to compute, so we warn the user about it
   if (insight::n_obs(model) > 1e4 && identical(ci_method, "profile")) {
-    message(insight::format_message(
-      "Profiled confidence intervals may take longer time to compute. Use 'ci_method=\"wald\"' for faster computation of CIs."
-    ))
+    insight::format_alert(
+      "Profiled confidence intervals may take longer time to compute.",
+      "Use `ci_method=\"wald\"` for faster computation of CIs."
+    )
   }
 
   args <- list(

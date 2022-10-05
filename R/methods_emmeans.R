@@ -6,27 +6,21 @@
 #' @rdname model_parameters.averaging
 #' @export
 model_parameters.emmGrid <- function(model,
-                                     ci = .95,
+                                     ci = 0.95,
                                      centrality = "median",
                                      dispersion = FALSE,
                                      ci_method = "eti",
-                                     test = c("pd", "rope"),
+                                     test = "pd",
                                      rope_range = "default",
                                      rope_ci = 0.95,
                                      exponentiate = FALSE,
                                      p_adjust = NULL,
-                                     parameters = NULL,
+                                     keep = NULL,
+                                     drop = NULL,
                                      verbose = TRUE,
                                      ...) {
   # set default for p-adjust
-  emm_padjust <- tryCatch(
-    {
-      adj <- model@misc$adjust
-    },
-    error = function(e) {
-      NULL
-    }
-  )
+  emm_padjust <- tryCatch(model@misc$adjust, error = function(e) NULL)
   if (!is.null(emm_padjust) && is.null(p_adjust)) {
     p_adjust <- emm_padjust
   }
@@ -120,8 +114,12 @@ model_parameters.emmGrid <- function(model,
   params <- .exponentiate_parameters(params, model, exponentiate)
 
   # filter parameters
-  if (!is.null(parameters)) {
-    params <- .filter_parameters(params, parameters, verbose = verbose)
+  if (!is.null(keep) || !is.null(drop)) {
+    params <- .filter_parameters(params,
+      keep = keep,
+      drop = drop,
+      verbose = verbose
+    )
   }
 
   params <- suppressWarnings(.add_model_parameters_attributes(params, model, ci, exponentiate = FALSE, p_adjust = p_adjust, verbose = verbose, ...))
@@ -136,7 +134,7 @@ model_parameters.emmGrid <- function(model,
 #' @rdname model_parameters.averaging
 #' @export
 model_parameters.emm_list <- function(model,
-                                      ci = .95,
+                                      ci = 0.95,
                                       exponentiate = FALSE,
                                       p_adjust = NULL,
                                       verbose = TRUE,
@@ -282,7 +280,7 @@ boot_em_df <- function(model) {
 
 #' @rdname p_value
 #' @export
-p_value.emmGrid <- function(model, ci = .95, adjust = "none", ...) {
+p_value.emmGrid <- function(model, ci = 0.95, adjust = "none", ...) {
   if (!is.null(model@misc$is_boot) && model@misc$is_boot) {
     return(boot_em_pval(model, adjust))
   }

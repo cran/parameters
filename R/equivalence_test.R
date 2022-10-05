@@ -106,7 +106,8 @@ bayestestR::equivalence_test
 #'   for further information.
 #' }
 #'
-#' @note There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the [**see**-package](https://easystats.github.io/see/).
+#' @note There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html)
+#' implemented in the [**see**-package](https://easystats.github.io/see/).
 #'
 #' @references
 #' \itemize{
@@ -158,7 +159,7 @@ bayestestR::equivalence_test
 #' @export
 equivalence_test.lm <- function(x,
                                 range = "default",
-                                ci = .95,
+                                ci = 0.95,
                                 rule = "classic",
                                 verbose = TRUE,
                                 ...) {
@@ -221,7 +222,7 @@ equivalence_test.rma <- equivalence_test.lm
 #' @export
 equivalence_test.merMod <- function(x,
                                     range = "default",
-                                    ci = .95,
+                                    ci = 0.95,
                                     rule = "classic",
                                     effects = c("fixed", "random"),
                                     verbose = TRUE,
@@ -266,7 +267,7 @@ equivalence_test.MixMod <- equivalence_test.merMod
 #' @export
 equivalence_test.parameters_simulate_model <- function(x,
                                                        range = "default",
-                                                       ci = .95,
+                                                       ci = 0.95,
                                                        verbose = TRUE,
                                                        ...) {
   # ==== retrieve model, to define rope range for simulated model parameters ====
@@ -275,8 +276,10 @@ equivalence_test.parameters_simulate_model <- function(x,
 
   if (all(range == "default") && !is.null(model)) {
     range <- bayestestR::rope_range(model, verbose = verbose)
-  } else if (!all(is.numeric(range)) | length(range) != 2) {
-    stop("`range` should be 'default' or a vector of 2 numeric values (e.g., c(-0.1, 0.1)).")
+  } else if (!all(is.numeric(range)) || length(range) != 2) {
+    insight::format_error(
+      "`range` should be \"default\" or a vector of 2 numeric values (e.g., `c(-0.1, 0.1)`)."
+    )
   }
 
 
@@ -304,7 +307,7 @@ equivalence_test.parameters_simulate_model <- function(x,
 #' @keywords internal
 .equivalence_test_frequentist <- function(x,
                                           range = "default",
-                                          ci = .95,
+                                          ci = 0.95,
                                           rule = "classic",
                                           verbose = TRUE,
                                           ...) {
@@ -315,12 +318,14 @@ equivalence_test.parameters_simulate_model <- function(x,
     if (is.list(range)) {
       range <- range[[which.max(sapply(range, diff))]]
     }
-  } else if (!all(is.numeric(range)) | length(range) != 2) {
-    stop("`range` should be 'default' or a vector of 2 numeric values (e.g., c(-0.1, 0.1)).")
+  } else if (!all(is.numeric(range)) || length(range) != 2) {
+    insight::format_error(
+      "`range` should be \"default\" or a vector of 2 numeric values (e.g., `c(-0.1, 0.1)`)."
+    )
   }
 
   if (length(ci) > 1) {
-    warning("`ci` may only be of length 1. Using first ci-value now.", call. = FALSE)
+    insight::format_warning("`ci` may only be of length 1. Using first ci-value now.")
     ci <- ci[1]
   }
 
@@ -377,19 +382,21 @@ equivalence_test.parameters_simulate_model <- function(x,
 #' @keywords internal
 .equivalence_test_frequentist_random <- function(x,
                                                  range = "default",
-                                                 ci = .95,
+                                                 ci = 0.95,
                                                  rule = "classic",
                                                  verbose = TRUE,
                                                  ...) {
   if (all(range == "default")) {
     range <- bayestestR::rope_range(x, verbose = verbose)
-  } else if (!all(is.numeric(range)) | length(range) != 2) {
-    stop("`range` should be 'default' or a vector of 2 numeric values (e.g., c(-0.1, 0.1)).")
+  } else if (!all(is.numeric(range)) || length(range) != 2) {
+    insight::format_error(
+      "`range` should be \"default\" or a vector of 2 numeric values (e.g., `c(-0.1, 0.1)`)."
+    )
   }
 
   if (length(ci) > 1) {
     if (isTRUE(verbose)) {
-      warning("`ci` may only be of length 1. Using first ci-value now.", call. = FALSE)
+      insight::format_warning("`ci` may only be of length 1. Using first ci-value now.")
     }
     ci <- ci[1]
   }

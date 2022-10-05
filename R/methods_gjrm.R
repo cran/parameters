@@ -1,7 +1,7 @@
 #' @rdname model_parameters.averaging
 #' @export
 model_parameters.SemiParBIV <- function(model,
-                                        ci = .95,
+                                        ci = 0.95,
                                         bootstrap = FALSE,
                                         iterations = 1000,
                                         standardize = NULL,
@@ -31,7 +31,7 @@ model_parameters.SemiParBIV <- function(model,
 p_value.SemiParBIV <- function(model, ...) {
   s <- summary(model)
   s <- datawizard::compact_list(s[grepl("^tableP", names(s))])
-  params <- do.call(rbind, lapply(1:length(s), function(i) {
+  params <- do.call(rbind, lapply(seq_along(s), function(i) {
     out <- as.data.frame(s[[i]])
     out$Parameter <- rownames(out)
     out$Component <- paste0("Equation", i)
@@ -47,7 +47,7 @@ p_value.SemiParBIV <- function(model, ...) {
 standard_error.SemiParBIV <- function(model, ...) {
   s <- summary(model)
   s <- datawizard::compact_list(s[grepl("^tableP", names(s))])
-  params <- do.call(rbind, lapply(1:length(s), function(i) {
+  params <- do.call(rbind, lapply(seq_along(s), function(i) {
     out <- as.data.frame(s[[i]])
     out$Parameter <- rownames(out)
     out$Component <- paste0("Equation", i)

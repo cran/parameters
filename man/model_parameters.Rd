@@ -23,21 +23,37 @@ in \code{\link[=print.parameters_model]{print.parameters_model()}} and 'Examples
 A data frame of indices related to the model's parameters.
 }
 \description{
-Compute and extract model parameters. The available options and arguments depend on the modeling \strong{package} and model \code{class}. Follow one of these links to read the model-specific documentation:
+Compute and extract model parameters. The available options and arguments depend
+on the modeling \strong{package} and model \code{class}. Follow one of these links to read
+the model-specific documentation:
 \itemize{
-\item{\link[=model_parameters.default]{Default method}: \code{lm}, \code{glm}, \strong{stats}, \strong{censReg}, \strong{MASS}, \strong{survey}, ... }
-\item{\link[=model_parameters.cgam]{Additive models}: \strong{bamlss}, \strong{gamlss}, \strong{mgcv}, \strong{scam}, \strong{VGAM}, \code{Gam}, \code{gamm}, ...}
-\item{\link[=model_parameters.aov]{ANOVA}: \strong{afex}, \code{aov}, \code{anova}, ...}
-\item{\link[=model_parameters.stanreg]{Bayesian}: \strong{BayesFactor}, \strong{blavaan}, \strong{brms}, \strong{MCMCglmm}, \strong{posterior}, \strong{rstanarm}, \code{bayesQR}, \code{bcplm}, \code{BGGM}, \code{blmrm}, \code{blrm}, \code{mcmc.list}, \code{MCMCglmm}, ...}
-\item{\link[=model_parameters.kmeans]{Clustering}: \strong{hclust}, \strong{kmeans}, \strong{mclust}, \strong{pam}, ...}
-\item{\link[=model_parameters.htest]{Correlations, t-tests, etc.:} \strong{lmtest}, \code{htest}, \code{pairwise.htest}, ...}
-\item{\link[=model_parameters.rma]{Meta-Analysis}: \strong{metaBMA}, \strong{metafor}, \strong{metaplus}, ...}
-\item{\link[=model_parameters.merMod]{Mixed models}: \strong{cplm}, \strong{glmmTMB}, \strong{lme4}, \strong{lmerTest}, \strong{nlme}, \strong{ordinal}, \strong{robustlmm}, \strong{spaMM}, \code{mixed}, \code{MixMod}, ...}
-\item{\link[=model_parameters.mlm]{Multinomial, ordinal and cumulative link}: \strong{brglm2}, \strong{DirichletReg}, \strong{nnet}, \strong{ordinal}, \code{mlm}, ...}
-\item{\link[=model_parameters.mira]{Multiple imputation}: \strong{mice}}
-\item{\link[=model_parameters.principal]{PCA, FA, CFA, SEM}: \strong{FactoMineR}, \strong{lavaan}, \strong{psych}, \code{sem}, ...}
-\item{\link[=model_parameters.zcpglm]{Zero-inflated and hurdle}: \strong{cplm}, \strong{mhurdle}, \strong{pscl}, ...}
-\item{\link[=model_parameters.averaging]{Other models}: \strong{aod}, \strong{bbmle}, \strong{betareg}, \strong{emmeans}, \strong{epiR}, \strong{ggeffects}, \strong{glmx}, \strong{ivfixed}, \strong{ivprobit}, \strong{JRM}, \strong{lmodel2}, \strong{logitsf}, \strong{marginaleffects}, \strong{margins}, \strong{maxLik}, \strong{mediation}, \strong{mfx}, \strong{multcomp}, \strong{mvord}, \strong{plm}, \strong{PMCMRplus}, \strong{quantreg}, \strong{selection}, \strong{systemfit}, \strong{tidymodels}, \strong{varEST}, \strong{WRS2}, \code{bfsl}, \code{deltaMethod}, \code{fitdistr}, \code{mjoint}, \code{mle}, \code{model.avg}, ...}
+\item \link[=model_parameters.default]{Default method}: \code{lm}, \code{glm}, \strong{stats}, \strong{censReg},
+\strong{MASS}, \strong{survey}, ...
+\item \link[=model_parameters.cgam]{Additive models}: \strong{bamlss}, \strong{gamlss}, \strong{mgcv},
+\strong{scam}, \strong{VGAM}, \code{Gam}, \code{gamm}, ...
+\item \link[=model_parameters.aov]{ANOVA}: \strong{afex}, \code{aov}, \code{anova}, ...
+\item \link[=model_parameters.stanreg]{Bayesian}: \strong{BayesFactor}, \strong{blavaan}, \strong{brms},
+\strong{MCMCglmm}, \strong{posterior}, \strong{rstanarm}, \code{bayesQR}, \code{bcplm}, \code{BGGM}, \code{blmrm},
+\code{blrm}, \code{mcmc.list}, \code{MCMCglmm}, ...
+\item \link[=model_parameters.kmeans]{Clustering}: \strong{hclust}, \strong{kmeans}, \strong{mclust}, \strong{pam}, ...
+\item \link[=model_parameters.htest]{Correlations, t-tests, etc.}: \strong{lmtest}, \code{htest},
+\code{pairwise.htest}, ...
+\item \link[=model_parameters.rma]{Meta-Analysis}: \strong{metaBMA}, \strong{metafor}, \strong{metaplus}, ...
+\item \link[=model_parameters.merMod]{Mixed models}: \strong{cplm}, \strong{glmmTMB}, \strong{lme4},
+\strong{lmerTest}, \strong{nlme}, \strong{ordinal}, \strong{robustlmm}, \strong{spaMM}, \code{mixed}, \code{MixMod}, ...
+\item \link[=model_parameters.mlm]{Multinomial, ordinal and cumulative link}: \strong{brglm2},
+\strong{DirichletReg}, \strong{nnet}, \strong{ordinal}, \code{mlm}, ...
+\item \link[=model_parameters.mira]{Multiple imputation}: \strong{mice}
+\item \link[=model_parameters.principal]{PCA, FA, CFA, SEM}: \strong{FactoMineR}, \strong{lavaan},
+\strong{psych}, \code{sem}, ...
+\item \link[=model_parameters.zcpglm]{Zero-inflated and hurdle}: \strong{cplm}, \strong{mhurdle},
+\strong{pscl}, ...
+\item \link[=model_parameters.averaging]{Other models}: \strong{aod}, \strong{bbmle}, \strong{betareg},
+\strong{emmeans}, \strong{epiR}, \strong{ggeffects}, \strong{glmx}, \strong{ivfixed}, \strong{ivprobit},
+\strong{JRM}, \strong{lmodel2}, \strong{logitsf}, \strong{marginaleffects}, \strong{margins}, \strong{maxLik},
+\strong{mediation}, \strong{mfx}, \strong{multcomp}, \strong{mvord}, \strong{plm}, \strong{PMCMRplus},
+\strong{quantreg}, \strong{selection}, \strong{systemfit}, \strong{tidymodels}, \strong{varEST},
+\strong{WRS2}, \code{bfsl}, \code{deltaMethod}, \code{fitdistr}, \code{mjoint}, \code{mle}, \code{model.avg}, ...
 }
 }
 \note{
@@ -222,7 +238,7 @@ to a \eqn{\chi}-squared distribution to compute CIs and p-values.
 
 \code{"profile"}
 \itemize{
-\item Applies to \emph{non-Bayesian models} of class \code{glm}, \code{polr} or \code{glmmTMB}.
+\item Applies to \emph{non-Bayesian models} of class \code{glm}, \code{polr}, \code{merMod} or \code{glmmTMB}.
 CIs computed by \emph{profiling the likelihood curve for a parameter}, using
 linear interpolation to find where likelihood ratio equals a critical value;
 p-values computed using the Wald method with a \emph{normal-distribution} (note:
@@ -337,6 +353,12 @@ show the additional information on how to interpret coefficients of models
 with log-transformed response variables or with log-/logit-links when the
 \code{exponentiate} argument in \code{model_parameters()} is not \code{TRUE}. Set this option
 to \code{FALSE} to hide this message when printing \code{model_parameters()} objects.
+\item \code{parameters_labels}: \code{options(parameters_labels = TRUE)} will use variable
+and value labels for pretty names, if data is labelled. If no labels
+available, default pretty names are used.
+\item \code{parameters_select}: \verb{options(parameters_select = <value>)} will set the
+default for the \code{select} argument. See argument's documentation for available
+options.
 }
 }
 

@@ -59,6 +59,9 @@
   attr(params, "show_summary") <- isTRUE(summary)
   attr(params, "log_link") <- isTRUE(grepl("log", info$link_function, fixed = TRUE))
 
+  # add parameters with value and variable
+  attr(params, "pretty_labels") <- .format_value_labels(params, model)
+
   # use tryCatch, these might fail...
   attr(params, "test_statistic") <- tryCatch(insight::find_statistic(model), error = function(e) NULL)
   attr(params, "log_response") <- tryCatch(isTRUE(grepl("log", insight::find_transformation(model), fixed = TRUE)), error = function(e) NULL)
@@ -124,7 +127,11 @@
   } else {
     coef_col <- .find_coefficient_type(info, exponentiate, model)
     attr(params, "coefficient_name") <- coef_col
-    attr(params, "zi_coefficient_name") <- ifelse(isTRUE(exponentiate), "Odds Ratio", "Log-Odds")
+    attr(params, "zi_coefficient_name") <- if (isTRUE(exponentiate)) {
+      "Odds Ratio"
+    } else {
+      "Log-Odds"
+    }
   }
 
 
@@ -250,7 +257,8 @@
       if (isTRUE(exponentiate)) {
         if (info$is_exponential && identical(info$link_function, "log")) {
           coef_col <- "Prevalence Ratio"
-        } else if ((info$is_binomial && info$is_logit) || info$is_ordinal || info$is_multinomial || info$is_categorical) {
+        } else if ((info$is_binomial && info$is_logit) || info$is_ordinal ||
+          info$is_multinomial || info$is_categorical) {
           coef_col <- "Odds Ratio"
         } else if (info$is_binomial && !info$is_logit) {
           coef_col <- "Risk Ratio"
@@ -260,7 +268,8 @@
       } else {
         if (info$is_exponential && identical(info$link_function, "log")) {
           coef_col <- "Log-Prevalence"
-        } else if ((info$is_binomial && info$is_logit) || info$is_ordinal || info$is_multinomial || info$is_categorical) {
+        } else if ((info$is_binomial && info$is_logit) || info$is_ordinal ||
+          info$is_multinomial || info$is_categorical) {
           coef_col <- "Log-Odds"
         } else if (info$is_binomial && !info$is_logit) {
           coef_col <- "Log-Risk"
@@ -279,6 +288,7 @@
   isTRUE(exponentiate) || identical(exponentiate, "nongaussian")
 }
 
+
 #' @keywords internal
 .exponentiate_parameters <- function(params, model = NULL, exponentiate = TRUE) {
   # "exponentiate" must be
@@ -289,7 +299,8 @@
   }
 
   # check if non-gaussian applies
-  if (!is.null(model) && insight::model_info(model, verbose = FALSE)$is_linear && identical(exponentiate, "nongaussian")) {
+  if (!is.null(model) && insight::model_info(model, verbose = FALSE)$is_linear &&
+    identical(exponentiate, "nongaussian")) {
     return(params)
   }
 
@@ -302,7 +313,7 @@
       if (!is.null(params$Component)) {
         rows <- !tolower(params$Component) %in% c("dispersion", "residual")
       } else {
-        rows <- 1:nrow(params)
+        rows <- seq_len(nrow(params))
       }
     }
     params[rows, columns] <- exp(params[rows, columns])
@@ -320,8 +331,14 @@
   attr(params, "model_class") <- class(model)
   cp <- insight::clean_parameters(model)
   clean_params <- cp[cp$Parameter %in% params$Parameter, ]
-  attr(params, "cleaned_parameters") <- stats::setNames(clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)], params$Parameter)
-  attr(params, "pretty_names") <- stats::setNames(clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)], params$Parameter)
+  attr(params, "cleaned_parameters") <- stats::setNames(
+    clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)],
+    params$Parameter
+  )
+  attr(params, "pretty_names") <- stats::setNames(
+    clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)],
+    params$Parameter
+  )
 
   params
 }
@@ -408,10 +425,10 @@
   if (length(not_allowed)) {
     if (verbose) {
       not_allowed_string <- datawizard::text_concatenate(not_allowed, enclose = "\"")
-      warning(insight::format_message(
-        sprintf("Following arguments are not supported in `%s()` for models of class '%s' and will be ignored: %s", function_name, model_class, not_allowed_string),
+      insight::format_warning(
+        sprintf("Following arguments are not supported in `%s()` for models of class `%s` and will be ignored: %s", function_name, model_class, not_allowed_string),
         sprintf("Please run `%s()` again without specifying the above mentioned arguments to obtain expected results.", function_name)
-      ), call. = FALSE)
+      )
     }
     dots[not_allowed] <- NULL
     if (!length(dots)) {
@@ -419,4 +436,16 @@
     }
   }
   dots
+}
+
+
+
+# functions to check if necessary default argument was provided ------------
+
+.is_model_valid <- function(model) {
+  if (missing(model) || is.null(model)) {
+    insight::format_error(
+      "You must provide a model-object. Argument `model` cannot be missing or `NULL`."
+    )
+  }
 }

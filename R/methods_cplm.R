@@ -29,7 +29,7 @@
 #' @inheritParams simulate_model
 #' @export
 model_parameters.zcpglm <- function(model,
-                                    ci = .95,
+                                    ci = 0.95,
                                     bootstrap = FALSE,
                                     iterations = 1000,
                                     component = c("all", "conditional", "zi", "zero_inflated"),
@@ -38,7 +38,6 @@ model_parameters.zcpglm <- function(model,
                                     p_adjust = NULL,
                                     keep = NULL,
                                     drop = NULL,
-                                    parameters = keep,
                                     summary = getOption("parameters_summary", FALSE),
                                     verbose = TRUE,
                                     ...) {
@@ -217,7 +216,7 @@ standard_error.cpglm <- function(model, ...) {
 #' @rdname model_parameters.merMod
 #' @export
 model_parameters.cpglmm <- function(model,
-                                    ci = .95,
+                                    ci = 0.95,
                                     ci_method = NULL,
                                     ci_random = NULL,
                                     bootstrap = FALSE,
@@ -233,7 +232,7 @@ model_parameters.cpglmm <- function(model,
                                     ...) {
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    warning(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."), call. = FALSE)
+    insight::format_warning("Argument 'df_method' is deprecated. Please use 'ci_method' instead.")
     ci_method <- df_method
   }
 
@@ -244,7 +243,7 @@ model_parameters.cpglmm <- function(model,
   # standardize only works for fixed effects...
   if (!is.null(standardize) && standardize != "refit") {
     if (!missing(effects) && effects != "fixed" && verbose) {
-      warning(insight::format_message("Standardizing coefficients only works for fixed effects of the mixed model."), call. = FALSE)
+      insight::format_warning("Standardizing coefficients only works for fixed effects of the mixed model.")
     }
     effects <- "fixed"
   }

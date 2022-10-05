@@ -3,9 +3,9 @@
 model_parameters.stanfit <- function(model,
                                      centrality = "median",
                                      dispersion = FALSE,
-                                     ci = .95,
+                                     ci = 0.95,
                                      ci_method = "eti",
-                                     test = c("pd", "rope"),
+                                     test = "pd",
                                      rope_range = "default",
                                      rope_ci = 0.95,
                                      diagnostic = c("ESS", "Rhat"),
@@ -15,7 +15,6 @@ model_parameters.stanfit <- function(model,
                                      group_level = FALSE,
                                      keep = NULL,
                                      drop = NULL,
-                                     parameters = keep,
                                      verbose = TRUE,
                                      ...) {
   # Processing
@@ -40,7 +39,10 @@ model_parameters.stanfit <- function(model,
   )
 
   if (effects != "fixed") {
-    random_effect_levels <- which(params$Effects %in% "random" & grepl("^(?!Sigma\\[)(.*)", params$Parameter, perl = TRUE))
+    random_effect_levels <- which(
+      params$Effects %in% "random" &
+        grepl("^(?!Sigma\\[)(.*)", params$Parameter, perl = TRUE)
+    )
     if (length(random_effect_levels) && isFALSE(group_level)) params <- params[-random_effect_levels, ]
   }
 

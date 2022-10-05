@@ -1,6 +1,8 @@
 # output-format helper  -------------------------
 
-# this function does the main composition of columns for the output
+# this function does the main composition of columns for the output.
+# it's used by "compare_parameters()", where users can choose between
+# different pre-sets of "print-layouts"
 
 .format_output_style <- function(x, style, format, modelname) {
   linesep <- " "
@@ -80,7 +82,7 @@
     steps <- (ncol(x) - 1) / length(observations)
     empty_row[[1]] <- "Observations"
     insert_at <- seq(2, ncol(x), by = steps)
-    for (i in 1:length(insert_at)) {
+    for (i in seq_along(insert_at)) {
       empty_row[[insert_at[i]]] <- observations[i]
     }
     x <- rbind(x, empty_row)
@@ -121,7 +123,9 @@
   }
 
   # fix coefficient column name for mixed count and zi pars
-  if (!is.null(x$Component) && sum(c("conditional", "zero_inflated", "dispersion") %in% x$Component) >= 2 && any(colnames(x) %in% .all_coefficient_types())) {
+  if (!is.null(x$Component) &&
+    sum(c("conditional", "zero_inflated", "dispersion") %in% x$Component) >= 2 &&
+    any(colnames(x) %in% .all_coefficient_types())) {
     colnames(x)[colnames(x) %in% .all_coefficient_types()] <- "Coefficient"
   }
 
@@ -149,10 +153,14 @@
 # But for instance, for random effects, however, which are on a different scale,
 # we want a different name for this column. Since print.parameters_model() splits
 # components into different tables, we change the column name for those "tables"
-# that contain the random effects or zero-inflated parameters
+# that contain the random effects or zero-inflation parameters
 
 .all_coefficient_types <- function() {
-  c("Odds Ratio", "Risk Ratio", "Prevalence Ratio", "IRR", "Log-Odds", "Log-Mean", "Log-Ratio", "Log-Prevalence", "Probability", "Marginal Means", "Estimated Counts", "Ratio")
+  c(
+    "Odds Ratio", "Risk Ratio", "Prevalence Ratio", "IRR", "Log-Odds",
+    "Log-Mean", "Log-Ratio", "Log-Prevalence", "Probability", "Marginal Means",
+    "Estimated Counts", "Ratio"
+  )
 }
 
 
@@ -168,6 +176,20 @@
                                            is_multivariate = FALSE,
                                            ran_pars,
                                            formatted_table = NULL) {
+  # prepare component names
+  .conditional_fixed_text <- if (is_zero_inflated) {
+    "Fixed Effects (Count Model)"
+  } else {
+    "Fixed Effects"
+  }
+  .conditional_random_text <- if (ran_pars) {
+    "Random Effects Variances"
+  } else if (is_zero_inflated) {
+    "Random Effects (Count Model)"
+  } else {
+    "Random Effects"
+  }
+
   component_name <- switch(type,
     "mu" = ,
     "fixed" = ,
@@ -177,17 +199,12 @@
     "random." = ,
     "random" = "Random Effects",
     "conditional.fixed" = ,
-    "conditional.fixed." = ifelse(is_zero_inflated, "Fixed Effects (Count Model)", "Fixed Effects"),
-    "conditional.random" = ifelse(ran_pars,
-      "Random Effects Variances",
-      ifelse(is_zero_inflated,
-        "Random Effects (Count Model)", "Random Effects"
-      )
-    ),
-    "zero_inflated" = "Zero-Inflated",
+    "conditional.fixed." = .conditional_fixed_text,
+    "conditional.random" = .conditional_random_text,
+    "zero_inflated" = "Zero-Inflation",
     "zero_inflated.fixed" = ,
-    "zero_inflated.fixed." = "Fixed Effects (Zero-Inflated Model)",
-    "zero_inflated.random" = "Random Effects (Zero-Inflated Model)",
+    "zero_inflated.fixed." = "Fixed Effects (Zero-Inflation Component)",
+    "zero_inflated.random" = "Random Effects (Zero-Inflation Component)",
     "survival" = ,
     "survival.fixed" = "Survival",
     "dispersion.fixed" = ,
@@ -254,9 +271,9 @@
   if (grepl("^zero_inflated\\.(r|R)andom", component_name)) {
     component_name <- insight::trim_ws(gsub("^zero_inflated\\.(r|R)andom(\\.)*", "", component_name))
     if (nchar(component_name) == 0) {
-      component_name <- "Random Effects (Zero-Inflated Model)"
+      component_name <- "Random Effects (Zero-Inflation Component)"
     } else {
-      component_name <- paste0("Random Effects (Zero-Inflated Model): ", component_name)
+      component_name <- paste0("Random Effects (Zero-Inflation Component): ", component_name)
     }
   }
   if (grepl("^random\\.(.*)", component_name)) {
@@ -264,10 +281,10 @@
   }
 
   # if we show ZI component only, make sure this appears in header
-  if (!grepl("(Zero-Inflated Model)", component_name, fixed = TRUE) &&
+  if (!grepl("(Zero-Inflation Component)", component_name, fixed = TRUE) &&
     !is.null(formatted_table$Component) &&
     all(formatted_table$Component == "zero_inflated")) {
-    component_name <- paste0(component_name, " (Zero-Inflated Model)")
+    component_name <- paste0(component_name, " (Zero-Inflation Component)")
   }
 
   # tweaking of sub headers
@@ -302,7 +319,11 @@
     s2 <- component_name
   } else {
     s1 <- component_name
-    s2 <- ifelse(tolower(split_column) == "component", "", split_column)
+    if (tolower(split_column) == "component") {
+      s2 <- ""
+    } else {
+      s2 <- split_column
+    }
   }
 
   list(name = component_name, subheader1 = s1, subheader2 = s2)
@@ -323,7 +344,7 @@
   if ("Component" %in% colnames(x)) {
     row_index <- which(x$Component == "conditional")
   } else {
-    row_index <- 1:nrow(x)
+    row_index <- seq_len(nrow(x))
   }
 
   x_other <- x[-row_index, ]
@@ -383,11 +404,11 @@
 
 
   empty_row <- x[1, ]
-  for (i in 1:ncol(empty_row)) {
+  for (i in seq_len(ncol(empty_row))) {
     empty_row[[i]] <- NA
   }
 
-  for (i in length(groups):1) {
+  for (i in rev(seq_along(groups))) {
     x[seq(groups[i] + 1, nrow(x) + 1), ] <- x[seq(groups[i], nrow(x)), ]
     x[groups[i], ] <- empty_row
     x$Parameter[groups[i]] <- paste0("# ", names(groups[i]))
@@ -423,6 +444,7 @@
     colnames(x)[which(colnames(x) == "Group")] <- "Subgroup"
   }
 
+  # check which columns to be printed
   if (!is.null(select)) {
     if (all(select == "minimal")) {
       select <- c("Parameter", "Coefficient", "Std_Coefficient", "CI", "CI_low", "CI_high", "p")
@@ -470,6 +492,8 @@
     colnames(x)[which(colnames(x) == "Std_Coefficient")] <- paste0("Std_", coef_name)
   }
 
+  # cpmpute s- instead of p-value?
+  # see 10.1186/s12874-020-01105-9
   if (isTRUE(s_value) && "p" %in% colnames(x)) {
     colnames(x)[colnames(x) == "p"] <- "s"
     x[["s"]] <- log2(1 / x[["s"]])
@@ -486,12 +510,21 @@
     x$Response <- NULL
   }
   split_by <- ""
-  split_by <- c(split_by, ifelse("Component" %in% names(x) && insight::n_unique(x$Component) > 1, "Component", ""))
-  split_by <- c(split_by, ifelse("Effects" %in% names(x) && insight::n_unique(x$Effects) > 1, "Effects", ""))
-  split_by <- c(split_by, ifelse("Response" %in% names(x) && insight::n_unique(x$Response) > 1, "Response", ""))
-  split_by <- c(split_by, ifelse("Group" %in% names(x) && insight::n_unique(x$Group) > 1, "Group", ""))
-  split_by <- c(split_by, ifelse("Subgroup" %in% names(x) && insight::n_unique(x$Subgroup) > 1, "Subgroup", ""))
-
+  if ("Component" %in% names(x) && insight::n_unique(x$Component) > 1) {
+    split_by <- c(split_by, "Component")
+  }
+  if ("Effects" %in% names(x) && insight::n_unique(x$Effects) > 1) {
+    split_by <- c(split_by, "Effects")
+  }
+  if ("Response" %in% names(x) && insight::n_unique(x$Response) > 1) {
+    split_by <- c(split_by, "Response")
+  }
+  if ("Group" %in% names(x) && insight::n_unique(x$Group) > 1) {
+    split_by <- c(split_by, "Group")
+  }
+  if ("Subgroup" %in% names(x) && insight::n_unique(x$Subgroup) > 1) {
+    split_by <- c(split_by, "Subgroup")
+  }
   split_by <- split_by[nchar(split_by) > 0]
   split_by
 }
@@ -544,7 +577,7 @@
   is_ordinal_model <- isTRUE(attributes(x)$ordinal_model)
   is_multivariate <- isTRUE(attributes(x)$multivariate_response)
 
-  # zero-inflated stuff
+  # zero-inflation stuff
   is_zero_inflated <- (!is.null(x$Component) & "zero_inflated" %in% x$Component)
   zi_coef_name <- attributes(x)$zi_coefficient_name
 
@@ -658,7 +691,10 @@
 
     # random pars with level? combine into parameter column
     if (all(c("Parameter", "Level") %in% colnames(tables[[type]]))) {
-      tables[[type]]$Parameter <- paste0(tables[[type]]$Parameter, " ", ci_brackets[1], tables[[type]]$Level, ci_brackets[2])
+      tables[[type]]$Parameter <- paste0(
+        tables[[type]]$Parameter, " ", ci_brackets[1],
+        tables[[type]]$Level, ci_brackets[2]
+      )
       tables[[type]]$Level <- NULL
     }
 
@@ -702,8 +738,16 @@
       tables[[type]][[1]] <- insight::format_value(tables[[type]][[1]], digits = digits, protect_integers = TRUE)
     }
 
-    formatted_table <- insight::format_table(tables[[type]], digits = digits, ci_digits = ci_digits, p_digits = p_digits, pretty_names = pretty_names, ci_width = ci_width, ci_brackets = ci_brackets, zap_small = zap_small, ...)
-    component_header <- .format_model_component_header(x, type, split_column, is_zero_inflated, is_ordinal_model, is_multivariate, ran_pars, formatted_table)
+    formatted_table <- insight::format_table(
+      tables[[type]],
+      digits = digits, ci_digits = ci_digits,
+      p_digits = p_digits, pretty_names = pretty_names, ci_width = ci_width,
+      ci_brackets = ci_brackets, zap_small = zap_small, ...
+    )
+    component_header <- .format_model_component_header(
+      x, type, split_column, is_zero_inflated, is_ordinal_model,
+      is_multivariate, ran_pars, formatted_table
+    )
 
     # exceptions for random effects
     if (insight::n_unique(formatted_table$Group) == 1) {
@@ -725,7 +769,10 @@
     if (is.null(format) || format %in% c("markdown", "text")) {
       # Print
       if (component_header$name != "rewb-contextual") {
-        table_caption <- c(sprintf("# %s %s", component_header$subheader1, tolower(component_header$subheader2)), "blue")
+        table_caption <- c(
+          sprintf("# %s %s", component_header$subheader1, tolower(component_header$subheader2)),
+          "blue"
+        )
       }
     } else if (format %in% c("markdown", "html")) {
       # Print
@@ -754,7 +801,10 @@
 
   if (identical(format, "html")) {
     # fix non-equal length of columns
-    final_table <- .fix_nonmatching_columns(final_table, is_lavaan = inherits(attributes(x)$model, c("lavaan", "blavaan")))
+    final_table <- .fix_nonmatching_columns(
+      final_table,
+      is_lavaan = inherits(attributes(x)$model, c("lavaan", "blavaan"))
+    )
     do.call(rbind, final_table)
   } else {
     datawizard::compact_list(final_table)
@@ -770,7 +820,7 @@
 .fix_nonmatching_columns <- function(final_table, is_lavaan = FALSE) {
   # fix for lavaan here
   if (is_lavaan) {
-    for (i in 1:length(final_table)) {
+    for (i in seq_along(final_table)) {
       if (!is.null(final_table[[i]]$Link) && !is.null(final_table[[i]]$To)) {
         if (all(is.na(final_table[[i]]$Link))) {
           final_table[[i]]$Link <- final_table[[i]]$To
@@ -790,7 +840,7 @@
   # remove non matching columns
   if (!all(col_len) == max(col_len)) {
     all_columns <- unique(unlist(lapply(final_table, colnames)))
-    for (i in 1:length(final_table)) {
+    for (i in seq_along(final_table)) {
       missing_columns <- setdiff(all_columns, colnames(final_table[[i]]))
       if (length(missing_columns)) {
         a <- attributes(final_table[[i]])

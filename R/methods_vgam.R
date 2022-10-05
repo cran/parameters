@@ -56,9 +56,7 @@ simulate_model.vgam <- function(model, iterations = 1000, ...) {
 
 #' @export
 p_value.vglm <- function(model, ...) {
-  if (!requireNamespace("VGAM", quietly = TRUE)) {
-    stop("Package `VGAM` required.", call. = FALSE)
-  }
+  insight::check_if_installed("VGAM")
 
   cs <- VGAM::summary(model)@coef3
   p <- cs[, 4]
@@ -83,7 +81,7 @@ standard_error.vglm <- function(model, ...) {
 
 
 
-# ci.vgam <- function(x, ci = .95, component = c("all", "conditional", "smooth"), ...) {
+# ci.vgam <- function(x, ci = 0.95, component = c("all", "conditional", "smooth"), ...) {
 #   component <- match.arg(component)
 #
 #   # dof and SE

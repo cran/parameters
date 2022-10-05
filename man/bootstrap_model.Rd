@@ -24,6 +24,7 @@ bootstrap_model(model, iterations = 1000, ...)
   type = "parametric",
   parallel = c("no", "multicore", "snow"),
   n_cpus = 1,
+  cluster = NULL,
   verbose = FALSE,
   ...
 )
@@ -46,6 +47,9 @@ other models, see argument \code{sim} in \code{?boot::boot} (defaults to
 \item{n_cpus}{Number of processes to be used in parallel operation.}
 
 \item{verbose}{Toggle warnings and messages.}
+
+\item{cluster}{Optional cluster when \code{parallel = "snow"}. See \code{?lme4::bootMer}
+for details.}
 }
 \value{
 A data frame of bootstrapped estimates.
@@ -68,7 +72,7 @@ The output can be passed directly to the various functions from the
 slopes, etc. and their confidence intervals. These can then be passed to
 \code{model_parameter()} to obtain standard errors, p-values, etc. (see
 example).
-\cr\cr
+
 Note that that p-values returned here are estimated under the assumption of
 \emph{translation equivariance}: that shape of the sampling distribution is
 unaffected by the null being true or not. If this assumption does not hold,

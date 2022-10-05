@@ -36,7 +36,8 @@
 #'
 #' model <- lm(Sepal.Length ~ Species + poly(Sepal.Width, 2, raw = TRUE), data = iris)
 #' format_parameters(model)
-#' @return A (names) character vector with formatted parameter names. The value names refer to the original names of the coefficients.
+#' @return A (names) character vector with formatted parameter names. The value
+#' names refer to the original names of the coefficients.
 #' @export
 format_parameters <- function(model, ...) {
   UseMethod("format_parameters")
@@ -46,13 +47,11 @@ format_parameters <- function(model, ...) {
 #' @rdname format_parameters
 #' @export
 format_parameters.default <- function(model, brackets = c("[", "]"), ...) {
-  tryCatch(
-    {
-      .format_parameter_default(model, brackets = brackets, ...)
-    },
-    error = function(e) {
-      NULL
-    }
+  # check for valid input
+  .is_model_valid(model)
+
+  tryCatch(.format_parameter_default(model, brackets = brackets, ...),
+    error = function(e) NULL
   )
 }
 
@@ -103,7 +102,7 @@ format_parameters.parameters_model <- function(model, ...) {
 
 
   # special handling hurdle- and zeroinfl-models ---------------------
-  if (isTRUE(info$is_zero_inflated) | isTRUE(info$is_hurdle)) {
+  if (isTRUE(info$is_zero_inflated) || isTRUE(info$is_hurdle)) {
     names <- gsub("^(count_|zero_)", "", names)
     types$Parameter <- gsub("^(count_|zero_)", "", types$Parameter)
   }
@@ -140,7 +139,7 @@ format_parameters.parameters_model <- function(model, ...) {
   names <- .clean_parameter_names(names)
 
 
-  for (i in 1:nrow(types)) {
+  for (i in seq_len(nrow(types))) {
     name <- types$Parameter[i]
 
     # No interaction
@@ -160,7 +159,7 @@ format_parameters.parameters_model <- function(model, ...) {
       is_nested <- types$Type[i] == "nested"
       is_simple <- types$Type[i] == "simple"
 
-      for (j in 1:length(components)) {
+      for (j in seq_along(components)) {
         if (components[j] %in% types$Parameter) {
           type <- types[types$Parameter == components[j], ]
 
@@ -277,7 +276,13 @@ format_parameters.parameters_model <- function(model, ...) {
 
   if (length(components) > 2) {
     if (type == "interaction") {
-      components <- paste0("(", paste0(utils::head(components, -1), collapse = " * "), ")", sep, utils::tail(components, 1))
+      components <- paste0(
+        "(",
+        paste0(utils::head(components, -1), collapse = " * "),
+        ")",
+        sep,
+        utils::tail(components, 1)
+      )
     } else {
       components <- paste0(components, collapse = sep)
     }
@@ -329,6 +334,89 @@ format_parameters.parameters_model <- function(model, ...) {
     ".L" = paste0(brackets[1], "linear", brackets[2]),
     ".Q" = paste0(brackets[1], "quadratic", brackets[2]),
     ".C" = paste0(brackets[1], "cubic", brackets[2]),
-    paste0(brackets[1], parameters::format_order(as.numeric(gsub("^", "", degree, fixed = TRUE)), textual = FALSE), " degree", brackets[2])
+    paste0(
+      brackets[1],
+      parameters::format_order(as.numeric(gsub("^", "", degree, fixed = TRUE)), textual = FALSE),
+      " degree",
+      brackets[2]
+    )
   )
+}
+
+
+
+# replace pretty names with value labels, when present ---------------
+
+.format_value_labels <- function(params, model = NULL) {
+  labels <- NULL
+  if (is.null(model)) {
+    model <- .get_object(params)
+  }
+
+  if (!is.null(model)) {
+    # get data, but exclude response - we have no need for that label
+    mf <- insight::get_data(model)[, -1, drop = FALSE]
+
+    # return variable labels, and for factors, add labels for each level
+    lbs <- lapply(colnames(mf), function(i) {
+      vec <- mf[[i]]
+      if (is.factor(vec)) {
+        variable_label <- attr(vec, "label", exact = TRUE)
+        value_labels <- names(attr(vec, "labels", exact = TRUE))
+        if (is.null(variable_label)) {
+          variable_label <- i
+        }
+        if (is.null(value_labels)) {
+          value_labels <- levels(vec)
+        }
+        out <- paste0(variable_label, " [", value_labels, "]")
+      } else {
+        out <- attr(vec, "label", exact = TRUE)
+      }
+      if (is.null(out)) {
+        return(i)
+      } else {
+        return(out)
+      }
+    })
+
+    # coefficient names (not labels)
+    preds <- lapply(colnames(mf), function(i) {
+      if (is.factor(mf[[i]])) {
+        i <- paste0(i, levels(mf[[i]]))
+      }
+      i
+    })
+
+    # name elements
+    names(lbs) <- names(preds) <- colnames(mf)
+    labels <- tryCatch(stats::setNames(unlist(lbs), unlist(preds)), error = function(e) NULL)
+
+    # retrieve pretty names attribute
+    pn <- attributes(params)$pretty_names
+    # replace former pretty names with labels, if we have any labels
+    # (else, default pretty names are returned)
+    if (!is.null(labels)) {
+      # check if we have any interactions, and if so, create combined labels
+      interactions <- pn[grepl(":", names(pn), fixed = TRUE)]
+      if (length(interactions)) {
+        labs <- c()
+        for (i in names(interactions)) {
+          # extract single coefficient names from interaction term
+          out <- unlist(strsplit(i, ":", fixed = TRUE))
+          # combine labels
+          labs <- c(labs, paste0(sapply(out, function(l) labels[l]), collapse = " * "))
+        }
+        # add interaction terms to labels string
+        names(labs) <- names(interactions)
+        labels <- c(labels, labs)
+      }
+      # make sure "invalid" labels are ignored
+      common_labels <- intersect(names(labels), names(pn))
+      pn[common_labels] <- labels[common_labels]
+    }
+    labels <- pn
+  }
+
+  labels
 }

@@ -7,7 +7,7 @@
 #' @rdname model_parameters.averaging
 #' @export
 model_parameters.metaplus <- function(model,
-                                      ci = .95,
+                                      ci = 0.95,
                                       bootstrap = FALSE,
                                       iterations = 1000,
                                       standardize = NULL,
@@ -17,7 +17,9 @@ model_parameters.metaplus <- function(model,
                                       ...) {
   if (!missing(ci)) {
     if (isTRUE(verbose)) {
-      message(insight::format_message("'metaplus' models do not support other levels for confidence intervals than 0.95. Argument 'ci' is ignored."))
+      message(insight::format_message(
+        "'metaplus' models do not support other levels for confidence intervals than 0.95. Argument 'ci' is ignored."
+      ))
     }
     ci <- .95
   }
@@ -40,7 +42,7 @@ model_parameters.metaplus <- function(model,
   } else if (!is.null(model$k)) {
     sprintf("Study %i", 1:model[["k"]])
   } else {
-    sprintf("Study %i", 1:length(model$yi))
+    sprintf("Study %i", seq_along(model$yi))
   }
 
   alpha <- (1 + ci) / 2
@@ -78,7 +80,7 @@ model_parameters.metaplus <- function(model,
   }
 
   original_attributes$names <- names(out)
-  original_attributes$row.names <- 1:nrow(out)
+  original_attributes$row.names <- seq_len(nrow(out))
   original_attributes$pretty_names <- stats::setNames(out$Parameter, out$Parameter)
   attributes(out) <- original_attributes
 
@@ -145,7 +147,7 @@ ci.metaplus <- function(x, ...) {
 #' @rdname model_parameters.averaging
 #' @export
 model_parameters.meta_random <- function(model,
-                                         ci = .95,
+                                         ci = 0.95,
                                          ci_method = "eti",
                                          exponentiate = FALSE,
                                          include_studies = TRUE,
@@ -269,7 +271,7 @@ ci.meta_random <- function(x, method = "eti", ...) {
 
   out <- data.frame(
     Parameter = rownames(params),
-    CI = .95,
+    ci = 0.95,
     CI_low = params[[ci_cols[1]]],
     CI_high = params[[ci_cols[2]]],
     stringsAsFactors = FALSE
@@ -305,7 +307,7 @@ ci.meta_fixed <- ci.meta_random
 #' @rdname model_parameters.averaging
 #' @export
 model_parameters.meta_bma <- function(model,
-                                      ci = .95,
+                                      ci = 0.95,
                                       ci_method = "eti",
                                       exponentiate = FALSE,
                                       include_studies = TRUE,

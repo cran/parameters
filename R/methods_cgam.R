@@ -32,7 +32,7 @@
 #' }
 #' @export
 model_parameters.cgam <- function(model,
-                                  ci = .95,
+                                  ci = 0.95,
                                   ci_method = "residual",
                                   bootstrap = FALSE,
                                   iterations = 1000,
@@ -41,7 +41,6 @@ model_parameters.cgam <- function(model,
                                   p_adjust = NULL,
                                   keep = NULL,
                                   drop = NULL,
-                                  parameters = keep,
                                   verbose = TRUE,
                                   ...) {
   # sanity check, warn if unsupported argument is used.

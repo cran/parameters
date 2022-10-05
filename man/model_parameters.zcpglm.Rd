@@ -20,7 +20,6 @@
   p_adjust = NULL,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   summary = getOption("parameters_summary", FALSE),
   verbose = TRUE,
   ...
@@ -48,7 +47,6 @@
   p_adjust = NULL,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   summary = getOption("parameters_summary", FALSE),
   verbose = TRUE,
   ...
@@ -65,7 +63,6 @@
   p_adjust = NULL,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   summary = getOption("parameters_summary", FALSE),
   verbose = TRUE,
   ...
@@ -82,7 +79,6 @@
   p_adjust = NULL,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   summary = getOption("parameters_summary", FALSE),
   verbose = TRUE,
   ...
@@ -101,8 +97,8 @@
 case of bootstrapped frequentist models.}
 
 \item{component}{Should all parameters, parameters for the conditional model,
-for the zero-inflated part of the model, or the dispersion model be returned?
-Applies to models with zero-inflated and/or dispersion component. \code{component}
+for the zero-inflation part of the model, or the dispersion model be returned?
+Applies to models with zero-inflation and/or dispersion component. \code{component}
 may be one of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or
 \code{"all"} (default). May be abbreviated.}
 
@@ -110,17 +106,17 @@ may be one of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"}, \code{"
 \code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
 on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
 \code{"pseudo"}. See 'Details' in \code{\link[=standardize_parameters]{standardize_parameters()}}.
-\strong{Important:}
+\strong{Importantly}:
 \itemize{
-\item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
+\item The \code{"refit"} method does \emph{not} standardize categorical predictors (i.e.
 factors), which may be a different behaviour compared to other R packages
 (such as \strong{lm.beta}) or other software packages (like SPSS). to mimic
 such behaviours, either use \code{standardize="basic"} or standardize the data
 with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed
-effects will be returned.
-\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of standardized parameters only
-works when \code{standardize="refit"}.
+effects will be standardized.
+\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of
+standardized parameters only works when \code{standardize="refit"}.
 }}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
@@ -164,8 +160,6 @@ names.}
 
 \item{drop}{See \code{keep}.}
 
-\item{parameters}{Deprecated, alias for \code{keep}.}
-
 \item{summary}{Logical, if \code{TRUE}, prints summary information about the
 model (model formula, number of observations, residual standard deviation
 and more).}
@@ -174,8 +168,7 @@ and more).}
 
 \item{...}{Arguments passed to or from other methods. For instance, when
 \code{bootstrap = TRUE}, arguments like \code{type} or \code{parallel} are
-passed down to \code{bootstrap_model()}, and arguments like \code{ci_method}
-are passed down to \code{\link[bayestestR:describe_posterior]{bayestestR::describe_posterior()}}.}
+passed down to \code{bootstrap_model()}.}
 }
 \value{
 A data frame of indices related to the model's parameters.

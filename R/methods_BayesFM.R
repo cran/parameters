@@ -24,12 +24,12 @@ model_parameters.befa <- function(model,
                                   sort = FALSE,
                                   centrality = "median",
                                   dispersion = FALSE,
-                                  ci = .95,
+                                  ci = 0.95,
                                   ci_method = "eti",
                                   test = NULL,
                                   verbose = TRUE,
                                   ...) {
-  if (!attr(model, "post.column.switch") | !attr(model, "post.sign.switch")) {
+  if (!attr(model, "post.column.switch") || !attr(model, "post.sign.switch")) {
     insight::check_if_installed("BayesFM")
     if (!attr(model, "post.column.switch")) model <- BayesFM::post.column.switch(model)
     if (!attr(model, "post.sign.switch")) model <- BayesFM::post.sign.switch(model)

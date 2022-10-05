@@ -1,7 +1,7 @@
 #' Standard Errors
 #'
 #' `standard_error()` attempts to return standard errors of model
-#' parameters
+#' parameters.
 #'
 #' @param model A model.
 #' @param force Logical, if `TRUE`, factors are converted to numerical
@@ -16,9 +16,12 @@
 #'  * A covariance matrix
 #'  * A function which returns a covariance matrix (e.g., `stats::vcov()`)
 #'  * A string which indicates the kind of uncertainty estimates to return.
-#'    - Heteroskedasticity-consistent: `"vcovHC"`, `"HC"`, `"HC0"`, `"HC1"`, `"HC2"`, `"HC3"`, `"HC4"`, `"HC4m"`, `"HC5"`. See `?sandwich::vcovHC`.
-#'    - Cluster-robust: `"vcovCR"`, `"CR0"`, `"CR1"`, `"CR1p"`, `"CR1S"`, `"CR2"`, `"CR3"`. See `?clubSandwich::vcovCR`.
-#'    - Bootstrap: `"vcovBS"`, `"xy"`, `"residual"`, `"wild"`, `"mammen"`, `"webb"`. See `?sandwich::vcovBS`.
+#'    - Heteroskedasticity-consistent: `"vcovHC"`, `"HC"`, `"HC0"`, `"HC1"`,
+#'      `"HC2"`, `"HC3"`, `"HC4"`, `"HC4m"`, `"HC5"`. See `?sandwich::vcovHC`.
+#'    - Cluster-robust: `"vcovCR"`, `"CR0"`, `"CR1"`, `"CR1p"`, `"CR1S"`, `"CR2"`,
+#'      `"CR3"`. See `?clubSandwich::vcovCR`.
+#'    - Bootstrap: `"vcovBS"`, `"xy"`, `"residual"`, `"wild"`, `"mammen"`, `"webb"`.
+#'      See `?sandwich::vcovBS`.
 #'    - Other `sandwich` package functions: `"vcovHAC"`, `"vcovPC"`, `"vcovCL"`, `"vcovPL"`.
 #' @param vcov_args List of arguments to be passed to the function identified by
 #'   the `vcov` argument. This function is typically supplied by the **sandwich**
@@ -72,8 +75,10 @@ standard_error.default <- function(model,
                                    vcov_args = NULL,
                                    verbose = TRUE,
                                    ...) {
-  dots <- list(...)
+  # check for valid input
+  .is_model_valid(model)
 
+  dots <- list(...)
   se <- NULL
 
   # vcov: matrix

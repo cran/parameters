@@ -3,7 +3,7 @@
 #' @rdname model_parameters.averaging
 #' @export
 model_parameters.betareg <- function(model,
-                                     ci = .95,
+                                     ci = 0.95,
                                      bootstrap = FALSE,
                                      iterations = 1000,
                                      component = c("conditional", "precision", "all"),
@@ -52,7 +52,7 @@ model_parameters.betareg <- function(model,
 
 #' @export
 ci.betareg <- function(x,
-                       ci = .95,
+                       ci = 0.95,
                        component = "all",
                        verbose = TRUE,
                        ...) {
@@ -145,7 +145,7 @@ simulate_model.betareg <- function(model,
                                    component = c("all", "conditional", "precision"),
                                    ...) {
   component <- match.arg(component)
-  out <- .simulate_model(model, iterations, component = component)
+  out <- .simulate_model(model, iterations, component = component, ...)
 
   class(out) <- c("parameters_simulate_model", class(out))
   attr(out, "object_name") <- insight::safe_deparse(substitute(model))

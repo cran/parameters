@@ -31,6 +31,10 @@ format.parameters_model <- function(x,
     groups <- attributes(x)$coef_groups
   }
 
+  # for the current HTML backend we use (package "gt"), we cannot change
+  # the column header for subtables, so we need to remove the attributes
+  # for the "Coefficient" column here, which else allows us to use different
+  # column labels for subtables by model components
   if (identical(format, "html")) {
     coef_name <- NULL
     coef_name2 <- NULL
@@ -39,8 +43,12 @@ format.parameters_model <- function(x,
     attr(x, "zi_coefficient_name") <- NULL
   }
 
-  # remove method for htest
-  if (!is.null(m_class) && any(m_class %in% c("BFBayesFactor", "htest", "rma", "t1way", "yuen", "PMCMR", "osrt", "trendPMCMR", "anova", "afex_aov"))) {
+  # remove method columns for htest and friends - this should be printed as footer
+  if (!is.null(m_class) &&
+    any(m_class %in% c(
+      "BFBayesFactor", "htest", "rma", "t1way", "yuen",
+      "PMCMR", "osrt", "trendPMCMR", "anova", "afex_aov"
+    ))) {
     x$Method <- NULL
     x$Alternative <- NULL
   }
@@ -72,32 +80,78 @@ format.parameters_model <- function(x,
     if (!is.null(x$Group) && !is.null(x$Effects)) {
       ran_pars <- which(x$Effects == "random")
       stddevs <- grepl("^SD \\(", x$Parameter[ran_pars])
-      x$Parameter[ran_pars[stddevs]] <- paste0(gsub("(.*)\\)", "\\1", x$Parameter[ran_pars[stddevs]]), ": ", x$Group[ran_pars[stddevs]], ")")
+      x$Parameter[ran_pars[stddevs]] <- paste0(
+        gsub("(.*)\\)", "\\1", x$Parameter[ran_pars[stddevs]]),
+        ": ",
+        x$Group[ran_pars[stddevs]],
+        ")"
+      )
       corrs <- grepl("^Cor \\(", x$Parameter[ran_pars])
-      x$Parameter[ran_pars[corrs]] <- paste0(gsub("(.*)\\)", "\\1", x$Parameter[ran_pars[corrs]]), ": ", x$Group[ran_pars[corrs]], ")")
+      x$Parameter[ran_pars[corrs]] <- paste0(
+        gsub("(.*)\\)", "\\1", x$Parameter[ran_pars[corrs]]),
+        ": ",
+        x$Group[ran_pars[corrs]],
+        ")"
+      )
       x$Parameter[x$Parameter == "SD (Observations: Residual)"] <- "SD (Residual)"
       x$Group <- NULL
     }
   }
 
-  # group parameters
+  # group parameters - this function find those parameters that should be
+  # grouped, reorders parameters into groups and indents lines that belong
+  # to one group, adding a header for each group
   if (!is.null(groups)) {
     x <- .parameter_groups(x, groups)
   }
   indent_groups <- attributes(x)$indent_groups
   indent_rows <- attributes(x)$indent_rows
 
-  # prepare output, to have in shape for printing
+  # prepare output, to have in shape for printing. this function removes
+  # empty columns, or selects only those columns that should be printed
   x <- .prepare_x_for_print(x, select, coef_name, s_value)
 
   # check whether to split table by certain factors/columns (like component, response...)
   split_by <- .prepare_splitby_for_print(x)
 
-  # print everything now...
+  # format everything now...
   if (split_components && !is.null(split_by) && length(split_by)) {
-    formatted_table <- .format_columns_multiple_components(x, pretty_names, split_column = split_by, digits = digits, ci_digits = ci_digits, p_digits = p_digits, coef_column = coef_name, format = format, ci_width = ci_width, ci_brackets = ci_brackets, zap_small = zap_small, ...)
+    # this function mainly sets the appropriate column names for each
+    # "sub table" (i.e. we print a table for each model component, like count,
+    # zero-inflation, smooth, random, ...) and formats some parameter labels.
+    # moreover, insight::format_table() is called to do the final formatting
+    # and .format_model_component_header() is called to set captions for each
+    # "sub table".
+    formatted_table <- .format_columns_multiple_components(
+      x,
+      pretty_names,
+      split_column = split_by,
+      digits = digits,
+      ci_digits = ci_digits,
+      p_digits = p_digits,
+      coef_column = coef_name,
+      format = format,
+      ci_width = ci_width,
+      ci_brackets = ci_brackets,
+      zap_small = zap_small,
+      ...
+    )
   } else {
-    formatted_table <- .format_columns_single_component(x, pretty_names = pretty_names, digits = digits, ci_width = ci_width, ci_brackets = ci_brackets, ci_digits = ci_digits, p_digits = p_digits, format = format, coef_name = coef_name, zap_small = zap_small, ...)
+    # for tables that don't have multiple components, formatting is rather
+    # easy, since we don't need to split the data frame into "sub tables"
+    formatted_table <- .format_columns_single_component(
+      x,
+      pretty_names = pretty_names,
+      digits = digits,
+      ci_width = ci_width,
+      ci_brackets = ci_brackets,
+      ci_digits = ci_digits,
+      p_digits = p_digits,
+      format = format,
+      coef_name = coef_name,
+      zap_small = zap_small,
+      ...
+    )
   }
 
   # remove unique columns
@@ -115,6 +169,18 @@ format.parameters_model <- function(x,
     attr(formatted_table, "indent_groups") <- NULL
   } else if (!is.null(indent_groups)) {
     attr(formatted_table, "indent_groups") <- indent_groups
+  }
+
+  # vertical layout possible, if these have just one row
+  if (identical(list(...)$layout, "vertical")) {
+    if ("Parameter" %in% colnames(formatted_table)) {
+      new_colnames <- c("", formatted_table$Parameter)
+      formatted_table$Parameter <- NULL
+    } else {
+      new_colnames <- c("Type", paste0("Value ", seq_len(nrow(formatted_table))))
+    }
+    formatted_table <- datawizard::rownames_as_column(as.data.frame(t(formatted_table)), "Type")
+    colnames(formatted_table) <- new_colnames
   }
 
   formatted_table
@@ -157,9 +223,16 @@ format.compare_parameters <- function(x,
 
   out <- data.frame(
     Parameter = x$Parameter,
+    Effects = x$Effects,
     Component = x$Component,
     stringsAsFactors = FALSE
   )
+
+  # remove zi-suffix if we split components anyway
+  if (isTRUE(split_components)) {
+    out$Parameter <- insight::trim_ws(gsub(" (zi)", "", out$Parameter, fixed = TRUE))
+    out$Effects <- NULL
+  }
 
   # save model names
   models <- attributes(x)$model_names
@@ -172,6 +245,17 @@ format.compare_parameters <- function(x,
     groups <- parameters_attributes[[1]]$coef_groups
   }
 
+  # locate random effects rows
+  ran_pars <- which(x$Effects == "random")
+
+  # find all random effect groups
+  group_cols <- grepl("^Group\\.", colnames(x))
+  if (any(group_cols)) {
+    ran_groups <- unique(unlist(lapply(x[group_cols], insight::compact_character)))
+  } else {
+    ran_groups <- NULL
+  }
+
   for (i in models) {
     # each column is suffixed with ".model_name", so we extract
     # columns for each model separately here
@@ -180,13 +264,75 @@ format.compare_parameters <- function(x,
     # since we now have the columns for a single model, we clean the
     # column names (i.e. remove suffix), so we can use "format_table" function
     colnames(cols) <- gsub(pattern, "", colnames(cols))
+    # check if we have mixed models with random variance parameters
+    # in such cases, we don't need the group-column, but we rather
+    # merge it with the parameter column
+    if (!is.null(cols$Group) && length(ran_pars) && !is.null(ran_groups) && length(ran_groups)) {
+      # ran_pars has row indices for *all* models in this function -
+      # make sure we have only valid rows for this particular model
+      ran_pars_rows <- ran_pars[ran_pars %in% which(nchar(cols$Group) > 0)]
+      # find SD random parameters
+      stddevs <- grepl("^SD \\(", out$Parameter[ran_pars_rows])
+      # check if we already fixed that name in a previous loop
+      fixed_name <- unlist(lapply(ran_groups, function(g) {
+        which(grepl(g, out$Parameter[ran_pars_rows[stddevs]], fixed = TRUE))
+      }))
+      if (length(fixed_name)) {
+        stddevs[fixed_name] <- FALSE
+      }
+      # collapse parameter name with RE grouping factor
+      if (length(stddevs)) {
+        out$Parameter[ran_pars_rows[stddevs]] <- paste0(
+          gsub("(.*)\\)", "\\1", out$Parameter[ran_pars_rows[stddevs]]),
+          ": ",
+          cols$Group[ran_pars_rows[stddevs]],
+          ")"
+        )
+      }
+      # same for correlations
+      corrs <- grepl("^Cor \\(", out$Parameter[ran_pars_rows])
+      # check if we already fixed that name in a previous loop
+      fixed_name <- unlist(lapply(ran_groups, function(g) {
+        which(grepl(g, out$Parameter[ran_pars_rows[corrs]], fixed = TRUE))
+      }))
+      if (length(fixed_name)) {
+        corrs[fixed_name] <- FALSE
+      }
+      # collapse parameter name with RE grouping factor
+      if (length(corrs)) {
+        out$Parameter[ran_pars_rows[corrs]] <- paste0(
+          gsub("(.*)\\)", "\\1", out$Parameter[ran_pars_rows[corrs]]),
+          ": ",
+          cols$Group[ran_pars_rows[corrs]],
+          ")"
+        )
+      }
+      out$Parameter[out$Parameter == "SD (Observations: Residual)"] <- "SD (Residual)"
+      cols$Group <- NULL
+    }
     # save p-stars in extra column
     cols$p_stars <- insight::format_p(cols$p, stars = TRUE, stars_only = TRUE)
-    cols <- insight::format_table(cols, digits = digits, ci_width = ci_width, ci_brackets = ci_brackets, ci_digits = ci_digits, p_digits = p_digits, zap_small = zap_small)
+    cols <- insight::format_table(
+      cols,
+      digits = digits,
+      ci_width = ci_width,
+      ci_brackets = ci_brackets,
+      ci_digits = ci_digits,
+      p_digits = p_digits,
+      zap_small = zap_small,
+      ...
+    )
     out <- cbind(out, .format_output_style(cols, style, format, i))
   }
 
-  # group parameters
+  # sort by effects and component
+  if (isFALSE(split_components)) {
+    out <- datawizard::data_arrange(out, c("Effects", "Component"))
+  }
+
+  # group parameters - this function find those parameters that should be
+  # grouped, reorders parameters into groups and indents lines that belong
+  # to one group, adding a header for each group
   if (!is.null(groups)) {
     out <- .parameter_groups(out, groups)
   }
@@ -197,7 +343,7 @@ format.compare_parameters <- function(x,
   # check whether to split table by certain factors/columns (like component, response...)
   split_by <- split_column <- .prepare_splitby_for_print(x)
 
-  if (length(split_by) > 0) {
+  if (length(split_by) > 0 && isTRUE(split_components)) {
     # set up split-factor
     if (length(split_column) > 1) {
       split_by <- lapply(split_column, function(i) x[[i]])
@@ -208,12 +354,33 @@ format.compare_parameters <- function(x,
 
     # make sure we have correct sorting here...
     formatted_table <- split(out, f = split_by)
-    formatted_table <- lapply(formatted_table, function(i) {
+    formatted_table <- lapply(names(formatted_table), function(tab) {
+      i <- formatted_table[[tab]]
       # remove unique columns
       if (insight::n_unique(i$Component) == 1) i$Component <- NULL
       if (insight::n_unique(i$Effects) == 1) i$Effects <- NULL
+      # format table captions for sub tables
+      table_caption <- .format_model_component_header(
+        x, type = tab, split_column = tab, is_zero_inflated = FALSE,
+        is_ordinal_model = FALSE, is_multivariate = FALSE, ran_pars = FALSE,
+        formatted_table = i
+      )
+      # add as attribute, so table captions are printed
+      if (identical(format, "html")) {
+        i$Component <- table_caption$name
+      } else if (identical(format, "md") || identical(format, "markdown")) {
+        attr(i, "table_caption") <- table_caption$name
+      } else {
+        attr(i, "table_caption") <- c(paste("#", table_caption$name), "blue")
+      }
       i
     })
+
+    # for HTML, bind data frames
+    if (identical(format, "html")) {
+      # fix non-equal length of columns and bind data frames
+      formatted_table <- do.call(rbind, .fix_nonmatching_columns(formatted_table))
+    }
   } else {
     formatted_table <- out
     # remove unique columns
@@ -317,7 +484,18 @@ format.parameters_sem <- function(x,
   if (missing(digits)) digits <- .additional_arguments(x, "digits", 2)
   if (missing(ci_digits)) ci_digits <- .additional_arguments(x, "ci_digits", 2)
   if (missing(p_digits)) p_digits <- .additional_arguments(x, "p_digits", 3)
-  .format_columns_multiple_components(x, pretty_names = TRUE, split_column = "Component", digits = digits, ci_digits = ci_digits, p_digits = p_digits, format = format, ci_width = ci_width, ci_brackets = ci_brackets, ...)
+  .format_columns_multiple_components(
+    x,
+    pretty_names = TRUE,
+    split_column = "Component",
+    digits = digits,
+    ci_digits = ci_digits,
+    p_digits = p_digits,
+    format = format,
+    ci_width = ci_width,
+    ci_brackets = ci_brackets,
+    ...
+  )
 }
 
 
@@ -403,7 +581,7 @@ format.parameters_sem <- function(x,
 # footer: generic text
 .add_footer_text <- function(footer = NULL, text, type = "text") {
   if (!is.null(text)) {
-    if (type == "text" | type == "markdown") {
+    if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
         fill <- "\n"
       } else {
@@ -428,7 +606,7 @@ format.parameters_sem <- function(x,
       res_df <- ""
     }
 
-    if (type == "text" | type == "markdown") {
+    if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
         fill <- "\n"
       } else {
@@ -457,7 +635,7 @@ format.parameters_sem <- function(x,
       }
     )
     if (!is.null(rsq)) {
-      if (type == "text" | type == "markdown") {
+      if (type == "text" || type == "markdown") {
         if (is.null(footer)) {
           fill <- "\n"
         } else {
@@ -476,7 +654,7 @@ format.parameters_sem <- function(x,
 # footer: anova type
 .add_footer_anova_type <- function(footer = NULL, aov_type, type = "text") {
   if (!is.null(aov_type)) {
-    if (type == "text" | type == "markdown") {
+    if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
         fill <- "\n"
       } else {
@@ -494,7 +672,7 @@ format.parameters_sem <- function(x,
 # footer: anova test
 .add_footer_anova_test <- function(footer = NULL, test, type = "text") {
   if (!is.null(test)) {
-    if (type == "text" | type == "markdown") {
+    if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
         fill <- "\n"
       } else {
@@ -512,7 +690,7 @@ format.parameters_sem <- function(x,
 # footer: htest alternative
 .add_footer_alternative <- function(footer = NULL, text_alternative, type = "text") {
   if (!is.null(text_alternative)) {
-    if (type == "text" | type == "markdown") {
+    if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
         fill <- "\n"
       } else {
@@ -530,7 +708,7 @@ format.parameters_sem <- function(x,
 # footer: p-adjustment
 .add_footer_padjust <- function(footer = NULL, p_adjust, type = "text") {
   if (!is.null(p_adjust) && p_adjust != "none") {
-    if (type == "text" | type == "markdown") {
+    if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
         fill <- "\n"
       } else {
@@ -555,7 +733,7 @@ format.parameters_sem <- function(x,
       n <- ""
     }
 
-    if (type == "text" | type == "markdown") {
+    if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
         fill <- "\n"
       } else {
@@ -577,6 +755,7 @@ format.parameters_sem <- function(x,
     ci_method <- .additional_arguments(x, "ci_method", NULL)
     test_statistic <- .additional_arguments(x, "test_statistic", NULL)
     bootstrap <- .additional_arguments(x, "bootstrap", FALSE)
+    simulated <- .additional_arguments(x, "simulated", FALSE)
     residual_df <- .additional_arguments(x, "residual_df", NULL)
     random_variances <- .additional_arguments(x, "ran_pars", FALSE)
     model_class <- .additional_arguments(x, "model_class", NULL)
@@ -602,6 +781,15 @@ format.parameters_sem <- function(x,
         "equal-tailed"
       )
 
+      # sampling method
+      if (isTRUE(bootstrap)) {
+        sampling_method <- "na\u0131ve bootstrap"
+      } else if (isTRUE(simulated)) {
+        sampling_method <- "simulated multivariate normal"
+      } else {
+        sampling_method <- "MCMC"
+      }
+
       string_method <- switch(ci_method,
         "bci" = ,
         "bcai" = "bias-corrected accelerated bootstrap",
@@ -609,7 +797,7 @@ format.parameters_sem <- function(x,
         "ci" = ,
         "quantile" = ,
         "eti" = ,
-        "hdi" = ifelse(isTRUE(bootstrap), "na\u0131ve bootstrap", "MCMC"),
+        "hdi" = sampling_method,
         "normal" = "Wald normal",
         "boot" = "parametric bootstrap",
         "Wald"
@@ -683,8 +871,10 @@ format.parameters_sem <- function(x,
       }
     }
 
-    if (!is.null(msg)) {
+    if (!is.null(msg) && isTRUE(getOption("parameters_warning_exponentiate", TRUE))) {
       message(paste0("\n", msg))
+      # set flag, so message only displayed once per session
+      options("parameters_warning_exponentiate" = FALSE)
     }
   }
 }

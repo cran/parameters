@@ -1,8 +1,71 @@
+# parameters 0.19.0
+
+## Breaking
+
+* Arguments that calculate effectsize in `model_parameters()` for `htest`,
+  Anova objects and objects of class `BFBayesFactor` were revised. Instead of
+  single arguments for the different effectsizes, there is now one argument,
+  `effectsize_type`. The reason behind this change is that meanwhile many
+  new type of effectsizes have been added to the _effectsize_ package, and
+  the generic argument allows to make use of those effect sizes.
+
+* The attribute name in PCA / EFA has been changed from `data_set` to `dataset`.
+
+* The minimum needed R version has been bumped to `3.6`.
+
+* Removed deprecated argument `parameters` from `model_parameters()`.
+
+* `standard_error_robust()`, `ci_robust()` and `p_value_robust()` are now
+  deprecated and superseded by the `vcov` and `vcov_args` arguments in the
+  related methods `standard_error()`, `ci()` and `p_value()`, respectively.
+
+* Following functions were moved from package *parameters* to *performance*:
+  `check_sphericity_bartlett()`, `check_kmo()`, `check_factorstructure()` and
+  `check_clusterstructure()`.
+  
+## Changes to functions
+
+* Added `sparse` option to `principal_components()` for sparse PCA.
+
+* The `pretty_names` argument from the `print()` method can now also be
+  `"labels"`, which will then use variable and value labels (if data is
+  labelled) as pretty names. If no labels were found, default pretty names
+  are used.
+
+* `bootstrap_model()` for models of class `glmmTMB` and `merMod` gains a
+  `cluster` argument to specify optional clusters when the `parallel`
+  option is set to `"snow"`.
+
+* P-value adjustment (argument `p_adjust` in `model_parameters()`) is now
+  performed after potential parameters were removed (using `keep` or `drop`),
+  so adjusted p-values is only applied to the parameters of interest.
+
+* Robust standard errors are now supported for `fixest` models with the `vcov`
+  argument.
+
+* `print()` for `model_parameters()` gains a `footer` argument, which can be
+  used to suppress the footer in the output. Further more, if `footer = ""`
+  or `footer = FALSE` in `print_md()`, no footer is printed.
+
+* `simulate_model()` and `simulate_parameters()` now pass `...` to
+  `insight::get_varcov()`, to allow simulated draws to be based on
+  heteroscedasticity consistent variance covariance matrices.
+
+* The `print()` method for `compare_parameters()` was improved for models with
+  multiple components (e.g., mixed models with fixed and random effects, or
+  models with count- and zero-inflation parts). For these models,
+  `compare_parameters(effects = "all", component = "all")` prints more nicely.
+
+## Bug fixes
+
+* Fix erroneous warning for *p*-value adjustments when the differences between
+  original and adjusted *p*-values were very small.
+
 # parameters 0.18.2
 
 ## New functions
 
-* New function `dominance_analysis()`, to compute dominance analysis 
+* New function `dominance_analysis()`, to compute dominance analysis
   statistics and designations.
 
 ## Changes to functions
@@ -44,20 +107,20 @@
 
 * `model_parameters()` for mixed models gains a `ci_random` argument, to toggle
   whether confidence intervals for random effects parameters should also be
-  computed. Set to `FALSE` if calculation of confidence intervals for random 
+  computed. Set to `FALSE` if calculation of confidence intervals for random
   effects parameters takes too long.
 
 * `ci()` for *glmmTMB* models with `method = "profile"` is now more robust.
 
 ## Bug fixes
 
-* Fixed issue with *glmmTMB* models when calculating confidence 
+* Fixed issue with *glmmTMB* models when calculating confidence
   intervals for random effects failed due to singular fits.
-  
+
 * `display()` now correctly includes custom text and additional information
   in the footer (#722).
 
-* Fixed issue with argument `column_names` in `compare_parameters()` when 
+* Fixed issue with argument `column_names` in `compare_parameters()` when
   strings contained characters that needed to be escaped for regular expressions.
 
 * Fixed issues with unknown arguments in `model_parameters()` for *lavaan* models
@@ -84,10 +147,10 @@
 
 * `model_parameters()` for mixed models from package *lme4* now also reports
   confidence intervals for random effect variances by default. Formerly, CIs
-  were only included when `ci_method` was `"profile"` or `"boot"`. The 
+  were only included when `ci_method` was `"profile"` or `"boot"`. The
   *merDeriv* package is required for this feature.
 
-* `model_parameters()` for `htest` objects now also supports models from 
+* `model_parameters()` for `htest` objects now also supports models from
   `var.test()`.
 
 * Improved support for `anova.rms` models in `model_parameters()`.
@@ -96,12 +159,12 @@
   and `deltaMethods` objects from package *car*.
 
 * `model_parameters()` now checks arguments and informs the user if specific
-  given arguments are not supported for that model class (e.g., `"vcov"` is 
+  given arguments are not supported for that model class (e.g., `"vcov"` is
   currently not supported for models of class *glmmTMB*).
 
 ## Bug fixes
 
-* The `vcov` argument, used for computing robust standard errors, did not 
+* The `vcov` argument, used for computing robust standard errors, did not
   calculate the correct p-values and confidence intervals for models of class
   `lme`.
 
@@ -119,7 +182,7 @@
 * Added options to set defaults for different arguments. Currently supported:
   - `options("parameters_summary" = TRUE/FALSE)`, which sets the default value
     for the `summary` argument in `model_parameters()` for non-mixed models.
-  - `options("parameters_mixed_summary" = TRUE/FALSE)`, which sets the default 
+  - `options("parameters_mixed_summary" = TRUE/FALSE)`, which sets the default
     value for the `summary` argument in `model_parameters()` for mixed models.
 
 * Minor improvements for `print()` methods.
@@ -157,8 +220,8 @@
 
 * `model_parameters()` for mixed models gains an `include_sigma` argument. If
   `TRUE`, adds the residual variance, computed from the random effects variances,
-  as an attribute to the returned data frame. Including sigma was the default 
-  behaviour, but now defaults to `FALSE` and is only included when 
+  as an attribute to the returned data frame. Including sigma was the default
+  behaviour, but now defaults to `FALSE` and is only included when
   `include_sigma = TRUE`, because the calculation was very time consuming.
 
 * `model_parameters()` for `merMod` models now also computes CIs for the random
@@ -178,14 +241,14 @@
 * `model_prameters()` for `MixMod` objects (package *GLMMadaptive*) gains a
   `robust` argument, to compute robust standard errors.
 
-## Bug fixes 
+## Bug fixes
 
 * Fixed bug with `ci()` for class `merMod` when `method="boot"`.
 
-* Fixed issue with correct association of components for ordinal models of 
+* Fixed issue with correct association of components for ordinal models of
   classes `clm` and `clm2`.
 
-* Fixed issues in `random_parameters()` and  `model_parameters()` for mixed 
+* Fixed issues in `random_parameters()` and  `model_parameters()` for mixed
   models without random intercept.
 
 * Confidence intervals for random parameters in `model_parameters()` failed for

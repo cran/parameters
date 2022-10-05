@@ -66,7 +66,7 @@
 #' }
 #' @export
 compare_parameters <- function(...,
-                               ci = .95,
+                               ci = 0.95,
                                effects = "fixed",
                                component = "conditional",
                                standardize = NULL,
@@ -75,9 +75,9 @@ compare_parameters <- function(...,
                                p_adjust = NULL,
                                style = NULL,
                                column_names = NULL,
+                               pretty_names = TRUE,
                                keep = NULL,
                                drop = NULL,
-                               parameters = keep,
                                verbose = TRUE,
                                df_method = ci_method) {
   models <- list(...)
@@ -120,10 +120,10 @@ compare_parameters <- function(...,
   supported_models <- sapply(models, function(i) insight::is_model_supported(i) | inherits(i, "lavaan") | inherits(i, "parameters_model"))
 
   if (!all(supported_models)) {
-    warning(insight::format_message(
+    insight::format_warning(
       sprintf("Following objects are not supported: %s", paste0(model_names[!supported_models], collapse = ", ")),
       "Dropping unsupported models now."
-    ), call. = FALSE)
+    )
     models <- models[supported_models]
     model_names <- model_names[supported_models]
   }
@@ -137,7 +137,7 @@ compare_parameters <- function(...,
   if (!is.null(column_names)) {
     if (length(column_names) != length(model_names)) {
       if (isTRUE(verbose)) {
-        warning("Number of column names does not match number of models.", call. = FALSE)
+        insight::format_warning("Number of column names does not match number of models.")
       }
     } else {
       model_names <- column_names
@@ -145,7 +145,7 @@ compare_parameters <- function(...,
   }
 
   # iterate all models and create list of model parameters
-  m <- lapply(1:length(models), function(i) {
+  m <- lapply(seq_along(models), function(i) {
     model <- models[[i]]
     model_name <- model_names[[i]]
 
@@ -183,11 +183,14 @@ compare_parameters <- function(...,
     }
 
     # set pretty parameter names
-    dat <- .set_pretty_names(dat)
+    dat <- .set_pretty_names(dat, pretty_names)
 
-    # make sure we have a component-column, for merging
+    # make sure we have a component- and effects column, for merging
     if (!"Component" %in% colnames(dat)) {
       dat$Component <- "conditional"
+    }
+    if (!"Effects" %in% colnames(dat)) {
+      dat$Effects <- "fixed"
     }
 
     # add zi-suffix to parameter names
@@ -196,7 +199,7 @@ compare_parameters <- function(...,
     }
 
     # add suffix
-    ignore <- colnames(dat) %in% c("Parameter", "Component")
+    ignore <- colnames(dat) %in% c("Parameter", "Component", "Effects")
     colnames(dat)[!ignore] <- paste0(colnames(dat)[!ignore], ".", model_name)
 
     # save model number, for sorting
@@ -210,7 +213,7 @@ compare_parameters <- function(...,
   names(object_attributes) <- model_names
 
   # merge all data frames
-  all_models <- suppressWarnings(Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component")), m))
+  all_models <- suppressWarnings(Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component", "Effects")), m))
 
   # find columns with model numbers and create new variable "params_order",
   # which is pasted together of all model-column indices. Take lowest index of
@@ -238,7 +241,14 @@ compare_models <- compare_parameters
 # helper ----------------------------
 
 
-.set_pretty_names <- function(x) {
+.set_pretty_names <- function(x, pretty_names) {
+  # check if pretty names should be replaced by value labels
+  # (if we have labelled data)
+  if (isTRUE(getOption("parameters_labels", FALSE)) || identical(pretty_names, "labels")) {
+    attr(x, "pretty_names") <- attr(x, "pretty_labels", exact = TRUE)
+    pretty_names <- TRUE
+  }
+
   att <- attributes(x)
 
   if (!is.null(att$pretty_names)) {

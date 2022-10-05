@@ -23,10 +23,14 @@
 #' @export
 model_parameters.hclust <- function(model, data = NULL, clusters = NULL, ...) {
   if (is.null(data)) {
-    stop("This function requires the data used to compute the clustering to be provided via 'data' as it is not accessible from the clustering object itself.")
+    insight::format_error(
+      "This function requires the data used to compute the clustering to be provided via `data` as it is not accessible from the clustering object itself."
+    )
   }
   if (is.null(clusters)) {
-    stop("This function requires a vector of clusters assignments of same length as data to be passed, as it is not contained in the clustering object itself.")
+    insight::format_error(
+      "This function requires a vector of clusters assignments of same length as data to be passed, as it is not contained in the clustering object itself."
+    )
   }
 
   params <- cluster_centers(data, clusters, ...)
@@ -85,7 +89,9 @@ model_parameters.hclust <- function(model, data = NULL, clusters = NULL, ...) {
 #' @export
 model_parameters.pvclust <- function(model, data = NULL, clusters = NULL, ci = 0.95, ...) {
   if (is.null(data)) {
-    stop("This function requires the data used to compute the clustering to be provided via 'data' as it is not accessible from the clustering object itself.")
+    insight::format_error(
+      "This function requires the data used to compute the clustering to be provided via `data` as it is not accessible from the clustering object itself."
+    )
   }
 
   if (is.null(clusters)) {
@@ -113,7 +119,7 @@ model_parameters.pvclust <- function(model, data = NULL, clusters = NULL, ci = 0
 
   # Assign clusters
   out <- data.frame()
-  for (cluster in 1:length(rez$clusters)) {
+  for (cluster in seq_along(rez$clusters)) {
     out <- rbind(out, data.frame(Cluster = cluster, Row = rez$clusters[[cluster]], stringsAsFactors = FALSE), make.row.names = FALSE, stringsAsFactors = FALSE)
   }
 

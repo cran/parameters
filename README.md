@@ -2,7 +2,7 @@
 # parameters <img src="man/figures/logo.png" align="right" height="139" />
 
 [![DOI](https://joss.theoj.org/papers/10.21105/joss.02445/status.svg)](https://doi.org/10.21105/joss.02445)
-[![downloads](http://cranlogs.r-pkg.org/badges/parameters)](https://cran.r-project.org/package=parameters)
+[![downloads](https://cranlogs.r-pkg.org/badges/parameters)](https://cran.r-project.org/package=parameters)
 [![total](https://cranlogs.r-pkg.org/badges/grand-total/parameters)](https://cranlogs.r-pkg.org/)
 [![status](https://tinyverse.netlify.com/badge/parameters)](https://CRAN.R-project.org/package=parameters)
 
@@ -27,30 +27,23 @@ of (model) objects from many different packages.
 
 ## Installation
 
-[![CRAN](http://www.r-pkg.org/badges/version/parameters)](https://cran.r-project.org/package=parameters)
+[![CRAN](https://www.r-pkg.org/badges/version/parameters)](https://cran.r-project.org/package=parameters)
 [![parameters status
 badge](https://easystats.r-universe.dev/badges/parameters)](https://easystats.r-universe.dev)
-[![R-check](https://github.com/easystats/parameters/workflows/R-check/badge.svg?branch=main)](https://github.com/easystats/parameters/actions)
+[![R-CMD-check](https://github.com/easystats/parameters/workflows/R-CMD-check/badge.svg?branch=main)](https://github.com/easystats/parameters/actions)
 
-Run the following to install the stable release of **parameters** from
-CRAN:
+| Type        | Source       | Command                                                                      |
+|-------------|--------------|------------------------------------------------------------------------------|
+| Release     | CRAN         | `install.packages("parameters")`                                             |
+| Development | r - universe | `install.packages("parameters", repos = "https://easystats.r-universe.dev")` |
+| Development | GitHub       | `remotes::install_github("easystats/parameters")`                            |
 
-``` r
-install.packages("parameters")
-```
-
-Or this one to install the latest development version from R-universe…
-
-``` r
-install.packages("parameters", repos = "https://easystats.r-universe.dev")
-```
-
-…or from GitHub:
-
-``` r
-install.packages("remotes")
-remotes::install_github("easystats/parameters")
-```
+> **Tip**
+>
+> Instead of `library(parameters)`, use `library(easystats)`. This will
+> make all features of the easystats-ecosystem available.
+>
+> To stay updated, use `easystats::install_latest()`.
 
 ## Documentation
 
@@ -84,7 +77,7 @@ these vignettes:
 
 In case you want to file an issue or contribute in another way to the
 package, please follow [this
-guide](https://github.com/easystats/parameters/blob/master/.github/CONTRIBUTING.md).
+guide](https://github.com/easystats/parameters/blob/main/.github/CONTRIBUTING.md).
 For questions about the functionality, you may either contact us via
 email or also file an issue.
 
@@ -92,7 +85,7 @@ email or also file an issue.
 
 ## Model’s parameters description
 
-<img src="man/figures/figure1.png" style="display: block; margin: auto;" />
+<img src="man/figures/figure1.png" width="100%" style="display: block; margin: auto;" />
 
 The
 [`model_parameters()`](https://easystats.github.io/parameters/articles/model_parameters.html)
@@ -148,7 +141,7 @@ model_parameters(model, standardize = "refit")
 ``` r
 library(lme4)
 
-model <- lmer(Sepal.Width ~ Petal.Length + (1|Species), data = iris)
+model <- lmer(Sepal.Width ~ Petal.Length + (1 | Species), data = iris)
 
 # model parameters with CI, df and p-values based on Wald approximation
 model_parameters(model, effects = "all")
@@ -212,15 +205,15 @@ model_parameters(model)
 
 ## Variable and parameters selection
 
-<img src="man/figures/figure2.png" style="display: block; margin: auto;" />
+<img src="man/figures/figure2.png" width="100%" style="display: block; margin: auto;" />
 
 [`select_parameters()`](https://easystats.github.io/parameters/articles/parameters_selection.html)
 can help you quickly select and retain the most relevant predictors
 using methods tailored for the model type.
 
 ``` r
-lm(disp ~ ., data = mtcars) |> 
-  select_parameters() |> 
+lm(disp ~ ., data = mtcars) |>
+  select_parameters() |>
   model_parameters()
 #> Parameter   | Coefficient |     SE |            95% CI | t(26) |      p
 #> -----------------------------------------------------------------------
@@ -241,10 +234,10 @@ citation("parameters")
 
 To cite package 'parameters' in publications use:
 
-  Lüdecke D, Ben-Shachar M, Patil I, Makowski D (2020). "Extracting, Computing and
-  Exploring the Parameters of Statistical Models using R." _Journal of Open Source
-  Software_, *5*(53), 2445. doi:10.21105/joss.02445
-  <https://doi.org/10.21105/joss.02445>.
+  Lüdecke D, Ben-Shachar M, Patil I, Makowski D (2020). "Extracting,
+  Computing and Exploring the Parameters of Statistical Models using
+  R." _Journal of Open Source Software_, *5*(53), 2445.
+  doi:10.21105/joss.02445 <https://doi.org/10.21105/joss.02445>.
 
 A BibTeX entry for LaTeX users is
 

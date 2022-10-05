@@ -1,3 +1,74 @@
+#' Get Scores from Principal Component Analysis (PCA)
+#'
+#' `get_scores()` takes `n_items` amount of items that load the most
+#' (either by loading cutoff or number) on a component, and then computes their
+#' average.
+#'
+#' @param x An object returned by [principal_components()].
+#' @param n_items Number of required (i.e. non-missing) items to build the sum
+#'   score. If `NULL`, the value is chosen to match half of the number of
+#'   columns in a data frame.
+#'
+#' @details `get_scores()` takes the results from
+#'   [principal_components()] and extracts the variables for each
+#'   component found by the PCA. Then, for each of these "subscales", row means
+#'   are calculated (which equals adding up the single items and dividing by the
+#'   number of items). This results in a sum score for each component from the
+#'   PCA, which is on the same scale as the original, single items that were
+#'   used to compute the PCA.
+#'
+#' @examples
+#' if (require("psych")) {
+#'   pca <- principal_components(mtcars[, 1:7], n = 2, rotation = "varimax")
+#'
+#'   # PCA extracted two components
+#'   pca
+#'
+#'   # assignment of items to each component
+#'   closest_component(pca)
+#'
+#'   # now we want to have sum scores for each component
+#'   get_scores(pca)
+#'
+#'   # compare to manually computed sum score for 2nd component, which
+#'   # consists of items "hp" and "qsec"
+#'   (mtcars$hp + mtcars$qsec) / 2
+#' }
+#' @return A data frame with subscales, which are average sum scores for all
+#'   items from each component.
+#' @export
+get_scores <- function(x, n_items = NULL) {
+  subscales <- closest_component(x)
+  dataset <- attributes(x)$dataset
+
+  out <- lapply(sort(unique(subscales)), function(.subscale) {
+    columns <- names(subscales)[subscales == .subscale]
+    items <- dataset[columns]
+
+    if (is.null(n_items)) {
+      .n_items <- round(ncol(items) / 2)
+    } else {
+      .n_items <- n_items
+    }
+
+    apply(items, 1, function(i) {
+      if (sum(!is.na(i)) >= .n_items) {
+        mean(i, na.rm = TRUE)
+      } else {
+        NA
+      }
+    })
+  })
+
+  out <- as.data.frame(do.call(cbind, out))
+  colnames(out) <- sprintf("Component_%i", seq_len(ncol(out)))
+
+  out
+}
+
+
+
+
 # model parameters -----------------------------------------------------------------
 
 
@@ -76,23 +147,43 @@ predict.parameters_efa <- function(object,
                                    names = NULL,
                                    keep_na = TRUE,
                                    ...) {
+  attri <- attributes(object)
   if (is.null(newdata)) {
-    out <- as.data.frame(attributes(object)$scores)
-    if (isTRUE(keep_na)) {
-      out <- .merge_na(object, out)
+    if ("scores" %in% names(attri)) {
+      out <- as.data.frame(attri$scores)
+      if (isTRUE(keep_na)) {
+        out <- .merge_na(object, out)
+      }
+    } else {
+      if ("dataset" %in% names(attri)) {
+        out <- as.data.frame(stats::predict(attri$model, data = attri$dataset))
+      } else {
+        insight::format_error(
+          "Could not retrieve data nor model. Please report an issue on {.url https://github.com/easystats/parameters/issues}."
+        )
+      }
     }
   } else {
-    if (inherits(attributes(object)$model, c("psych", "fa"))) {
+    if (inherits(attri$model, c("psych", "fa"))) {
+      # Clean-up newdata (keep only the variables used in the model)
+      newdata <- newdata[names(attri$model$complexity)] # assuming "complexity" info is there
       # psych:::predict.fa(object, data)
-      out <- as.data.frame(stats::predict(attributes(object)$model, data = newdata))
+      out <- as.data.frame(stats::predict(attri$model, data = newdata))
+    } else if (inherits(attri$model, c("spca"))) {
+      # https://github.com/erichson/spca/issues/7
+      newdata <- newdata[names(attri$model$center)]
+      if(attri$standardize == TRUE) {
+        newdata <- sweep(newdata, MARGIN = 2, STATS = attri$model$center, FUN = "-", check.margin = TRUE)
+        newdata <- sweep(newdata, MARGIN = 2, STATS = attri$model$scale, FUN = "/", check.margin = TRUE)
+      }
+      out <- as.matrix(newdata) %*% as.matrix(attri$model$loadings)
+      out <- stats::setNames(as.data.frame(out), paste0("Component", seq_len(ncol(out))))
     } else {
-      out <- as.data.frame(stats::predict(attributes(object)$model, newdata = newdata, ...))
+      out <- as.data.frame(stats::predict(attri$model, newdata = newdata, ...))
     }
   }
   if (!is.null(names)) {
-    names(out)[1:length(c(names))] <- names
-  } else {
-    names(out) <- names(get_scores(object))
+    names(out)[seq_along(names)] <- names
   }
   row.names(out) <- NULL
   out
@@ -107,10 +198,12 @@ predict.parameters_pca <- predict.parameters_efa
 .merge_na <- function(object, out) {
   compl_cases <- attributes(object)$complete_cases
   if (is.null(compl_cases)) {
-    warning(insight::format_message("Could not retrieve information about missing data. Returning only complete cases."), call. = FALSE)
+    insight::format_warning(
+      "Could not retrieve information about missing data. Returning only complete cases."
+    )
   } else {
-    original_data <- data.frame(.parameters_merge_id = 1:length(compl_cases))
-    out$.parameters_merge_id <- (1:nrow(original_data))[compl_cases]
+    original_data <- data.frame(.parameters_merge_id = seq_along(compl_cases))
+    out$.parameters_merge_id <- (seq_len(nrow(original_data)))[compl_cases]
     out <- merge(original_data, out, by = ".parameters_merge_id", all = TRUE, sort = TRUE)
     out$.parameters_merge_id <- NULL
   }
@@ -128,12 +221,24 @@ predict.parameters_pca <- predict.parameters_efa
 #' @export
 print.parameters_efa_summary <- function(x, digits = 3, ...) {
   if ("Parameter" %in% names(x)) {
-    x$Parameter <- c("Eigenvalues", "Variance Explained", "Variance Explained (Cumulative)", "Variance Explained (Proportion)")
+    x$Parameter <- c(
+      "Eigenvalues", "Variance Explained", "Variance Explained (Cumulative)",
+      "Variance Explained (Proportion)"
+    )
   } else if ("Component" %in% names(x)) {
-    names(x) <- c("Component", "Eigenvalues", "Variance Explained", "Variance Explained (Cumulative)", "Variance Explained (Proportion)")
+    names(x) <- c(
+      "Component", "Eigenvalues", "Variance Explained",
+      "Variance Explained (Cumulative)", "Variance Explained (Proportion)"
+    )
   }
 
-  cat(insight::export_table(x, digits = digits, caption = c("# (Explained) Variance of Components", "blue"), format = "text", ...))
+  cat(insight::export_table(
+    x,
+    digits = digits,
+    caption = c("# (Explained) Variance of Components", "blue"),
+    format = "text",
+    ...
+  ))
   invisible(x)
 }
 
@@ -181,7 +286,10 @@ print.parameters_omega <- function(x, ...) {
 #' @export
 print.parameters_omega_summary <- function(x, ...) {
   orig_x <- x
-  names(x) <- c("Composite", "Total Variance (%)", "Variance due to General Factor (%)", "Variance due to Group Factor (%)")
+  names(x) <- c(
+    "Composite", "Total Variance (%)", "Variance due to General Factor (%)",
+    "Variance due to Group Factor (%)"
+  )
   cat(insight::export_table(x))
   invisible(orig_x)
 }
@@ -358,7 +466,7 @@ sort.parameters_pca <- sort.parameters_efa
   items <- table(loads$cluster) # how many items are in each cluster?
   first <- 1
   item <- loads$item
-  for (i in 1:length(items)) {
+  for (i in seq_along(items)) {
     if (items[i] > 0) {
       last <- first + items[i] - 1
       ord <- sort(abs(x[first:last, i]), decreasing = TRUE, index.return = TRUE)
@@ -392,9 +500,9 @@ sort.parameters_pca <- sort.parameters_efa
   }
 
 
-  if (threshold == "max" | threshold >= 1) {
+  if (threshold == "max" || threshold >= 1) {
     if (threshold == "max") {
-      for (row in 1:nrow(loadings)) {
+      for (row in seq_len(nrow(loadings))) {
         maxi <- max(abs(loadings[row, loadings_columns, drop = FALSE]))
         loadings[row, loadings_columns][abs(loadings[row, loadings_columns]) < maxi] <- NA
       }
@@ -429,7 +537,7 @@ closest_component <- function(pca_results) {
 
 .closest_component <- function(loadings, loadings_columns = NULL, variable_names = NULL) {
   if (is.matrix(loadings)) loadings <- as.data.frame(loadings)
-  if (is.null(loadings_columns)) loadings_columns <- 1:ncol(loadings)
+  if (is.null(loadings_columns)) loadings_columns <- seq_len(ncol(loadings))
   if (is.null(variable_names)) variable_names <- row.names(loadings)
   component_columns <- apply(loadings[loadings_columns], 1, function(i) which.max(abs(i)))
   stats::setNames(component_columns, variable_names)

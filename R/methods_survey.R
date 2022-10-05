@@ -3,7 +3,7 @@
 #' @rdname model_parameters.default
 #' @export
 model_parameters.svyglm <- function(model,
-                                    ci = .95,
+                                    ci = 0.95,
                                     ci_method = "wald",
                                     bootstrap = FALSE,
                                     iterations = 1000,
@@ -13,7 +13,9 @@ model_parameters.svyglm <- function(model,
                                     verbose = TRUE,
                                     ...) {
   if (insight::n_obs(model) > 1e4 && ci_method == "likelihood") {
-    message(insight::format_message("Likelihood confidence intervals may take longer time to compute. Use 'ci_method=\"wald\"' for faster computation of CIs."))
+    message(insight::format_message(
+      "Likelihood confidence intervals may take longer time to compute. Use 'ci_method=\"wald\"' for faster computation of CIs."
+    ))
   }
 
   out <- .model_parameters_generic(
@@ -83,7 +85,7 @@ standard_error.svyolr <- standard_error.svyglm
 # confidence intervals -----------------------------------
 
 #' @export
-ci.svyglm <- function(x, ci = .95, method = "wald", ...) {
+ci.svyglm <- function(x, ci = 0.95, method = "wald", ...) {
   method <- match.arg(method, choices = c("wald", "residual", "normal", "likelihood"))
   if (method == "likelihood") {
     out <- lapply(ci, function(i) .ci_likelihood(model = x, ci = i))

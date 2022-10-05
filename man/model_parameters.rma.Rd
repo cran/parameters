@@ -32,17 +32,17 @@ case of bootstrapped frequentist models.}
 \code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
 on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
 \code{"pseudo"}. See 'Details' in \code{\link[=standardize_parameters]{standardize_parameters()}}.
-\strong{Important:}
+\strong{Importantly}:
 \itemize{
-\item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
+\item The \code{"refit"} method does \emph{not} standardize categorical predictors (i.e.
 factors), which may be a different behaviour compared to other R packages
 (such as \strong{lm.beta}) or other software packages (like SPSS). to mimic
 such behaviours, either use \code{standardize="basic"} or standardize the data
 with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed
-effects will be returned.
-\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of standardized parameters only
-works when \code{standardize="refit"}.
+effects will be standardized.
+\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of
+standardized parameters only works when \code{standardize="refit"}.
 }}
 
 \item{exponentiate}{Logical, indicating whether or not to exponentiate the
@@ -65,8 +65,7 @@ for all studies. Else, only parameters for overall-effects are shown.}
 
 \item{...}{Arguments passed to or from other methods. For instance, when
 \code{bootstrap = TRUE}, arguments like \code{type} or \code{parallel} are
-passed down to \code{bootstrap_model()}, and arguments like \code{ci_method}
-are passed down to \code{\link[bayestestR:describe_posterior]{bayestestR::describe_posterior()}}.}
+passed down to \code{bootstrap_model()}.}
 }
 \value{
 A data frame of indices related to the model's parameters.

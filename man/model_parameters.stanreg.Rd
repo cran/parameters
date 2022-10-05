@@ -23,7 +23,7 @@
   dispersion = FALSE,
   ci = 0.95,
   ci_method = "eti",
-  test = c("pd", "rope"),
+  test = "pd",
   rope_range = "default",
   rope_ci = 0.95,
   bf_prior = NULL,
@@ -31,7 +31,6 @@
   priors = TRUE,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -42,7 +41,7 @@
   dispersion = FALSE,
   ci = 0.95,
   ci_method = "eti",
-  test = c("pd", "rope"),
+  test = "pd",
   rope_range = "default",
   rope_ci = 0.95,
   component = "all",
@@ -50,7 +49,6 @@
   standardize = NULL,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -63,7 +61,7 @@
   dispersion = FALSE,
   ci = 0.95,
   ci_method = "eti",
-  test = c("pd", "rope"),
+  test = "pd",
   rope_range = "default",
   rope_ci = 0.95,
   bf_prior = NULL,
@@ -71,7 +69,6 @@
   priors = TRUE,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -82,7 +79,7 @@
   dispersion = FALSE,
   ci = 0.95,
   ci_method = "eti",
-  test = c("pd", "rope"),
+  test = "pd",
   rope_range = "default",
   rope_ci = 0.95,
   bf_prior = NULL,
@@ -95,7 +92,6 @@
   group_level = FALSE,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -108,7 +104,7 @@
   dispersion = FALSE,
   ci = 0.95,
   ci_method = "eti",
-  test = c("pd", "rope"),
+  test = "pd",
   rope_range = "default",
   rope_ci = 0.95,
   bf_prior = NULL,
@@ -116,7 +112,6 @@
   priors = TRUE,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -127,7 +122,7 @@
   dispersion = FALSE,
   ci = 0.95,
   ci_method = "eti",
-  test = c("pd", "rope"),
+  test = "pd",
   rope_range = "default",
   rope_ci = 0.95,
   bf_prior = NULL,
@@ -135,7 +130,6 @@
   priors = TRUE,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -146,12 +140,11 @@
   dispersion = FALSE,
   ci = 0.95,
   ci_method = "eti",
-  test = c("pd", "rope"),
+  test = "pd",
   rope_range = "default",
   rope_ci = 0.95,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -162,7 +155,7 @@
   dispersion = FALSE,
   ci = 0.95,
   ci_method = "eti",
-  test = c("pd", "rope"),
+  test = "pd",
   rope_range = "default",
   rope_ci = 0.95,
   diagnostic = c("ESS", "Rhat"),
@@ -172,7 +165,6 @@
   group_level = FALSE,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -183,7 +175,7 @@
   dispersion = FALSE,
   ci = 0.95,
   ci_method = "eti",
-  test = c("pd", "rope"),
+  test = "pd",
   rope_range = "default",
   rope_ci = 0.95,
   bf_prior = NULL,
@@ -195,7 +187,6 @@
   group_level = FALSE,
   keep = NULL,
   drop = NULL,
-  parameters = keep,
   verbose = TRUE,
   ...
 )
@@ -268,16 +259,14 @@ names.}
 
 \item{drop}{See \code{keep}.}
 
-\item{parameters}{Deprecated, alias for \code{keep}.}
-
 \item{verbose}{Toggle messages and warnings.}
 
 \item{...}{Currently not used.}
 
 \item{component}{Which type of parameters to return, such as parameters for the
-conditional model, the zero-inflated part of the model, the dispersion
+conditional model, the zero-inflation part of the model, the dispersion
 term, or other auxiliary parameters be returned? Applies to models with
-zero-inflated and/or dispersion formula, or if parameters such as \code{sigma}
+zero-inflation and/or dispersion formula, or if parameters such as \code{sigma}
 should be included. May be abbreviated. Note that the \emph{conditional}
 component is also called \emph{count} or \emph{mean} component, depending on the
 model. There are three convenient shortcuts: \code{component = "all"} returns
@@ -305,17 +294,17 @@ non-Gaussian families.}
 \code{NULL} (default; no standardization), \code{"refit"} (for re-fitting the model
 on standardized data) or one of \code{"basic"}, \code{"posthoc"}, \code{"smart"},
 \code{"pseudo"}. See 'Details' in \code{\link[=standardize_parameters]{standardize_parameters()}}.
-\strong{Important:}
+\strong{Importantly}:
 \itemize{
-\item The \code{"refit"} method does \emph{not} standardized categorical predictors (i.e.
+\item The \code{"refit"} method does \emph{not} standardize categorical predictors (i.e.
 factors), which may be a different behaviour compared to other R packages
 (such as \strong{lm.beta}) or other software packages (like SPSS). to mimic
 such behaviours, either use \code{standardize="basic"} or standardize the data
 with \code{datawizard::standardize(force=TRUE)} \emph{before} fitting the model.
 \item For mixed models, when using methods other than \code{"refit"}, only the fixed
-effects will be returned.
-\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of standardized parameters only
-works when \code{standardize="refit"}.
+effects will be standardized.
+\item Robust estimation (i.e., \code{vcov} set to a value other than \code{NULL}) of
+standardized parameters only works when \code{standardize="refit"}.
 }}
 
 \item{as_draws}{Logical, if \code{TRUE} and \code{model} is of class \code{data.frame},
@@ -438,7 +427,7 @@ to a \eqn{\chi}-squared distribution to compute CIs and p-values.
 
 \code{"profile"}
 \itemize{
-\item Applies to \emph{non-Bayesian models} of class \code{glm}, \code{polr} or \code{glmmTMB}.
+\item Applies to \emph{non-Bayesian models} of class \code{glm}, \code{polr}, \code{merMod} or \code{glmmTMB}.
 CIs computed by \emph{profiling the likelihood curve for a parameter}, using
 linear interpolation to find where likelihood ratio equals a critical value;
 p-values computed using the Wald method with a \emph{normal-distribution} (note:

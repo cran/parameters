@@ -1,7 +1,7 @@
 #' @rdname model_parameters.zcpglm
 #' @export
 model_parameters.mhurdle <- function(model,
-                                     ci = .95,
+                                     ci = 0.95,
                                      component = c("all", "conditional", "zi", "zero_inflated", "infrequent_purchase", "ip", "auxiliary"),
                                      exponentiate = FALSE,
                                      p_adjust = NULL,
@@ -28,7 +28,9 @@ model_parameters.mhurdle <- function(model,
 
 
 #' @export
-p_value.mhurdle <- function(model, component = c("all", "conditional", "zi", "zero_inflated", "infrequent_purchase", "ip", "auxiliary"), ...) {
+p_value.mhurdle <- function(model,
+                            component = c("all", "conditional", "zi", "zero_inflated", "infrequent_purchase", "ip", "auxiliary"),
+                            ...) {
   component <- match.arg(component)
   s <- summary(model)
   params <- insight::get_parameters(model, component = "all")
@@ -50,7 +52,7 @@ p_value.mhurdle <- function(model, component = c("all", "conditional", "zi", "ze
 
 
 #' @export
-ci.mhurdle <- function(x, ci = .95, ...) {
+ci.mhurdle <- function(x, ci = 0.95, ...) {
   .ci_generic(model = x, ci = ci, ...)
 }
 
@@ -88,7 +90,7 @@ standard_error.mhurdle <- function(model, component = c("all", "conditional", "z
 #' @export
 simulate_model.mhurdle <- function(model, iterations = 1000, component = c("all", "conditional", "zi", "zero_inflated", "infrequent_purchase", "ip", "auxiliary"), ...) {
   component <- match.arg(component)
-  out <- .simulate_model(model, iterations, component = component, effects = "fixed")
+  out <- .simulate_model(model, iterations, component = component, effects = "fixed", ...)
 
   class(out) <- c("parameters_simulate_model", class(out))
   attr(out, "object_name") <- insight::safe_deparse(substitute(model))

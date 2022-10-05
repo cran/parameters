@@ -1,7 +1,7 @@
 # .ergm, btergm -----------------------
 
 #' @export
-ci.btergm <- function(x, ci = .95, ...) {
+ci.btergm <- function(x, ci = 0.95, ...) {
   as.data.frame(ci(as.data.frame(x@boot$t), ci = ci, ...))
 }
 
@@ -11,7 +11,7 @@ standard_error.btergm <- function(model, ...) {
   cf <- model@coef
   bootstraps <- model@boot$t
 
-  sdev <- sapply(1:ncol(bootstraps), function(i) {
+  sdev <- sapply(seq_len(ncol(bootstraps)), function(i) {
     cur <- (bootstraps[, i] - cf[i])^2
     sqrt(sum(cur) / length(cur))
   })

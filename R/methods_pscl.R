@@ -22,7 +22,7 @@ model_parameters.zerocount <- model_parameters.zcpglm
 
 #' @export
 ci.zeroinfl <- function(x,
-                        ci = .95,
+                        ci = 0.95,
                         dof = NULL,
                         method = "wald",
                         component = "all",
@@ -72,7 +72,11 @@ standard_error.zeroinfl <- function(model,
 
   cs <- datawizard::compact_list(stats::coef(summary(model)))
   x <- lapply(names(cs), function(i) {
-    comp <- ifelse(i == "count", "conditional", "zi")
+    if (i == "count") {
+      comp <- "conditional"
+    } else {
+      comp <- "zi"
+    }
 
     stats <- cs[[i]]
 
@@ -112,7 +116,11 @@ standard_error.zerocount <- standard_error.zeroinfl
 
 #' @rdname p_value.zcpglm
 #' @export
-p_value.zeroinfl <- function(model, component = c("all", "conditional", "zi", "zero_inflated"), method = NULL, verbose = TRUE, ...) {
+p_value.zeroinfl <- function(model,
+                             component = c("all", "conditional", "zi", "zero_inflated"),
+                             method = NULL,
+                             verbose = TRUE,
+                             ...) {
   component <- match.arg(component)
   if (is.null(.check_component(model, component, verbose = verbose))) {
     return(NULL)
@@ -125,7 +133,11 @@ p_value.zeroinfl <- function(model, component = c("all", "conditional", "zi", "z
 
   cs <- datawizard::compact_list(stats::coef(summary(model)))
   x <- lapply(names(cs), function(i) {
-    comp <- ifelse(i == "count", "conditional", "zi")
+    if (i == "count") {
+      comp <- "conditional"
+    } else {
+      comp <- "zi"
+    }
     stats <- cs[[i]]
 
     # remove log(theta)
@@ -180,7 +192,7 @@ simulate_model.zerocount <- simulate_model.zeroinfl
 simulate_parameters.zeroinfl <- function(model,
                                          iterations = 1000,
                                          centrality = "median",
-                                         ci = .95,
+                                         ci = 0.95,
                                          ci_method = "quantile",
                                          test = "p-value",
                                          ...) {
