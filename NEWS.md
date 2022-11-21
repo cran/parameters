@@ -1,3 +1,61 @@
+# parameters 0.20.0
+
+## Breaking
+
+* The deprecated argument `df_method` in `model_parameters()` is now defunct
+  and throws an error when used.
+
+* The deprecated functions `ci_robust()`, `p_robust()` and `standard_error_robust`
+  have been removed. These were superseded by the `vcov` argument in `ci()`,
+  `p_value()`, and `standard_error()`, respectively.
+
+* The `style` argument in `compare_parameters()` was renamed into `select`.
+
+## New functions
+
+* `p_function()`, to print and plot p-values and compatibility (confidence)
+  intervals for statistical models, at different levels. This allows to see
+  which estimates are most compatible with the model at various compatibility
+  levels.
+
+* `p_calibrate()`, to compute calibrated p-values.
+
+## Changes
+
+* `model_parameters()` and `compare_parameters()` now use the unicode character
+  for the multiplication-sign as interaction mark (i.e. `\u00d7`). Use
+  `options(parameters_interaction = <value>)` or the argument `interaction_mark`
+  to use a different character as interaction mark.
+
+* The `select` argument in `compare_parameters()`, which is used to control the
+  table column elements, now supports an experimental glue-like syntax.
+  See this vignette _Printing Model Parameters_. Furthermore, the `select`
+  argument can also be used in the `print()` method for `model_parameters()`.
+
+* `print_html()` gets a `font_size` and `line_padding` argument to tweak the
+  appearance of HTML tables. Furthermore, arguments `select` and `column_labels`
+  are new, to customize the column layout of tables. See examples in `?display`.
+
+* Consolidation of vignettes on standardization of model parameters.
+
+* Minor speed improvements.
+
+## Bug fix
+
+* `model_parameters().BFBayesFactor` no longer drops the `BF` column if the
+  Bayes factor is `NA`.
+
+* The `print()` and `display()` methods for `model_parameters()` from Bayesian
+  models now pass the `...` to `insight::format_table()`, allowing extra
+  arguments to be recognized.
+
+* Fixed footer message regarding the approximation method for CU and p-values
+  for mixed models.
+
+* Fixed issues in the `print()` method for `compare_parameters()` with mixed
+  models, when some models contained within-between components (see
+  `wb_component`) and others did not.
+
 # parameters 0.19.0
 
 ## Breaking

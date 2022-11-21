@@ -16,16 +16,6 @@
 #' @param ci_method Method for computing degrees of freedom for p-values
 #'   and confidence intervals (CI). See documentation for related model class
 #'   in [model_parameters()].
-#' @param style String, indicating which style of output is requested. Following
-#'   templates are possible:
-#'
-#'  - `"ci"`: Estimate and confidence intervals, no asterisks for p-values.
-#'  - `"se"`: Estimate and standard errors, no asterisks for p-values.
-#'  - `"ci_p"`: Estimate, confidence intervals and asterisks for p-values.
-#'  - `"se_p"`: Estimate, standard errors and asterisks for p-values.
-#'  - `"ci_p2"`: Estimate, confidence intervals and numeric p-values, in two columns.
-#'  - `"se_p2"`: Estimate, standard errors and numeric p-values, in two columns.
-#'
 #' @inheritParams model_parameters.default
 #' @inheritParams model_parameters.cpglmm
 #' @inheritParams print.parameters_model
@@ -47,6 +37,15 @@
 #' lm1 <- lm(Sepal.Length ~ Species, data = iris)
 #' lm2 <- lm(Sepal.Length ~ Species + Petal.Length, data = iris)
 #' compare_parameters(lm1, lm2)
+#'
+#' # custom style
+#' compare_parameters(lm1, lm2, select = "{estimate}{stars} ({se})")
+#'
+#' \dontrun{
+#' # custom style, in HTML
+#' result <- compare_parameters(lm1, lm2, select = "{estimate}<br>({se})|{p}")
+#' print_html(result)
+#' }
 #'
 #' data(mtcars)
 #' m1 <- lm(mpg ~ wt, data = mtcars)
@@ -73,7 +72,7 @@ compare_parameters <- function(...,
                                exponentiate = FALSE,
                                ci_method = "wald",
                                p_adjust = NULL,
-                               style = NULL,
+                               select = NULL,
                                column_names = NULL,
                                pretty_names = TRUE,
                                keep = NULL,
@@ -84,8 +83,7 @@ compare_parameters <- function(...,
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    warning(insight::format_message("Argument 'df_method' is deprecated. Please use 'ci_method' instead."), call. = FALSE)
-    ci_method <- df_method
+    insight::format_error("Argument `df_method` is defunct. Please use `ci_method` instead.")
   }
 
   if (length(models) == 1) {
@@ -109,7 +107,7 @@ compare_parameters <- function(...,
     model_names <- match.call(expand.dots = FALSE)$`...`
     if (length(names(model_names)) > 0) {
       model_names <- names(model_names)
-    } else if (any(sapply(model_names, is.call))) {
+    } else if (any(vapply(model_names, is.call, logical(1)))) {
       model_names <- paste("Model", seq_along(models), sep = " ")
     } else {
       model_names <- sapply(model_names, as.character)
@@ -117,7 +115,9 @@ compare_parameters <- function(...,
     }
   }
 
-  supported_models <- sapply(models, function(i) insight::is_model_supported(i) | inherits(i, "lavaan") | inherits(i, "parameters_model"))
+  supported_models <- sapply(models, function(i) {
+    insight::is_model_supported(i) | inherits(i, "lavaan") | inherits(i, "parameters_model")
+  })
 
   if (!all(supported_models)) {
     insight::format_warning(
@@ -129,8 +129,8 @@ compare_parameters <- function(...,
   }
 
   # set default
-  if (is.null(style)) {
-    style <- "ci"
+  if (is.null(select)) {
+    select <- "ci"
   }
 
   # provide own names
@@ -172,6 +172,7 @@ compare_parameters <- function(...,
         p_adjust = p_adjust,
         keep = keep,
         drop = drop,
+        wb_component = FALSE,
         verbose = verbose
       )
     }
@@ -218,14 +219,14 @@ compare_parameters <- function(...,
   # find columns with model numbers and create new variable "params_order",
   # which is pasted together of all model-column indices. Take lowest index of
   # all model-column indices, which then indicates order of parameters/rows.
-  model_cols <- which(grepl("^model", colnames(all_models)))
+  model_cols <- which(startsWith(colnames(all_models), "model"))
   params_order <- as.numeric(substr(gsub("NA", "", do.call(paste0, all_models[model_cols]), fixed = TRUE), 0, 1))
 
   all_models <- all_models[order(params_order), ]
   all_models[model_cols] <- NULL
 
   attr(all_models, "model_names") <- gsub("\"", "", unlist(lapply(model_names, insight::safe_deparse)), fixed = TRUE)
-  attr(all_models, "output_style") <- style
+  attr(all_models, "output_style") <- select
   attr(all_models, "all_attributes") <- object_attributes
   class(all_models) <- c("compare_parameters", "see_compare_parameters", unique(class(all_models)))
 
@@ -255,7 +256,8 @@ compare_models <- compare_parameters
     # remove strings with NA names
     att$pretty_names <- att$pretty_names[!is.na(names(att$pretty_names))]
     if (length(att$pretty_names) != length(x$Parameter)) {
-      match_pretty_names <- stats::na.omit(match(names(att$pretty_names), x$Parameter))
+      match_pretty_names <- match(names(att$pretty_names), x$Parameter)
+      match_pretty_names <- match_pretty_names[!is.na(match_pretty_names)]
       if (length(match_pretty_names)) {
         x$Parameter[match_pretty_names] <- att$pretty_names[x$Parameter[match_pretty_names]]
       }
@@ -264,7 +266,8 @@ compare_models <- compare_parameters
       if (!anyNA(match_pretty_names)) {
         x$Parameter <- att$pretty_names[x$Parameter]
       } else {
-        match_pretty_names <- stats::na.omit(match(names(att$pretty_names), x$Parameter))
+        match_pretty_names <- match(names(att$pretty_names), x$Parameter)
+        match_pretty_names <- match_pretty_names[!is.na(match_pretty_names)]
         if (length(match_pretty_names)) {
           x$Parameter[match_pretty_names] <- att$pretty_names[x$Parameter[match_pretty_names]]
         }

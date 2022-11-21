@@ -1,4 +1,7 @@
 if (requiet("testthat") && requiet("parameters") && requiet("insight")) {
+  # make sure we have the correct interaction mark for tests
+  options(parameters_interaction = "*")
+
   data(iris)
   m1 <- lm(Sepal.Length ~ Species, data = iris)
   m2 <- lm(Sepal.Length ~ Species * Petal.Length, data = iris)
@@ -21,7 +24,7 @@ if (requiet("testthat") && requiet("parameters") && requiet("insight")) {
     )
     out <- capture.output(x)
     expect_equal(length(out), 14)
-    out <- format(x, style = "ci")
+    out <- format(x, select = "ci")
     expect_equal(colnames(out), c("Parameter", "m1", "m2", "m3"))
     expect_equal(
       out$Parameter,
@@ -35,7 +38,7 @@ if (requiet("testthat") && requiet("parameters") && requiet("insight")) {
   })
 
 
-  x <- compare_parameters(m1, m2, m3, style = "se_p2")
+  x <- compare_parameters(m1, m2, m3, select = "se_p2")
   test_that("compare_parameters, se_p2", {
     expect_equal(
       colnames(x),
@@ -49,12 +52,12 @@ if (requiet("testthat") && requiet("parameters") && requiet("insight")) {
     )
     out <- capture.output(x)
     expect_equal(length(out), 14)
-    out <- format(x, style = "se_p2")
+    out <- format(x, select = "se_p2")
     expect_equal(
       colnames(out),
       c(
-        "Parameter", "Coefficient (m1)", "p (m1)", "Coefficient (m2)",
-        "p (m2)", "Log-Mean (m3)", "p (m3)"
+        "Parameter", "Estimate (SE) (m1)", "p (m1)", "Estimate (SE) (m2)",
+        "p (m2)", "Estimate (SE) (m3)", "p (m3)"
       )
     )
     expect_equal(

@@ -20,15 +20,13 @@
 #' @seealso [`simulate_parameters()`], [`bootstrap_model()`], [`bootstrap_parameters()`]
 #'
 #' @details
-#' **Technical Details**
-#'
+#' ## Technical Details
 #' `simulate_model()` is a computationally faster alternative
 #' to `bootstrap_model()`. Simulated draws for coefficients are based
 #' on a multivariate normal distribution (`MASS::mvrnorm()`) with mean
 #' `mu = coef(model)` and variance `Sigma = vcov(model)`.
 #'
-#' **Models with Zero-Inflation Component**
-#'
+#' ## Models with Zero-Inflation Component
 #' For models from packages **glmmTMB**, **pscl**, **GLMMadaptive** and
 #' **countreg**, the `component` argument can be used to specify
 #' which parameters should be simulated. For all other models, parameters
@@ -68,7 +66,7 @@ simulate_model.default <- function(model, iterations = 1000, ...) {
   out <- .simulate_model(model, iterations, component = "conditional", effects = "fixed", ...)
 
   class(out) <- c("parameters_simulate_model", class(out))
-  attr(out, "object_name") <- insight::safe_deparse(substitute(model))
+  attr(out, "object_name") <- insight::safe_deparse_symbol(substitute(model))
   out
 }
 

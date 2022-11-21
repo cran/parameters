@@ -23,12 +23,16 @@ model_parameters.marginaleffects <- function(model,
     error = function(e) out
   )
 
-  attr(out, "object_name") <- insight::safe_deparse(substitute(model))
+  attr(out, "object_name") <- insight::safe_deparse_symbol(substitute(model))
 
   if (inherits(model, "marginalmeans")) {
     attr(out, "coefficient_name") <- "Marginal Means"
   } else if (inherits(model, "comparisons")) {
-    attr(out, "coefficient_name") <- "Contrast"
+    attr(out, "coefficient_name") <- "Estimate"
+    attr(out, "title") <- "Contrasts between Adjusted Predictions"
+    if ("Type" %in% colnames(out)) {
+      attr(out, "prediction_type") <- out$Type[1]
+    }
   } else if (inherits(model, "marginaleffects")) {
     attr(out, "coefficient_name") <- "Slope"
   } else if (inherits(model, "predictions")) {
@@ -79,7 +83,7 @@ model_parameters.predictions <- function(model,
     error = function(e) out
   )
 
-  attr(out, "object_name") <- insight::safe_deparse(substitute(model))
+  attr(out, "object_name") <- insight::safe_deparse_symbol(substitute(model))
   attr(out, "coefficient_name") <- "Predicted"
   attr(out, "no_caption") <- TRUE
 

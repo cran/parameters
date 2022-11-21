@@ -40,8 +40,7 @@ model_parameters.stanfit <- function(model,
 
   if (effects != "fixed") {
     random_effect_levels <- which(
-      params$Effects %in% "random" &
-        grepl("^(?!Sigma\\[)(.*)", params$Parameter, perl = TRUE)
+      params$Effects %in% "random" & !startsWith(params$Parameter, "Sigma[")
     )
     if (length(random_effect_levels) && isFALSE(group_level)) params <- params[-random_effect_levels, ]
   }
@@ -60,7 +59,7 @@ model_parameters.stanfit <- function(model,
   )
 
   attr(params, "parameter_info") <- insight::clean_parameters(model)
-  attr(params, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  attr(params, "object_name") <- insight::safe_deparse_symbol(substitute(model))
   class(params) <- c("parameters_stan", "parameters_model", "see_parameters_model", class(params))
 
   params

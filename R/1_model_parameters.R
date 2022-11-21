@@ -127,6 +127,8 @@
 #' level 1 predictors (Hoffman 2015, page 342). A warning is given when a
 #' within-group variable is found to have access between-group variance.
 #'
+#' See also [package vignette](https://easystats.github.io/parameters/articles/standardize_parameters_effsize.html).
+#'
 #' @section Labeling the Degrees of Freedom:
 #' Throughout the **parameters** package, we decided to label the residual
 #' degrees of freedom *df_error*. The reason for this is that these degrees
@@ -273,7 +275,7 @@
 #' which is converted into a p-value using [`bayestestR::pd_to_p()`].
 #'
 #' @inheritSection format_parameters Interpretation of Interaction Terms
-#' @inheritSection print.parameters_model Global Options to Customize Messages when Printing
+#' @inheritSection print.parameters_model Global Options to Customize Messages and Tables when Printing
 #'
 #' @references
 #'
@@ -307,7 +309,9 @@ model_parameters <- function(model, ...) {
 # getOption("parameters_mixed_summary"): show model summary for mixed models
 # getOption("parameters_cimethod"): show message about CI approximation
 # getOption("parameters_exponentiate"): show warning about exp for log/logit links
-
+# getOption("parameters_labels"): use value/variable labels instead pretty names
+# getOption("parameters_interaction"): separator char for interactions
+# getOption("parameters_select"): default for the `select` argument
 
 
 #' @rdname model_parameters
@@ -325,13 +329,13 @@ parameters <- model_parameters
 #' @param bootstrap Should estimates be based on bootstrapped model? If
 #'   `TRUE`, then arguments of [Bayesian
 #'   regressions][model_parameters.stanreg] apply (see also
-#'   [`bootstrap_parameters()`][bootstrap_parameters]).
+#'   [`bootstrap_parameters()`]).
 #' @param iterations The number of bootstrap replicates. This only apply in the
 #'   case of bootstrapped frequentist models.
 #' @param standardize The method used for standardizing the parameters. Can be
 #'   `NULL` (default; no standardization), `"refit"` (for re-fitting the model
 #'   on standardized data) or one of `"basic"`, `"posthoc"`, `"smart"`,
-#'   `"pseudo"`. See 'Details' in [standardize_parameters()].
+#'   `"pseudo"`. See 'Details' in [`standardize_parameters()`].
 #'   **Importantly**:
 #'   - The `"refit"` method does *not* standardize categorical predictors (i.e.
 #'   factors), which may be a different behaviour compared to other R packages
@@ -355,7 +359,7 @@ parameters <- model_parameters
 #'   `exponentiate = "nongaussian"` will only exponentiate coefficients from
 #'   non-Gaussian families.
 #' @param p_adjust Character vector, if not `NULL`, indicates the method to
-#'   adjust p-values. See [stats::p.adjust()] for details. Further
+#'   adjust p-values. See [`stats::p.adjust()`] for details. Further
 #'   possible adjustment methods are `"tukey"`, `"scheffe"`,
 #'   `"sidak"` and `"none"` to explicitly disable adjustment for
 #'   `emmGrid` objects (from **emmeans**).
@@ -398,7 +402,7 @@ parameters <- model_parameters
 #' @param verbose Toggle warnings and messages.
 #' @inheritParams standard_error
 #'
-#' @seealso [insight::standardize_names()] to
+#' @seealso [`insight::standardize_names()`] to
 #'   rename columns into a consistent, standardized naming scheme.
 #'
 #' @inheritSection model_parameters Confidence intervals and approximation of degrees of freedom
@@ -464,7 +468,7 @@ model_parameters.default <- function(model,
     dots = list(...),
     not_allowed = c("include_sigma", "wb_component"),
     class(model)[1],
-    verbose = verbose
+    verbose = FALSE
   )
 
   # extract model parameters table, as data frame
@@ -516,7 +520,7 @@ model_parameters.default <- function(model,
     )
   }
 
-  attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  attr(out, "object_name") <- insight::safe_deparse_symbol(substitute(model))
   out
 }
 
@@ -550,8 +554,7 @@ model_parameters.default <- function(model,
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    insight::format_warning("Argument `df_method` is deprecated. Please use `ci_method` instead.")
-    ci_method <- df_method
+    insight::format_error("Argument `df_method` is defunct. Please use `ci_method` instead.")
   }
 
 
@@ -658,8 +661,7 @@ model_parameters.glm <- function(model,
 
   ## TODO remove later
   if (!missing(df_method) && !identical(ci_method, df_method)) {
-    insight::format_warning("Argument `df_method` is deprecated. Please use `ci_method` instead.")
-    ci_method <- df_method
+    insight::format_error("Argument `df_method` is defunct. Please use `ci_method` instead.")
   }
 
   # profiled CIs may take a long time to compute, so we warn the user about it
@@ -687,6 +689,9 @@ model_parameters.glm <- function(model,
   args <- c(args, dots)
   out <- do.call(".model_parameters_generic", args)
 
-  attr(out, "object_name") <- deparse(substitute(model), width.cutoff = 500)
+  attr(out, "object_name") <- insight::safe_deparse_symbol(substitute(model))
   out
 }
+
+#' @export
+model_parameters.zoo <- model_parameters.default

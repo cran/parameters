@@ -50,7 +50,8 @@ format_parameters.default <- function(model, brackets = c("[", "]"), ...) {
   # check for valid input
   .is_model_valid(model)
 
-  tryCatch(.format_parameter_default(model, brackets = brackets, ...),
+  tryCatch(
+    .format_parameter_default(model, brackets = brackets, ...),
     error = function(e) NULL
   )
 }
@@ -193,7 +194,8 @@ format_parameters.parameters_model <- function(model, ...) {
         components,
         type = types[i, "Type"],
         is_nested = is_nested,
-        is_simple = is_simple
+        is_simple = is_simple,
+        ...
       )
     }
   }
@@ -268,17 +270,33 @@ format_parameters.parameters_model <- function(model, ...) {
 
 
 #' @keywords internal
-.format_interaction <- function(components, type, is_nested = FALSE, is_simple = FALSE) {
+.format_interaction <- function(components,
+                                type,
+                                is_nested = FALSE,
+                                is_simple = FALSE,
+                                interaction_mark = NULL,
+                                ...) {
   # sep <- ifelse(is_nested | is_simple, " : ", " * ")
   # sep <- ifelse(is_nested, " / ", " * ")
   # sep <- ifelse(is_simple, " : ", ifelse(is_nested, " / ", " * "))
-  sep <- " * "
+  if (is.null(interaction_mark)) {
+    if (.unicode_symbols()) {
+      sep <- "\u00D7"
+    } else {
+      sep <- "*"
+    }
+  } else {
+    sep <- interaction_mark
+  }
+
+  # either use argument, or override with options
+  sep <- paste0(" ", getOption("parameters_interaction", insight::trim_ws(sep)), " ")
 
   if (length(components) > 2) {
     if (type == "interaction") {
       components <- paste0(
         "(",
-        paste0(utils::head(components, -1), collapse = " * "),
+        paste0(utils::head(components, -1), collapse = sep),
         ")",
         sep,
         utils::tail(components, 1)
@@ -297,7 +315,7 @@ format_parameters.parameters_model <- function(model, ...) {
 
 #' @keywords internal
 .format_factor <- function(name, variable, brackets = c("[", "]")) {
-  level <- sub(variable, "", name)
+  level <- sub(variable, "", name, fixed = TRUE)
 
   # special handling for "cut()"
   pattern_cut_right <- "^\\((.*),(.*)\\]$"
@@ -419,4 +437,25 @@ format_parameters.parameters_model <- function(model, ...) {
   }
 
   labels
+}
+
+
+# helper -------------------
+
+.unicode_symbols <- function() {
+  # symbols only work on windows from R 4.2 and higher
+  win_os <- tryCatch(
+    {
+      si <- Sys.info()
+      if (!is.null(si["sysname"])) {
+        si["sysname"] == "Windows" || startsWith(R.version$os, "mingw")
+      } else {
+        FALSE
+      }
+    },
+    error = function(e) {
+      TRUE
+    }
+  )
+  l10n_info()[["UTF-8"]] && ((win_os && getRversion() >= "4.2") || (!win_os && getRversion() >= "4.0"))
 }

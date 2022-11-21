@@ -26,6 +26,18 @@ format.parameters_model <- function(x,
   random_variances <- isTRUE(attributes(x)$ran_pars)
   mean_group_values <- attributes(x)$mean_group_values
 
+  # process selection of columns
+  style <- NULL
+  if (!is.null(select)) {
+    # glue-like syntax, so we switch to "style" argument here
+    if (length(select) == 1 &&
+        is.character(select) &&
+        (grepl("{", select, fixed = TRUE) || select %in% .style_shortcuts)) {
+      style <- select
+      select <- NULL
+    }
+  }
+
   # is information about grouped parameters stored as attribute?
   if (is.null(groups) && !is.null(attributes(x)$coef_groups)) {
     groups <- attributes(x)$coef_groups
@@ -58,6 +70,11 @@ format.parameters_model <- function(x,
     x$Response <- NULL
   }
 
+  # remove type for comparisons()
+  if (!is.null(m_class) && any(m_class == "comparisons")) {
+    x$Type <- NULL
+  }
+
   # rename columns for t-tests
   if (!is.null(htest_type) && htest_type == "ttest" && !is.null(mean_group_values)) {
     if (all(c("Mean_Group1", "Mean_Group2") %in% colnames(x))) {
@@ -79,14 +96,14 @@ format.parameters_model <- function(x,
   if (isTRUE(random_variances)) {
     if (!is.null(x$Group) && !is.null(x$Effects)) {
       ran_pars <- which(x$Effects == "random")
-      stddevs <- grepl("^SD \\(", x$Parameter[ran_pars])
+      stddevs <- startsWith(x$Parameter[ran_pars], "SD (")
       x$Parameter[ran_pars[stddevs]] <- paste0(
         gsub("(.*)\\)", "\\1", x$Parameter[ran_pars[stddevs]]),
         ": ",
         x$Group[ran_pars[stddevs]],
         ")"
       )
-      corrs <- grepl("^Cor \\(", x$Parameter[ran_pars])
+      corrs <- startsWith(x$Parameter[ran_pars], "Cor (")
       x$Parameter[ran_pars[corrs]] <- paste0(
         gsub("(.*)\\)", "\\1", x$Parameter[ran_pars[corrs]]),
         ": ",
@@ -113,6 +130,11 @@ format.parameters_model <- function(x,
 
   # check whether to split table by certain factors/columns (like component, response...)
   split_by <- .prepare_splitby_for_print(x)
+
+  # add p-stars, if we need this for style-argument
+  if (!is.null(style) && grepl("{stars}", style, fixed = TRUE)) {
+    x$p_stars <- insight::format_p(x[["p"]], stars = TRUE, stars_only = TRUE)
+  }
 
   # format everything now...
   if (split_components && !is.null(split_by) && length(split_by)) {
@@ -164,6 +186,27 @@ format.parameters_model <- function(x,
     formatted_table$CI <- NULL
   }
 
+  # we also allow style-argument for model parameters. In this case, we need
+  # some small preparation, namely, we need the p_stars column, and we need
+  # to "split" the formatted table, because the glue-function needs the columns
+  # without the parameters-column.
+  if (!is.null(style)) {
+    if (!is.data.frame(formatted_table)) {
+      formatted_table[] <- lapply(
+        formatted_table,
+        .style_formatted_table,
+        style = style,
+        format = format
+      )
+    } else {
+      formatted_table <- .style_formatted_table(
+        formatted_table,
+        style = style,
+        format = format
+      )
+    }
+  }
+
   if (!is.null(indent_rows)) {
     attr(formatted_table, "indent_rows") <- indent_rows
     attr(formatted_table, "indent_groups") <- NULL
@@ -202,8 +245,8 @@ format.parameters_brms_meta <- format.parameters_model
 #' @inheritParams print.parameters_model
 #' @export
 format.compare_parameters <- function(x,
-                                      style = NULL,
                                       split_components = TRUE,
+                                      select = NULL,
                                       digits = 2,
                                       ci_digits = 2,
                                       p_digits = 3,
@@ -249,7 +292,7 @@ format.compare_parameters <- function(x,
   ran_pars <- which(x$Effects == "random")
 
   # find all random effect groups
-  group_cols <- grepl("^Group\\.", colnames(x))
+  group_cols <- startsWith(colnames(x), "Group.")
   if (any(group_cols)) {
     ran_groups <- unique(unlist(lapply(x[group_cols], insight::compact_character)))
   } else {
@@ -272,7 +315,7 @@ format.compare_parameters <- function(x,
       # make sure we have only valid rows for this particular model
       ran_pars_rows <- ran_pars[ran_pars %in% which(nchar(cols$Group) > 0)]
       # find SD random parameters
-      stddevs <- grepl("^SD \\(", out$Parameter[ran_pars_rows])
+      stddevs <- startsWith(out$Parameter[ran_pars_rows], "SD (")
       # check if we already fixed that name in a previous loop
       fixed_name <- unlist(lapply(ran_groups, function(g) {
         which(grepl(g, out$Parameter[ran_pars_rows[stddevs]], fixed = TRUE))
@@ -290,7 +333,7 @@ format.compare_parameters <- function(x,
         )
       }
       # same for correlations
-      corrs <- grepl("^Cor \\(", out$Parameter[ran_pars_rows])
+      corrs <- startsWith(out$Parameter[ran_pars_rows], "Cor (")
       # check if we already fixed that name in a previous loop
       fixed_name <- unlist(lapply(ran_groups, function(g) {
         which(grepl(g, out$Parameter[ran_pars_rows[corrs]], fixed = TRUE))
@@ -322,7 +365,7 @@ format.compare_parameters <- function(x,
       zap_small = zap_small,
       ...
     )
-    out <- cbind(out, .format_output_style(cols, style, format, i))
+    out <- cbind(out, .format_output_style(cols, style = select, format, i))
   }
 
   # sort by effects and component
@@ -361,7 +404,8 @@ format.compare_parameters <- function(x,
       if (insight::n_unique(i$Effects) == 1) i$Effects <- NULL
       # format table captions for sub tables
       table_caption <- .format_model_component_header(
-        x, type = tab, split_column = tab, is_zero_inflated = FALSE,
+        x,
+        type = tab, split_column = tab, is_zero_inflated = FALSE,
         is_ordinal_model = FALSE, is_multivariate = FALSE, ran_pars = FALSE,
         formatted_table = i
       )
@@ -387,7 +431,7 @@ format.compare_parameters <- function(x,
     if (insight::n_unique(formatted_table$Component) == 1) formatted_table$Component <- NULL
     if (insight::n_unique(formatted_table$Effects) == 1) formatted_table$Effects <- NULL
     # add line with info about observations
-    formatted_table <- .add_obs_row(formatted_table, parameters_attributes, style)
+    formatted_table <- .add_obs_row(formatted_table, parameters_attributes, style = select)
   }
 
   formatted_table
@@ -417,6 +461,18 @@ format.parameters_stan <- function(x,
   if (!split_components || is.null(cp)) {
     NextMethod()
   } else {
+    # process selection of columns
+    style <- NULL
+    if (!is.null(select)) {
+      # glue-like syntax, so we switch to "style" argument here
+      if (length(select) == 1 &&
+        is.character(select) &&
+        (grepl("{", select, fixed = TRUE) || select %in% .style_shortcuts)) {
+        style <- select
+        select <- NULL
+      }
+    }
+
     if (!is.null(select)) {
       if (all(select == "minimal")) {
         select <- c("Parameter", "Coefficient", "Median", "Mean", "CI", "CI_low", "CI_high", "pd")
@@ -445,7 +501,8 @@ format.parameters_stan <- function(x,
         digits = digits,
         ci_digits = ci_digits,
         p_digits = p_digits,
-        preserve_attributes = TRUE
+        preserve_attributes = TRUE,
+        ...
       )
       param_table$Group <- NULL
       param_table$Response <- NULL
@@ -455,6 +512,22 @@ format.parameters_stan <- function(x,
   }
 
   final_table <- datawizard::compact_list(final_table)
+
+  # we also allow style-argument for model parameters. In this case, we need
+  # some small preparation, namely, we need the p_stars column, and we need
+  # to "split" the formatted table, because the glue-function needs the columns
+  # without the parameters-column.
+  if (!is.null(style)) {
+    for (i in seq_along(final_table)) {
+      att <- attributes(final_table[[i]])
+      final_table[[i]] <- .style_formatted_table(
+        final_table[[i]],
+        style = style,
+        format = format
+      )
+      attributes(final_table[[i]]) <- utils::modifyList(att, attributes(final_table[[i]]))
+    }
+  }
 
   # modify table title, if requested
   if (length(final_table) == 1 && !is.null(table_caption)) {
@@ -499,6 +572,34 @@ format.parameters_sem <- function(x,
 }
 
 
+# helper ---------------------
+
+.style_formatted_table <- function(formtab, style, format) {
+  additional_columns <- intersect(c("Effects", "Group", "Component"), colnames(formtab))
+  if (length(additional_columns)) {
+    additional_columns <- formtab[additional_columns]
+  }
+  # define column names in case the glue-pattern has multiple columns.
+  if (grepl("|", style, fixed = TRUE)) {
+    cn <- NULL
+  } else {
+    cn <- .style_pattern_to_name(style)
+  }
+  formtab <- cbind(
+    formtab[1],
+    .format_output_style(
+      formtab[2:ncol(formtab)],
+      style = style,
+      format = format,
+      modelname = cn
+    )
+  )
+  if (!insight::is_empty_object(additional_columns)) {
+    formtab <- cbind(formtab, additional_columns)
+  }
+  formtab
+}
+
 
 # footer functions ------------------
 
@@ -520,6 +621,7 @@ format.parameters_sem <- function(x,
   model_formula <- attributes(x)$model_formula
   anova_test <- attributes(x)$anova_test
   anova_type <- attributes(x)$anova_type
+  prediction_type <- attributes(x)$prediction_type
   footer_text <- attributes(x)$footer_text
   text_alternative <- attributes(x)$text_alternative
   n_obs <- attributes(x)$n_obs
@@ -552,6 +654,11 @@ format.parameters_sem <- function(x,
   # footer: anova test
   if (!is.null(anova_type)) {
     footer <- .add_footer_anova_type(footer, anova_type, type)
+  }
+
+  # footer: marginaleffects::comparisons()
+  if (!is.null(prediction_type)) {
+    footer <- .add_footer_prediction_type(footer, prediction_type, type)
   }
 
   # footer: htest alternative
@@ -669,6 +776,24 @@ format.parameters_sem <- function(x,
 }
 
 
+# footer: marginaleffects::comparisions() prediction_type
+.add_footer_prediction_type <- function(footer = NULL, prediction_type, type = "text") {
+  if (!is.null(prediction_type)) {
+    if (type == "text" || type == "markdown") {
+      if (is.null(footer)) {
+        fill <- "\n"
+      } else {
+        fill <- ""
+      }
+      footer <- paste0(footer, sprintf("%sPrediction type: %s\n", fill, prediction_type))
+    } else if (type == "html") {
+      footer <- c(footer, sprintf("Prediction type: %s", prediction_type))
+    }
+  }
+  footer
+}
+
+
 # footer: anova test
 .add_footer_anova_test <- function(footer = NULL, test, type = "text") {
   if (!is.null(test)) {
@@ -762,87 +887,95 @@ format.parameters_sem <- function(x,
 
     # prepare strings
     if (!is.null(ci_method)) {
-      # since `.format_ci_method_name()` changes the CI method names to have a
-      # mix of cases, standardize them by converting to lower case
-      ci_method <- tolower(ci_method)
+      # only random effects? no message for fixed effects ci-approximation
+      if (!is.null(x$Effects) && all(x$Effects == "random")) {
+        msg <- "\n"
+        string_method <- ""
 
-      # in case of glm's that have df.residual(), and where residual df where requested
-      if (ci_method == "residual" &&
-        test_statistic == "z-statistic" &&
-        !is.null(residual_df) &&
-        !is.infinite(residual_df) && !is.na(residual_df)) {
-        test_statistic <- "t-statistic"
-      }
-
-      string_tailed <- switch(ci_method,
-        "hdi" = "highest-density",
-        "uniroot" = ,
-        "profile" = "profile-likelihood",
-        "equal-tailed"
-      )
-
-      # sampling method
-      if (isTRUE(bootstrap)) {
-        sampling_method <- "na\u0131ve bootstrap"
-      } else if (isTRUE(simulated)) {
-        sampling_method <- "simulated multivariate normal"
+        # here we have fixed effects only, or fixed and random effects
       } else {
-        sampling_method <- "MCMC"
-      }
+        # since `.format_ci_method_name()` changes the CI method names to have a
+        # mix of cases, standardize them by converting to lower case
+        ci_method <- tolower(ci_method)
 
-      string_method <- switch(ci_method,
-        "bci" = ,
-        "bcai" = "bias-corrected accelerated bootstrap",
-        "si" = ,
-        "ci" = ,
-        "quantile" = ,
-        "eti" = ,
-        "hdi" = sampling_method,
-        "normal" = "Wald normal",
-        "boot" = "parametric bootstrap",
-        "Wald"
-      )
+        # in case of glm's that have df.residual(), and where residual df where requested
+        if (ci_method == "residual" &&
+          test_statistic == "z-statistic" &&
+          !is.null(residual_df) &&
+          !is.infinite(residual_df) && !is.na(residual_df)) {
+          test_statistic <- "t-statistic"
+        }
 
-      if (toupper(ci_method) %in% c("KENWARD", "KR", "KENWARD-ROGER", "KENWARD-ROGERS", "SATTERTHWAITE")) {
-        string_approx <- paste0("with ", format_df_adjust(ci_method, approx_string = "", dof_string = ""), " ")
-      } else {
-        string_approx <- ""
-      }
-
-      if (!is.null(test_statistic) && !ci_method == "normal" && !isTRUE(bootstrap)) {
-        string_statistic <- switch(tolower(test_statistic),
-          "t-statistic" = "t",
-          "chi-squared statistic" = ,
-          "z-statistic" = "z",
-          ""
+        string_tailed <- switch(ci_method,
+          "hdi" = "highest-density",
+          "uniroot" = ,
+          "profile" = "profile-likelihood",
+          "equal-tailed"
         )
-        string_method <- paste0(string_method, " ", string_statistic, "-")
-      } else {
-        string_method <- paste0(string_method, " ")
-      }
 
-      # bootstrapped intervals
-      if (isTRUE(bootstrap)) {
-        msg <- paste0("\nUncertainty intervals (", string_tailed, ") are ", string_method, "intervals.")
-      } else {
-        msg <- paste0("\nUncertainty intervals (", string_tailed, ") and p-values (two-tailed) computed using a ", string_method, "distribution ", string_approx, "approximation.")
+        # sampling method
+        if (isTRUE(bootstrap)) {
+          sampling_method <- ifelse(isTRUE(.unicode_symbols()), "na\u0131ve bootstrap", "naive bootstrap")
+        } else if (isTRUE(simulated)) {
+          sampling_method <- "simulated multivariate normal"
+        } else {
+          sampling_method <- "MCMC"
+        }
+
+        string_method <- switch(ci_method,
+          "bci" = ,
+          "bcai" = "bias-corrected accelerated bootstrap",
+          "si" = ,
+          "ci" = ,
+          "quantile" = ,
+          "eti" = ,
+          "hdi" = sampling_method,
+          "normal" = "Wald normal",
+          "boot" = "parametric bootstrap",
+          "Wald"
+        )
+
+        if (toupper(ci_method) %in% c("KENWARD", "KR", "KENWARD-ROGER", "KENWARD-ROGERS", "SATTERTHWAITE")) {
+          string_approx <- paste0("with ", format_df_adjust(ci_method, approx_string = "", dof_string = ""), " ")
+        } else {
+          string_approx <- ""
+        }
+
+        if (!is.null(test_statistic) && !ci_method == "normal" && !isTRUE(bootstrap)) {
+          string_statistic <- switch(tolower(test_statistic),
+            "t-statistic" = "t",
+            "chi-squared statistic" = ,
+            "z-statistic" = "z",
+            ""
+          )
+          string_method <- paste0(string_method, " ", string_statistic, "-")
+        } else {
+          string_method <- paste0(string_method, " ")
+        }
+
+        # bootstrapped intervals
+        if (isTRUE(bootstrap)) {
+          msg <- paste0("\nUncertainty intervals (", string_tailed, ") are ", string_method, "intervals.")
+        } else {
+          msg <- paste0("\nUncertainty intervals (", string_tailed, ") and p-values (two-tailed) computed using a ", string_method, "distribution ", string_approx, "approximation.")
+        }
       }
 
       # do we have random effect variances from lme4/glmmTMB?
       # must be glmmTMB
       show_re_msg <- (identical(model_class, "glmmTMB") &&
-        # and not Wald-CIs
-        (string_method != "Wald z-" || ci_method != "wald")) ||
+        # and not Wald-/normalCIs
+        (!string_method %in% c("Wald z-", "Wald normal") || !ci_method %in% c("wald", "normal"))) ||
         # OR must be merMod
         ((identical(model_class, "lmerMod") || identical(model_class, "glmerMod")) &&
           # and not Wald CIs
-          !ci_method %in% c("wald", "residual", "normal", "profile", "boot"))
+          !ci_method %in% c("wald", "normal", "profile", "boot"))
 
       if (show_re_msg && isTRUE(random_variances) && !is.null(x$Effects) && "random" %in% x$Effects) {
         msg <- paste(msg, "Uncertainty intervals for random effect variances computed using a Wald z-distribution approximation.")
       }
 
-      message(insight::format_message(msg))
+      insight::format_alert(msg)
     }
   }
 }

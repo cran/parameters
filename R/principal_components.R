@@ -46,8 +46,7 @@
 #'
 #' @details
 #'
-#' **Methods and Utilities**
-#'
+#' ## Methods and Utilities
 #' - [`n_components()`] and [`n_factors()`] automatically estimates the optimal
 #'   number of dimensions to retain.
 #'
@@ -76,16 +75,14 @@
 #'   visually displays the loadings (that requires the
 #'   [**see**-package](https://easystats.github.io/see/) to work).
 #'
-#' **Complexity**
-#'
+#' ## Complexity
 #' Complexity represents the number of latent components needed to account
 #' for the observed variables. Whereas a perfect simple structure solution
 #' has a complexity of 1 in that each item would only load on one factor,
 #' a solution with evenly distributed items has a complexity greater than 1
 #' (_Hofman, 1978; Pettersson and Turkheimer, 2010_).
 #'
-#' **Uniqueness**
-#'
+#' ## Uniqueness
 #' Uniqueness represents the variance that is 'unique' to the variable and
 #'  not shared with other variables. It is equal to `1 – communality`
 #'  (variance that is shared with other variables). A uniqueness of `0.20`
@@ -93,15 +90,13 @@
 #'  variables in the overall factor model. The greater 'uniqueness' the lower
 #'  the relevance of the variable in the factor model.
 #'
-#' **MSA**
-#'
+#' ## MSA
 #' MSA represents the Kaiser-Meyer-Olkin Measure of Sampling Adequacy
 #' (_Kaiser and Rice, 1974_) for each item. It indicates whether there is
 #' enough data for each factor give reliable results for the PCA. The value
 #' should be > 0.6, and desirable values are > 0.8 (_Tabachnick and Fidell, 2013_).
 #'
-#' **PCA or FA?**
-#'
+#' ## PCA or FA?
 #' There is a simplified rule of thumb that may help do decide whether to run
 #' a factor analysis or a principal component analysis:
 #'
@@ -114,9 +109,8 @@
 #'
 #'  (Source: [CrossValidated](https://stats.stackexchange.com/q/1576/54740))
 #'
-#' **Computing Item Scores**
-#'
-#' Use [get_scores()] to compute scores for the "subscales" represented by the
+#' ## Computing Item Scores
+#' Use [`get_scores()`] to compute scores for the "subscales" represented by the
 #' extracted principal components. `get_scores()` takes the results from
 #' `principal_components()` and extracts the variables for each component found
 #' by the PCA. Then, for each of these "subscales", raw means are calculated
@@ -126,8 +120,7 @@
 #' One can also use `predict()` to back-predict scores for each component,
 #' to which one can provide `newdata` or a vector of `names` for the components.
 #'
-#' **Explained Variance and Eingenvalues**
-#'
+#' ## Explained Variance and Eingenvalues
 #' Use `summary()` to get the Eigenvalues and the explained variance for each
 #' extracted component. The eigenvectors and eigenvalues represent the "core"
 #' of a PCA: The eigenvectors (the principal components) determine the
@@ -143,7 +136,9 @@
 #' principal_components(mtcars[, 1:7], n = "all", threshold = 0.2)
 #'
 #' # Automated number of components
-#' principal_components(mtcars[, 1:4], n = "auto")
+#' if (require("nFactors")) {
+#'   principal_components(mtcars[, 1:4], n = "auto")
+#' }
 #'
 #' # Sparse PCA
 #' if (require("sparsepca")) {
@@ -166,7 +161,6 @@
 #'
 #'   # which variables from the original data belong to which extracted component?
 #'   closest_component(pca)
-#'   # rotated_data(pca)  # TODO: doesn't work
 #' }
 #' }
 #'
@@ -253,13 +247,16 @@ principal_components.data.frame <- function(x,
                                             standardize = TRUE,
                                             ...) {
   # save name of data set
-  data_name <- deparse(substitute(x))
+  data_name <- insight::safe_deparse_symbol(substitute(x))
 
   # original data
   original_data <- x
 
   # remove missing
   x <- stats::na.omit(x)
+
+  # Select numeric only
+  x <- x[vapply(x, is.numeric, logical(1))]
 
   # N factors
   n <- .get_n_factors(x, n = n, type = "PCA", rotation = rotation)
@@ -452,9 +449,6 @@ principal_components.data.frame <- function(x,
 
   # rotate loadings
   insight::check_if_installed("psych", reason = sprintf("`%s`-rotation.", rotation))
-  if (!requireNamespace("psych", quietly = TRUE)) {
-    insight::format_error(sprintf("Package `psych` required for `%s`-rotation.", rotation))
-  }
 
   pca <- psych::principal(x, nfactors = n, rotate = rotation, ...)
   msa <- psych::KMO(x)
