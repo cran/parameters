@@ -107,7 +107,7 @@ compare_parameters <- function(...,
     model_names <- match.call(expand.dots = FALSE)$`...`
     if (length(names(model_names)) > 0) {
       model_names <- names(model_names)
-    } else if (any(vapply(model_names, is.call, logical(1)))) {
+    } else if (any(vapply(model_names, is.call, TRUE))) {
       model_names <- paste("Model", seq_along(models), sep = " ")
     } else {
       model_names <- sapply(model_names, as.character)
@@ -121,7 +121,7 @@ compare_parameters <- function(...,
 
   if (!all(supported_models)) {
     insight::format_warning(
-      sprintf("Following objects are not supported: %s", paste0(model_names[!supported_models], collapse = ", ")),
+      sprintf("Following objects are not supported: %s", toString(model_names[!supported_models])),
       "Dropping unsupported models now."
     )
     models <- models[supported_models]
@@ -130,7 +130,13 @@ compare_parameters <- function(...,
 
   # set default
   if (is.null(select)) {
-    select <- "ci"
+    if (is.null(ci) || is.na(ci)) {
+      # if user set CI to NULL, show only estimates by default
+      select <- "{estimate}"
+    } else {
+      # if we have CI, include them
+      select <- "ci"
+    }
   }
 
   # provide own names
@@ -193,6 +199,9 @@ compare_parameters <- function(...,
     if (!"Effects" %in% colnames(dat)) {
       dat$Effects <- "fixed"
     }
+    if (!"Group" %in% colnames(dat)) {
+      dat$Group <- ""
+    }
 
     # add zi-suffix to parameter names
     if (any(dat$Component == "zero_inflated")) {
@@ -200,7 +209,7 @@ compare_parameters <- function(...,
     }
 
     # add suffix
-    ignore <- colnames(dat) %in% c("Parameter", "Component", "Effects")
+    ignore <- colnames(dat) %in% c("Parameter", "Component", "Effects", "Group")
     colnames(dat)[!ignore] <- paste0(colnames(dat)[!ignore], ".", model_name)
 
     # save model number, for sorting
@@ -214,7 +223,9 @@ compare_parameters <- function(...,
   names(object_attributes) <- model_names
 
   # merge all data frames
-  all_models <- suppressWarnings(Reduce(function(x, y) merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component", "Effects")), m))
+  all_models <- suppressWarnings(Reduce(function(x, y) {
+    merge(x, y, all = TRUE, sort = FALSE, by = c("Parameter", "Component", "Effects", "Group"))
+  }, m))
 
   # find columns with model numbers and create new variable "params_order",
   # which is pasted together of all model-column indices. Take lowest index of
@@ -224,6 +235,11 @@ compare_parameters <- function(...,
 
   all_models <- all_models[order(params_order), ]
   all_models[model_cols] <- NULL
+
+  # remove empty group-column
+  if (all(nchar(all_models$Group) == 0)) {
+    all_models$Group <- NULL
+  }
 
   attr(all_models, "model_names") <- gsub("\"", "", unlist(lapply(model_names, insight::safe_deparse)), fixed = TRUE)
   attr(all_models, "output_style") <- select

@@ -33,15 +33,6 @@
     standardize <- NULL
   }
 
-  if (!is.null(standardize) && !requireNamespace("datawizard", quietly = TRUE)) {
-    if (verbose) {
-      insight::format_warning(
-        "Package 'datawizard' required to calculate standardized coefficients. Please install it."
-      )
-    }
-    standardize <- NULL
-  }
-
   # ==== model exceptions
 
   if (inherits(model, c("crq", "crqs"))) {
@@ -94,12 +85,12 @@
   } else if (inherits(model, "clm") && !is.null(model$alpha)) {
     intercept_groups <- rep(
       c("intercept", "location", "scale"),
-      vapply(model[c("alpha", "beta", "zeta")], length, numeric(1))
+      vapply(model[c("alpha", "beta", "zeta")], length, 1L)
     )
   } else if (inherits(model, "clm2") && !is.null(model$Alpha)) {
     intercept_groups <- rep(
       c("intercept", "location", "scale"),
-      vapply(model[c("Alpha", "beta", "zeta")], length, numeric(1))
+      vapply(model[c("Alpha", "beta", "zeta")], length, 1L)
     )
   } else {
     intercept_groups <- NULL
@@ -136,10 +127,10 @@
       ci_cols <- names(ci_df)[!names(ci_df) %in% c("CI", merge_by)]
       parameters <- merge(parameters, ci_df, by = merge_by, sort = FALSE)
     } else {
-      ci_cols <- c()
+      ci_cols <- NULL
     }
   } else {
-    ci_cols <- c()
+    ci_cols <- NULL
   }
 
 
@@ -583,6 +574,7 @@
         stringsAsFactors = FALSE
       )
     }
+
     if (!is.null(df_error) && nrow(df_error) == nrow(parameters)) {
       if ("SE" %in% colnames(df_error)) {
         df_error$SE <- NULL
@@ -596,7 +588,12 @@
   parameters <- parameters[match(original_order, parameters$.id), ]
 
   # Renaming
-  names(parameters) <- gsub("Statistic", gsub("-statistic", "", attr(statistic, "statistic", exact = TRUE), fixed = TRUE), names(parameters), fixed = TRUE)
+  names(parameters) <- gsub(
+    "Statistic",
+    gsub("-statistic", "", attr(statistic, "statistic", exact = TRUE), fixed = TRUE),
+    names(parameters),
+    fixed = TRUE
+  )
   names(parameters) <- gsub("Std. Error", "SE", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("Estimate", "Coefficient", names(parameters), fixed = TRUE)
   names(parameters) <- gsub("t value", "t", names(parameters), fixed = TRUE)
@@ -894,7 +891,7 @@
   }
 
   # CI
-  if (length(ci) > 1) {
+  if (length(ci) > 1L) {
     ci <- ci[1]
     if (verbose) {
       insight::format_warning(
@@ -928,10 +925,13 @@
   )]
 
   # Get estimates
-  data <- do.call(lavaan::parameterEstimates, c(
-    list(object = model, se = TRUE, ci = TRUE, level = ci),
-    dot_args
-  ))
+  data <- do.call(
+    lavaan::parameterEstimates,
+    c(
+      list(object = model, se = TRUE, ci = TRUE, level = ci),
+      dot_args
+    )
+  )
 
   label <- data$label
 
@@ -940,6 +940,7 @@
     if (is.logical(standardize)) {
       standardize <- "all"
     }
+
     type <- switch(standardize,
       "all" = ,
       "std.all" = "std.all",
@@ -1018,7 +1019,7 @@
       insight::format_warning(
         sprintf(
           "Model matrix is rank deficient. Parameters `%s` were not estimable.",
-          paste(p$Parameter[is.na(p$Estimate)], collapse = ", ")
+          toString(p$Parameter[is.na(p$Estimate)])
         )
       )
     }

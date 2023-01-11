@@ -49,68 +49,66 @@
 #'   `n_components()` is a convenient short for `n_factors(type =
 #'   "PCA")`.
 #'
-#' @examples
+#' @examplesIf require("PCDimension", quietly = TRUE) && require("nFactors", quietly = TRUE) && require("EGAnet", quietly = TRUE)
 #' library(parameters)
-#' if (require("nFactors", quietly = TRUE) && require("EGAnet", quietly = TRUE)) {
-#'   n_factors(mtcars, type = "PCA")
+#' n_factors(mtcars, type = "PCA")
 #'
-#'   result <- n_factors(mtcars[1:5], type = "FA")
-#'   as.data.frame(result)
-#'   summary(result)
-#'   \dontrun{
-#'   if (require("PCDimension", quietly = TRUE)) {
-#'     # Setting package = 'all' will increase the number of methods (but is slow)
-#'     n_factors(mtcars, type = "PCA", package = "all")
-#'     n_factors(mtcars, type = "FA", algorithm = "mle", package = "all")
-#'   }
-#'   }
+#' result <- n_factors(mtcars[1:5], type = "FA")
+#' as.data.frame(result)
+#' summary(result)
+#' \dontrun{
+#' # Setting package = 'all' will increase the number of methods (but is slow)
+#' n_factors(mtcars, type = "PCA", package = "all")
+#' n_factors(mtcars, type = "FA", algorithm = "mle", package = "all")
 #' }
+#'
 #' @return A data frame.
 #'
-#' @references \itemize{
-#'   \item Bartlett, M. S. (1950). Tests of significance in factor analysis.
+#' @references
+#'
+#' - Bartlett, M. S. (1950). Tests of significance in factor analysis.
 #'   British Journal of statistical psychology, 3(2), 77-85.
 #'
-#'   \item Bentler, P. M., & Yuan, K. H. (1996). Test of linear trend in
+#' - Bentler, P. M., & Yuan, K. H. (1996). Test of linear trend in
 #'   eigenvalues of a covariance matrix with application to data analysis.
 #'   British Journal of Mathematical and Statistical Psychology, 49(2), 299-312.
 #'
-#'   \item Cattell, R. B. (1966). The scree test for the number of factors.
+#' - Cattell, R. B. (1966). The scree test for the number of factors.
 #'   Multivariate behavioral research, 1(2), 245-276.
 #'
-#'   \item Finch, W. H. (2019). Using Fit Statistic Differences to Determine the
+#' - Finch, W. H. (2019). Using Fit Statistic Differences to Determine the
 #'   Optimal Number of Factors to Retain in an Exploratory Factor Analysis.
 #'   Educational and Psychological Measurement.
 #'
-#'   \item Zoski, K. W., & Jurs, S. (1996). An objective counterpart to the
+#' - Zoski, K. W., & Jurs, S. (1996). An objective counterpart to the
 #'   visual scree test for factor analysis: The standard error scree.
 #'   Educational and Psychological Measurement, 56(3), 443-451.
 #'
-#'   \item Zoski, K., & Jurs, S. (1993). Using multiple regression to determine
+#' - Zoski, K., & Jurs, S. (1993). Using multiple regression to determine
 #'   the number of factors to retain in factor analysis. Multiple Linear
 #'   Regression Viewpoints, 20(1), 5-9.
 #'
-#'   \item Nasser, F., Benson, J., & Wisenbaker, J. (2002). The performance of
+#' - Nasser, F., Benson, J., & Wisenbaker, J. (2002). The performance of
 #'   regression-based variations of the visual scree for determining the number
 #'   of common factors. Educational and psychological measurement, 62(3),
 #'   397-419.
 #'
-#'   \item Golino, H., Shi, D., Garrido, L. E., Christensen, A. P., Nieto, M.
+#' - Golino, H., Shi, D., Garrido, L. E., Christensen, A. P., Nieto, M.
 #'   D., Sadana, R., & Thiyagarajan, J. A. (2018). Investigating the performance
 #'   of Exploratory Graph Analysis and traditional techniques to identify the
 #'   number of latent factors: A simulation and tutorial.
 #'
-#'   \item Golino, H. F., & Epskamp, S. (2017). Exploratory graph analysis: A
+#' - Golino, H. F., & Epskamp, S. (2017). Exploratory graph analysis: A
 #'   new approach for estimating the number of dimensions in psychological
 #'   research. PloS one, 12(6), e0174035.
 #'
-#'   \item Revelle, W., & Rocklin, T. (1979). Very simple structure: An
+#' - Revelle, W., & Rocklin, T. (1979). Very simple structure: An
 #'   alternative procedure for estimating the optimal number of interpretable
 #'   factors. Multivariate Behavioral Research, 14(4), 403-414.
 #'
-#'   \item Velicer, W. F. (1976). Determining the number of components from the
+#' - Velicer, W. F. (1976). Determining the number of components from the
 #'   matrix of partial correlations. Psychometrika, 41(3), 321-327.
-#' }
+#'
 #' @export
 n_factors <- function(x,
                       type = "FA",
@@ -140,7 +138,7 @@ n_factors <- function(x,
   }
 
   # Get only numeric
-  x <- x[vapply(x, is.numeric, logical(1))]
+  x <- x[vapply(x, is.numeric, TRUE)]
 
   # Correlation matrix
   if (is.null(cor)) {
@@ -310,8 +308,8 @@ n_factors <- function(x,
       out <- rbind(
         out,
         tryCatch(.n_factors_PCDimension(x, type),
-                 warning = function(w) data.frame(),
-                 error = function(e) data.frame()
+          warning = function(w) data.frame(),
+          error = function(e) data.frame()
         )
       )
     } else {
@@ -329,7 +327,7 @@ n_factors <- function(x,
   row.names(out) <- NULL # Reset row index
 
   if (!is.null(n_max)) {
-    out <-  out[out$n_Factors <= n_max, ]
+    out <- out[out$n_Factors <= n_max, ]
   }
 
   # Add summary
@@ -340,7 +338,7 @@ n_factors <- function(x,
 
   attr(out, "summary") <- by_factors
   attr(out, "n") <- min(as.numeric(as.character(
-    by_factors[by_factors$n_Methods == max(by_factors$n_Methods), c("n_Factors")]
+    by_factors[by_factors$n_Methods == max(by_factors$n_Methods), "n_Factors"]
   )))
 
   class(out) <- c("n_factors", "see_n_factors", class(out))
@@ -384,10 +382,10 @@ print.n_factors <- function(x, ...) {
   # Extract methods
   if ("n_Factors" %in% names(x)) {
     type <- "factor"
-    methods_text <- paste0(as.character(x[x$n_Factors == best_n, "Method"]), collapse = ", ")
+    methods_text <- toString(as.character(x[x$n_Factors == best_n, "Method"]))
   } else {
     type <- "cluster"
-    methods_text <- paste0(as.character(x[x$n_Clusters == best_n, "Method"]), collapse = ", ")
+    methods_text <- toString(as.character(x[x$n_Clusters == best_n, "Method"]))
   }
 
 
@@ -453,7 +451,7 @@ print.n_clusters <- print.n_factors
     details = FALSE
   )$nFactors
 
-  data.frame(
+  .data_frame(
     n_Factors = as.numeric(nfac),
     Method = insight::format_capitalize(names(nfac)),
     Family = "Barlett"
@@ -472,7 +470,7 @@ print.n_clusters <- print.n_factors
     details = FALSE
   )$nFactors
 
-  data.frame(
+  .data_frame(
     n_Factors = as.numeric(nfac),
     Method = "Bentler",
     Family = "Bentler"
@@ -489,7 +487,7 @@ print.n_clusters <- print.n_factors
     nfac <- nFactors::nCng(x = eigen_values, cor = TRUE, model = model)$nFactors
   }
 
-  data.frame(
+  .data_frame(
     n_Factors = as.numeric(nfac),
     Method = "CNG",
     Family = "CNG"
@@ -506,7 +504,7 @@ print.n_clusters <- print.n_factors
     nfac <- nFactors::nMreg(x = eigen_values, cor = TRUE, model = model)$nFactors
   }
 
-  data.frame(
+  .data_frame(
     n_Factors = as.numeric(nfac),
     Method = c("beta", "t", "p"),
     Family = "Multiple_regression"
@@ -519,7 +517,7 @@ print.n_clusters <- print.n_factors
 .n_factors_scree <- function(eigen_values = NULL, model = "factors") {
   nfac <- unlist(nFactors::nScree(x = eigen_values, cor = TRUE, model = model)$Components)
 
-  data.frame(
+  .data_frame(
     n_Factors = as.numeric(nfac),
     Method = c("Optimal coordinates", "Acceleration factor", "Parallel analysis", "Kaiser criterion"),
     Family = "Scree"
@@ -531,7 +529,7 @@ print.n_clusters <- print.n_factors
 #' @keywords internal
 .n_factors_sescree <- function(eigen_values = NULL, model = "factors") {
   nfac <- nFactors::nSeScree(x = eigen_values, cor = TRUE, model = model)$nFactors
-  data.frame(
+  .data_frame(
     n_Factors = as.numeric(nfac),
     Method = c("Scree (SE)", "Scree (R2)"),
     Family = "Scree_SE"
@@ -548,8 +546,6 @@ print.n_clusters <- print.n_factors
                            nobs = NULL,
                            eigen_values = NULL,
                            type = "FA") {
-
-
   # Replace with own correlation matrix
   junk <- utils::capture.output(suppressWarnings(suppressMessages(
     nfac_glasso <- EGAnet::EGA(cor, n = nobs, model = "glasso", plot.EGA = FALSE)$n.dim
@@ -558,7 +554,7 @@ print.n_clusters <- print.n_factors
     nfac_TMFG <- EGAnet::EGA(cor, n = nobs, model = "TMFG", plot.EGA = FALSE)$n.dim
   )))
 
-  data.frame(
+  .data_frame(
     n_Factors = as.numeric(c(nfac_glasso, nfac_TMFG)),
     Method = c("EGA (glasso)", "EGA (TMFG)"),
     Family = "EGA"
@@ -609,7 +605,7 @@ print.n_clusters <- print.n_factors
   BIC_reg <- ifelse(length(BIC_reg) == 0, NA, BIC_reg)
   BIC_adj <- ifelse(length(BIC_adj) == 0, NA, BIC_adj)
 
-  data.frame(
+  .data_frame(
     n_Factors = as.numeric(c(vss_1, vss_2, velicer_MAP, BIC_reg, BIC_adj)),
     Method = c("VSS complexity 1", "VSS complexity 2", "Velicer's MAP", "BIC", "BIC (adjusted)"),
     Family = c("VSS", "VSS", "Velicers_MAP", "BIC", "BIC")
@@ -638,21 +634,29 @@ print.n_clusters <- print.n_factors
   rez <- data.frame()
   for (n in 1:(ncol(cor) - 1)) {
     if (tolower(type) %in% c("fa", "factor", "efa")) {
-      factors <- tryCatch(suppressWarnings(psych::fa(cor,
-        nfactors = n,
-        n.obs = nobs,
-        rotate = rotation,
-        fm = algorithm
-      )),
-      error = function(e) NA
+      factors <- tryCatch(
+        suppressWarnings(
+          psych::fa(
+            cor,
+            nfactors = n,
+            n.obs = nobs,
+            rotate = rotation,
+            fm = algorithm
+          )
+        ),
+        error = function(e) NA
       )
     } else {
-      factors <- tryCatch(suppressWarnings(psych::pca(cor,
-        nfactors = n,
-        n.obs = nobs,
-        rotate = rotation
-      )),
-      error = function(e) NA
+      factors <- tryCatch(
+        suppressWarnings(
+          psych::pca(
+            cor,
+            nfactors = n,
+            n.obs = nobs,
+            rotate = rotation
+          )
+        ),
+        error = function(e) NA
       )
     }
 
@@ -668,7 +672,7 @@ print.n_clusters <- print.n_factors
 
     rez <- rbind(
       rez,
-      data.frame(
+      .data_frame(
         n = n,
         Fit = factors$fit.off,
         TLI = tli,
@@ -721,7 +725,7 @@ print.n_clusters <- print.n_factors
   # BIC (this is a penalized method so we can just take the one that minimizes it)
   BIC <- ifelse(all(is.na(rez$BIC)), NA, rez[!is.na(rez$BIC) & rez$BIC == min(rez$BIC, na.rm = TRUE), "n"])
 
-  data.frame(
+  .data_frame(
     n_Factors = c(fit_off, TLI, RMSEA, RMSR, CRMS, BIC),
     Method = c("Fit_off", "TLI", "RMSEA", "RMSR", "CRMS", "BIC"),
     Family = c("Fit", "Fit", "Fit", "Fit", "Fit", "Fit")
@@ -762,13 +766,14 @@ print.n_clusters <- print.n_factors
   )
   rez_ag <- PCDimension::compareAgDimMethods(ag, agfuns)
 
-  data.frame(
+  .data_frame(
     n_Factors = as.numeric(c(rez_rnd, rez_bokenstick, rez_ag)),
-    Method = c("Random (lambda)", "Random (F)", "Broken-Stick", "Auer-Gervini (twice)",
-               "Auer-Gervini (spectral)", "Auer-Gervini (kmeans-2)", "AuerGervini (kmeans-3)",
-               "Auer-Gervini (T)", "AuerGervini (CPT)"),
-    Family = "PCDimension",
-    stringsAsFactors = FALSE
+    Method = c(
+      "Random (lambda)", "Random (F)", "Broken-Stick", "Auer-Gervini (twice)",
+      "Auer-Gervini (spectral)", "Auer-Gervini (kmeans-2)", "AuerGervini (kmeans-3)",
+      "Auer-Gervini (T)", "AuerGervini (CPT)"
+    ),
+    Family = "PCDimension"
   )
 }
 
@@ -792,14 +797,14 @@ print.n_clusters <- print.n_factors
     )
   }
 
-  minPar <- c(min(lambda) - abs(min(lambda)) + .001, 0.001)
+  minPar <- c(min(lambda) - abs(min(lambda)) + 0.001, 0.001)
   maxPar <- c(max(lambda), stats::lm(lambda ~ I(rev(seq_along(lambda))))$coef[2])
 
 
   n <- N
   significance <- alpha
   min.k <- 3
-  LRT <- data.frame(
+  LRT <- .data_frame(
     q = numeric(length(lambda) - min.k), k = numeric(length(lambda) - min.k),
     LRT = numeric(length(lambda) - min.k), a = numeric(length(lambda) - min.k),
     b = numeric(length(lambda) - min.k),

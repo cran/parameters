@@ -1,17 +1,10 @@
 #' @rdname n_clusters
-#' @examples
+#' @examplesIf require("see", quietly = TRUE) && require("factoextra", quietly = TRUE)
 #' \donttest{
-#' #
-#' # Specific Methods =========================
-#' # Elbow method --------------------
-#' if (require("openxlsx", quietly = TRUE) &&
-#'   require("see", quietly = TRUE) &&
-#'   require("factoextra", quietly = TRUE)) {
-#'   x <- n_clusters_elbow(iris[1:4])
-#'   x
-#'   as.data.frame(x)
-#'   plot(x)
-#' }
+#' x <- n_clusters_elbow(iris[1:4])
+#' x
+#' as.data.frame(x)
+#' plot(x)
 #' }
 #' @export
 n_clusters_elbow <- function(x,
@@ -177,7 +170,7 @@ n_clusters_dbscan <- function(x, standardize = TRUE, include_factors = FALSE, me
   } else {
     insight::check_if_installed("dbscan")
     if (min_size < 1) min_size <- round(min_size * nrow(x))
-    out <- data.frame(n_Obs = 1:nrow(x), eps = sort(dbscan::kNNdist(x, k = min_size)))
+    out <- data.frame(n_Obs = seq_len(nrow(x)), eps = sort(dbscan::kNNdist(x, k = min_size)))
     row.names(out) <- NULL
 
     gradient <- c(0, diff(out$eps))

@@ -180,6 +180,12 @@ simulate_model.coxph <- simulate_model.default
 simulate_model.logistf <- simulate_model.default
 
 #' @export
+simulate_model.flic <- simulate_model.default
+
+#' @export
+simulate_model.flac <- simulate_model.default
+
+#' @export
 simulate_model.truncreg <- simulate_model.default
 
 #' @export
@@ -264,7 +270,8 @@ simulate_model.bracl <- simulate_model.default
   X <- drop(mu) + eS$vectors %*% diag(sqrt(pmax(ev, 0)), p) %*% t(matrix(stats::rnorm(p * n), n))
   nm <- names(mu)
 
-  if (is.null(nm) && !is.null(dn <- dimnames(Sigma))) {
+  dn <- dimnames(Sigma)
+  if (is.null(nm) && !is.null(dn)) {
     nm <- dn[[1L]]
   }
 

@@ -1,8 +1,4 @@
-if (requiet("testthat") &&
-  requiet("parameters") &&
-  requiet("sandwich") &&
-  requiet("clubSandwich") &&
-  requiet("datawizard")) {
+if (requiet("sandwich") && requiet("clubSandwich")) {
   data(mtcars)
   mtcars$am <- as.factor(mtcars$am)
   model <- lm(mpg ~ wt * am + cyl + gear, data = mtcars)
@@ -27,7 +23,7 @@ if (requiet("testthat") &&
   test_that("ci, robust", {
     params <- ci(model, robust = TRUE, verbose = FALSE)
     robust_se <- unname(sqrt(diag(sandwich::vcovHC(model))))
-    upper_ci <- as.vector(coef(model) + qt(.975, df.residual(model)) * robust_se)
+    upper_ci <- as.vector(coef(model) + qt(0.975, df.residual(model)) * robust_se)
     expect_equal(params$CI_high, upper_ci, tolerance = 1e-3, ignore_attr = TRUE)
   })
 
@@ -81,7 +77,7 @@ if (requiet("testthat") &&
     test_that("ci, robust", {
       params <- ci(model, vcov = "HC3")
       robust_se <- unname(sqrt(diag(sandwich::vcovHC(model))))
-      upper_ci <- as.vector(coef(model) + qt(.975, df.residual(model)) * robust_se)
+      upper_ci <- as.vector(coef(model) + qt(0.975, df.residual(model)) * robust_se)
       expect_equal(params$CI_high, upper_ci, tolerance = 1e-3, ignore_attr = TRUE)
     })
 
@@ -92,7 +88,8 @@ if (requiet("testthat") &&
       expect_equal(params$p, c(0, 0.00695, 0.00322, 0.00435, 0.94471, 0.00176), tolerance = 1e-3)
     })
 
-    model2 <- lm(mpg ~ wt * am + cyl + gear, data = datawizard::standardize(mtcars))
+    d <- datawizard::standardize(mtcars)
+    model2 <- lm(mpg ~ wt * am + cyl + gear, data = d)
 
     test_that("model_parameters, robust", {
       params <- model_parameters(model, standardize = "refit", vcov = "HC3")
@@ -129,7 +126,7 @@ if (requiet("testthat") &&
       test_that("ci_ml1, robust", {
         params <- ci_ml1(model, robust = TRUE, vcov_estimation = "CR", vcov_args = list(cluster = iris$Species))
         robust_se <- unname(sqrt(diag(clubSandwich::vcovCR(model, type = "CR1", cluster = iris$Species))))
-        upper_ci <- fixef(model) + qt(.975, dof_ml1(model)) * robust_se
+        upper_ci <- fixef(model) + qt(0.975, dof_ml1(model)) * robust_se
       })
     } else {
 

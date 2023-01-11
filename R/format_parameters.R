@@ -371,9 +371,12 @@ format_parameters.parameters_model <- function(model, ...) {
     model <- .get_object(params)
   }
 
-  if (!is.null(model)) {
+  # sanity check
+  if (!is.null(model) && insight::is_regression_model(model) && !is.data.frame(model)) {
     # get data, but exclude response - we have no need for that label
-    mf <- insight::get_data(model)[, -1, drop = FALSE]
+    mf <- insight::get_data(model, source = "mf", verbose = FALSE)
+    resp <- insight::find_response(model, combine = FALSE)
+    mf <- mf[, setdiff(colnames(mf), resp), drop = FALSE]
 
     # return variable labels, and for factors, add labels for each level
     lbs <- lapply(colnames(mf), function(i) {
@@ -418,7 +421,7 @@ format_parameters.parameters_model <- function(model, ...) {
       # check if we have any interactions, and if so, create combined labels
       interactions <- pn[grepl(":", names(pn), fixed = TRUE)]
       if (length(interactions)) {
-        labs <- c()
+        labs <- NULL
         for (i in names(interactions)) {
           # extract single coefficient names from interaction term
           out <- unlist(strsplit(i, ":", fixed = TRUE))
@@ -436,7 +439,12 @@ format_parameters.parameters_model <- function(model, ...) {
     labels <- pn
   }
 
-  labels
+  # missing labels return original parameter name (e.g., variance components in mixed models)
+  out <- stats::setNames(params$Parameter, params$Parameter)
+  labels <- labels[names(labels) %in% params$Parameter]
+  out[match(names(labels), params$Parameter)] <- labels
+
+  out
 }
 
 

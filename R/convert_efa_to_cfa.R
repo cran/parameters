@@ -16,10 +16,10 @@
 #'   model1 <- efa_to_cfa(efa)
 #'   model2 <- efa_to_cfa(efa, threshold = 0.3)
 #'
-#'   anova(
+#'   suppressWarnings(anova(
 #'     lavaan::cfa(model1, data = attitude),
 #'     lavaan::cfa(model2, data = attitude)
-#'   )
+#'   ))
 #' }
 #' }
 #' @return Converted index.
@@ -82,7 +82,7 @@ efa_to_cfa <- convert_efa_to_cfa
     )
   }
 
-  cfa <- c()
+  cfa <- NULL
   # Iterate over dimensions
   for (i in seq_along(names)) {
     cfa <- c(

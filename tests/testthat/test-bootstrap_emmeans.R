@@ -1,6 +1,6 @@
 .runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
 
-if (.runThisTest && requiet("testthat") && requiet("parameters")) {
+if (.runThisTest) {
   test_that("emmeans | lm", {
     skip_if_not_installed("emmeans")
     skip_if_not_installed("boot")
@@ -22,11 +22,11 @@ if (.runThisTest && requiet("testthat") && requiet("parameters")) {
     )
 
     mp <- model_parameters(emmeans::emmeans(b, consec ~ cyl), verbose = FALSE)
-    expect_equal(
+    expect_identical(
       colnames(mp),
       c("Parameter", "Median", "CI", "CI_low", "CI_high", "pd", "Component")
     )
-    expect_equal(nrow(mp), 5)
+    expect_identical(nrow(mp), 5L)
   })
 
 
@@ -52,10 +52,10 @@ if (.runThisTest && requiet("testthat") && requiet("parameters")) {
     )
 
     mp <- suppressWarnings(model_parameters(emmeans::emmeans(b, consec ~ cyl)))
-    expect_equal(
+    expect_identical(
       colnames(mp),
       c("Parameter", "Median", "CI", "CI_low", "CI_high", "pd", "Component")
     )
-    expect_equal(nrow(mp), 5)
+    expect_identical(nrow(mp), 5L)
   })
 }

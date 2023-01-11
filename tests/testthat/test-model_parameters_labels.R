@@ -1,4 +1,4 @@
-if (requiet("insight") && requiet("testthat") && requiet("parameters") && requiet("lme4")) {
+if (requiet("lme4")) {
   # make sure we have the correct interaction mark for tests
   options(parameters_interaction = "*")
 
@@ -98,4 +98,13 @@ test_that("Issue #785: partial and factor labels", {
   mp <- model_parameters(m)
   known <- c("(Intercept)", "Horsepower", "drat", "Cylinders [6]", "Cylinders [8]")
   expect_equal(attr(mp, "pretty_labels"), known, ignore_attr = TRUE)
+})
+
+
+
+test_that("Issue #806: Missing label for variance component in lme4", {
+  requiet("lme4")
+  mod <- lmer(mpg ~ hp + (1 | gear), data = mtcars)
+  p <- parameters::parameters(mod, pretty_names = "labels")
+  expect_true("SD (Intercept)" %in% attr(p, "pretty_labels"))
 })

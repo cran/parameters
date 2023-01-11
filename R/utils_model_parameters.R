@@ -198,7 +198,7 @@
   # add CI, and reorder
   if (!"CI" %in% colnames(params) && length(ci) == 1) {
     params$CI <- ci
-    ci_pos <- grep("CI_low", colnames(params))
+    ci_pos <- grep("CI_low", colnames(params), fixed = TRUE)
     if (length(ci_pos)) {
       if (length(ci_pos) > 1) {
         ci_pos <- ci_pos[1]
@@ -340,6 +340,14 @@
     clean_params$Cleaned_Parameter[match(params$Parameter, clean_params$Parameter)],
     params$Parameter
   )
+
+  # add Group variable
+  if (!is.null(clean_params$Group) && any(nchar(clean_params$Group) > 0)) {
+    params$Group <- tryCatch(gsub("(.*): (.*)", "\\2", clean_params$Group),
+      error = function(e) NULL
+    )
+  }
+
   attr(params, "cleaned_parameters") <- named_clean_params
   attr(params, "pretty_names") <- named_clean_params
 

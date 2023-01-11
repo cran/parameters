@@ -1,5 +1,6 @@
 requiet("parameters")
 
+skip_if(getRversion() < "4.0.0")
 options("parameters_interaction" = "*")
 
 data(iris)
@@ -86,5 +87,32 @@ test_that("templates, glue-3, separate columnns", {
     ), select = "{estimate}|{p}")
   )
 })
+
+
+.runThisTest <- Sys.getenv("RunAllparametersTests") == "yes"
+
+if (.runThisTest && requiet("glmmTMB")) {
+  data("fish")
+
+  m0 <- glm(count ~ child + camper, data = fish, family = poisson())
+
+  m1 <- glmmTMB(
+    count ~ child + camper + (1 | persons) + (1 | ID),
+    data = fish,
+    family = poisson()
+  )
+
+  m2 <- glmmTMB(
+    count ~ child + camper + zg + (1 | ID),
+    ziformula = ~ child + (1 | persons),
+    data = fish,
+    family = truncated_poisson()
+  )
+
+  cp <- compare_parameters(m0, m1, m2, effects = "all", component = "all")
+  test_that("combination of different models", {
+    expect_snapshot(print(cp))
+  })
+}
 
 options("parameters_interaction" = NULL)

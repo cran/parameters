@@ -1,3 +1,25 @@
+# parameters 0.20.1
+
+## General
+
+* Added support for models of class `flic` and `flac` (*logistf*), `mmrm` (*mmrm*).
+
+## Changes
+
+* `model_parameters()` now includes a `Group` column for `stanreg` or `brmsfit`
+  models with random effects.
+
+* The `print()` method for `model_parameters()` now uses the same pattern to
+  print random effect variances for Bayesian models as for frequentist models.
+
+## Bug fix
+
+* Fixed issue with the `print()` method for `compare_parameters()`, which
+  duplicated random effects parameters rows in some edge cases.
+
+* Fixed issue with the `print()` method for `compare_parameters()`, which
+  didn't work properly when `ci=NULL`.
+
 # parameters 0.20.0
 
 ## Breaking

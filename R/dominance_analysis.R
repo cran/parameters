@@ -126,7 +126,7 @@
 #'   # Dominance Analysis with Weighted Logit Regression
 #'   model_wt <- glm(vs ~ cyl + carb + mpg,
 #'     data = mtcars,
-#'     weights = wt, family = binomial()
+#'     weights = wt, family = quasibinomial()
 #'   )
 #'
 #'   dominance_analysis(model_wt, quote_args = "weights")
@@ -322,7 +322,7 @@ dominance_analysis <- function(model, sets = NULL, all = NULL,
   # Build non-formula model arguments to `domin` ----
   fml <- stats::reformulate(ivs, response = dv, intercept = insight::has_intercept(model))
 
-  data <- insight::get_data(model)
+  data <- insight::get_data(model, verbose = FALSE)
 
   args <- as.list(insight::get_call(model), collapse = "") # extract all arguments from call
 
@@ -570,7 +570,8 @@ print.parameters_da <- function(x, digits = 3, ...) {
 
     cpt_names_rep <- gsub(
       "dmn_", "< ",
-      cpt_names
+      cpt_names,
+      fixed = TRUE
     )
 
     printed_x$Complete <-

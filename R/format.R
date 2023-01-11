@@ -31,8 +31,8 @@ format.parameters_model <- function(x,
   if (!is.null(select)) {
     # glue-like syntax, so we switch to "style" argument here
     if (length(select) == 1 &&
-        is.character(select) &&
-        (grepl("{", select, fixed = TRUE) || select %in% .style_shortcuts)) {
+      is.character(select) &&
+      (grepl("{", select, fixed = TRUE) || select %in% .style_shortcuts)) {
       style <- select
       select <- NULL
     }
@@ -41,6 +41,11 @@ format.parameters_model <- function(x,
   # is information about grouped parameters stored as attribute?
   if (is.null(groups) && !is.null(attributes(x)$coef_groups)) {
     groups <- attributes(x)$coef_groups
+  }
+
+  # rename random effect parameters names for stan models
+  if (isTRUE(random_variances) && any(c("brmsfit", "stanreg", "stanmvreg") %in% m_class)) {
+    x <- .format_stan_parameters(x)
   }
 
   # for the current HTML backend we use (package "gt"), we cannot change
@@ -292,11 +297,12 @@ format.compare_parameters <- function(x,
   ran_pars <- which(x$Effects == "random")
 
   # find all random effect groups
-  group_cols <- startsWith(colnames(x), "Group.")
-  if (any(group_cols)) {
-    ran_groups <- unique(unlist(lapply(x[group_cols], insight::compact_character)))
+  if (!is.null(x$Group)) {
+    ran_groups <- unique(insight::compact_character(x$Group))
+    ran_group_rows <- which(nchar(x$Group) > 0)
   } else {
     ran_groups <- NULL
+    ran_group_rows <- NULL
   }
 
   for (i in models) {
@@ -307,13 +313,22 @@ format.compare_parameters <- function(x,
     # since we now have the columns for a single model, we clean the
     # column names (i.e. remove suffix), so we can use "format_table" function
     colnames(cols) <- gsub(pattern, "", colnames(cols))
+    # find coefficient column, check which rows have non-NA values
+    # since we merged all models together, and we only have model-specific
+    # columns for estimates, CI etc. but not for Effects and Component, we
+    # extract "valid" rows via non-NA values in the coefficient column
+    coef_column <- which(colnames(cols) %in% c(.all_coefficient_types(), "Coefficient"))
+    valid_rows <- which(!is.na(cols[[coef_column]]))
     # check if we have mixed models with random variance parameters
     # in such cases, we don't need the group-column, but we rather
     # merge it with the parameter column
-    if (!is.null(cols$Group) && length(ran_pars) && !is.null(ran_groups) && length(ran_groups)) {
+    ran_pars_rows <- NULL
+    if (length(ran_pars) && length(ran_group_rows) && any(ran_group_rows %in% valid_rows)) {
       # ran_pars has row indices for *all* models in this function -
       # make sure we have only valid rows for this particular model
-      ran_pars_rows <- ran_pars[ran_pars %in% which(nchar(cols$Group) > 0)]
+      ran_pars_rows <- intersect(valid_rows, intersect(ran_pars, ran_group_rows))
+    }
+    if (!is.null(ran_pars_rows) && length(ran_pars_rows)) {
       # find SD random parameters
       stddevs <- startsWith(out$Parameter[ran_pars_rows], "SD (")
       # check if we already fixed that name in a previous loop
@@ -328,7 +343,7 @@ format.compare_parameters <- function(x,
         out$Parameter[ran_pars_rows[stddevs]] <- paste0(
           gsub("(.*)\\)", "\\1", out$Parameter[ran_pars_rows[stddevs]]),
           ": ",
-          cols$Group[ran_pars_rows[stddevs]],
+          x$Group[ran_pars_rows[stddevs]],
           ")"
         )
       }
@@ -346,12 +361,11 @@ format.compare_parameters <- function(x,
         out$Parameter[ran_pars_rows[corrs]] <- paste0(
           gsub("(.*)\\)", "\\1", out$Parameter[ran_pars_rows[corrs]]),
           ": ",
-          cols$Group[ran_pars_rows[corrs]],
+          x$Group[ran_pars_rows[corrs]],
           ")"
         )
       }
       out$Parameter[out$Parameter == "SD (Observations: Residual)"] <- "SD (Residual)"
-      cols$Group <- NULL
     }
     # save p-stars in extra column
     cols$p_stars <- insight::format_p(cols$p, stars = TRUE, stars_only = TRUE)
@@ -367,6 +381,10 @@ format.compare_parameters <- function(x,
     )
     out <- cbind(out, .format_output_style(cols, style = select, format, i))
   }
+
+  # remove group column
+  out$Group <- NULL
+  x$Group <- NULL
 
   # sort by effects and component
   if (isFALSE(split_components)) {
@@ -386,9 +404,9 @@ format.compare_parameters <- function(x,
   # check whether to split table by certain factors/columns (like component, response...)
   split_by <- split_column <- .prepare_splitby_for_print(x)
 
-  if (length(split_by) > 0 && isTRUE(split_components)) {
+  if (length(split_by) > 0L && isTRUE(split_components)) {
     # set up split-factor
-    if (length(split_column) > 1) {
+    if (length(split_column) > 1L) {
       split_by <- lapply(split_column, function(i) x[[i]])
     } else {
       split_by <- list(x[[split_column]])
@@ -400,8 +418,8 @@ format.compare_parameters <- function(x,
     formatted_table <- lapply(names(formatted_table), function(tab) {
       i <- formatted_table[[tab]]
       # remove unique columns
-      if (insight::n_unique(i$Component) == 1) i$Component <- NULL
-      if (insight::n_unique(i$Effects) == 1) i$Effects <- NULL
+      if (insight::n_unique(i$Component) == 1L) i$Component <- NULL
+      if (insight::n_unique(i$Effects) == 1L) i$Effects <- NULL
       # format table captions for sub tables
       table_caption <- .format_model_component_header(
         x,
@@ -428,117 +446,14 @@ format.compare_parameters <- function(x,
   } else {
     formatted_table <- out
     # remove unique columns
-    if (insight::n_unique(formatted_table$Component) == 1) formatted_table$Component <- NULL
-    if (insight::n_unique(formatted_table$Effects) == 1) formatted_table$Effects <- NULL
+    if (insight::n_unique(formatted_table$Component) == 1L) formatted_table$Component <- NULL
+    if (insight::n_unique(formatted_table$Effects) == 1L) formatted_table$Effects <- NULL
     # add line with info about observations
     formatted_table <- .add_obs_row(formatted_table, parameters_attributes, style = select)
   }
 
   formatted_table
 }
-
-
-
-# stan models ----------------------------
-
-#' @export
-format.parameters_stan <- function(x,
-                                   split_components = TRUE,
-                                   select = NULL,
-                                   digits = 2,
-                                   ci_digits = 2,
-                                   p_digits = 3,
-                                   ci_width = NULL,
-                                   ci_brackets = NULL,
-                                   zap_small = FALSE,
-                                   format = NULL,
-                                   table_caption = NULL,
-                                   ...) {
-  cp <- attributes(x)$parameter_info
-  att <- attributes(x)
-  final_table <- list()
-
-  if (!split_components || is.null(cp)) {
-    NextMethod()
-  } else {
-    # process selection of columns
-    style <- NULL
-    if (!is.null(select)) {
-      # glue-like syntax, so we switch to "style" argument here
-      if (length(select) == 1 &&
-        is.character(select) &&
-        (grepl("{", select, fixed = TRUE) || select %in% .style_shortcuts)) {
-        style <- select
-        select <- NULL
-      }
-    }
-
-    if (!is.null(select)) {
-      if (all(select == "minimal")) {
-        select <- c("Parameter", "Coefficient", "Median", "Mean", "CI", "CI_low", "CI_high", "pd")
-      } else if (all(select == "short")) {
-        select <- c("Parameter", "Coefficient", "Median", "Mean", "MAD", "SD", "pd")
-      } else {
-        if (is.numeric(select)) select <- colnames(x)[select]
-      }
-      select <- union(select, c("Parameter", "Component", "Effects", "Response", "Subgroup"))
-      to_remove <- setdiff(colnames(x), select)
-      x[to_remove] <- NULL
-    }
-
-    out <- insight::print_parameters(cp, x, keep_parameter_column = FALSE, format = format)
-
-    final_table <- lapply(out, function(i) {
-      if (identical(format, "markdown")) {
-        attr(i, "table_caption") <- attributes(i)$main_title
-      }
-      attributes(i) <- utils::modifyList(att, attributes(i))
-      param_table <- insight::format_table(
-        i,
-        ci_width = ci_width,
-        ci_brackets = ci_brackets,
-        zap_small = zap_small,
-        digits = digits,
-        ci_digits = ci_digits,
-        p_digits = p_digits,
-        preserve_attributes = TRUE,
-        ...
-      )
-      param_table$Group <- NULL
-      param_table$Response <- NULL
-      param_table$Function <- NULL
-      param_table
-    })
-  }
-
-  final_table <- datawizard::compact_list(final_table)
-
-  # we also allow style-argument for model parameters. In this case, we need
-  # some small preparation, namely, we need the p_stars column, and we need
-  # to "split" the formatted table, because the glue-function needs the columns
-  # without the parameters-column.
-  if (!is.null(style)) {
-    for (i in seq_along(final_table)) {
-      att <- attributes(final_table[[i]])
-      final_table[[i]] <- .style_formatted_table(
-        final_table[[i]],
-        style = style,
-        format = format
-      )
-      attributes(final_table[[i]]) <- utils::modifyList(att, attributes(final_table[[i]]))
-    }
-  }
-
-  # modify table title, if requested
-  if (length(final_table) == 1 && !is.null(table_caption)) {
-    attr(final_table[[1]], "table_caption") <- table_caption
-  } else if (length(final_table) == 1 && attr(final_table[[1]], "table_caption")[1] == "# Fixed effects") {
-    attr(final_table[[1]], "table_caption") <- ""
-  }
-
-  final_table
-}
-
 
 
 
@@ -677,7 +592,7 @@ format.parameters_sem <- function(x,
   }
 
   # if we have two trailing newlines, remove one
-  if (identical(type, "text") && !is.null(footer) && grepl("\n\n$", footer[1])) {
+  if (identical(type, "text") && !is.null(footer) && endsWith(footer[1], "\n\n")) {
     footer[1] <- substr(footer[1], 0, nchar(x) - 1)
   }
 
@@ -696,7 +611,7 @@ format.parameters_sem <- function(x,
       }
       footer <- paste0(footer, sprintf("%s%s\n", fill, text))
     } else if (type == "html") {
-      footer <- c(footer, gsub("\n", "", text))
+      footer <- c(footer, gsub("\n", "", text, fixed = TRUE))
     }
   }
   footer
@@ -899,10 +814,12 @@ format.parameters_sem <- function(x,
         ci_method <- tolower(ci_method)
 
         # in case of glm's that have df.residual(), and where residual df where requested
-        if (ci_method == "residual" &&
+        is_test_statistic_t <- ci_method == "residual" &&
           test_statistic == "z-statistic" &&
           !is.null(residual_df) &&
-          !is.infinite(residual_df) && !is.na(residual_df)) {
+          !is.infinite(residual_df) && !is.na(residual_df)
+
+        if (is_test_statistic_t) {
           test_statistic <- "t-statistic"
         }
 
@@ -987,17 +904,13 @@ format.parameters_sem <- function(x,
     exponentiate <- .additional_arguments(x, "exponentiate", FALSE)
     if (!.is_valid_exponentiate_argument(exponentiate)) {
       if (isTRUE(.additional_arguments(x, "log_link", FALSE))) {
-        msg <- insight::format_message(
-          "The model has a log- or logit-link. Consider using `exponentiate = TRUE` to interpret coefficients as ratios."
-        )
+        msg <- "The model has a log- or logit-link. Consider using `exponentiate = TRUE` to interpret coefficients as ratios."
       } else if (isTRUE(.additional_arguments(x, "log_response", FALSE))) {
-        msg <- insight::format_message(
-          "The model has a log-transformed response variable. Consider using `exponentiate = TRUE` to interpret coefficients as ratios."
-        )
+        msg <- "The model has a log-transformed response variable. Consider using `exponentiate = TRUE` to interpret coefficients as ratios."
       }
     } else if (.is_valid_exponentiate_argument(exponentiate)) {
       if (isTRUE(.additional_arguments(x, "log_response", FALSE))) {
-        msg <- insight::format_message(
+        msg <- c(
           "This model has a log-transformed response variable, and exponentiated parameters are reported.",
           "A one-unit increase in the predictor is associated with multiplying the outcome by that predictor's coefficient."
         )
@@ -1005,7 +918,7 @@ format.parameters_sem <- function(x,
     }
 
     if (!is.null(msg) && isTRUE(getOption("parameters_warning_exponentiate", TRUE))) {
-      message(paste0("\n", msg))
+      insight::format_alert(paste0("\n", msg))
       # set flag, so message only displayed once per session
       options("parameters_warning_exponentiate" = FALSE)
     }

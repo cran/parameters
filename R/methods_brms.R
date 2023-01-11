@@ -71,6 +71,7 @@ model_parameters.brmsfit <- function(model,
       if (length(random_effect_levels) && isFALSE(group_level)) params <- params[-random_effect_levels, ]
     }
 
+    # add prettified names as attribute. Furthermore, group column is added
     params <- .add_pretty_names(params, model)
 
     # exponentiate coefficients and SE/CI, if requested
@@ -81,13 +82,14 @@ model_parameters.brmsfit <- function(model,
       ci,
       exponentiate,
       ci_method = ci_method,
+      group_level = group_level,
       verbose = verbose,
       ...
     )
 
     attr(params, "parameter_info") <- insight::clean_parameters(model)
     attr(params, "object_name") <- insight::safe_deparse_symbol(substitute(model))
-    class(params) <- unique(c("parameters_stan", "see_parameters_model", "parameters_model", class(params)))
+    class(params) <- unique(c("parameters_model", "see_parameters_model", class(params)))
   }
 
   params
