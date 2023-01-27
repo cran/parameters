@@ -106,7 +106,6 @@
   exponentiate = FALSE,
   p_adjust = NULL,
   summary = getOption("parameters_summary", FALSE),
-  df_method = ci_method,
   vcov = NULL,
   vcov_args = NULL,
   verbose = TRUE,
@@ -229,7 +228,6 @@
   exponentiate = FALSE,
   p_adjust = NULL,
   summary = getOption("parameters_summary", FALSE),
-  df_method = ci_method,
   vcov = NULL,
   vcov_args = NULL,
   verbose = TRUE,
@@ -561,7 +559,6 @@
   exponentiate = FALSE,
   p_adjust = NULL,
   summary = getOption("parameters_summary", FALSE),
-  df_method = ci_method,
   vcov = NULL,
   vcov_args = NULL,
   verbose = TRUE,
@@ -673,8 +670,6 @@ cases \code{"wald"} is used then.}
 \item{summary}{Logical, if \code{TRUE}, prints summary information about the
 model (model formula, number of observations, residual standard deviation
 and more).}
-
-\item{df_method}{Deprecated. Please use \code{ci_method}.}
 
 \item{vcov}{Variance-covariance matrix used to compute uncertainty estimates
 (e.g., for robust standard errors). This argument accepts a covariance matrix,
@@ -788,7 +783,9 @@ if (require("multcomp", quietly = TRUE)) {
   model_parameters(mod)
 }
 if (require("PMCMRplus", quietly = TRUE)) {
-  model <- kwAllPairsConoverTest(count ~ spray, data = InsectSprays)
+  model <- suppressWarnings(
+    kwAllPairsConoverTest(count ~ spray, data = InsectSprays)
+  )
   model_parameters(model)
 }
 }

@@ -74,12 +74,15 @@ model_parameters.BFBayesFactor <- function(model,
 
   if (any(startsWith(names(model@numerator), "Null"))) {
     if (isTRUE(verbose)) {
-      insight::print_color("Nothing to compute for point-null models.\nSee github.com/easystats/parameters/issues/226\n", "red")
+      insight::format_warning(
+        "Nothing to compute for point-null models.",
+        "See github.com/easystats/parameters/issues/226"
+      )
     }
     return(NULL)
   }
 
-  if (is.null(insight::get_parameters(model, verbose = verbose))) {
+  if (is.null(insight::get_parameters(model, verbose = FALSE))) {
     if (isTRUE(verbose)) {
       insight::format_warning("Can't extract model parameters.")
     }
