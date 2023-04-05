@@ -1,7 +1,7 @@
 # print brms
 
     Code
-      print(mp1)
+      mp1
     Output
       # Fixed Effects
       
@@ -24,7 +24,7 @@
 ---
 
     Code
-      print(mp2)
+      mp2
     Output
       # Fixed Effects
       
@@ -55,7 +55,7 @@
 ---
 
     Code
-      print(mp3)
+      mp3
     Output
       # Fixed Effects
       
@@ -85,7 +85,7 @@
 ---
 
     Code
-      print(mp4)
+      mp4
     Output
       # Fixed Effects
       
@@ -115,7 +115,7 @@
 ---
 
     Code
-      print(mp5)
+      mp5
     Output
       # Fixed Effects
       
@@ -143,7 +143,7 @@
 ---
 
     Code
-      print(mp6)
+      mp6
     Output
       # Fixed Effects
       
@@ -174,7 +174,7 @@
 ---
 
     Code
-      print(mp7)
+      mp7
     Output
       # Fixed Effects
       
@@ -192,15 +192,11 @@
       (Intercept) | -0.58 | [-1.27, 0.08] | 95.97% | 1.000 | 4494.00
       child       |  1.24 | [ 0.71, 1.82] |   100% | 1.000 | 4195.00
       camper      | -0.62 | [-1.38, 0.11] | 94.73% | 1.000 | 4427.00
-    Message <simpleMessage>
-      
-      Uncertainty intervals (equal-tailed) and p-values (two-tailed) computed
-        using a MCMC distribution approximation.
 
 ---
 
     Code
-      print(mp8)
+      mp8
     Output
       # Fixed Effects (Count Model)
       
@@ -229,15 +225,11 @@
       Parameter               | Mean |       95% CI |   pd |  Rhat |    ESS
       ---------------------------------------------------------------------
       SD (Intercept: persons) | 1.49 | [0.63, 3.41] | 100% | 0.996 | 129.00
-    Message <simpleMessage>
-      
-      Uncertainty intervals (equal-tailed) and p-values (two-tailed) computed
-        using a MCMC distribution approximation.
 
 ---
 
     Code
-      print(mp9)
+      mp9
     Output
       Parameter    |   Mean |           95% CI |   pd |  Rhat |     ESS
       -----------------------------------------------------------------

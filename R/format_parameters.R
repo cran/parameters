@@ -49,11 +49,7 @@ format_parameters <- function(model, ...) {
 format_parameters.default <- function(model, brackets = c("[", "]"), ...) {
   # check for valid input
   .is_model_valid(model)
-
-  tryCatch(
-    .format_parameter_default(model, brackets = brackets, ...),
-    error = function(e) NULL
-  )
+  .safe(.format_parameter_default(model, brackets = brackets, ...))
 }
 
 
@@ -156,7 +152,7 @@ format_parameters.parameters_model <- function(model, ...) {
 
       # Interaction or nesting
     } else {
-      components <- unlist(strsplit(name, ":", fixed = TRUE))
+      components <- unlist(strsplit(name, ":", fixed = TRUE), use.names = FALSE)
       is_nested <- types$Type[i] == "nested"
       is_simple <- types$Type[i] == "simple"
 
@@ -191,7 +187,7 @@ format_parameters.parameters_model <- function(model, ...) {
         }
       }
       names[i] <- .format_interaction(
-        components,
+        components = components,
         type = types[i, "Type"],
         is_nested = is_nested,
         is_simple = is_simple,
@@ -411,7 +407,10 @@ format_parameters.parameters_model <- function(model, ...) {
 
     # name elements
     names(lbs) <- names(preds) <- colnames(mf)
-    labels <- tryCatch(stats::setNames(unlist(lbs), unlist(preds)), error = function(e) NULL)
+    labels <- .safe(stats::setNames(
+      unlist(lbs, use.names = FALSE),
+      unlist(preds, use.names = FALSE)
+    ))
 
     # retrieve pretty names attribute
     pn <- attributes(params)$pretty_names

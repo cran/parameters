@@ -104,20 +104,22 @@ compare_parameters <- function(...,
     } else if (any(vapply(model_names, is.call, TRUE))) {
       model_names <- paste("Model", seq_along(models), sep = " ")
     } else {
-      model_names <- sapply(model_names, as.character)
+      model_names <- vapply(model_names, as.character, character(1))
       names(models) <- model_names
     }
   }
 
-  supported_models <- sapply(models, function(i) {
-    insight::is_model_supported(i) | inherits(i, "lavaan") | inherits(i, "parameters_model")
-  })
+  supported_models <- vapply(models, function(i) {
+    insight::is_model_supported(i) || inherits(i, "lavaan") || inherits(i, "parameters_model")
+  }, TRUE)
 
   if (!all(supported_models)) {
-    insight::format_warning(
-      sprintf("Following objects are not supported: %s", toString(model_names[!supported_models])),
-      "Dropping unsupported models now."
-    )
+    if (verbose) {
+      insight::format_alert(
+        sprintf("Following objects are not supported: %s", toString(model_names[!supported_models])),
+        "Dropping unsupported models now."
+      )
+    }
     models <- models[supported_models]
     model_names <- model_names[supported_models]
   }
@@ -137,7 +139,7 @@ compare_parameters <- function(...,
   if (!is.null(column_names)) {
     if (length(column_names) != length(model_names)) {
       if (isTRUE(verbose)) {
-        insight::format_warning("Number of column names does not match number of models.")
+        insight::format_alert("Number of column names does not match number of models.")
       }
     } else {
       model_names <- column_names

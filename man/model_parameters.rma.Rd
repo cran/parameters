@@ -12,6 +12,8 @@
   standardize = NULL,
   exponentiate = FALSE,
   include_studies = TRUE,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -61,6 +63,28 @@ non-Gaussian families.}
 \item{include_studies}{Logical, if \code{TRUE} (default), includes parameters
 for all studies. Else, only parameters for overall-effects are shown.}
 
+\item{keep}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{keep} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{drop}{See \code{keep}.}
+
 \item{verbose}{Toggle warnings and messages.}
 
 \item{...}{Arguments passed to or from other methods. For instance, when
@@ -96,13 +120,14 @@ if (require("metafor", quietly = TRUE)) {
     data = dat.bcg
   )
   dat$alloc <- ifelse(dat$alloc == "random", "random", "other")
-  model <- rma(yi, vi, mods = ~alloc, data = dat, digits = 3, slab = author)
+  d <<- dat
+  model <- rma(yi, vi, mods = ~alloc, data = d, digits = 3, slab = author)
   model_parameters(model)
 }
 
 if (require("metaBMA", quietly = TRUE)) {
   data(towels)
-  m <- meta_random(logOR, SE, study, data = towels)
+  m <- suppressWarnings(meta_random(logOR, SE, study, data = towels))
   model_parameters(m)
 }
 }

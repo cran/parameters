@@ -37,11 +37,17 @@
 #'
 #' @param model Statistical Model.
 #' @param ... Arguments passed to or from other methods. Non-documented
-#'   arguments are `digits`, `p_digits`, `ci_digits` and
-#'   `footer_digits` to set the number of digits for the output.
-#'   `group` can also be passed to the `print()` method. See details
-#'   in [print.parameters_model()] and 'Examples' in
-#'   [model_parameters.default()].
+#'   arguments are `digits`, `p_digits`, `ci_digits` and `footer_digits` to set
+#'   the number of digits for the output. If `s_value = TRUE`, the p-value will
+#'   be replaced by the S-value in the output (cf. _Rafi and Greenland 2020_).
+#'   `pd` adds an additional column with the _probability of direction_ (see
+#'   [bayestestR::p_direction()] for details). `groups` can be used to group
+#'   coefficients. It will be passed to the print-method, or can directly be used
+#'   in `print()`, see documentation in [print.parameters_model()]. Furthermore,
+#'   see 'Examples' in [model_parameters.default()]. For developers, whose
+#'   interest mainly is to get a "tidy" data frame of model summaries, it is
+#'   recommended to set `pretty_names = FALSE` to speed up computation of the
+#'   summary table.
 #'
 #' @seealso [insight::standardize_names()] to
 #'   rename columns into a consistent, standardized naming scheme.
@@ -285,6 +291,10 @@
 #'   - Neter, J., Wasserman, W., & Kutner, M. H. (1989). Applied linear
 #'   regression models.
 #'
+#'   - Rafi Z, Greenland S. Semantic and cognitive tools to aid statistical
+#'   science: replace confidence and significance by compatibility and surprise.
+#'   BMC Medical Research Methodology (2020) 20:244.
+
 #' @return A data frame of indices related to the model's parameters.
 #' @export
 model_parameters <- function(model, ...) {
@@ -304,6 +314,8 @@ model_parameters <- function(model, ...) {
 
 
 # Options -------------------------------------
+
+# Add new options to the docs in "print.parameters_model"
 
 # getOption("parameters_summary"): show model summary
 # getOption("parameters_mixed_summary"): show model summary for mixed models
@@ -639,6 +651,8 @@ model_parameters.glm <- function(model,
                                  exponentiate = FALSE,
                                  p_adjust = NULL,
                                  summary = getOption("parameters_summary", FALSE),
+                                 keep = NULL,
+                                 drop = NULL,
                                  vcov = NULL,
                                  vcov_args = NULL,
                                  verbose = TRUE,
@@ -669,6 +683,8 @@ model_parameters.glm <- function(model,
     exponentiate = exponentiate,
     p_adjust = p_adjust,
     summary = summary,
+    keep_parameters = keep,
+    drop_parameters = drop,
     vcov = vcov,
     vcov_args = vcov_args
   )

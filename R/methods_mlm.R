@@ -44,6 +44,8 @@ model_parameters.mlm <- function(model,
                                  standardize = NULL,
                                  exponentiate = FALSE,
                                  p_adjust = NULL,
+                                 keep = NULL,
+                                 drop = NULL,
                                  verbose = TRUE,
                                  ...) {
   out <- .model_parameters_generic(
@@ -57,6 +59,8 @@ model_parameters.mlm <- function(model,
     standardize = standardize,
     exponentiate = exponentiate,
     p_adjust = p_adjust,
+    keep_parameters = keep,
+    drop_parameters = drop,
     ...
   )
   attr(out, "object_name") <- insight::safe_deparse_symbol(substitute(model))
@@ -80,9 +84,9 @@ standard_error.mlm <- function(model,
     # manually
   } else {
     if (!is.null(vcov)) {
-      warning(insight::format_message(
+      insight::format_warning(
         "Unable to extract the variance-covariance matrix requested in `vcov`."
-      ))
+      )
     }
     cs <- stats::coef(summary(model))
     se <- lapply(names(cs), function(x) {
@@ -111,9 +115,9 @@ p_value.mlm <- function(model, vcov = NULL, vcov_args = NULL, ...) {
     # manually
   } else {
     if (!is.null(vcov)) {
-      warning(insight::format_message(
+      insight::format_warning(
         "Unable to extract the variance-covariance matrix requested in `vcov`."
-      ))
+      )
     }
     cs <- stats::coef(summary(model))
     p <- lapply(names(cs), function(x) {
@@ -164,7 +168,7 @@ ci.mlm <- function(x,
     )
 
     resp <- insight::get_parameters(x)$Response
-    if (!"Reponse" %in% colnames(out) && nrow(out) == length(resp)) {
+    if (!"Response" %in% colnames(out) && nrow(out) == length(resp)) {
       out[["Response"]] <- resp
     } else {
       if (!isTRUE(all(out$Response == resp))) {

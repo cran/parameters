@@ -30,7 +30,8 @@ model_parameters.kmeans <- function(model, ...) {
     data.frame(
       Cluster = row.names(model$centers),
       n_Obs = model$size,
-      Sum_Squares = model$withinss
+      Sum_Squares = model$withinss,
+      stringsAsFactors = FALSE
     ),
     model$centers
   )
@@ -149,7 +150,7 @@ predict.parameters_clusters <- function(object, newdata = NULL, names = NULL, ..
     } else if (is.character(names)) {
       out <- names[as.numeric(out)]
     } else {
-      stop("`names` must be a character vector or a list.", call. = FALSE)
+      insight::format_error("`names` must be a character vector or a list.")
     }
     out <- as.character(out)
   }

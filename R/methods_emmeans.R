@@ -20,7 +20,7 @@ model_parameters.emmGrid <- function(model,
                                      verbose = TRUE,
                                      ...) {
   # set default for p-adjust
-  emm_padjust <- tryCatch(model@misc$adjust, error = function(e) NULL)
+  emm_padjust <- .safe(model@misc$adjust)
   if (!is.null(emm_padjust) && is.null(p_adjust)) {
     p_adjust <- emm_padjust
   }
@@ -337,13 +337,13 @@ degrees_of_freedom.emm_list <- function(model, ...) {
   }
 
   s <- summary(model)
-  unname(unlist(lapply(s, function(i) {
+  unlist(lapply(s, function(i) {
     if (is.null(i$df)) {
       rep(Inf, nrow(i))
     } else {
       i$df
     }
-  })))
+  }), use.names = FALSE)
 }
 
 boot_em_df <- function(model) {

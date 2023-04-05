@@ -39,7 +39,7 @@ format_p_adjust <- function(method) {
     ## TODO add "mvt" method from emmeans
 
     # prepare arguments
-    all_methods <- c(tolower(stats::p.adjust.methods), "tukey", "scheffe", "sidak")
+    all_methods <- c(stats::p.adjust.methods, "tukey", "scheffe", "sidak")
 
     # for interaction terms, e.g. for "by" argument in emmeans
     # pairwise comparison, we have to adjust the rank resp. the
@@ -60,7 +60,7 @@ format_p_adjust <- function(method) {
 
 
     # only proceed if valid argument-value
-    if (tolower(p_adjust) %in% all_methods) {
+    if (tolower(p_adjust) %in% tolower(all_methods)) {
       # save old values, to check if p-adjustment worked
       old_p_vals <- params$p
       # find statistic column
@@ -116,7 +116,7 @@ format_p_adjust <- function(method) {
         insight::format_warning(paste0("Could not apply ", p_adjust, "-adjustment to p-values. Either something went wrong, or the non-adjusted p-values were already very large."))
       }
     } else if (verbose) {
-      insight::format_warning(paste0("`p_adjust` must be one of ", toString(all_methods)))
+      insight::format_alert(paste0("`p_adjust` must be one of ", toString(all_methods)))
     }
   }
   params

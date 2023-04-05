@@ -89,9 +89,7 @@ standard_error.default <- function(model,
   # vcov: function which returns a matrix
   if (is.function(vcov)) {
     args <- c(list(model), vcov_args, dots)
-    se <- tryCatch(sqrt(diag(do.call("vcov", args))),
-      error = function(x) NULL
-    )
+    se <- .safe(sqrt(diag(do.call("vcov", args))))
   }
 
   # vcov: character (with backward compatibility for `robust = TRUE`)
@@ -109,35 +107,29 @@ standard_error.default <- function(model,
 
   # classical se from summary()
   if (is.null(se)) {
-    se <- tryCatch(
-      {
-        if (grepl("Zelig-", class(model)[1], fixed = TRUE)) {
-          unlist(model$get_se())
-        } else {
-          .get_se_from_summary(model)
-        }
-      },
-      error = function(e) NULL
-    )
+    se <- .safe({
+      if (grepl("Zelig-", class(model)[1], fixed = TRUE)) {
+        unlist(model$get_se())
+      } else {
+        .get_se_from_summary(model)
+      }
+    })
   }
 
   # classical se from get_varcov()
   if (is.null(se)) {
-    se <- tryCatch(
-      {
-        varcov <- insight::get_varcov(model, component = component)
-        se_from_varcov <- sqrt(diag(varcov))
-        names(se_from_varcov) <- colnames(varcov)
-        se_from_varcov
-      },
-      error = function(e) NULL
-    )
+    se <- .safe({
+      varcov <- insight::get_varcov(model, component = component)
+      se_from_varcov <- sqrt(diag(varcov))
+      names(se_from_varcov) <- colnames(varcov)
+      se_from_varcov
+    })
   }
 
   # output
   if (is.null(se)) {
     if (isTRUE(verbose)) {
-      warning("Could not extract standard errors from model object.", call. = FALSE)
+      insight::format_warning("Could not extract standard errors from model object.")
     }
   } else {
     params <- insight::get_parameters(model, component = component)

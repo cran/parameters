@@ -7,13 +7,15 @@ model_parameters.lmodel2 <- function(model,
                                      ci = 0.95,
                                      exponentiate = FALSE,
                                      p_adjust = NULL,
+                                     keep = NULL,
+                                     drop = NULL,
                                      verbose = TRUE,
                                      ...) {
   if (!missing(ci)) {
     if (isTRUE(verbose)) {
-      message(insight::format_message("'lmodel2' models do not support other levels for confidence intervals than 0.95. Argument 'ci' is ignored."))
+      insight::format_alert("`lmodel2` models do not support other levels for confidence intervals than 0.95. Argument `ci` is ignored.")
     }
-    ci <- .95
+    ci <- 0.95
   }
 
   out <- .model_parameters_generic(
@@ -25,6 +27,8 @@ model_parameters.lmodel2 <- function(model,
     standardize = NULL,
     exponentiate = exponentiate,
     p_adjust = p_adjust,
+    keep_parameters = keep,
+    drop_parameters = drop,
     verbose = verbose,
     ...
   )

@@ -123,31 +123,25 @@ p_value.default <- function(model,
 
   # default 1st try: summary()
   if (is.null(p)) {
-    p <- tryCatch(
-      {
-        # Zelig-models are weird
-        if (grepl("Zelig-", class(model)[1], fixed = TRUE)) {
-          unlist(model$get_pvalue())
-        } else {
-          # try to get p-value from classical summary for default models
-          .get_pval_from_summary(model)
-        }
-      },
-      error = function(e) NULL
-    )
+    p <- .safe({
+      # Zelig-models are weird
+      if (grepl("Zelig-", class(model)[1], fixed = TRUE)) {
+        unlist(model$get_pvalue())
+      } else {
+        # try to get p-value from classical summary for default models
+        .get_pval_from_summary(model)
+      }
+    })
   }
 
   # default 2nd try: p value from test-statistic
   if (is.null(p)) {
-    p <- tryCatch(
-      {
-        stat <- insight::get_statistic(model)
-        p_from_stat <- 2 * stats::pt(abs(stat$Statistic), df = Inf, lower.tail = FALSE)
-        names(p_from_stat) <- stat$Parameter
-        p_from_stat
-      },
-      error = function(e) NULL
-    )
+    p <- .safe({
+      stat <- insight::get_statistic(model)
+      p_from_stat <- 2 * stats::pt(abs(stat$Statistic), df = Inf, lower.tail = FALSE)
+      names(p_from_stat) <- stat$Parameter
+      p_from_stat
+    })
   }
 
   # output
@@ -163,7 +157,7 @@ p_value.default <- function(model,
 
   # failure warning
   if (is.null(p) && isTRUE(verbose)) {
-    warning("Could not extract p-values from model object.", call. = FALSE)
+    insight::format_warning("Could not extract p-values from model object.")
   }
 }
 

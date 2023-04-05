@@ -127,12 +127,15 @@ model_parameters.mira <- function(model,
                                   ci = 0.95,
                                   exponentiate = FALSE,
                                   p_adjust = NULL,
+                                  keep = NULL,
+                                  drop = NULL,
                                   verbose = TRUE,
                                   ...) {
   insight::check_if_installed("mice")
+  micemodel <- suppressWarnings(mice::pool(model))
 
   out <- .model_parameters_generic(
-    model = mice::pool(model),
+    model = micemodel,
     ci = ci,
     bootstrap = FALSE,
     iterations = 10,
@@ -140,6 +143,9 @@ model_parameters.mira <- function(model,
     standardize = NULL,
     exponentiate = exponentiate,
     p_adjust = p_adjust,
+    keep_parameters = keep,
+    drop_parameters = drop,
+    verbose = verbose,
     ...
   )
 

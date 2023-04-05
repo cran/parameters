@@ -1,3 +1,40 @@
+# parameters 0.20.3
+
+## General
+
+* Added support for models of class `hglm` (*hglm*), `mblogit` (*mclogit*),
+  `fixest_multi` (*fixest*), and `phylolm` / `phyloglm` (*phylolm*).
+
+* `as.data.frame` methods for extracting posterior draws via `bootstrap_model()`
+  have been retired. Instead, directly using `bootstrap_model()` is recommended.
+  
+## Changes to functions
+
+* `equivalence_test()` gets a method for `ggeffects` objects from package
+  *ggeffects*.
+
+* `equivalence_test()` now prints the `SGPV` column instead of `% in ROPE`.
+  This is because the former `% in ROPE` actually was equivalent to the second
+  generation p-value (SGPV) and refers to the proportion of the _range_ of the
+  confidence interval that is covered by the ROPE. However, `% in ROPE` did
+  not refer to the probability mass of the underlying distribution of a confidence
+  interval that was covered by the ROPE, hence the old column name was a bit
+  misleading.
+
+* Fixed issue in `model_parameters.ggeffects()` to address forthcoming changes
+  in the _ggeffects_ package.
+
+## Bug fixes
+
+* When an invalid or not supported value for the `p_adjust` argument in
+  `model_parameters()` is provided, the valid options were not shown in correct
+  capital letters, where appropriate.
+
+* Fixed bug in `cluster_analysis()` for `include_factors = TRUE`.
+
+* Fixed warning in `model_parameters()` and `ci()` for models from package
+  *glmmTMB* when `ci_method` was either `"profile"` or `"uniroot"`.
+
 # parameters 0.20.2
 
 ## General

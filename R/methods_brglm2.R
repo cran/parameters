@@ -14,6 +14,9 @@ model_parameters.bracl <- function(model,
                                    standardize = NULL,
                                    exponentiate = FALSE,
                                    p_adjust = NULL,
+                                   summary = getOption("parameters_summary", FALSE),
+                                   keep = NULL,
+                                   drop = NULL,
                                    verbose = TRUE,
                                    ...) {
   # sanity check, warn if unsupported argument is used.
@@ -25,14 +28,7 @@ model_parameters.bracl <- function(model,
   )
 
   # detect number of levels of response
-  nl <- tryCatch(
-    {
-      nlevels(factor(insight::get_response(model)))
-    },
-    error = function(e) {
-      0
-    }
-  )
+  nl <- .safe(nlevels(factor(insight::get_response(model))), 0)
 
   # merge by response as well if more than 2 levels
   if (nl > 2) {
@@ -50,6 +46,9 @@ model_parameters.bracl <- function(model,
     standardize = standardize,
     exponentiate = exponentiate,
     p_adjust = p_adjust,
+    keep_parameters = keep,
+    drop_parameters = drop,
+    summary = summary,
     vcov = NULL,
     vcov_args = NULL
   )

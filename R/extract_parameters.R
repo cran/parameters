@@ -26,7 +26,7 @@
 
   if (isTRUE(standardize)) {
     if (verbose) {
-      insight::format_warning(
+      insight::format_alert(
         "`standardize` must be on of \"refit\", \"posthoc\", \"basic\", \"smart\" or \"pseudo\"."
       )
     }
@@ -316,14 +316,10 @@
 
 .add_sigma_residual_df <- function(params, model) {
   if (is.null(params$Component) || !"sigma" %in% params$Component) {
-    sig <- tryCatch(suppressWarnings(insight::get_sigma(model, ci = NULL, verbose = FALSE)),
-      error = function(e) NULL
-    )
+    sig <- .safe(suppressWarnings(insight::get_sigma(model, ci = NULL, verbose = FALSE)))
     attr(params, "sigma") <- as.numeric(sig)
 
-    resdf <- tryCatch(suppressWarnings(insight::get_df(model, type = "residual")),
-      error = function(e) NULL
-    )
+    resdf <- .safe(suppressWarnings(insight::get_df(model, type = "residual")))
     attr(params, "residual_df") <- as.numeric(resdf)
   }
   params
@@ -404,7 +400,7 @@
 
   if (nrow(out) == 0) {
     if (verbose) {
-      insight::format_warning(
+      insight::format_alert(
         "The pattern defined in the `keep` (and `drop`) arguments would remove all parameters from the output. Thus, selecting specific parameters will be ignored."
       )
     }
@@ -681,7 +677,7 @@
       grep,
       x = parameters$Parameter,
       fixed = TRUE
-    )))
+    ), use.names = FALSE))
     parameters$Component[index] <- "within"
   }
 
@@ -691,7 +687,7 @@
       grep,
       x = parameters$Parameter,
       fixed = TRUE
-    )))
+    ), use.names = FALSE))
     parameters$Component[index] <- "between"
   }
 
@@ -716,7 +712,7 @@
     if (!is.null(attr(mf[[i]], which_effect, exact = TRUE))) {
       i
     }
-  }))
+  }), use.names = FALSE)
 }
 
 
@@ -745,11 +741,13 @@
                                          verbose = TRUE,
                                          ...) {
   # no ROPE for multi-response models
-  if (insight::is_multivariate(model)) {
+  if (insight::is_multivariate(model) && any(c("rope", "p_rope") %in% test)) {
     test <- setdiff(test, c("rope", "p_rope"))
-    insight::format_warning(
-      "Multivariate response models are not yet supported for tests `rope` and `p_rope`."
-    )
+    if (verbose) {
+      insight::format_alert(
+        "Multivariate response models are not yet supported for tests `rope` and `p_rope`."
+      )
+    }
   }
 
   # MCMCglmm need special handling
@@ -887,7 +885,7 @@
   valid_std_options <- c("all", "std.all", "latent", "std.lv", "no_exogenous", "std.nox")
   if (!is.logical(standardize) && !(standardize %in% valid_std_options)) {
     if (verbose) {
-      insight::format_warning(
+      insight::format_alert(
         "`standardize` should be one of `TRUE`, \"all\", \"std.all\", \"latent\", \"std.lv\", \"no_exogenous\" or \"std.nox\".",
         "Returning unstandardized solution."
       )
@@ -899,7 +897,7 @@
   if (length(ci) > 1L) {
     ci <- ci[1]
     if (verbose) {
-      insight::format_warning(
+      insight::format_alert(
         paste0("lavaan models only accept one level of CI. Keeping the first one: `ci = ", ci, "`.")
       )
     }
@@ -1021,7 +1019,7 @@
 .check_rank_deficiency <- function(p, verbose = TRUE) {
   if (anyNA(p$Estimate)) {
     if (isTRUE(verbose)) {
-      insight::format_warning(
+      insight::format_alert(
         sprintf(
           "Model matrix is rank deficient. Parameters `%s` were not estimable.",
           toString(p$Parameter[is.na(p$Estimate)])

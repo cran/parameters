@@ -34,13 +34,14 @@
 #'     data = dat.bcg
 #'   )
 #'   dat$alloc <- ifelse(dat$alloc == "random", "random", "other")
-#'   model <- rma(yi, vi, mods = ~alloc, data = dat, digits = 3, slab = author)
+#'   d <<- dat
+#'   model <- rma(yi, vi, mods = ~alloc, data = d, digits = 3, slab = author)
 #'   model_parameters(model)
 #' }
 #'
 #' if (require("metaBMA", quietly = TRUE)) {
 #'   data(towels)
-#'   m <- meta_random(logOR, SE, study, data = towels)
+#'   m <- suppressWarnings(meta_random(logOR, SE, study, data = towels))
 #'   model_parameters(m)
 #' }
 #' }
@@ -54,6 +55,8 @@ model_parameters.rma <- function(model,
                                  standardize = NULL,
                                  exponentiate = FALSE,
                                  include_studies = TRUE,
+                                 keep = NULL,
+                                 drop = NULL,
                                  verbose = TRUE,
                                  ...) {
   # handle ci-level that was defined in function call...
@@ -70,6 +73,9 @@ model_parameters.rma <- function(model,
     merge_by = "Parameter",
     standardize = standardize,
     exponentiate = exponentiate,
+    keep_parameters = keep,
+    drop_parameters = drop,
+    verbose = verbose,
     ...
   )
 

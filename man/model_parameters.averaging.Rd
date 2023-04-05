@@ -35,7 +35,8 @@
 \alias{model_parameters.marginaleffects}
 \alias{model_parameters.comparisons}
 \alias{model_parameters.marginalmeans}
-\alias{model_parameters.deltamethod}
+\alias{model_parameters.hypotheses}
+\alias{model_parameters.slopes}
 \alias{model_parameters.predictions}
 \alias{model_parameters.margins}
 \alias{model_parameters.maxLik}
@@ -82,6 +83,9 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  summary = getOption("parameters_summary", FALSE),
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -92,6 +96,9 @@
   component = c("conditional", "full"),
   exponentiate = FALSE,
   p_adjust = NULL,
+  summary = getOption("parameters_summary", FALSE),
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -106,6 +113,8 @@
   exponentiate = FALSE,
   p_adjust = NULL,
   summary = getOption("parameters_summary", FALSE),
+  keep = NULL,
+  drop = NULL,
   vcov = NULL,
   vcov_args = NULL,
   verbose = TRUE,
@@ -121,6 +130,9 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  summary = getOption("parameters_summary", FALSE),
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -130,6 +142,9 @@
   ci = 0.95,
   ci_method = "residual",
   p_adjust = NULL,
+  summary = getOption("parameters_summary", FALSE),
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -176,6 +191,8 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -188,6 +205,8 @@
   iterations = 1000,
   standardize = NULL,
   exponentiate = FALSE,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -201,19 +220,39 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
 
-\method{model_parameters}{ivFixed}(model, ci = 0.95, ci_method = "wald", verbose = TRUE, ...)
+\method{model_parameters}{ivFixed}(
+  model,
+  ci = 0.95,
+  ci_method = "wald",
+  keep = NULL,
+  drop = NULL,
+  verbose = TRUE,
+  ...
+)
 
-\method{model_parameters}{ivprobit}(model, ci = 0.95, ci_method = "wald", verbose = TRUE, ...)
+\method{model_parameters}{ivprobit}(
+  model,
+  ci = 0.95,
+  ci_method = "wald",
+  keep = NULL,
+  drop = NULL,
+  verbose = TRUE,
+  ...
+)
 
 \method{model_parameters}{lmodel2}(
   model,
   ci = 0.95,
   exponentiate = FALSE,
   p_adjust = NULL,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -228,6 +267,8 @@
   exponentiate = FALSE,
   p_adjust = NULL,
   summary = getOption("parameters_summary", FALSE),
+  keep = NULL,
+  drop = NULL,
   vcov = NULL,
   vcov_args = NULL,
   verbose = TRUE,
@@ -250,7 +291,9 @@
 
 \method{model_parameters}{marginalmeans}(model, ci = 0.95, ...)
 
-\method{model_parameters}{deltamethod}(model, ci = 0.95, ...)
+\method{model_parameters}{hypotheses}(model, ci = 0.95, ...)
+
+\method{model_parameters}{slopes}(model, ci = 0.95, ...)
 
 \method{model_parameters}{predictions}(model, ci = 0.95, ...)
 
@@ -309,6 +352,8 @@
   standardize = NULL,
   exponentiate = FALSE,
   include_studies = TRUE,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -388,6 +433,8 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -401,6 +448,8 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -414,6 +463,8 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -427,6 +478,8 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -453,6 +506,8 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -485,7 +540,15 @@
   ...
 )
 
-\method{model_parameters}{glht}(model, ci = 0.95, exponentiate = FALSE, verbose = TRUE, ...)
+\method{model_parameters}{glht}(
+  model,
+  ci = 0.95,
+  exponentiate = FALSE,
+  keep = NULL,
+  drop = NULL,
+  verbose = TRUE,
+  ...
+)
 
 \method{model_parameters}{mvord}(
   model,
@@ -494,6 +557,9 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  summary = getOption("parameters_summary", FALSE),
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -532,6 +598,9 @@
   iterations = 1000,
   standardize = NULL,
   exponentiate = FALSE,
+  p_adjust = NULL,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -545,6 +614,9 @@
   standardize = NULL,
   exponentiate = FALSE,
   p_adjust = NULL,
+  summary = getOption("parameters_summary", FALSE),
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -559,6 +631,8 @@
   exponentiate = FALSE,
   p_adjust = NULL,
   summary = getOption("parameters_summary", FALSE),
+  keep = NULL,
+  drop = NULL,
   vcov = NULL,
   vcov_args = NULL,
   verbose = TRUE,
@@ -575,6 +649,8 @@
   exponentiate = FALSE,
   p_adjust = NULL,
   summary = FALSE,
+  keep = NULL,
+  drop = NULL,
   verbose = TRUE,
   ...
 )
@@ -655,6 +731,32 @@ possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
 \code{"sidak"} and \code{"none"} to explicitly disable adjustment for
 \code{emmGrid} objects (from \strong{emmeans}).}
 
+\item{summary}{Logical, if \code{TRUE}, prints summary information about the
+model (model formula, number of observations, residual standard deviation
+and more).}
+
+\item{keep}{Character containing a regular expression pattern that
+describes the parameters that should be included (for \code{keep}) or excluded
+(for \code{drop}) in the returned data frame. \code{keep} may also be a
+named list of regular expressions. All non-matching parameters will be
+removed from the output. If \code{keep} is a character vector, every parameter
+name in the \emph{"Parameter"} column that matches the regular expression in
+\code{keep} will be selected from the returned data frame (and vice versa,
+all parameter names matching \code{drop} will be excluded). Furthermore, if
+\code{keep} has more than one element, these will be merged with an \code{OR}
+operator into a regular expression pattern like this: \code{"(one|two|three)"}.
+If \code{keep} is a named list of regular expression patterns, the names of the
+list-element should equal the column name where selection should be
+applied. This is useful for model objects where \code{model_parameters()}
+returns multiple columns with parameter components, like in
+\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
+should match the parameter names as they are stored in the returned data
+frame, which can be different from how they are printed. Inspect the
+\verb{$Parameter} column of the parameters table to get the exact parameter
+names.}
+
+\item{drop}{See \code{keep}.}
+
 \item{verbose}{Toggle warnings and messages.}
 
 \item{ci_method}{Method for computing degrees of freedom for
@@ -666,10 +768,6 @@ options (which vary depending on the model class): \code{"residual"},
 \emph{Confidence intervals and approximation of degrees of freedom} in
 \code{\link[=model_parameters]{model_parameters()}} for further details. When \code{ci_method=NULL}, in most
 cases \code{"wald"} is used then.}
-
-\item{summary}{Logical, if \code{TRUE}, prints summary information about the
-model (model formula, number of observations, residual standard deviation
-and more).}
 
 \item{vcov}{Variance-covariance matrix used to compute uncertainty estimates
 (e.g., for robust standard errors). This argument accepts a covariance matrix,
@@ -713,28 +811,6 @@ the bounds are set to \code{x +- 0.1*SD(response)}.}
 
 \item{rope_ci}{The Credible Interval (CI) probability, corresponding to the
 proportion of HDI, to use for the percentage in ROPE.}
-
-\item{keep}{Character containing a regular expression pattern that
-describes the parameters that should be included (for \code{keep}) or excluded
-(for \code{drop}) in the returned data frame. \code{keep} may also be a
-named list of regular expressions. All non-matching parameters will be
-removed from the output. If \code{keep} is a character vector, every parameter
-name in the \emph{"Parameter"} column that matches the regular expression in
-\code{keep} will be selected from the returned data frame (and vice versa,
-all parameter names matching \code{drop} will be excluded). Furthermore, if
-\code{keep} has more than one element, these will be merged with an \code{OR}
-operator into a regular expression pattern like this: \code{"(one|two|three)"}.
-If \code{keep} is a named list of regular expression patterns, the names of the
-list-element should equal the column name where selection should be
-applied. This is useful for model objects where \code{model_parameters()}
-returns multiple columns with parameter components, like in
-\code{\link[=model_parameters.lavaan]{model_parameters.lavaan()}}. Note that the regular expression pattern
-should match the parameter names as they are stored in the returned data
-frame, which can be different from how they are printed. Inspect the
-\verb{$Parameter} column of the parameters table to get the exact parameter
-names.}
-
-\item{drop}{See \code{keep}.}
 
 \item{effects}{Should results for fixed effects, random effects or both be
 returned? Only applies to mixed models. May be abbreviated.}

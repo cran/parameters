@@ -555,7 +555,7 @@
 
 .parameter_groups <- function(x, groups) {
   # only apply to conditional component for now
-  if ("Component" %in% colnames(x) && sum(x$Component == "conditional") == 0) {
+  if ("Component" %in% colnames(x) && !any(x$Component == "conditional")) {
     return(x)
   }
   if ("Component" %in% colnames(x)) {
@@ -582,15 +582,13 @@
 
     # sanity check - check if all parameter names in the
     # group list are spelled correctly
-    misspelled <- sapply(group_rows, function(i) {
-      anyNA(i)
-    })
+    misspelled <- vapply(group_rows, anyNA, TRUE)
 
     if (any(misspelled)) {
       # remove invalid groups
       group_rows[misspelled] <- NULL
       # tell user
-      insight::format_warning(
+      insight::format_alert(
         "Couldn't find one or more parameters specified in following groups:",
         toString(names(misspelled[misspelled])),
         "Maybe you misspelled parameter names?"
@@ -616,7 +614,7 @@
     names(groups) <- group_names
 
     # order groups
-    groups <- groups[order(groups)]
+    groups <- sort(groups, na.last = TRUE)
   }
 
 
@@ -773,7 +771,7 @@
   ignore_group <- isTRUE(attributes(x)$ignore_group)
   ran_pars <- isTRUE(attributes(x)$ran_pars)
   is_ggeffects <- isTRUE(attributes(x)$is_ggeffects)
-
+  is_fixest_multi <- identical(attributes(x)$model_class, "fixest_multi")
 
   # name of "Parameter" column - usually the first column, however, for
   # ggeffects objects, this column has the name of the focal term
@@ -855,6 +853,15 @@
     names(tables)[wrong_names] <- paste0("random.", names(tables)[wrong_names])
   }
 
+  # fixest_multi models can have a special structure, with multiple responses
+  # and multiple rhs of formulas. We fix headers here
+
+  if (is_fixest_multi && length(split_column) > 1) {
+    old_names <- unique(paste0(x$Response, ".", x$Group))
+    new_names <- unique(paste0(x$Response, " ~ ", x$Group))
+    names(tables) <- new_names[match(names(tables), old_names)]
+  }
+
 
   for (type in names(tables)) {
     # do we have emmeans emlist? and contrasts?
@@ -928,8 +935,8 @@
       colnames(tables[[type]])[which(colnames(tables[[type]]) == paste0("Std_", coef_column))] <- paste0("Std_", zi_coef_name)
     }
 
-    # rename columns for correlation part
-    if (type == "correlation" && !is.null(coef_column)) {
+    # rename columns for correlation, location or scale part
+    if (type %in% c("correlation", "scale", "location") && !is.null(coef_column)) {
       colnames(tables[[type]])[which(colnames(tables[[type]]) == coef_column)] <- "Estimate"
     }
 
@@ -1026,7 +1033,7 @@
     )
     do.call(rbind, final_table)
   } else {
-    datawizard::compact_list(final_table)
+    insight::compact_list(final_table)
   }
 }
 
@@ -1040,11 +1047,9 @@
   # fix for lavaan here
   if (is_lavaan) {
     for (i in seq_along(final_table)) {
-      if (!is.null(final_table[[i]]$Link) && !is.null(final_table[[i]]$To)) {
-        if (all(is.na(final_table[[i]]$Link))) {
-          final_table[[i]]$Link <- final_table[[i]]$To
-          final_table[[i]]$To <- NA
-        }
+      if (!is.null(final_table[[i]]$Link) && !is.null(final_table[[i]]$To) && all(is.na(final_table[[i]]$Link))) {
+        final_table[[i]]$Link <- final_table[[i]]$To
+        final_table[[i]]$To <- NA
       }
       colnames(final_table[[i]])[1] <- "Parameter"
       if (!is.null(final_table[[i]]$To) && all(is.na(final_table[[i]]$To))) {

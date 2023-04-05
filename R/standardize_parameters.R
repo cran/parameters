@@ -4,8 +4,8 @@
 #'
 #' @param model A statistical model.
 #' @param method The method used for standardizing the parameters. Can be
-#'   `"refit"` (default), `"posthoc"`, `"smart"`, `"basic"` or `"pseudo"`. See
-#'   'Details'.
+#'   `"refit"` (default), `"posthoc"`, `"smart"`, `"basic"`, `"pseudo"` or
+#'   `"sdy"`. See Details'.
 #' @param include_response If `TRUE` (default), the response value will also be
 #'   standardized. If `FALSE`, only the predictors will be standardized. For
 #'   GLMs the response value will never be standardized (see *Generalized Linear
@@ -71,6 +71,17 @@
 #' is used for level 2 predictors, and `sqrt(residual-variance)` is used for
 #' level 1 predictors (Hoffman 2015, page 342). A warning is given when a
 #' within-group variable is found to have access between-group variance.
+#' - **sdy** (*for logistic regression models only*): This y-standardization
+#' is useful when comparing coefficients of logistic regression models across
+#' models for the same sample. Unobserved heterogeneity varies across models
+#' with different independent variables, and thus, odds ratios from the same
+#' predictor of different models cannot be compared directly. The
+#' y-standardization makes coefficients "comparable across models by dividing
+#' them with the estimated standard deviation of the latent variable for each
+#' model" (Mood 2010). Thus, whenever one has multiple logistic regression models
+#' that are fit to the same data and share certain predictors (e.g. nested
+#' models), it can be useful to use this standardization approach to make
+#' log-odds or odds ratios comparable.
 #'
 #' ## Transformed Variables
 #' When the model's formula contains transformations (e.g. `y ~ exp(X)`) `method
@@ -143,10 +154,10 @@
 #' @examplesIf require("rstanarm", quietly = TRUE)
 #' \donttest{
 #' model <- rstanarm::stan_glm(rating ~ critical + privileges, data = attitude, refresh = 0)
-#' standardize_posteriors(model, method = "refit")
-#' standardize_posteriors(model, method = "posthoc")
-#' standardize_posteriors(model, method = "smart")
-#' head(standardize_posteriors(model, method = "basic"))
+#' standardize_posteriors(model, method = "refit", verbose = FALSE)
+#' standardize_posteriors(model, method = "posthoc", verbose = FALSE)
+#' standardize_posteriors(model, method = "smart", verbose = FALSE)
+#' head(standardize_posteriors(model, method = "basic", verbose = FALSE))
 #' }
 #'
 #' @references
@@ -163,6 +174,9 @@
 #'
 #' - Gelman, A. (2008). Scaling regression inputs by dividing by two standard
 #'   deviations. Statistics in medicine, 27(15), 2865-2873.
+#'
+#' - Mood C. Logistic Regression: Why We Cannot Do What We Think We Can Do, and
+#'   What We Can Do About It. European Sociological Review (2010) 26:67–82.
 #'
 #' @export
 #' @aliases standardise_parameters
@@ -193,7 +207,7 @@ standardize_parameters.default <- function(model,
   .is_model_valid(model)
 
   object_name <- insight::safe_deparse_symbol(substitute(model))
-  method <- match.arg(method, c("refit", "posthoc", "smart", "basic", "classic", "pseudo"))
+  method <- match.arg(method, c("refit", "posthoc", "smart", "basic", "classic", "pseudo", "sdy"))
 
   m_info <- .get_model_info(model, ...)
   include_response <- include_response && .safe_to_standardize_response(m_info, verbose = verbose)
@@ -207,18 +221,23 @@ standardize_parameters.default <- function(model,
   }
 
   # need model_parameters to return the parameters, not the terms
-  if (inherits(model, "aov")) class(model) <- class(model)[class(model) != "aov"]
+  if (inherits(model, "aov")) {
+    class(model) <- class(model)[class(model) != "aov"]
+  }
   pars <- model_parameters(model, ci = ci, standardize = NULL, effects = "fixed", as_draws = TRUE, ...)
 
   # should post hoc exponentiate?
   exponentiate <- isTRUE(eval(match.call()[["exponentiate"]], envir = parent.frame()))
   coefficient_name <- attr(pars, "coefficient_name")
 
-  if (method %in% c("posthoc", "smart", "basic", "classic", "pseudo")) {
+  if (method %in% c("posthoc", "smart", "basic", "classic", "pseudo", "sdy")) {
     if (m_info$is_multivariate) {
       insight::format_error(
         "Cannot post-hoc standardize multivariate models. Try using method \"refit\" instead."
       )
+    }
+    if (method == "sdy" && !m_info$is_binomial) {
+      insight::format_error("Method \"sdy\" is only applicable to logistic regression models.")
     }
 
     pars <- .standardize_parameters_posthoc(
@@ -271,7 +290,7 @@ standardize_parameters.mediate <- function(model,
                                            verbose = TRUE,
                                            ...) {
   if (method != "refit") {
-    warning("Only `method=\"refit\"` is supported for mediation models.", immediate. = TRUE, call. = FALSE)
+    insight::format_warning("Only `method=\"refit\"` is supported for mediation models.")
   }
 
   NextMethod("standardize_parameters",
@@ -292,12 +311,12 @@ standardize_parameters.parameters_model <- function(model,
                                                     ...) {
   if (method == "refit") {
     insight::format_error(
-      "Argument `refit` not supported for standardizing results from `model_parameters()`.",
+      "Argument `refit` not supported for standardizing results from `model_parameters()`."
     )
   }
 
   if (!is.null(ci)) {
-    insight::format_warning(
+    insight::format_alert(
       "Argument `ci` not supported for standardizing results from `model_parameters()`. It is ignored."
     )
   }
@@ -310,7 +329,10 @@ standardize_parameters.parameters_model <- function(model,
   m_info <- .get_model_info(model, ...)
   include_response <- include_response && .safe_to_standardize_response(m_info, verbose = verbose)
 
-  if (is.null(exponentiate <- attr(pars, "exponentiate"))) exponentiate <- FALSE
+  exponentiate <- attr(pars, "exponentiate")
+  if (is.null(exponentiate)) {
+    exponentiate <- FALSE
+  }
   pars <- .standardize_parameters_posthoc(
     pars, method, model, m_info, robust, two_sd, exponentiate, include_response, verbose
   )
@@ -352,7 +374,7 @@ standardize_parameters.bootstrap_model <- function(model,
                                                    verbose = TRUE,
                                                    ...) {
   object_name <- insight::safe_deparse_symbol(substitute(model))
-  method <- match.arg(method, c("refit", "posthoc", "smart", "basic", "classic", "pseudo"))
+  method <- match.arg(method, c("refit", "posthoc", "smart", "basic", "classic", "pseudo", "sdy"))
 
   pars <- model
   model <- attr(pars, "original_model")
@@ -534,7 +556,7 @@ print_html.parameters_standardized <- function(x, digits = 2, ...) {
   method <- .cant_smart_or_posthoc(method, model, mi, pars$Parameter)
 
   if (robust && method == "pseudo") {
-    insight::format_warning("`robust` standardization not available for `pseudo` method.")
+    insight::format_alert("`robust` standardization not available for `pseudo` method.")
     robust <- FALSE
   }
 
@@ -565,8 +587,12 @@ print_html.parameters_standardized <- function(x, digits = 2, ...) {
   } else if (method == "pseudo") {
     col_dev_resp <- "Deviation_Response_Pseudo"
     col_dev_pred <- "Deviation_Pseudo"
+  } else if (method == "sdy") {
+    col_dev_resp <- "Deviation_Response_Basic"
+    col_dev_pred <- "Deviation_SDy"
+    include_response <- FALSE
   } else {
-    insight::format_error("`method` must be one of \"basic\", \"posthoc\", \"smart\" or \"pseudo\".")
+    insight::format_error("`method` must be one of \"basic\", \"posthoc\", \"smart\", \"pseudo\" or \"sdy\".")
   }
 
 
@@ -580,7 +606,11 @@ print_html.parameters_standardized <- function(x, digits = 2, ...) {
     pars[, colnames(pars) %in% .col_2_scale, drop = FALSE],
     function(x) {
       if (exponentiate) {
-        x^.dev_factor
+        if (method == "sdy") {
+          exp(x * .dev_factor)
+        } else {
+          x^.dev_factor
+        }
       } else {
         x * .dev_factor
       }
@@ -612,23 +642,20 @@ print_html.parameters_standardized <- function(x, digits = 2, ...) {
   if (method %in% c("smart", "posthoc")) {
     cant_posthocsmart <- FALSE
 
-    if (mi$is_linear) {
-      if (!colnames(stats::model.frame(model))[1] == insight::find_response(model)) {
-        can_posthocsmart <- TRUE
-      }
+    if (mi$is_linear && !colnames(stats::model.frame(model))[1] == insight::find_response(model)) {
+      can_posthocsmart <- TRUE
     }
 
     # factors are allowed
-    if (!cant_posthocsmart &&
-      !all(params == insight::clean_names(params) | grepl("(as.factor|factor)\\(", params))) {
+    if (!cant_posthocsmart && !all(params == insight::clean_names(params) | grepl("(as.factor|factor)\\(", params))) {
       cant_posthocsmart <- TRUE
     }
 
     if (cant_posthocsmart) {
-      warning(insight::format_message(
+      insight::format_alert(
         "Method `", method, "` does not currently support models with transformed parameters.",
         "Reverting to `basic` method. Concider using the `refit` method directly."
-      ), call. = FALSE)
+      )
       method <- "basic"
     }
   }
@@ -639,7 +666,7 @@ print_html.parameters_standardized <- function(x, digits = 2, ...) {
 #' @keywords internal
 .should_pseudo <- function(method, model, mi) {
   if (method == "pseudo" && !(mi$is_mixed && length(insight::find_random(model)$random) == 1)) {
-    insight::format_warning(
+    insight::format_alert(
       "`pseudo` method only available for 2-level (G)LMMs.",
       "Setting method to `basic`."
     )
@@ -653,10 +680,10 @@ print_html.parameters_standardized <- function(x, digits = 2, ...) {
 .safe_to_standardize_response <- function(info, verbose = TRUE) {
   if (is.null(info)) {
     if (verbose) {
-      warning(insight::format_message(
+      insight::format_warning(
         "Unable to verify if response should not be standardized.",
         "Response will be standardized."
-      ), immediate. = TRUE, call. = FALSE)
+      )
     }
     return(TRUE)
   }
@@ -682,7 +709,7 @@ print_html.parameters_standardized <- function(x, digits = 2, ...) {
 
 #' @keywords internal
 .get_model_info <- function(model, model_info = NULL, ...) {
-  if (is.null(model_info)) model_info <- insight::model_info(model)
+  if (is.null(model_info)) model_info <- insight::model_info(model, verbose = FALSE)
 
   model_info
 }

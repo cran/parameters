@@ -368,10 +368,10 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
         },
         error = function(e) {
           if (isTRUE(verbose)) {
-            message(insight::format_message(
+            insight::format_alert(
               "Cannot compute profiled standard errors and confidence intervals for random effects parameters.",
               "Your model may suffer from singularity (see '?lme4::isSingular' and '?performance::check_singularity')."
-            ))
+            )
           }
           out
         }
@@ -380,6 +380,16 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
       # lme4 - wald / normal CI
 
       merDeriv_loaded <- isNamespaceLoaded("merDeriv")
+      # detach on exit
+      on.exit(
+        {
+          if (!merDeriv_loaded) {
+            .unregister_vcov()
+          }
+        },
+        add = TRUE,
+        after = FALSE
+      )
 
       # Wald based CIs
       # see https://stat.ethz.ch/pipermail/r-sig-mixed-models/2022q1/029985.html
@@ -504,13 +514,8 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
             out
           }
         )
-
-        # detach
-        if (!merDeriv_loaded) {
-          .unregister_vcov()
-        }
       } else if (isTRUE(verbose)) {
-        message(insight::format_message("Package 'merDeriv' needs to be installed to compute confidence intervals for random effect parameters."))
+        insight::format_alert("Package 'merDeriv' needs to be installed to compute confidence intervals for random effect parameters.")
       }
     }
   } else if (inherits(model, "glmmTMB")) {
@@ -702,7 +707,7 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
       attr(vc2, "useSc") <- FALSE
     }
 
-    varcorr <- datawizard::compact_list(list(vc1, vc2))
+    varcorr <- insight::compact_list(list(vc1, vc2))
     names(varcorr) <- c("cond", "zi")[seq_along(varcorr)]
 
     # joineRML
@@ -752,7 +757,7 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
       }
       out
     })
-    varcorr <- datawizard::compact_list(varcorr)
+    varcorr <- insight::compact_list(varcorr)
     names(varcorr) <- setdiff(names(lme4::VarCorr(model)), "residual__")
     attr(varcorr, "sc") <- lme4::VarCorr(model)$residual__$sd[1, 1]
 

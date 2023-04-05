@@ -12,7 +12,7 @@ model_parameters.ggeffects <- function(model, keep = NULL, drop = NULL, verbose 
     focal_term <- "Time"
   }
 
-  model <- as.data.frame(model)
+  model <- as.data.frame(model, terms_to_colnames = FALSE)
 
   # rename columns
   new_colnames <- colnames(model)
@@ -76,19 +76,19 @@ model_parameters.ggeffects <- function(model, keep = NULL, drop = NULL, verbose 
   })
   footer <- NULL
 
-  if (!datawizard::is_empty_object(cv)) {
+  if (!insight::is_empty_object(cv)) {
     cv.names <- names(cv)
     cv.space <- max(nchar(cv.names))
 
     # ignore this string when determining maximum length
     poplev <- which(cv %in% c("NA (population-level)", "0 (population-level)"))
-    if (!datawizard::is_empty_object(poplev)) {
+    if (!insight::is_empty_object(poplev)) {
       mcv <- cv[-poplev]
     } else {
       mcv <- cv
     }
 
-    if (!datawizard::is_empty_object(mcv)) {
+    if (!insight::is_empty_object(mcv)) {
       cv.space2 <- max(nchar(mcv))
     } else {
       cv.space2 <- 0
@@ -99,4 +99,17 @@ model_parameters.ggeffects <- function(model, keep = NULL, drop = NULL, verbose 
   }
 
   footer
+}
+
+
+.get_ggeffects_model <- function(x) {
+  obj_name <- attr(x, "model.name", exact = TRUE)
+  .model <- NULL
+  if (!is.null(obj_name)) {
+    .model <- .safe(get(obj_name, envir = parent.frame()))
+    if (is.null(.model)) {
+      .model <- .safe(get(obj_name, envir = globalenv()))
+    }
+  }
+  .model
 }

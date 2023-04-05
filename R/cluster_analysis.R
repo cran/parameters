@@ -7,7 +7,8 @@
 #' - Maechler M, Rousseeuw P, Struyf A, Hubert M, Hornik K (2014) cluster: Cluster
 #' Analysis Basics and Extensions. R package.
 #'
-#' @param x A data frame.
+#' @param x A data frame (with at least two variables), or a matrix (with at
+#'   least two columns).
 #' @param n Number of clusters used for supervised cluster methods. If `NULL`,
 #' the number of clusters to extract is determined by calling [`n_clusters()`].
 #' Note that this argument does not apply for unsupervised clustering methods
@@ -47,7 +48,8 @@
 #'   as `nrow(x)`.
 #'
 #' @note
-#' There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html) implemented in the [**see**-package](https://easystats.github.io/see/).
+#' There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html)
+#' implemented in the [**see**-package](https://easystats.github.io/see/).
 #'
 #' @details
 #' The `print()` and `plot()` methods show the (standardized) mean value for
@@ -146,6 +148,16 @@ cluster_analysis <- function(x,
     x <- as.data.frame(x)
   }
 
+  # sanity check - needs data frame
+  if (!is.data.frame(x)) {
+    insight::format_error("`x` needs to be a data frame.")
+  }
+
+  # sanity check - need at least two columns
+  if (ncol(x) < 2) {
+    insight::format_error("At least two variables required to compute a cluster analysis.")
+  }
+
   # check if we have a correlation/covariance or distance matrix?
   if (nrow(x) == ncol(x) && identical(round(x[lower.tri(x)], 10), round(x[upper.tri(x)], 10))) {
     ## TODO: special handling
@@ -221,7 +233,11 @@ cluster_analysis <- function(x,
   # Create NA-vector of same length as original data frame
   clusters <- rep(NA, times = nrow(x))
   # Create vector with cluster group classification (with missing)
-  complete_cases <- stats::complete.cases(x[names(data)])
+  if (include_factors) {
+    complete_cases <- stats::complete.cases(x)
+  } else {
+    complete_cases <- stats::complete.cases(x[vapply(x, is.numeric, TRUE)])
+  }
   clusters[complete_cases] <- rez$clusters
 
   # Get clustering parameters
@@ -304,9 +320,13 @@ cluster_analysis <- function(x,
     out <- list(model = attributes(rez)$model, clusters = rez$Cluster)
   } else {
     if (distance_method %in% c("correlation", "uncentered", "abscor")) {
-      insight::format_warning(paste0(
-        "Method `", distance_method, "` not supported by regular `hclust()`. Please specify another one or set `n = NULL` to use pvclust."
-      ))
+      insight::format_warning(
+        paste0(
+          "Method `",
+          distance_method,
+          "` not supported by regular `hclust()`. Please specify another one or set `n = NULL` to use pvclust."
+        )
+      )
     }
     dist <- dist(data, method = distance_method, ...)
     model <- stats::hclust(dist, method = hclust_method, ...)

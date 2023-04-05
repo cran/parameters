@@ -101,11 +101,17 @@ names.}
 \item{verbose}{Toggle warnings and messages.}
 
 \item{...}{Arguments passed to or from other methods. Non-documented
-arguments are \code{digits}, \code{p_digits}, \code{ci_digits} and
-\code{footer_digits} to set the number of digits for the output.
-\code{group} can also be passed to the \code{print()} method. See details
-in \code{\link[=print.parameters_model]{print.parameters_model()}} and 'Examples' in
-\code{\link[=model_parameters.default]{model_parameters.default()}}.}
+arguments are \code{digits}, \code{p_digits}, \code{ci_digits} and \code{footer_digits} to set
+the number of digits for the output. If \code{s_value = TRUE}, the p-value will
+be replaced by the S-value in the output (cf. \emph{Rafi and Greenland 2020}).
+\code{pd} adds an additional column with the \emph{probability of direction} (see
+\code{\link[bayestestR:p_direction]{bayestestR::p_direction()}} for details). \code{groups} can be used to group
+coefficients. It will be passed to the print-method, or can directly be used
+in \code{print()}, see documentation in \code{\link[=print.parameters_model]{print.parameters_model()}}. Furthermore,
+see 'Examples' in \code{\link[=model_parameters.default]{model_parameters.default()}}. For developers, whose
+interest mainly is to get a "tidy" data frame of model summaries, it is
+recommended to set \code{pretty_names = FALSE} to speed up computation of the
+summary table.}
 }
 \value{
 A data frame with p-values and compatibility intervals.
@@ -141,17 +147,16 @@ probability", \emph{Schweder 2018}), and assuming that all underlying assumption
 are correct and met, \code{p_function()} interprets \emph{p}-values in a Fisherian way
 as "\emph{continuous} measure of evidence against the very test hypothesis \emph{and}
 entire model (all assumptions) used to compute it"
-(\href{https://lesslikely.com/statistics/s-values/}{P-Values Are Tough and S-Values Can Help}).
+(\emph{P-Values Are Tough and S-Values Can Help}, lesslikely.com/statistics/s-values).
 
 This interpretation as a continuous measure of evidence against the test
 hypothesis and the entire model used to compute it can be seen in the
-figure below (taken from
-\href{https://lesslikely.com/statistics/s-values/}{P-Values Are Tough and S-Values Can Help}).
-The "conditional" interpretation of \emph{p}-values and interval
-estimates (A) implicitly assumes certain assumptions to be true, thus the
-interpretation is "conditioned" on these assumptions (i.e. assumptions are
-taken as given). The unconditional interpretation (B), however, questions all
-these assumptions.
+figure below (taken from \emph{P-Values Are Tough and S-Values Can Help},
+lesslikely.com/statistics/s-values). The "conditional" interpretation of
+\emph{p}-values and interval estimates (A) implicitly assumes certain assumptions
+to be true, thus the interpretation is "conditioned" on these assumptions
+(i.e. assumptions are taken as given). The unconditional interpretation (B),
+however, questions all these assumptions.
 
 \if{html}{\cr \figure{unconditional_interpretation.png}{options: alt="Conditional versus unconditional interpretations of P-values"} \cr}
 

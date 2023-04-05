@@ -46,9 +46,9 @@ model_parameters.glmmTMB <- function(model,
   # standardize only works for fixed effects...
   if (!is.null(standardize) && standardize != "refit") {
     if (!missing(effects) && effects != "fixed" && verbose) {
-      warning(insight::format_message(
+      insight::format_warning(
         "Standardizing coefficients only works for fixed effects of the mixed model."
-      ), call. = FALSE)
+      )
     }
     effects <- "fixed"
   }
@@ -77,9 +77,7 @@ model_parameters.glmmTMB <- function(model,
       if (effects != "fixed") {
         effects <- "fixed"
         if (verbose) {
-          warning(insight::format_message(
-            "Bootstrapping only returns fixed effects of the mixed model."
-          ), call. = FALSE)
+          insight::format_warning("Bootstrapping only returns fixed effects of the mixed model.")
         }
       }
     } else {
@@ -131,10 +129,10 @@ model_parameters.glmmTMB <- function(model,
           suppressWarnings(stats::confint(model, parm = "sigma", method = "wald", level = ci)[1:2]),
           error = function(e) {
             if (verbose) {
-              message(insight::format_message(
+              insight::format_alert(
                 "Cannot compute standard errors and confidence intervals for sigma parameter.",
                 "Your model may suffer from singularity (see '?lme4::isSingular' and '?performance::check_singularity')."
-              ))
+              )
             }
             c(NA, NA)
           }
@@ -158,7 +156,7 @@ model_parameters.glmmTMB <- function(model,
     if (isTRUE(group_level)) {
       params_random <- .extract_random_parameters(model, ci = ci, effects = effects, component = component)
       if (length(random_effects) > 1) {
-        insight::format_warning(
+        insight::format_alert(
           "Cannot extract confidence intervals for random variance parameters from models with more than one grouping factor."
         )
       }
@@ -343,7 +341,7 @@ standard_error.glmmTMB <- function(model,
       return(NULL)
     }
 
-    cs <- datawizard::compact_list(stats::coef(summary(model)))
+    cs <- insight::compact_list(stats::coef(summary(model)))
     x <- lapply(names(cs), function(i) {
       .data_frame(
         Parameter = insight::find_parameters(model, effects = "fixed", component = i, flatten = TRUE),

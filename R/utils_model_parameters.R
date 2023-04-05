@@ -19,9 +19,7 @@
   dot.arguments <- list(...)
 
   # model info
-  info <- tryCatch(suppressWarnings(insight::model_info(model, verbose = FALSE)),
-    error = function(e) NULL
-  )
+  info <- .safe(suppressWarnings(insight::model_info(model, verbose = FALSE)))
 
   if (is.null(info)) {
     info <- list(family = "unknown", link_function = "unknown")
@@ -63,9 +61,9 @@
   attr(params, "pretty_labels") <- .format_value_labels(params, model)
 
   # use tryCatch, these might fail...
-  attr(params, "test_statistic") <- tryCatch(insight::find_statistic(model), error = function(e) NULL)
-  attr(params, "log_response") <- tryCatch(isTRUE(grepl("log", insight::find_transformation(model), fixed = TRUE)), error = function(e) NULL)
-  attr(params, "log_predictors") <- tryCatch(any(grepl("log", unlist(insight::find_terms(model)[c("conditional", "zero_inflated", "instruments")]), fixed = TRUE)), error = function(e) NULL)
+  attr(params, "test_statistic") <- .safe(insight::find_statistic(model))
+  attr(params, "log_response") <- .safe(isTRUE(grepl("log", insight::find_transformation(model), fixed = TRUE)))
+  attr(params, "log_predictors") <- .safe(any(grepl("log", unlist(insight::find_terms(model)[c("conditional", "zero_inflated", "instruments")]), fixed = TRUE)))
 
   # save if model is multivariate response model
   if (isTRUE(info$is_multivariate)) {
@@ -80,7 +78,7 @@
 
   # for summaries, add R2
   if (isTRUE(summary) && requireNamespace("performance", quietly = TRUE)) {
-    rsq <- tryCatch(suppressWarnings(performance::r2(model)), error = function(e) NULL)
+    rsq <- .safe(suppressWarnings(performance::r2(model)))
     attr(params, "r2") <- rsq
   }
 
@@ -88,30 +86,25 @@
   # Models for which titles should be removed - here we add exceptions for
   # objects that should not have a table headline like "# Fixed Effects", when
   # there is nothing else than fixed effects (redundant title)
-  if (inherits(model, c("mediate", "emmGrid", "emm_list", "summary_emm", "lm",
-                        "glm", "coxph", "bfsl", "deltaMethod"))) {
+  if (inherits(model, c(
+    "mediate", "emmGrid", "emm_list", "summary_emm", "lm", "averaging",
+    "glm", "coxph", "bfsl", "deltaMethod", "phylolm", "phyloglm"
+  ))) {
     attr(params, "no_caption") <- TRUE
     attr(params, "title") <- ""
   }
 
 
   # weighted nobs
-  weighted_nobs <- tryCatch(
-    {
-      w <- insight::get_weights(model, na_rm = TRUE, null_as_ones = TRUE)
-      round(sum(w))
-    },
-    error = function(e) {
-      NULL
-    }
-  )
+  weighted_nobs <- .safe({
+    w <- insight::get_weights(model, na_rm = TRUE, null_as_ones = TRUE)
+    round(sum(w))
+  })
   attr(params, "weighted_nobs") <- weighted_nobs
 
 
   # model formula
-  model_formula <- tryCatch(insight::safe_deparse(insight::find_formula(model)$conditional),
-    error = function(e) NULL
-  )
+  model_formula <- .safe(insight::safe_deparse(insight::find_formula(model)$conditional))
   attr(params, "model_formula") <- model_formula
 
 
@@ -137,9 +130,7 @@
   # special handling for meta analysis. we need additional
   # information about study weights
   if (inherits(model, c("rma", "rma.uni"))) {
-    rma_data <- tryCatch(insight::get_data(model, verbose = FALSE),
-      error = function(e) NULL
-    )
+    rma_data <- .safe(insight::get_data(model, verbose = FALSE))
     attr(params, "data") <- rma_data
     attr(params, "study_weights") <- 1 / model$vi
   }
@@ -148,9 +139,7 @@
   # special handling for meta analysis again, but these objects save the
   # inverse weighting information in a different column.
   if (inherits(model, c("meta_random", "meta_fixed", "meta_bma"))) {
-    rma_data <- tryCatch(insight::get_data(model, verbose = FALSE),
-      error = function(e) NULL
-    )
+    rma_data <- .safe(insight::get_data(model, verbose = FALSE))
     attr(params, "data") <- rma_data
     attr(params, "study_weights") <- 1 / params$SE^2
   }
@@ -307,6 +296,9 @@
   if (any(columns)) {
     if (inherits(model, "mvord")) {
       rows <- params$Component != "correlation"
+    } else if (inherits(model, c("clm", "clm2", "clmm"))) {
+      ## TODO: make sure we catch all ordinal models properly here
+      rows <- !tolower(params$Component) %in% c("location", "scale")
     } else {
       # don't exponentiate dispersion
       if (!is.null(params$Component)) {
@@ -338,9 +330,7 @@
 
   # add Group variable
   if (!is.null(clean_params$Group) && any(nchar(clean_params$Group) > 0)) {
-    params$Group <- tryCatch(gsub("(.*): (.*)", "\\2", clean_params$Group),
-      error = function(e) NULL
-    )
+    params$Group <- .safe(gsub("(.*): (.*)", "\\2", clean_params$Group))
   }
 
   attr(params, "cleaned_parameters") <- named_clean_params
@@ -439,7 +429,7 @@
   if (length(not_allowed)) {
     if (verbose) {
       not_allowed_string <- datawizard::text_concatenate(not_allowed, enclose = "\"")
-      insight::format_warning(
+      insight::format_alert(
         sprintf("Following arguments are not supported in `%s()` for models of class `%s` and will be ignored: %s", function_name, model_class, not_allowed_string),
         sprintf("Please run `%s()` again without specifying the above mentioned arguments to obtain expected results.", function_name)
       )

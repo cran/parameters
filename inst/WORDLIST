@@ -207,6 +207,7 @@ et
 exponentiate
 exponentiating
 fastICA
+fixest
 gam
 gamlss
 gamm
@@ -219,6 +220,7 @@ glmmTMB
 glmx
 hclust
 heteroskedasticity
+hglm
 homoscedasticity
 htest
 http
@@ -231,10 +233,12 @@ ivfixed
 ivprobit
 jeffreymgirard
 joineRML
+joss
 jstatsoft
 kmeans
 labelled
 lavaan
+lesslikely
 lm
 lme
 lmerTest
@@ -245,6 +249,8 @@ logistf
 logitsf
 marginaleffects
 maxLik
+mblogit
+mclogit
 mclust
 meaned
 merDeriv
@@ -257,6 +263,7 @@ metaplus
 mfx
 mgcv
 mhurdle
+mlogit
 mmrm
 modelsummary
 multcomp
@@ -269,6 +276,7 @@ pam
 pamk
 patilindrajeets
 performant
+phylolm
 plm
 posthoc
 pre
@@ -284,6 +292,7 @@ robustlmm
 rownumbers
 rstanarm
 sampleSelection
+sdy
 setosa
 spaMM
 spatialreg

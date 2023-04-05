@@ -16,6 +16,9 @@ bayestestR::equivalence_test
 #' @param rule Character, indicating the rules when testing for practical
 #'   equivalence. Can be `"bayes"`, `"classic"` or `"cet"`. See
 #'   'Details'.
+#' @param test Hypothesis test for computing contrasts or pairwise comparisons.
+#'   See [`?ggeffects::hypothesis_test`](https://strengejacke.github.io/ggeffects/reference/hypothesis_test.html)
+#'   for details.
 #' @param verbose Toggle warnings and messages.
 #' @param ... Arguments passed to or from other methods.
 #' @inheritParams model_parameters.merMod
@@ -35,14 +38,14 @@ bayestestR::equivalence_test
 #' (\cite{Pernet 2017}). One way to address this issues without Bayesian methods
 #' is *Equivalence Testing*, as implemented in `equivalence_test()`.
 #' While you either can reject the null hypothesis or claim an inconclusive result
-#' in NHST, the equivalence test adds a third category, *"accept"*. Roughly
-#' speaking, the idea behind equivalence testing in a frequentist framework is
-#' to check whether an estimate and its uncertainty (i.e. confidence interval)
-#' falls within a region of "practical equivalence". Depending on the rule for
-#' this test (see below), statistical significance does not necessarily indicate
-#' whether the null hypothesis can be rejected or not, i.e. the classical
-#' interpretation of the p-value may differ from the results returned from
-#' the equivalence test.
+#' in NHST, the equivalence test - according to _Pernet_ - adds a third category,
+#' *"accept"*. Roughly speaking, the idea behind equivalence testing in a
+#' frequentist framework is to check whether an estimate and its uncertainty
+#' (i.e. confidence interval) falls within a region of "practical equivalence".
+#' Depending on the rule for this test (see below), statistical significance
+#' does not necessarily indicate whether the null hypothesis can be rejected or
+#' not, i.e. the classical interpretation of the p-value may differ from the
+#' results returned from the equivalence test.
 #'
 #' ## Calculation of equivalence testing
 #' - "bayes" - Bayesian rule (Kruschke 2018)
@@ -64,9 +67,10 @@ bayestestR::equivalence_test
 #'   (i.e. H0) is *rejected*, when the coefficient is statistically significant
 #'   *and* the narrow confidence intervals (i.e. `1-2*alpha`) *include* or
 #'   *exceed* the ROPE boundaries. Practical equivalence is assumed
-#'   (i.e. H0 accepted) when the narrow confidence intervals are completely
+#'   (i.e. H0 "accepted") when the narrow confidence intervals are completely
 #'   inside the ROPE, no matter if the effect is statistically significant
-#'   or not. Else, the decision whether to accept or reject H0 is undecided.
+#'   or not. Else, the decision whether to accept or reject practical
+#'   equivalence is undecided.
 #'
 #' - "cet" - Conditional Equivalence Testing (Campbell/Gustafson 2018)
 #'
@@ -74,7 +78,8 @@ bayestestR::equivalence_test
 #'   Gustafson 2018_. According to this rule, practical equivalence is
 #'   rejected when the coefficient is statistically significant. When the
 #'   effect is *not* significant and the narrow confidence intervals are
-#'   completely inside the ROPE, we accept H0, else it is undecided.
+#'   completely inside the ROPE, we accept (i.e. assume) practical equivalence,
+#'   else it is undecided.
 #'
 #' ## Levels of Confidence Intervals used for Equivalence Testing
 #' For `rule = "classic"`, "narrow" confidence intervals are used for
@@ -88,15 +93,15 @@ bayestestR::equivalence_test
 #' The equivalence p-value is the area of the (cumulative) confidence
 #' distribution that is outside of the region of equivalence. It can be
 #' interpreted as p-value for *rejecting* the alternative hypothesis
-#' and *accepting* the null hypothesis.
+#' and *accepting* the "null hypothesis" (i.e. assuming practical
+#' equivalence). That is, a high p-value means we reject the assumption of
+#' practical equivalence and accept the alternative hypothesis.
 #'
 #' ## Second Generation p-Value (SGPV)
 #' Second generation p-values (SGPV) were proposed as a statistic that
 #' represents _the proportion of data-supported hypotheses that are also null
-#' hypotheses_ _(Blume et al. 2018)_. This statistic is actually computed in
-#' the same way as the percentage inside the ROPE as returned by
-#' `equivalence_test()` (see _Lakens and Delacre 2020_ for details on
-#' computation of the SGPV). Thus, the `"inside ROPE"` column reflects the SGPV.
+#' hypotheses_ _(Blume et al. 2018, Lakens and Delacre 2020)_. It represents the
+#' proportion of the confidence interval range that is inside the ROPE.
 #'
 #' ## ROPE range
 #' Some attention is required for finding suitable values for the ROPE limits
@@ -293,11 +298,100 @@ equivalence_test.parameters_simulate_model <- function(x,
 }
 
 
+#' @rdname equivalence_test.lm
+#' @export
+equivalence_test.ggeffects <- function(x,
+                                       range = "default",
+                                       rule = "classic",
+                                       test = "pairwise",
+                                       verbose = TRUE,
+                                       ...) {
+  insight::check_if_installed("ggeffects", minimum_version = "1.2.0")
 
+  # get attributes from ggeffects objects, so we have the original model and terms
+  focal <- attributes(x)$original.terms
+  obj_name <- attributes(x)$model.name
+  ci <- attributes(x)$ci.lvl
+
+  x <- .get_ggeffects_model(x)
+
+  # sanity check rope range
+  rule <- match.arg(tolower(rule), choices = c("bayes", "classic", "cet"))
+  range <- .check_rope_range(x, range, verbose)
+
+  out <- ggeffects::hypothesis_test(
+    x,
+    terms = focal,
+    test = test,
+    equivalence = range,
+    verbose = verbose,
+    ...
+  )
+
+  out <- insight::standardize_names(out)
+
+  # we only have one type of CIs
+  conf_int <- conf_int2 <- as.data.frame(t(out[c("CI_low", "CI_high")]))
+
+  l <- Map(
+    function(ci_wide, ci_narrow) {
+      .equivalence_test_numeric(
+        ci_wide,
+        ci_narrow,
+        range_rope = range,
+        rule = rule,
+        verbose = verbose
+      )
+    }, conf_int, conf_int2
+  )
+
+  # bind to data frame
+  dat <- do.call(rbind, l)
+
+  # remove old CIs, bind results from equivalence test
+  out$CI_low <- out$CI_high <- NULL
+  out$CI <- ci
+  out <- cbind(out, dat)
+
+  # standardize column order
+  cols <- c(
+    "Estimate", "Contrast", "Slope", "Predicted", "CI", "CI_low", "CI_high",
+    "SGPV", "ROPE_low", "ROPE_high", "ROPE_Percentage", "ROPE_Equivalence", "p"
+  )
+
+  # order of shared columns
+  shared_order <- intersect(cols, colnames(out))
+  parameter_columns <- setdiff(colnames(out), shared_order)
+  # add remaining columns, sort
+  out <- out[c(parameter_columns, shared_order)]
+
+  attr(out, "object_name") <- obj_name
+  attr(out, "parameter_columns") <- parameter_columns
+  attr(out, "rule") <- rule
+  attr(out, "rope") <- range
+  class(out) <- c("equivalence_test_lm", "see_equivalence_test_ggeffects", "data.frame")
+  out
+}
 
 
 
 # helper -------------------
+
+
+#' @keywords internal
+.check_rope_range <- function(x, range, verbose) {
+  if (all(range == "default")) {
+    range <- bayestestR::rope_range(x, verbose = verbose)
+    if (is.list(range)) {
+      range <- range[[which.max(sapply(range, diff))]]
+    }
+  } else if (!all(is.numeric(range)) || length(range) != 2) {
+    insight::format_error(
+      "`range` should be \"default\" or a vector of 2 numeric values (e.g., `c(-0.1, 0.1)`)."
+    )
+  }
+  range
+}
 
 
 #' @keywords internal
@@ -309,19 +403,10 @@ equivalence_test.parameters_simulate_model <- function(x,
                                           ...) {
   # ==== define rope range ====
 
-  if (all(range == "default")) {
-    range <- bayestestR::rope_range(x, verbose = verbose)
-    if (is.list(range)) {
-      range <- range[[which.max(sapply(range, diff))]]
-    }
-  } else if (!all(is.numeric(range)) || length(range) != 2) {
-    insight::format_error(
-      "`range` should be \"default\" or a vector of 2 numeric values (e.g., `c(-0.1, 0.1)`)."
-    )
-  }
+  range <- .check_rope_range(x, range, verbose)
 
   if (length(ci) > 1) {
-    insight::format_warning("`ci` may only be of length 1. Using first ci-value now.")
+    insight::format_alert("`ci` may only be of length 1. Using first ci-value now.")
     ci <- ci[1]
   }
 
@@ -341,17 +426,17 @@ equivalence_test.parameters_simulate_model <- function(x,
 
   # ==== equivalence test for each parameter ====
 
-  l <- mapply(
+  l <- Map(
     function(ci_wide, ci_narrow) {
       .equivalence_test_numeric(
         ci_wide,
         ci_narrow,
         range_rope = range,
         rule = rule,
+        ci = ci,
         verbose = verbose
       )
-    }, conf_int, conf_int2,
-    SIMPLIFY = FALSE
+    }, conf_int, conf_int2
   )
 
   dat <- do.call(rbind, l)
@@ -392,7 +477,7 @@ equivalence_test.parameters_simulate_model <- function(x,
 
   if (length(ci) > 1) {
     if (isTRUE(verbose)) {
-      insight::format_warning("`ci` may only be of length 1. Using first ci-value now.")
+      insight::format_alert("`ci` may only be of length 1. Using first ci-value now.")
     }
     ci <- ci[1]
   }
@@ -429,17 +514,17 @@ equivalence_test.parameters_simulate_model <- function(x,
       CI_high = est + stderr * fac_narrow
     )))
 
-    l <- mapply(
+    l <- Map(
       function(ci_wide, ci_narrow) {
         .equivalence_test_numeric(
           ci_wide,
           ci_narrow,
           range_rope = range,
           rule = rule,
+          ci = ci,
           verbose = verbose
         )
-      }, conf_int, conf_int2,
-      SIMPLIFY = FALSE
+      }, conf_int, conf_int2
     )
 
     dat <- do.call(rbind, l)
@@ -454,7 +539,7 @@ equivalence_test.parameters_simulate_model <- function(x,
 
 
 #' @keywords internal
-.equivalence_test_numeric <- function(ci_wide, ci_narrow, range_rope, rule, verbose) {
+.equivalence_test_numeric <- function(ci_wide, ci_narrow, range_rope, rule, ci = 0.95, verbose) {
   final_ci <- NULL
 
   # ==== HDI+ROPE decision rule, by Kruschke ====
@@ -513,9 +598,10 @@ equivalence_test.parameters_simulate_model <- function(x,
   data.frame(
     CI_low = final_ci[1],
     CI_high = final_ci[2],
+    SGPV = .sgpv(range_rope, final_ci),
     ROPE_low = range_rope[1],
     ROPE_high = range_rope[2],
-    ROPE_Percentage = .rope_coverage(range_rope, final_ci),
+    # ROPE_Percentage = .rope_coverage(range_rope, final_ci),
     ROPE_Equivalence = decision,
     stringsAsFactors = FALSE
   )
@@ -527,7 +613,7 @@ equivalence_test.parameters_simulate_model <- function(x,
 # helper ---------------------
 
 
-.rope_coverage <- function(rope, ci) {
+.sgpv <- function(rope, ci) {
   diff_rope <- abs(diff(rope))
   diff_ci <- abs(diff(ci))
 
@@ -557,6 +643,19 @@ equivalence_test.parameters_simulate_model <- function(x,
   coverage
 }
 
+
+## FIXME make sure this works for different CI levels
+.rope_coverage <- function(rope, ci_range, ci) {
+  diff_ci <- abs(diff(ci_range))
+  out <- bayestestR::distribution_normal(
+    n = 1000,
+    mean = ci_range[2] - (diff_ci / 2),
+    sd = diff_ci / 3.28
+  )
+
+  rc <- bayestestR::rope(out, range = rope, ci = ci)
+  rc$ROPE_Percentage
+}
 
 
 .add_p_to_equitest <- function(model, ci, range) {
@@ -621,7 +720,7 @@ format.equivalence_test_lm <- function(x,
   )
 
   # format column names
-  colnames(out)[which(colnames(out) == "Equivalence (ROPE)")] <- "H0"
+  colnames(out)[which(colnames(out) == "Equivalence (ROPE)")] <- "Equivalence"
   out$ROPE <- NULL
 
   # only show supported components

@@ -3,6 +3,7 @@
 \name{equivalence_test.lm}
 \alias{equivalence_test.lm}
 \alias{equivalence_test.merMod}
+\alias{equivalence_test.ggeffects}
 \title{Equivalence test}
 \usage{
 \method{equivalence_test}{lm}(
@@ -20,6 +21,15 @@
   ci = 0.95,
   rule = "classic",
   effects = c("fixed", "random"),
+  verbose = TRUE,
+  ...
+)
+
+\method{equivalence_test}{ggeffects}(
+  x,
+  range = "default",
+  rule = "classic",
+  test = "pairwise",
   verbose = TRUE,
   ...
 )
@@ -45,6 +55,10 @@ equivalence. Can be \code{"bayes"}, \code{"classic"} or \code{"cet"}. See
 effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
 to mixed models. May be abbreviated. If the calculation of random effects
 parameters takes too long, you may use \code{effects = "fixed"}.}
+
+\item{test}{Hypothesis test for computing contrasts or pairwise comparisons.
+See \href{https://strengejacke.github.io/ggeffects/reference/hypothesis_test.html}{\code{?ggeffects::hypothesis_test}}
+for details.}
 }
 \value{
 A data frame.
@@ -63,14 +77,14 @@ was observed, but one cannot conclude that the null hypothesis is true.}
 (\cite{Pernet 2017}). One way to address this issues without Bayesian methods
 is \emph{Equivalence Testing}, as implemented in \code{equivalence_test()}.
 While you either can reject the null hypothesis or claim an inconclusive result
-in NHST, the equivalence test adds a third category, \emph{"accept"}. Roughly
-speaking, the idea behind equivalence testing in a frequentist framework is
-to check whether an estimate and its uncertainty (i.e. confidence interval)
-falls within a region of "practical equivalence". Depending on the rule for
-this test (see below), statistical significance does not necessarily indicate
-whether the null hypothesis can be rejected or not, i.e. the classical
-interpretation of the p-value may differ from the results returned from
-the equivalence test.
+in NHST, the equivalence test - according to \emph{Pernet} - adds a third category,
+\emph{"accept"}. Roughly speaking, the idea behind equivalence testing in a
+frequentist framework is to check whether an estimate and its uncertainty
+(i.e. confidence interval) falls within a region of "practical equivalence".
+Depending on the rule for this test (see below), statistical significance
+does not necessarily indicate whether the null hypothesis can be rejected or
+not, i.e. the classical interpretation of the p-value may differ from the
+results returned from the equivalence test.
 \subsection{Calculation of equivalence testing}{
 \itemize{
 \item "bayes" - Bayesian rule (Kruschke 2018)
@@ -91,16 +105,18 @@ This rule follows the "TOST rule", i.e. a two one-sided test procedure
 (i.e. H0) is \emph{rejected}, when the coefficient is statistically significant
 \emph{and} the narrow confidence intervals (i.e. \code{1-2*alpha}) \emph{include} or
 \emph{exceed} the ROPE boundaries. Practical equivalence is assumed
-(i.e. H0 accepted) when the narrow confidence intervals are completely
+(i.e. H0 "accepted") when the narrow confidence intervals are completely
 inside the ROPE, no matter if the effect is statistically significant
-or not. Else, the decision whether to accept or reject H0 is undecided.
+or not. Else, the decision whether to accept or reject practical
+equivalence is undecided.
 \item "cet" - Conditional Equivalence Testing (Campbell/Gustafson 2018)
 
 The Conditional Equivalence Testing as described by \emph{Campbell and
 Gustafson 2018}. According to this rule, practical equivalence is
 rejected when the coefficient is statistically significant. When the
 effect is \emph{not} significant and the narrow confidence intervals are
-completely inside the ROPE, we accept H0, else it is undecided.
+completely inside the ROPE, we accept (i.e. assume) practical equivalence,
+else it is undecided.
 }
 }
 
@@ -119,17 +135,17 @@ only uses the regular intervals.
 The equivalence p-value is the area of the (cumulative) confidence
 distribution that is outside of the region of equivalence. It can be
 interpreted as p-value for \emph{rejecting} the alternative hypothesis
-and \emph{accepting} the null hypothesis.
+and \emph{accepting} the "null hypothesis" (i.e. assuming practical
+equivalence). That is, a high p-value means we reject the assumption of
+practical equivalence and accept the alternative hypothesis.
 }
 
 \subsection{Second Generation p-Value (SGPV)}{
 
 Second generation p-values (SGPV) were proposed as a statistic that
 represents \emph{the proportion of data-supported hypotheses that are also null
-hypotheses} \emph{(Blume et al. 2018)}. This statistic is actually computed in
-the same way as the percentage inside the ROPE as returned by
-\code{equivalence_test()} (see \emph{Lakens and Delacre 2020} for details on
-computation of the SGPV). Thus, the \code{"inside ROPE"} column reflects the SGPV.
+hypotheses} \emph{(Blume et al. 2018, Lakens and Delacre 2020)}. It represents the
+proportion of the confidence interval range that is inside the ROPE.
 }
 
 \subsection{ROPE range}{

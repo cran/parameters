@@ -227,6 +227,8 @@ model_parameters.cpglmm <- function(model,
                                     exponentiate = FALSE,
                                     p_adjust = NULL,
                                     include_sigma = FALSE,
+                                    keep = NULL,
+                                    drop = NULL,
                                     verbose = TRUE,
                                     ...) {
   # p-values, CI and se might be based on different df-methods
@@ -236,7 +238,7 @@ model_parameters.cpglmm <- function(model,
   # standardize only works for fixed effects...
   if (!is.null(standardize) && standardize != "refit") {
     if (!missing(effects) && effects != "fixed" && verbose) {
-      insight::format_warning("Standardizing coefficients only works for fixed effects of the mixed model.")
+      insight::format_alert("Standardizing coefficients only works for fixed effects of the mixed model.")
     }
     effects <- "fixed"
   }
@@ -255,6 +257,8 @@ model_parameters.cpglmm <- function(model,
     ci_method = ci_method,
     include_sigma = include_sigma,
     ci_random = ci_random,
+    keep_parameters = keep,
+    drop_parameters = drop,
     verbose = verbose,
     ...
   )
@@ -294,7 +298,7 @@ standard_error.cpglmm <- function(model, ...) {
   if (!is.null(df_method)) {
     df_method <- tolower(df_method)
     if (df_method %in% c("satterthwaite", "kenward", "kr")) {
-      insight::format_warning("Satterthwaite or Kenward-Rogers approximation of degrees of freedom is only available for linear mixed models.")
+      insight::format_alert("Satterthwaite or Kenward-Rogers approximation of degrees of freedom is only available for linear mixed models.")
       df_method <- "wald"
     }
     df_method <- match.arg(df_method, choices = c("wald", "normal", "residual", "ml1", "betwithin", "profile", "boot", "uniroot"))
