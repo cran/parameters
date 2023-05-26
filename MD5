@@ -1,13 +1,13 @@
-21d81eeae0dc4f4ed094afd4c8c8bc37 *DESCRIPTION
-734478c282a9b8342db6967daae18e67 *NAMESPACE
-ab861718caa8f6bc9038a7573a92c22b *NEWS.md
-5e8ab19190d03e5e36126e74d3aa0fc1 *R/1_model_parameters.R
-c62c69c9e97619587b6bb3f661ecd173 *R/2_ci.R
+415b485cabebcef7c5c1249c038d18dd *DESCRIPTION
+0dcaaf2d2c8256adeed753441c9d2e55 *NAMESPACE
+dfb45862e96e10f22d812a93235b9393 *NEWS.md
+7651484d4b50f99d22c7eaab8d757dd5 *R/1_model_parameters.R
+3a1d31257a0aba8f7887ae0f25643530 *R/2_ci.R
 abf9b076c2c7d8939a89791868e7df3e *R/3_p_value.R
 2815ac76b41d5ef096f930df5857aab8 *R/4_standard_error.R
 4ec9a8350e6d6bab697c833b6a0236a7 *R/5_simulate_model.R
 cf8687d6ff8772e19ff77f55c06b6303 *R/bootstrap_model-emmeans.R
-5213b6e523fc1f4416e65f941fcd0f6f *R/bootstrap_model.R
+e1b6ed8b2ff9447ac098d2e21e5fc66f *R/bootstrap_model.R
 5e64a06e0b8345b86a00316eeeff4739 *R/bootstrap_parameters.R
 42943322a8ab50aca3b38ae13a55ed11 *R/ci_betwithin.R
 034e6e9fb5856bce7a2102ab8604c80a *R/ci_generic.R
@@ -36,7 +36,7 @@ c812201314b93ae331bf728c1990cb66 *R/dof_satterthwaite.R
 1bffc804cb5da9647e10c35c01529c1e *R/extract_random_parameters.R
 3306ea638ae21f65e2d2e0497d7f9c53 *R/extract_random_variances.R
 69f8670f8f8e9a39b4459150aa7ea15b *R/factor_analysis.R
-28a03fa64c7b6e77daa8c87383e65b38 *R/format.R
+bd05b2cf86146ca6d386d2d108be1501 *R/format.R
 d318762029d51a56f42a2f5f6ddbd31c *R/format_df_adjust.R
 0680b93202d66fa2a7deefcf24dbd3ea *R/format_order.R
 8f0be754a654e5ba369c4569a1681e4b *R/format_p_adjust.R
@@ -134,6 +134,7 @@ b31fccda0e313db0480ec57fccaa1b94 *R/methods_mmrm.R
 30034254c5d91f664b6a293641b5eb13 *R/methods_multcomp.R
 9b018d99bbbffd473193b8a5cc45e1e0 *R/methods_multgee.R
 790fcd6f93c0dd9ebeb982505ab1673a *R/methods_mvord.R
+eabb80f844ed2170984236cbc9dad364 *R/methods_nestedLogit.R
 ed42d46b55f3ef876f33b5266e49e379 *R/methods_nlme.R
 385e7eb248910b3b1d8ec9073b3a809d *R/methods_ordinal.R
 8c6d55f05b1812711a39c5eef9cdba0e *R/methods_other.R
@@ -177,7 +178,7 @@ f09bbc375954b22a93e95148fcbc61b0 *R/p_value_kenward.R
 339f24be8e8a13165b97390567b45153 *R/p_value_ml1.R
 bb499d331d58c81bb97e36fb03a25f85 *R/p_value_satterthwaite.R
 5ba5bd8380a2b3c699e630aca9682f00 *R/parameters-package.R
-40b8236ccd175dcd9cf4c0dc817018a8 *R/parameters_type.R
+0ba7d768c6672caded5efe74bcb1f1d0 *R/parameters_type.R
 ab20a0eeccf5dc296c249238cd6b46af *R/plot.R
 b270ae5c24229734aa5480db45c781da *R/pool_parameters.R
 b239e53aade55f5a84ea8860fa43c22c *R/principal_components.R
@@ -198,7 +199,7 @@ a5eb604c29599ba9330354300314485f *R/standard_error_satterthwaite.R
 19229088ff6f0e844a563a56b2c2855d *R/standardize_parameters.R
 cec6d529cf5e4d838cf633fa7b49a7fc *R/standardize_posteriors.R
 3941053db8013a4b4a86650140b220be *R/utils.R
-079ba883956f532089a6434db69f6187 *R/utils_cleaners.R
+930dcd4975b3908841026f692d3d762d *R/utils_cleaners.R
 2b3b26fc248bbc95d4fc2d3177c300b6 *R/utils_clustering.R
 cd1d2004dd54bc284a20ef2c8949c45f *R/utils_format.R
 f4e5e4c76e96ad7ea55e73e5da8c6434 *R/utils_model_parameters.R
@@ -210,7 +211,7 @@ cd504c4afebc2e78571d9e6ec2fb9e12 *build/vignette.rds
 fed293a745c7a75939e2f2156aaa9afe *data/fish.RData
 fca1e9b681b9f432165601e6510c483c *data/qol_cancer.RData
 d9a675761b0b4ec7816a274c92857f5e *inst/CITATION
-18fcf797db64c16debbb4513bb939138 *inst/WORDLIST
+756c5d63212f16dd24411084391e299b *inst/WORDLIST
 7342a6d63f4cc4501afc55be1d148740 *inst/doc/overview_of_vignettes.R
 0985b9d33840bbceabd2c668526eec3c *inst/doc/overview_of_vignettes.Rmd
 2c54cd6e3b05466119f187d619181886 *inst/doc/overview_of_vignettes.html
@@ -354,7 +355,7 @@ ccfadf4697a7fd588004a6259408afab *tests/testthat/test-ivreg.R
 affc0de64eb9e599cf55d8a6c96e3c93 *tests/testthat/test-lme.R
 94dde5f73d12dc23905879b3174575c2 *tests/testthat/test-lmerTest.R
 52549675847d123c6e96922eb23c35a5 *tests/testthat/test-marginaleffects.R
-75aa3a580082955209ca249d4d67d80d *tests/testthat/test-mipo.R
+b58b45bc8cdc1af80340d5c6f1cff1f1 *tests/testthat/test-mipo.R
 6f6d859c2d6c26cce9514f323d853b30 *tests/testthat/test-mira.R
 2314dfc155f4dd2946e6895b5e0a8946 *tests/testthat/test-mlm.R
 5fd06e6b1171ac71876ca453d8337444 *tests/testthat/test-mmrm.R
@@ -398,6 +399,8 @@ d5b35a3a1d8894248ff0adb0592c2a2a *tests/testthat/test-model_parameters_df_method
 13284b8cbd5c933128d502f5f8e2fe56 *tests/testthat/test-model_parameters_std.R
 c433d05eaf2a4d04bbff9dfa4276aecb *tests/testthat/test-model_parameters_std_mixed.R
 58231e46fbb28629842dec69a9efcd42 *tests/testthat/test-n_factors.R
+178bdad755a06c4c3e6670e181846a52 *tests/testthat/test-nestedLogit.R
+d682889a5ab2af44cb9c10f0c2c46f5f *tests/testthat/test-ordered.R
 a52589b5367e377ec84bd2decfcf7f9d *tests/testthat/test-p_adjust.R
 34659d5610d5dfd5a1827abf043c7c1a *tests/testthat/test-p_calibrate.R
 d4885e4929ba97aaadde24bd65d5591d *tests/testthat/test-p_function.R
@@ -418,7 +421,7 @@ ed02ba13502626b998f12821a5052a77 *tests/testthat/test-plm.R
 9973135633de443b5b5528a02d6070e0 *tests/testthat/test-random_effects_ci-glmmTMB.R
 7612ee9b599b4410f1122c22d047aef2 *tests/testthat/test-random_effects_ci.R
 bb3a542820f58a87e167128ed9be6781 *tests/testthat/test-rank_deficienty.R
-7ec0825490e9ef8141c0de9e7d32cab6 *tests/testthat/test-robust.R
+82038784144fdf9225715abddc4f6f12 *tests/testthat/test-robust.R
 9fbcd592f3881c37c7ae278f16647f58 *tests/testthat/test-rstanarm.R
 6afceb2d59443a7678ebdae942130840 *tests/testthat/test-simulate_model.R
 e74028738355c993259e0717957a7bea *tests/testthat/test-simulate_parameters.R
