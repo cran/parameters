@@ -418,29 +418,25 @@ parameters <- model_parameters
 #'
 #' @inheritSection model_parameters Confidence intervals and approximation of degrees of freedom
 #'
-#' @examples
+#' @examplesIf require("boot", quietly = TRUE) && require("sandwich") && require("clubSandwich") && require("brglm2")
 #' library(parameters)
 #' model <- lm(mpg ~ wt + cyl, data = mtcars)
 #'
 #' model_parameters(model)
 #'
 #' # bootstrapped parameters
-#' if (require("boot", quietly = TRUE)) {
-#'   model_parameters(model, bootstrap = TRUE)
-#' }
+#' model_parameters(model, bootstrap = TRUE)
 #'
 #' # standardized parameters
 #' model_parameters(model, standardize = "refit")
 #'
 #' # robust, heteroskedasticity-consistent standard errors
-#' if (require("sandwich") && require("clubSandwich")) {
-#'   model_parameters(model, vcov = "HC3")
+#' model_parameters(model, vcov = "HC3")
 #'
-#'   model_parameters(model,
-#'     vcov = "vcovCL",
-#'     vcov_args = list(cluster = mtcars$cyl)
-#'   )
-#' }
+#' model_parameters(model,
+#'   vcov = "vcovCL",
+#'   vcov_args = list(cluster = mtcars$cyl)
+#' )
 #'
 #' # different p-value style in output
 #' model_parameters(model, p_digits = 5)
@@ -452,6 +448,15 @@ parameters <- model_parameters
 #'
 #' # show odds ratio / exponentiated coefficients
 #' model_parameters(model, exponentiate = TRUE)
+#'
+#' # bias-corrected logistic regression with penalized maximum likelihood
+#' model <- glm(
+#'   vs ~ wt + cyl,
+#'   data = mtcars,
+#'   family = "binomial",
+#'   method = "brglmFit"
+#' )
+#' model_parameters(model)
 #' }
 #' @return A data frame of indices related to the model's parameters.
 #' @export
@@ -700,7 +705,8 @@ model_parameters.glm <- function(model,
     keep_parameters = keep,
     drop_parameters = drop,
     vcov = vcov,
-    vcov_args = vcov_args
+    vcov_args = vcov_args,
+    verbose = verbose
   )
   args <- c(args, dots)
   out <- do.call(".model_parameters_generic", args)

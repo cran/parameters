@@ -124,21 +124,29 @@ n_factors <- function(x,
   }
 
   # Get number of observations
-  if (!is.data.frame(x)) {
+  if (is.data.frame(x)) {
+    nobs <- nrow(x)
+  } else {
     if (is.numeric(x) && !is.null(cor)) {
       nobs <- x
       package <- package[!package %in% c("pcdimension", "PCDimension")]
     } else if (is.matrix(x) || inherits(x, "easycormatrix")) {
       insight::format_error(
-        "Please input the correlation matrix via the `cor = ...` argument and the number of rows / observations via the first argument."
+        "Please input the correlation matrix via the `cor` argument and the number of rows / observations via the first argument."
       )
     }
-  } else {
-    nobs <- nrow(x)
   }
 
   # Get only numeric
-  x <- x[vapply(x, is.numeric, TRUE)]
+  numerics <- vapply(x, is.numeric, TRUE)
+  if (!all(numerics)) {
+    insight::format_warning(paste0(
+      "Some variables are not numeric (",
+      toString(names(x)[!numerics]),
+      "). Dropping them."
+    ))
+  }
+  x <- x[numerics]
 
   # Correlation matrix
   if (is.null(cor)) {
@@ -247,7 +255,7 @@ n_factors <- function(x,
       out <- rbind(
         out,
         tryCatch(.n_factors_ega(x, cor, nobs, eigen_values, type),
-          warning = function(w) data.frame(),
+          # warning = function(w) data.frame(),
           error = function(e) data.frame()
         )
       )
@@ -268,7 +276,7 @@ n_factors <- function(x,
       out <- rbind(
         out,
         tryCatch(.n_factors_vss(x, cor, nobs, type, rotation, algorithm),
-          warning = function(w) data.frame(),
+          # warning = function(w) data.frame(),
           error = function(e) data.frame()
         )
       )
@@ -300,7 +308,7 @@ n_factors <- function(x,
     }
   }
 
-  # fit -------------------------------------------
+  # pcdimension -------------------------------------------
   if ("pcdimension" %in% tolower(package)) {
     insight::check_if_installed("PCDimension")
 
@@ -565,6 +573,31 @@ print.n_clusters <- print.n_factors
 # psych ------------------------
 
 #' @keywords internal
+.n_factors_parallel <- function(x = NULL,
+                                cor = NULL,
+                                nobs = NULL,
+                                type = "FA") {
+  # Altnerative version of parralel analysis
+  # Not used because already included in nFactors
+
+  if (tolower(type) %in% c("fa", "factor", "efa")) {
+    fa <- "fa"
+  } else {
+    fa <- "pc"
+  }
+
+  insight::check_if_installed("psych")
+  out <- psych::fa.parallel(cor, n.obs = nobs, fa = fa, plot = FALSE, fm = "ml")
+
+
+  .data_frame(
+    n_Factors = as.numeric(stats::na.omit(c(out$nfact, out$ncomp))),
+    Method = "Parallel",
+    Family = "psych"
+  )
+}
+
+#' @keywords internal
 .n_factors_vss <- function(x = NULL,
                            cor = NULL,
                            nobs = NULL,
@@ -580,6 +613,7 @@ print.n_clusters <- print.n_factors
   }
 
 
+  insight::check_if_installed("psych")
   # Compute VSS
   vss <- psych::VSS(
     cor,
@@ -631,6 +665,7 @@ print.n_clusters <- print.n_factors
     }
   }
 
+  insight::check_if_installed("psych")
   rez <- data.frame()
   for (n in 1:(ncol(cor) - 1)) {
     if (tolower(type) %in% c("fa", "factor", "efa")) {
@@ -738,7 +773,7 @@ print.n_clusters <- print.n_factors
 .n_factors_PCDimension <- function(x = NULL, type = "PCA") {
   # This package is a strict dependency of PCDimension so if users have the
   # former they should have it
-  insight::check_if_installed("ClassDiscovery")
+  insight::check_if_installed(c("ClassDiscovery", "PCDimension"))
 
   # Only applies to PCA with full data
   if (tolower(type) %in% c("fa", "factor", "efa") || !is.data.frame(x)) {

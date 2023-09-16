@@ -19,10 +19,13 @@ bootstrap_parameters(
 
 \item{iterations}{The number of draws to simulate/bootstrap.}
 
-\item{centrality}{The point-estimates (centrality indices) to compute.  Character (vector) or list with one or more of these options: \code{"median"}, \code{"mean"}, \code{"MAP"} or \code{"all"}.}
+\item{centrality}{The point-estimates (centrality indices) to compute. Character
+(vector) or list with one or more of these options: \code{"median"}, \code{"mean"}, \code{"MAP"}
+(see \code{\link[bayestestR:map_estimate]{map_estimate()}}), \code{"trimmed"} (which is just \code{mean(x, trim = threshold)}),
+\code{"mode"} or \code{"all"}.}
 
 \item{ci}{Value or vector of probability of the CI (between 0 and 1)
-to be estimated. Default to \code{.95} (\verb{95\%}).}
+to be estimated. Default to \code{0.95} (\verb{95\%}).}
 
 \item{ci_method}{The type of index used for Credible Interval. Can be
 \code{"ETI"} (default, see \code{\link[bayestestR:eti]{eti()}}), \code{"HDI"}
@@ -73,19 +76,17 @@ to obtain non-parametric p-values.
 }
 
 \examples{
+\dontshow{if (require("boot", quietly = TRUE) && require("emmeans", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 \dontrun{
-if (require("boot", quietly = TRUE)) {
-  set.seed(2)
-  model <- lm(Sepal.Length ~ Species * Petal.Width, data = iris)
-  b <- bootstrap_parameters(model)
-  print(b)
+set.seed(2)
+model <- lm(Sepal.Length ~ Species * Petal.Width, data = iris)
+b <- bootstrap_parameters(model)
+print(b)
 
-  if (require("emmeans")) {
-    est <- emmeans(b, trt.vs.ctrl ~ Species)
-    print(model_parameters(est))
-  }
+est <- emmeans::emmeans(b, trt.vs.ctrl ~ Species)
+print(model_parameters(est))
 }
-}
+\dontshow{\}) # examplesIf}
 }
 \references{
 Davison, A. C., & Hinkley, D. V. (1997). Bootstrap methods and their

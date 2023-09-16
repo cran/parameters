@@ -8,7 +8,13 @@
 \usage{
 convert_efa_to_cfa(model, ...)
 
-\method{convert_efa_to_cfa}{fa}(model, threshold = "max", names = NULL, ...)
+\method{convert_efa_to_cfa}{fa}(
+  model,
+  threshold = "max",
+  names = NULL,
+  max_per_dimension = NULL,
+  ...
+)
 
 efa_to_cfa(model, ...)
 }
@@ -24,6 +30,8 @@ will only display the maximum loading per variable (the most simple
 structure).}
 
 \item{names}{Vector containing dimension names.}
+
+\item{max_per_dimension}{Maximum number of variables to keep per dimension.}
 }
 \value{
 Converted index.
@@ -33,18 +41,21 @@ Enables a conversion between Exploratory Factor Analysis (EFA) and
 Confirmatory Factor Analysis (CFA) \code{lavaan}-ready structure.
 }
 \examples{
+\dontshow{if (require("psych") && require("lavaan")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 \donttest{
 library(parameters)
-if (require("psych") && require("lavaan")) {
-  efa <- psych::fa(attitude, nfactors = 3)
+data(attitude)
+efa <- psych::fa(attitude, nfactors = 3)
 
-  model1 <- efa_to_cfa(efa)
-  model2 <- efa_to_cfa(efa, threshold = 0.3)
+model1 <- efa_to_cfa(efa)
+model2 <- efa_to_cfa(efa, threshold = 0.3)
+model3 <- efa_to_cfa(efa, max_per_dimension = 2)
 
-  suppressWarnings(anova(
-    lavaan::cfa(model1, data = attitude),
-    lavaan::cfa(model2, data = attitude)
-  ))
+suppressWarnings(anova(
+  lavaan::cfa(model1, data = attitude),
+  lavaan::cfa(model2, data = attitude),
+  lavaan::cfa(model3, data = attitude)
+))
 }
-}
+\dontshow{\}) # examplesIf}
 }
