@@ -1,4 +1,3 @@
-#' @rdname model_parameters.averaging
 #' @export
 model_parameters.ggeffects <- function(model, keep = NULL, drop = NULL, verbose = TRUE, ...) {
   ci <- attributes(model)$ci.lvl
@@ -109,6 +108,9 @@ model_parameters.ggeffects <- function(model, keep = NULL, drop = NULL, verbose 
     .model <- .safe(get(obj_name, envir = parent.frame()))
     if (is.null(.model)) {
       .model <- .safe(get(obj_name, envir = globalenv()))
+    }
+    if (is.null(.model)) {
+      .model <- .safe(.dynGet(obj_name))
     }
   }
   .model

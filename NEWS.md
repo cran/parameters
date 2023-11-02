@@ -1,3 +1,31 @@
+# parameters 0.21.3
+
+## Changes
+
+* `principal_components()` and `factor_analysis()` now also work when argument
+  `n = 1`.
+
+* `print_md()` for `compare_parameters()` now gains more arguments, similar to
+  the `print()` method.
+
+* `bootstrap_parameters()` and `model_parameters()` now accept bootstrapped
+  samples returned by `bootstrap_model()`.
+
+* The `print()` method for `model_parameters()` now also yields a warning for
+  models with logit-links when possible issues with (quasi) complete separation
+  occur.
+
+## Bug fixes
+
+* Fixed issue in `print_html()` for objects from package _ggeffects_.
+
+* Fixed issues for `nnet::multinom()` with wide-format response variables (using
+  `cbind()`).
+
+* Minor fixes for `print_html()` method for `model_parameters()`.
+
+* Robust standard errors (argument `vcov`) now works for `plm` models.
+
 # parameters 0.21.2
 
 ## Changes

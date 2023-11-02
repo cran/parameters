@@ -45,12 +45,12 @@
 #'
 #' @seealso [print.parameters_model()]
 #'
-#' @examples
+#' @examplesIf require("gt", quietly = TRUE)
 #' model <- lm(mpg ~ wt + cyl, data = mtcars)
 #' mp <- model_parameters(model)
 #' display(mp)
 #'
-#' \dontrun{
+#' \donttest{
 #' data(iris)
 #' lm1 <- lm(Sepal.Length ~ Species, data = iris)
 #' lm2 <- lm(Sepal.Length ~ Species + Petal.Length, data = iris)
@@ -223,13 +223,3 @@ display.equivalence_test_lm <- function(object, format = "markdown", digits = 2,
 display.parameters_distribution <- function(object, format = "markdown", digits = 2, ...) {
   print_md(x = object, digits = digits, ...)
 }
-
-
-
-
-
-# Reexports models ------------------------
-
-#' @importFrom insight display
-#' @export
-insight::display

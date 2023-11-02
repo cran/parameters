@@ -146,26 +146,24 @@
 #'   [`print_md()`][print_md.parameters_model]. See also
 #'   [`display()`][display.parameters_model].
 #'
-#' @examples
+#' @examplesIf require("gt", quietly = TRUE) && require("glmmTMB", quietly = TRUE)
 #' \donttest{
 #' library(parameters)
-#' if (require("glmmTMB", quietly = TRUE)) {
-#'   model <- glmmTMB(
-#'     count ~ spp + mined + (1 | site),
-#'     ziformula = ~mined,
-#'     family = poisson(),
-#'     data = Salamanders
-#'   )
-#'   mp <- model_parameters(model)
+#' model <- glmmTMB::glmmTMB(
+#'   count ~ spp + mined + (1 | site),
+#'   ziformula = ~mined,
+#'   family = poisson(),
+#'   data = Salamanders
+#' )
+#' mp <- model_parameters(model)
 #'
-#'   print(mp, pretty_names = FALSE)
+#' print(mp, pretty_names = FALSE)
 #'
-#'   print(mp, split_components = FALSE)
+#' print(mp, split_components = FALSE)
 #'
-#'   print(mp, select = c("Parameter", "Coefficient", "SE"))
+#' print(mp, select = c("Parameter", "Coefficient", "SE"))
 #'
-#'   print(mp, select = "minimal")
-#' }
+#' print(mp, select = "minimal")
 #'
 #'
 #' # group parameters ------
@@ -216,7 +214,7 @@
 #' result <- compare_parameters(lm1, lm2, select = "{estimate}{stars} ({se})")
 #' print(result)
 #'
-#' \dontrun{
+#' \donttest{
 #' # custom style, in HTML
 #' result <- compare_parameters(lm1, lm2, select = "{estimate}<br>({se})|{p}")
 #' print_html(result)

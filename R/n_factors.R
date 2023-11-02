@@ -7,26 +7,24 @@
 #' with the fewer factors.
 #'
 #' @param x A data frame.
-#' @param type Can be `"FA"` or `"PCA"`, depending on what you want to
-#'   do.
+#' @param type Can be `"FA"` or `"PCA"`, depending on what you want to do.
 #' @param rotation Only used for VSS (Very Simple Structure criterion, see
-#'   [psych::VSS()]). The rotation to apply. Can be `"none"`,
-#'   `"varimax"`, `"quartimax"`, `"bentlerT"`, `"equamax"`,
-#'   `"varimin"`, `"geominT"` and `"bifactor"` for orthogonal
-#'   rotations, and `"promax"`, `"oblimin"`, `"simplimax"`,
-#'   `"bentlerQ"`, `"geominQ"`, `"biquartimin"` and
-#'   `"cluster"` for oblique transformations.
-#' @param algorithm Factoring method used by VSS. Can be `"pa"` for
-#'   Principal Axis Factor Analysis, `"minres"` for minimum residual (OLS)
-#'   factoring, `"mle"` for Maximum Likelihood FA and `"pc"` for
-#'   Principal Components. `"default"` will select `"minres"` if
-#'   `type = "FA"` and `"pc"` if `type = "PCA"`.
+#'   [psych::VSS()]). The rotation to apply. Can be `"none"`, `"varimax"`,
+#'   `"quartimax"`, `"bentlerT"`, `"equamax"`, `"varimin"`, `"geominT"` and
+#'   `"bifactor"` for orthogonal rotations, and `"promax"`, `"oblimin"`,
+#'   `"simplimax"`, `"bentlerQ"`, `"geominQ"`, `"biquartimin"` and `"cluster"`
+#'   for oblique transformations.
+#' @param algorithm Factoring method used by VSS. Can be `"pa"` for Principal
+#'   Axis Factor Analysis, `"minres"` for minimum residual (OLS) factoring,
+#'   `"mle"` for Maximum Likelihood FA and `"pc"` for Principal Components.
+#'   `"default"` will select `"minres"` if `type = "FA"` and `"pc"` if
+#'   `type = "PCA"`.
 #' @param package Package from which respective methods are used. Can be
-#'   `"all"` or a vector containing `"nFactors"`, `"psych"`, `"PCDimension"`, `"fit"` or
-#'   `"EGAnet"`. Note that `"fit"` (which actually also relies on the `psych`
-#'   package) and `"EGAnet"` can be very slow for bigger
-#'   datasets. Thus, the default is `c("nFactors", "psych")`. You must have
-#'   the respective packages installed for the methods to be used.
+#'   `"all"` or a vector containing `"nFactors"`, `"psych"`, `"PCDimension"`,
+#'   `"fit"` or `"EGAnet"`. Note that `"fit"` (which actually also relies on the
+#'   `psych` package) and `"EGAnet"` can be very slow for bigger datasets. Thus,
+#'   the default is `c("nFactors", "psych")`. You must have the respective
+#'   packages installed for the methods to be used.
 #' @param safe If `TRUE`, the function will run all the procedures in try
 #'   blocks, and will only return those that work and silently skip the ones
 #'   that may fail.
@@ -44,19 +42,17 @@
 #'
 #' @note There is also a
 #'   [`plot()`-method](https://easystats.github.io/see/articles/parameters.html)
-#'   implemented in the
-#'   [**see**-package](https://easystats.github.io/see/)..
-#'   `n_components()` is a convenient short for `n_factors(type =
-#'   "PCA")`.
+#'   implemented in the [**see**-package](https://easystats.github.io/see/).
+#'   `n_components()` is a convenient short-cut  for `n_factors(type = "PCA")`.
 #'
-#' @examplesIf require("PCDimension", quietly = TRUE) && require("nFactors", quietly = TRUE) && require("EGAnet", quietly = TRUE)
+#' @examplesIf require("PCDimension", quietly = TRUE) && require("nFactors", quietly = TRUE) && require("EGAnet", quietly = TRUE) && require("psych", quietly = TRUE)
 #' library(parameters)
 #' n_factors(mtcars, type = "PCA")
 #'
 #' result <- n_factors(mtcars[1:5], type = "FA")
 #' as.data.frame(result)
 #' summary(result)
-#' \dontrun{
+#' \donttest{
 #' # Setting package = 'all' will increase the number of methods (but is slow)
 #' n_factors(mtcars, type = "PCA", package = "all")
 #' n_factors(mtcars, type = "FA", algorithm = "mle", package = "all")
@@ -132,7 +128,7 @@ n_factors <- function(x,
       package <- package[!package %in% c("pcdimension", "PCDimension")]
     } else if (is.matrix(x) || inherits(x, "easycormatrix")) {
       insight::format_error(
-        "Please input the correlation matrix via the `cor` argument and the number of rows / observations via the first argument."
+        "Please input the correlation matrix via the `cor` argument and the number of rows / observations via the first argument." # nolint
       )
     }
   }
@@ -545,10 +541,7 @@ print.n_clusters <- print.n_factors
 }
 
 
-
 # EGAnet ------------------------
-
-#' @keywords internal
 .n_factors_ega <- function(x = NULL,
                            cor = NULL,
                            nobs = NULL,
@@ -559,7 +552,7 @@ print.n_clusters <- print.n_factors
     nfac_glasso <- EGAnet::EGA(cor, n = nobs, model = "glasso", plot.EGA = FALSE)$n.dim # nolint
   )))
   junk <- utils::capture.output(suppressWarnings(suppressMessages(
-    nfac_TMFG <- EGAnet::EGA(cor, n = nobs, model = "TMFG", plot.EGA = FALSE)$n.dim # nolint
+    nfac_TMFG <- .safe(EGAnet::EGA(cor, n = nobs, model = "TMFG", plot.EGA = FALSE)$n.dim, NA) # nolint
   )))
 
   .data_frame(

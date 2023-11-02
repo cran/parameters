@@ -34,7 +34,7 @@
 #'   to obtain non-parametric p-values.
 #'
 #' @examplesIf require("boot", quietly = TRUE) && require("emmeans", quietly = TRUE)
-#' \dontrun{
+#' \donttest{
 #' set.seed(2)
 #' model <- lm(Sepal.Length ~ Species * Petal.Width, data = iris)
 #' b <- bootstrap_parameters(model)
@@ -44,16 +44,36 @@
 #' print(model_parameters(est))
 #' }
 #' @export
-bootstrap_parameters <- function(model,
-                                 iterations = 1000,
-                                 centrality = "median",
-                                 ci = 0.95,
-                                 ci_method = "quantile",
-                                 test = "p-value",
-                                 ...) {
+bootstrap_parameters <- function(model, ...) {
+  UseMethod("bootstrap_parameters")
+}
+
+
+# methods ----------------------------------------------------------------------
+
+#' @rdname bootstrap_parameters
+#' @export
+bootstrap_parameters.default <- function(model,
+                                         iterations = 1000,
+                                         centrality = "median",
+                                         ci = 0.95,
+                                         ci_method = "quantile",
+                                         test = "p-value",
+                                         ...) {
   data <- bootstrap_model(model, iterations = iterations, ...)
+  bootstrap_parameters(data, centrality = centrality, ci = ci, ci_method = ci_method, test = test, ...)
+}
+
+
+#' @export
+bootstrap_parameters.bootstrap_model <- function(model,
+                                                 centrality = "median",
+                                                 ci = 0.95,
+                                                 ci_method = "quantile",
+                                                 test = "p-value",
+                                                 ...) {
   out <- .summary_bootstrap(
-    data = data,
+    data = model,
     test = test,
     centrality = centrality,
     ci = ci,
@@ -62,12 +82,16 @@ bootstrap_parameters <- function(model,
   )
 
   class(out) <- c("bootstrap_parameters", "parameters_model", class(out))
-  attr(out, "boot_samples") <- data
+  attr(out, "boot_samples") <- model
   out
 }
 
 
+#' @export
+model_parameters.bootstrap_model <- bootstrap_parameters.bootstrap_model
 
+
+# utilities --------------------------------------------------------------------
 
 #' @keywords internal
 .summary_bootstrap <- function(data, test, centrality, ci, ci_method, ...) {
@@ -106,7 +130,7 @@ bootstrap_parameters <- function(model,
     parameters$.row_order <- seq_len(nrow(parameters))
     # calculate probability of direction, then convert to p.
     p <- bayestestR::p_direction(data, null = 0, ...)
-    p$p <- bayestestR::pd_to_p(p$pd)
+    p$p <- as.numeric(bayestestR::pd_to_p(p$pd))
     p$pd <- NULL
     parameters <- merge(parameters, p, all = TRUE)
     parameters <- parameters[order(parameters$.row_order), ]

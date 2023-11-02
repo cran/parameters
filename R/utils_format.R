@@ -336,7 +336,7 @@
   }
 
   # check if we have model data, else return parameter table
-  model_data <- insight::get_data(model)
+  model_data <- insight::get_data(model, verbose = FALSE)
   if (is.null(model_data)) {
     params
   }
@@ -666,7 +666,7 @@
       i
     })
 
-    # sanity check - check if all parameter names in the
+    # validation check - check if all parameter names in the
     # group list are spelled correctly
     misspelled <- vapply(group_rows, anyNA, TRUE)
 
@@ -926,7 +926,7 @@
   # make sure we have correct sorting here...
   tables <- split(x, f = split_by)
 
-  # sanity check - only preserve tables with any data in data frames
+  # validation check - only preserve tables with any data in data frames
   tables <- tables[vapply(tables, nrow, numeric(1)) > 0]
 
 
@@ -1154,7 +1154,7 @@
   col_len <- vapply(final_table, function(i) length(colnames(i)), numeric(1))
 
   # remove non matching columns
-  if (!all(col_len) == max(col_len)) {
+  if (!all(col_len == max(col_len))) {
     all_columns <- unique(unlist(lapply(final_table, colnames)))
     for (i in seq_along(final_table)) {
       missing_columns <- setdiff(all_columns, colnames(final_table[[i]]))

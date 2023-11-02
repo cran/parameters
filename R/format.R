@@ -306,12 +306,12 @@ format.compare_parameters <- function(x,
   ran_pars <- which(x$Effects == "random")
 
   # find all random effect groups
-  if (!is.null(x$Group)) {
-    ran_groups <- unique(insight::compact_character(x$Group))
-    ran_group_rows <- which(nchar(x$Group) > 0)
-  } else {
+  if (is.null(x$Group)) {
     ran_groups <- NULL
     ran_group_rows <- NULL
+  } else {
+    ran_groups <- unique(insight::compact_character(x$Group))
+    ran_group_rows <- which(nchar(x$Group) > 0)
   }
 
   for (i in models) {
@@ -556,6 +556,7 @@ format.parameters_sem <- function(x,
   footer_text <- attributes(x)$footer_text
   text_alternative <- attributes(x)$text_alternative
   n_obs <- attributes(x)$n_obs
+  is_ggeffects <- isTRUE(attributes(x)$is_ggeffects)
 
   # footer: model formula
   if (isTRUE(show_formula)) {
@@ -599,7 +600,7 @@ format.parameters_sem <- function(x,
 
   # footer: generic text
   if (!is.null(footer_text)) {
-    footer <- .add_footer_text(footer, footer_text, type)
+    footer <- .add_footer_text(footer, footer_text, type, is_ggeffects)
   }
 
   # add color code, if we have a footer
@@ -612,12 +613,18 @@ format.parameters_sem <- function(x,
     footer[1] <- substr(footer[1], 0, nchar(x) - 1)
   }
 
+  # finally, for ggeffects and HTML, remove *
+  if (is_ggeffects && type == "html") {
+    footer <- gsub("*", "", footer, fixed = TRUE)
+    footer <- gsub(":;", ":", footer, fixed = TRUE)
+  }
+
   footer
 }
 
 
 # footer: generic text
-.add_footer_text <- function(footer = NULL, text, type = "text") {
+.add_footer_text <- function(footer = NULL, text = NULL, type = "text", is_ggeffects = FALSE) {
   if (!is.null(text)) {
     if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
@@ -627,7 +634,8 @@ format.parameters_sem <- function(x,
       }
       footer <- paste0(footer, sprintf("%s%s\n", fill, text))
     } else if (type == "html") {
-      footer <- c(footer, gsub("\n", "", text, fixed = TRUE))
+      replacement <- ifelse(is_ggeffects, ";", "")
+      footer <- c(footer, gsub("\n", replacement, text, fixed = TRUE))
     }
   }
   footer
@@ -635,13 +643,13 @@ format.parameters_sem <- function(x,
 
 
 # footer: residual standard deviation
-.add_footer_sigma <- function(footer = NULL, digits, sigma, residual_df = NULL, type = "text") {
+.add_footer_sigma <- function(footer = NULL, digits = 3, sigma = NULL, residual_df = NULL, type = "text") {
   if (!is.null(sigma)) {
     # format residual df
-    if (!is.null(residual_df)) {
-      res_df <- paste0(" (df = ", residual_df, ")")
-    } else {
+    if (is.null(residual_df)) {
       res_df <- ""
+    } else {
+      res_df <- paste0(" (df = ", residual_df, ")")
     }
 
     if (type == "text" || type == "markdown") {
@@ -660,7 +668,7 @@ format.parameters_sem <- function(x,
 
 
 # footer: r-squared
-.add_footer_r2 <- function(footer = NULL, digits, r2 = NULL, type = "text") {
+.add_footer_r2 <- function(footer = NULL, digits = 3, r2 = NULL, type = "text") {
   if (!is.null(r2)) {
     rsq <- .safe(paste0(unlist(lapply(r2, function(i) {
       paste0(attributes(i)$names, ": ", insight::format_value(i, digits = digits))
@@ -684,7 +692,7 @@ format.parameters_sem <- function(x,
 
 
 # footer: anova type
-.add_footer_anova_type <- function(footer = NULL, aov_type, type = "text") {
+.add_footer_anova_type <- function(footer = NULL, aov_type = NULL, type = "text") {
   if (!is.null(aov_type)) {
     if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
@@ -702,7 +710,7 @@ format.parameters_sem <- function(x,
 
 
 # footer: marginaleffects::comparisions() prediction_type
-.add_footer_prediction_type <- function(footer = NULL, prediction_type, type = "text") {
+.add_footer_prediction_type <- function(footer = NULL, prediction_type = NULL, type = "text") {
   if (!is.null(prediction_type)) {
     if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
@@ -720,7 +728,7 @@ format.parameters_sem <- function(x,
 
 
 # footer: anova test
-.add_footer_anova_test <- function(footer = NULL, test, type = "text") {
+.add_footer_anova_test <- function(footer = NULL, test = NULL, type = "text") {
   if (!is.null(test)) {
     if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
@@ -738,7 +746,7 @@ format.parameters_sem <- function(x,
 
 
 # footer: htest alternative
-.add_footer_alternative <- function(footer = NULL, text_alternative, type = "text") {
+.add_footer_alternative <- function(footer = NULL, text_alternative = NULL, type = "text") {
   if (!is.null(text_alternative)) {
     if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
@@ -756,7 +764,7 @@ format.parameters_sem <- function(x,
 
 
 # footer: p-adjustment
-.add_footer_padjust <- function(footer = NULL, p_adjust, type = "text") {
+.add_footer_padjust <- function(footer = NULL, p_adjust = NULL, type = "text") {
   if (!is.null(p_adjust) && p_adjust != "none") {
     if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
@@ -774,13 +782,13 @@ format.parameters_sem <- function(x,
 
 
 # footer: model formula
-.add_footer_formula <- function(footer = NULL, model_formula, n_obs = NULL, type = "text") {
+.add_footer_formula <- function(footer = NULL, model_formula = NULL, n_obs = NULL, type = "text") {
   if (!is.null(model_formula)) {
     # format n of observations
-    if (!is.null(n_obs)) {
-      n <- paste0(" (", n_obs, " Observations)")
-    } else {
+    if (is.null(n_obs)) {
       n <- ""
+    } else {
+      n <- paste0(" (", n_obs, " Observations)")
     }
 
     if (type == "text" || type == "markdown") {
@@ -884,7 +892,7 @@ format.parameters_sem <- function(x,
         if (isTRUE(bootstrap)) {
           msg <- paste0("\nUncertainty intervals (", string_tailed, ") are ", string_method, "intervals.")
         } else {
-          msg <- paste0("\nUncertainty intervals (", string_tailed, ") and p-values (two-tailed) computed using a ", string_method, "distribution ", string_approx, "approximation.")
+          msg <- paste0("\nUncertainty intervals (", string_tailed, ") and p-values (two-tailed) computed using a ", string_method, "distribution ", string_approx, "approximation.") # nolint
         }
       }
 
@@ -899,7 +907,7 @@ format.parameters_sem <- function(x,
           !ci_method %in% c("wald", "normal", "profile", "boot"))
 
       if (show_re_msg && isTRUE(random_variances) && !is.null(x$Effects) && "random" %in% x$Effects) {
-        msg <- paste(msg, "Uncertainty intervals for random effect variances computed using a Wald z-distribution approximation.")
+        msg <- paste(msg, "Uncertainty intervals for random effect variances computed using a Wald z-distribution approximation.") # nolint
       }
 
       insight::format_alert(msg)
@@ -911,18 +919,44 @@ format.parameters_sem <- function(x,
 .print_footer_exp <- function(x) {
   if (isTRUE(getOption("parameters_exponentiate", TRUE))) {
     msg <- NULL
+    # we need this to check whether we have extremely large cofficients
+    if (all(c("Coefficient", "Parameter") %in% colnames(x))) {
+      spurious_coefficients <- abs(x$Coefficient[!.in_intercepts(x$Parameter)])
+    } else {
+      spurious_coefficients <- NULL
+    }
     exponentiate <- .additional_arguments(x, "exponentiate", FALSE)
     if (!.is_valid_exponentiate_argument(exponentiate)) {
       if (isTRUE(.additional_arguments(x, "log_link", FALSE))) {
-        msg <- "The model has a log- or logit-link. Consider using `exponentiate = TRUE` to interpret coefficients as ratios."
+        msg <- "The model has a log- or logit-link. Consider using `exponentiate = TRUE` to interpret coefficients as ratios." # nolint
+        # we only check for exp(coef), so exp() here soince coefficients are on logit-scale
+        spurious_coefficients <- exp(spurious_coefficients)
       } else if (isTRUE(.additional_arguments(x, "log_response", FALSE))) {
-        msg <- "The model has a log-transformed response variable. Consider using `exponentiate = TRUE` to interpret coefficients as ratios."
+        msg <- "The model has a log-transformed response variable. Consider using `exponentiate = TRUE` to interpret coefficients as ratios." # nolint
+        # don't show warning about complete separation
+        spurious_coefficients <- NULL
       }
-    } else if (.is_valid_exponentiate_argument(exponentiate) && isTRUE(.additional_arguments(x, "log_response", FALSE))) {
+    } else if (.is_valid_exponentiate_argument(exponentiate) && isTRUE(.additional_arguments(x, "log_response", FALSE))) { # nolint
       msg <- c(
         "This model has a log-transformed response variable, and exponentiated parameters are reported.",
-        "A one-unit increase in the predictor is associated with multiplying the outcome by that predictor's coefficient."
+        "A one-unit increase in the predictor is associated with multiplying the outcome by that predictor's coefficient." # nolint
       )
+      # don't show warning about complete separation
+      spurious_coefficients <- NULL
+    }
+
+    # following check only for models with logit-link
+    logit_model <- isTRUE(.additional_arguments(x, "logit_link", FALSE)) ||
+      isTRUE(attributes(x)$coefficient_name %in% c("Log-Odds", "Odds Ratio"))
+
+    # check for complete separation coefficients or possible issues with
+    # too few data points
+    if (!is.null(spurious_coefficients) && logit_model) {
+      if (any(spurious_coefficients > 100)) {
+        msg <- c(msg, "Some coefficients are very large, which may indicate issues with complete separation.") # nolint
+      } else if (any(spurious_coefficients > 25)) {
+        msg <- c(msg, "Some coefficients seem to be rather large, which may indicate issues with (quasi) complete separation. Consider using bias-corrected or penalized regression models.") # nolint
+      }
     }
 
     if (!is.null(msg) && isTRUE(getOption("parameters_warning_exponentiate", TRUE))) {

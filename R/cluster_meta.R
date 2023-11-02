@@ -32,7 +32,7 @@
 #'
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' data <- iris[1:4]
 #'
 #' rez1 <- cluster_analysis(data, n = 2, method = "kmeans")
@@ -77,7 +77,7 @@ cluster_meta <- function(list_of_clusters, rownames = NULL, ...) {
     x[[name]] <- solution
   }
 
-  # Sanity check
+  # validation check
   if (length(unique(lengths(x))) != 1) {
     insight::format_error("The clustering solutions are not of equal lengths.")
   }

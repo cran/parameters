@@ -31,29 +31,27 @@ n_components(
 \arguments{
 \item{x}{A data frame.}
 
-\item{type}{Can be \code{"FA"} or \code{"PCA"}, depending on what you want to
-do.}
+\item{type}{Can be \code{"FA"} or \code{"PCA"}, depending on what you want to do.}
 
 \item{rotation}{Only used for VSS (Very Simple Structure criterion, see
-\code{\link[psych:VSS]{psych::VSS()}}). The rotation to apply. Can be \code{"none"},
-\code{"varimax"}, \code{"quartimax"}, \code{"bentlerT"}, \code{"equamax"},
-\code{"varimin"}, \code{"geominT"} and \code{"bifactor"} for orthogonal
-rotations, and \code{"promax"}, \code{"oblimin"}, \code{"simplimax"},
-\code{"bentlerQ"}, \code{"geominQ"}, \code{"biquartimin"} and
-\code{"cluster"} for oblique transformations.}
+\code{\link[psych:VSS]{psych::VSS()}}). The rotation to apply. Can be \code{"none"}, \code{"varimax"},
+\code{"quartimax"}, \code{"bentlerT"}, \code{"equamax"}, \code{"varimin"}, \code{"geominT"} and
+\code{"bifactor"} for orthogonal rotations, and \code{"promax"}, \code{"oblimin"},
+\code{"simplimax"}, \code{"bentlerQ"}, \code{"geominQ"}, \code{"biquartimin"} and \code{"cluster"}
+for oblique transformations.}
 
-\item{algorithm}{Factoring method used by VSS. Can be \code{"pa"} for
-Principal Axis Factor Analysis, \code{"minres"} for minimum residual (OLS)
-factoring, \code{"mle"} for Maximum Likelihood FA and \code{"pc"} for
-Principal Components. \code{"default"} will select \code{"minres"} if
-\code{type = "FA"} and \code{"pc"} if \code{type = "PCA"}.}
+\item{algorithm}{Factoring method used by VSS. Can be \code{"pa"} for Principal
+Axis Factor Analysis, \code{"minres"} for minimum residual (OLS) factoring,
+\code{"mle"} for Maximum Likelihood FA and \code{"pc"} for Principal Components.
+\code{"default"} will select \code{"minres"} if \code{type = "FA"} and \code{"pc"} if
+\code{type = "PCA"}.}
 
 \item{package}{Package from which respective methods are used. Can be
-\code{"all"} or a vector containing \code{"nFactors"}, \code{"psych"}, \code{"PCDimension"}, \code{"fit"} or
-\code{"EGAnet"}. Note that \code{"fit"} (which actually also relies on the \code{psych}
-package) and \code{"EGAnet"} can be very slow for bigger
-datasets. Thus, the default is \code{c("nFactors", "psych")}. You must have
-the respective packages installed for the methods to be used.}
+\code{"all"} or a vector containing \code{"nFactors"}, \code{"psych"}, \code{"PCDimension"},
+\code{"fit"} or \code{"EGAnet"}. Note that \code{"fit"} (which actually also relies on the
+\code{psych} package) and \code{"EGAnet"} can be very slow for bigger datasets. Thus,
+the default is \code{c("nFactors", "psych")}. You must have the respective
+packages installed for the methods to be used.}
 
 \item{cor}{An optional correlation matrix that can be used (note that the
 data must still be passed as the first argument). If \code{NULL}, will
@@ -87,19 +85,18 @@ different defaults for the function arguments.
 \note{
 There is also a
 \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method}
-implemented in the
-\href{https://easystats.github.io/see/}{\strong{see}-package}..
-\code{n_components()} is a convenient short for \code{n_factors(type = "PCA")}.
+implemented in the \href{https://easystats.github.io/see/}{\strong{see}-package}.
+\code{n_components()} is a convenient short-cut  for \code{n_factors(type = "PCA")}.
 }
 \examples{
-\dontshow{if (require("PCDimension", quietly = TRUE) && require("nFactors", quietly = TRUE) && require("EGAnet", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (require("PCDimension", quietly = TRUE) && require("nFactors", quietly = TRUE) && require("EGAnet", quietly = TRUE) && require("psych", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 library(parameters)
 n_factors(mtcars, type = "PCA")
 
 result <- n_factors(mtcars[1:5], type = "FA")
 as.data.frame(result)
 summary(result)
-\dontrun{
+\donttest{
 # Setting package = 'all' will increase the number of methods (but is slow)
 n_factors(mtcars, type = "PCA", package = "all")
 n_factors(mtcars, type = "FA", algorithm = "mle", package = "all")

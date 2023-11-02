@@ -190,6 +190,7 @@ Therefore, you should not use this function to compare models with
 interaction terms with models without interaction terms.
 }
 \examples{
+\dontshow{if (require("gt", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 data(iris)
 lm1 <- lm(Sepal.Length ~ Species, data = iris)
 lm2 <- lm(Sepal.Length ~ Species + Petal.Length, data = iris)
@@ -198,7 +199,7 @@ compare_parameters(lm1, lm2)
 # custom style
 compare_parameters(lm1, lm2, select = "{estimate}{stars} ({se})")
 
-\dontrun{
+\donttest{
 # custom style, in HTML
 result <- compare_parameters(lm1, lm2, select = "{estimate}<br>({se})|{p}")
 print_html(result)
@@ -208,7 +209,7 @@ data(mtcars)
 m1 <- lm(mpg ~ wt, data = mtcars)
 m2 <- glm(vs ~ wt + cyl, data = mtcars, family = "binomial")
 compare_parameters(m1, m2)
-\dontrun{
+\donttest{
 # exponentiate coefficients, but not for lm
 compare_parameters(m1, m2, exponentiate = "nongaussian")
 
@@ -220,4 +221,5 @@ compare_parameters(m1, m2, column_names = c("linear model", "logistic reg."))
 compare_parameters(list(m1, m2))
 compare_parameters(list("linear model" = m1, "logistic reg." = m2))
 }
+\dontshow{\}) # examplesIf}
 }

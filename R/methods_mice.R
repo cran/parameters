@@ -92,7 +92,7 @@ model_parameters.mipo <- function(model,
                                   drop = NULL,
                                   verbose = TRUE,
                                   ...) {
-  # sanity check, warn if unsupported argument is used.
+  # validation check, warn if unsupported argument is used.
   dot_args <- .check_dots(
     dots = list(...),
     not_allowed = c("vcov", "vcov_args"),
@@ -148,7 +148,7 @@ model_parameters.mipo <- function(model,
 #'   fit <- with(data = imp, exp = lm(bmi ~ age + hyp + chl))
 #'   model_parameters(fit)
 #' }
-#' \dontrun{
+#' \donttest{
 #' # model_parameters() also works for models that have no "tidy"-method in mice
 #' if (require("mice", quietly = TRUE) && require("gee", quietly = TRUE)) {
 #'   data(warpbreaks)

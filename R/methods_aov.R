@@ -79,9 +79,11 @@
 #' model <- aov(Sepal.Length ~ Sepal.Big + Error(Species), data = df)
 #' model_parameters(model)
 #'
-#' @examplesIf requireNamespace("lme4", quietly = TRUE)
-#' \dontrun{
-#' mm <- lmer(Sepal.Length ~ Sepal.Big + Petal.Width + (1 | Species), data = df)
+#' @examplesIf requireNamespace("lme4", quietly = TRUE) && requireNamespace("effectsize", quietly = TRUE)
+#' \donttest{
+#' df <- iris
+#' df$Sepal.Big <- ifelse(df$Sepal.Width >= 3, "Yes", "No")
+#' mm <- lme4::lmer(Sepal.Length ~ Sepal.Big + Petal.Width + (1 | Species), data = df)
 #' model <- anova(mm)
 #'
 #' # simple parameters table
@@ -253,7 +255,6 @@ standard_error.anova <- standard_error.aov
 #' @export
 p_value.anova <- p_value.aov
 
-#' @rdname model_parameters.aov
 #' @export
 model_parameters.anova <- model_parameters.aov
 
@@ -267,7 +268,6 @@ standard_error.aovlist <- standard_error.aov
 #' @export
 p_value.aovlist <- p_value.aov
 
-#' @rdname model_parameters.aov
 #' @export
 model_parameters.aovlist <- model_parameters.aov
 
@@ -331,15 +331,12 @@ model_parameters.afex_aov <- function(model,
 
 # others  ------
 
-#' @rdname model_parameters.aov
 #' @export
 model_parameters.anova.rms <- model_parameters.aov
 
-#' @rdname model_parameters.aov
 #' @export
 model_parameters.Anova.mlm <- model_parameters.aov
 
-#' @rdname model_parameters.aov
 #' @export
 model_parameters.maov <- model_parameters.aov
 

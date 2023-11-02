@@ -133,6 +133,9 @@ print_md.compare_parameters <- function(x,
                                         footer = NULL,
                                         select = NULL,
                                         split_components = TRUE,
+                                        ci_brackets = c("(", ")"),
+                                        zap_small = FALSE,
+                                        groups = NULL,
                                         ...) {
   # check if user supplied digits attributes
   if (missing(digits)) {
@@ -158,8 +161,10 @@ print_md.compare_parameters <- function(x,
     ci_digits = ci_digits,
     p_digits = p_digits,
     ci_width = NULL,
-    ci_brackets = c("(", ")"),
-    format = "markdown"
+    ci_brackets = ci_brackets,
+    format = "markdown",
+    zap_small = zap_small,
+    groups = groups
   )
 
   insight::export_table(
@@ -322,13 +327,3 @@ print_md.parameters_distribution <- function(x, digits = 2, ci_brackets = c("(",
 
   insight::export_table(formatted_table, format = "markdown", align = "firstleft", ...)
 }
-
-
-
-
-
-# Reexports models ------------------------
-
-#' @importFrom insight print_md
-#' @export
-insight::print_md
