@@ -489,26 +489,24 @@ model_parameters.default <- function(model,
 
   # extract model parameters table, as data frame
   out <- tryCatch(
-    {
-      .model_parameters_generic(
-        model = model,
-        ci = ci,
-        ci_method = ci_method,
-        bootstrap = bootstrap,
-        iterations = iterations,
-        merge_by = "Parameter",
-        standardize = standardize,
-        exponentiate = exponentiate,
-        p_adjust = p_adjust,
-        summary = summary,
-        keep_parameters = keep,
-        drop_parameters = drop,
-        vcov = vcov,
-        vcov_args = vcov_args,
-        verbose = verbose,
-        ...
-      )
-    },
+    .model_parameters_generic(
+      model = model,
+      ci = ci,
+      ci_method = ci_method,
+      bootstrap = bootstrap,
+      iterations = iterations,
+      merge_by = "Parameter",
+      standardize = standardize,
+      exponentiate = exponentiate,
+      p_adjust = p_adjust,
+      summary = summary,
+      keep_parameters = keep,
+      drop_parameters = drop,
+      vcov = vcov,
+      vcov_args = vcov_args,
+      verbose = verbose,
+      ...
+    ),
     error = function(e) {
       fail <- NA
       attr(fail, "error") <- gsub("  ", " ", gsub("\\n", "", e$message), fixed = TRUE)
@@ -576,14 +574,14 @@ model_parameters.default <- function(model,
       ci_method <- "quantile"
     }
 
-    args <- list(
+    fun_args <- list(
       model,
       iterations = iterations,
       ci = ci,
       ci_method = ci_method
     )
-    args <- c(args, dots)
-    params <- do.call("bootstrap_parameters", args)
+    fun_args <- c(fun_args, dots)
+    params <- do.call("bootstrap_parameters", fun_args)
 
     # Processing, non-bootstrapped parameters
   } else {
@@ -592,7 +590,7 @@ model_parameters.default <- function(model,
       ci_method <- "wald"
     }
 
-    args <- list(
+    fun_args <- list(
       model,
       ci = ci,
       component = component,
@@ -607,8 +605,8 @@ model_parameters.default <- function(model,
       vcov = vcov,
       vcov_args = vcov_args
     )
-    args <- c(args, dots)
-    params <- do.call(".extract_parameters_generic", args)
+    fun_args <- c(fun_args, dots)
+    params <- do.call(".extract_parameters_generic", fun_args)
   }
 
 
@@ -686,12 +684,12 @@ model_parameters.glm <- function(model,
   # tell user that profiled CIs don't respect vcov-args
   if (identical(ci_method, "profile") && (!is.null(vcov) || !is.null(vcov_args)) && isTRUE(verbose)) {
     insight::format_alert(
-      "When `ci_method=\"profile\"`, `vcov` only modifies standard errors, test-statistic and p-values, but not confidence intervals.",
+      "When `ci_method=\"profile\"`, `vcov` only modifies standard errors, test-statistic and p-values, but not confidence intervals.", # nolint
       "Use `ci_method=\"wald\"` to return confidence intervals based on robust standard errors."
     )
   }
 
-  args <- list(
+  fun_args <- list(
     model = model,
     ci = ci,
     ci_method = ci_method,
@@ -708,8 +706,8 @@ model_parameters.glm <- function(model,
     vcov_args = vcov_args,
     verbose = verbose
   )
-  args <- c(args, dots)
-  out <- do.call(".model_parameters_generic", args)
+  fun_args <- c(fun_args, dots)
+  out <- do.call(".model_parameters_generic", fun_args)
 
   attr(out, "object_name") <- insight::safe_deparse_symbol(substitute(model))
   out

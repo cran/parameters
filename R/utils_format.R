@@ -40,7 +40,7 @@
   # add modelname to column names; for single column layout per model, we just
   # need the column name. If the layout contains more than one column per model,
   # add modelname in parenthesis.
-  if (!is.null(modelname) && nchar(modelname) > 0) {
+  if (!is.null(modelname) && nzchar(modelname, keepNA = TRUE)) {
     if (ncol(out) > 1) {
       colnames(out) <- paste0(colnames(out), " (", modelname, ")")
     } else {
@@ -135,7 +135,7 @@
   # align columns width for text format
   .align_values <- function(i) {
     if (!is.null(i)) {
-      non_empty <- !is.na(i) & nchar(i) > 0
+      non_empty <- !is.na(i) & nzchar(i, keepNA = TRUE)
       i[non_empty] <- format(insight::trim_ws(i[non_empty]), justify = "right")
     }
     i
@@ -157,44 +157,44 @@
     x$ROPE_Percentage <- .align_values(x$ROPE_Percentage)
   }
   # create new string
-  row <- rep(style, times = nrow(x))
-  for (r in seq_along(row)) {
-    row[r] <- gsub("{estimate}", x[[coef_column]][r], row[r], fixed = TRUE)
+  table_row <- rep(style, times = nrow(x))
+  for (r in seq_along(table_row)) {
+    table_row[r] <- gsub("{estimate}", x[[coef_column]][r], table_row[r], fixed = TRUE)
     if (!is.null(ci_low) && !is.null(ci_high)) {
-      row[r] <- gsub("{ci_low}", ci_low[r], row[r], fixed = TRUE)
-      row[r] <- gsub("{ci_high}", ci_high[r], row[r], fixed = TRUE)
+      table_row[r] <- gsub("{ci_low}", ci_low[r], table_row[r], fixed = TRUE)
+      table_row[r] <- gsub("{ci_high}", ci_high[r], table_row[r], fixed = TRUE)
     }
     if ("SE" %in% colnames(x)) {
-      row[r] <- gsub("{se}", x[["SE"]][r], row[r], fixed = TRUE)
+      table_row[r] <- gsub("{se}", x[["SE"]][r], table_row[r], fixed = TRUE)
     }
     if ("p" %in% colnames(x)) {
-      row[r] <- gsub("{p}", x[["p"]][r], row[r], fixed = TRUE)
+      table_row[r] <- gsub("{p}", x[["p"]][r], table_row[r], fixed = TRUE)
     }
     if ("p_stars" %in% colnames(x)) {
-      row[r] <- gsub("{stars}", x[["p_stars"]][r], row[r], fixed = TRUE)
+      table_row[r] <- gsub("{stars}", x[["p_stars"]][r], table_row[r], fixed = TRUE)
     }
     if ("pd" %in% colnames(x)) {
-      row[r] <- gsub("{pd}", x[["pd"]][r], row[r], fixed = TRUE)
+      table_row[r] <- gsub("{pd}", x[["pd"]][r], table_row[r], fixed = TRUE)
     }
     if ("Rhat" %in% colnames(x)) {
-      row[r] <- gsub("{rhat}", x[["Rhat"]][r], row[r], fixed = TRUE)
+      table_row[r] <- gsub("{rhat}", x[["Rhat"]][r], table_row[r], fixed = TRUE)
     }
     if ("ESS" %in% colnames(x)) {
-      row[r] <- gsub("{ess}", x[["ESS"]][r], row[r], fixed = TRUE)
+      table_row[r] <- gsub("{ess}", x[["ESS"]][r], table_row[r], fixed = TRUE)
     }
     if ("ROPE_Percentage" %in% colnames(x)) {
-      row[r] <- gsub("{rope}", x[["ROPE_Percentage"]][r], row[r], fixed = TRUE)
+      table_row[r] <- gsub("{rope}", x[["ROPE_Percentage"]][r], table_row[r], fixed = TRUE)
     }
   }
   # some cleaning: columns w/o coefficient are empty
-  row[x[[coef_column]] == "" | is.na(x[[coef_column]])] <- ""
+  table_row[x[[coef_column]] == "" | is.na(x[[coef_column]])] <- "" # nolint
   # fix some p-value stuff, e.g. if pattern is "p={p]}",
   # we may have "p= <0.001", which we want to be "p<0.001"
-  row <- gsub("=<", "<", row, fixed = TRUE)
-  row <- gsub("= <", "<", row, fixed = TRUE)
-  row <- gsub("= ", "=", row, fixed = TRUE)
+  table_row <- gsub("=<", "<", table_row, fixed = TRUE)
+  table_row <- gsub("= <", "<", table_row, fixed = TRUE)
+  table_row <- gsub("= ", "=", table_row, fixed = TRUE)
   # final output
-  x <- data.frame(row)
+  x <- data.frame(table_row)
   colnames(x) <- column_names
   x
 }
@@ -328,15 +328,45 @@
 }
 
 
-.add_reference_level <- function(params) {
-  # check if we have a model object, else return parameter table
-  model <- .get_object(params)
+.format_ranef_parameters <- function(x) {
+  if (!is.null(x$Group) && !is.null(x$Effects)) {
+    ran_pars <- which(x$Effects == "random")
+    stddevs <- startsWith(x$Parameter[ran_pars], "SD (")
+    x$Parameter[ran_pars[stddevs]] <- paste0(
+      gsub("(.*)\\)", "\\1", x$Parameter[ran_pars[stddevs]]),
+      ": ",
+      x$Group[ran_pars[stddevs]],
+      ")"
+    )
+    corrs <- startsWith(x$Parameter[ran_pars], "Cor (")
+    x$Parameter[ran_pars[corrs]] <- paste0(
+      gsub("(.*)\\)", "\\1", x$Parameter[ran_pars[corrs]]),
+      ": ",
+      x$Group[ran_pars[corrs]],
+      ")"
+    )
+    x$Parameter[x$Parameter == "SD (Observations: Residual)"] <- "SD (Residual)"
+    x$Group <- NULL
+  }
+  x
+}
+
+
+.add_reference_level <- function(params, model = NULL) {
   if (is.null(model)) {
-    params
+    # check if we have a model object, if not provided by user
+    model <- .get_object(params)
+  }
+  # no model object provided? Try to get data from model call
+  if (is.null(model)) {
+    # get data from model call
+    model_data <- .safe(eval(attributes(params)$model_call$data))
+  } else {
+    # get data from model object
+    model_data <- insight::get_data(model, verbose = FALSE)
   }
 
   # check if we have model data, else return parameter table
-  model_data <- insight::get_data(model, verbose = FALSE)
   if (is.null(model_data)) {
     params
   }
@@ -557,26 +587,26 @@
 
   if (grepl("^conditional\\.(r|R)andom_variances", component_name)) {
     component_name <- insight::trim_ws(gsub("^conditional\\.(r|R)andom_variances(\\.)*", "", component_name))
-    if (nchar(component_name) == 0) {
-      component_name <- "Random Effects Variances"
-    } else {
+    if (nzchar(component_name, keepNA = TRUE)) {
       component_name <- paste0("Random Effects Variances: ", component_name)
+    } else {
+      component_name <- "Random Effects Variances"
     }
   }
   if (grepl("^conditional\\.(r|R)andom", component_name)) {
     component_name <- insight::trim_ws(gsub("^conditional\\.(r|R)andom(\\.)*", "", component_name))
-    if (nchar(component_name) == 0) {
-      component_name <- ifelse(ran_pars, "Random Effects Variances", "Random Effects (Count Model)")
-    } else {
+    if (nzchar(component_name, keepNA = TRUE)) {
       component_name <- paste0("Random Effects (Count Model): ", component_name)
+    } else {
+      component_name <- ifelse(ran_pars, "Random Effects Variances", "Random Effects (Count Model)")
     }
   }
   if (grepl("^zero_inflated\\.(r|R)andom", component_name)) {
     component_name <- insight::trim_ws(gsub("^zero_inflated\\.(r|R)andom(\\.)*", "", component_name))
-    if (nchar(component_name) == 0) {
-      component_name <- "Random Effects (Zero-Inflation Component)"
-    } else {
+    if (nzchar(component_name, keepNA = TRUE)) {
       component_name <- paste0("Random Effects (Zero-Inflation Component): ", component_name)
+    } else {
+      component_name <- "Random Effects (Zero-Inflation Component)"
     }
   }
   if (startsWith(component_name, "random.")) {
@@ -828,7 +858,7 @@
   if ("Subgroup" %in% names(x) && insight::n_unique(x$Subgroup) > 1) {
     split_by <- c(split_by, "Subgroup")
   }
-  split_by <- split_by[nchar(split_by) > 0]
+  split_by <- split_by[nzchar(split_by, keepNA = TRUE)]
   split_by
 }
 
@@ -901,7 +931,7 @@
 
   # fix column output
   if (inherits(attributes(x)$model, c("lavaan", "blavaan")) && "Label" %in% colnames(x)) {
-    x$From <- ifelse(x$Label == "" | x$Label == x$To, x$From, paste0(x$From, " (", x$Label, ")"))
+    x$From <- ifelse(!nzchar(as.character(x$Label), keepNA = TRUE) | x$Label == x$To, x$From, paste0(x$From, " (", x$Label, ")"))
     x$Label <- NULL
   }
 
@@ -994,8 +1024,8 @@
 
     # Don't print if empty col
     tables[[type]][vapply(colnames(tables[[type]]), function(x) {
-      col <- tables[[type]][[x]]
-      (all(col == "") | all(is.na(col))) && !grepl("_CI_(high|low)$", x)
+      column <- tables[[type]][[x]]
+      (!any(nzchar(as.character(column), keepNA = TRUE)) | all(is.na(column))) && !grepl("_CI_(high|low)$", x)
     }, logical(1))] <- NULL
 
     attr(tables[[type]], "digits") <- digits

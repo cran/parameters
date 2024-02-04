@@ -3,7 +3,7 @@ skip_if_not_installed("nFactors")
 skip_if_not_installed("GPArotation")
 
 test_that("principal_components", {
-  x <- parameters::principal_components(mtcars[, 1:7], rotation = "varimax")
+  x <- principal_components(mtcars[, 1:7], rotation = "varimax")
 
   expect_equal(
     x$RC1,
@@ -20,21 +20,25 @@ test_that("principal_components", {
   )
 
   expect_named(x, c("Variable", "RC1", "RC2", "Complexity", "Uniqueness", "MSA"))
+
+  expect_identical(dim(predict(x)), c(32L, 2L))
+  expect_named(predict(x, names = c("A", "B")), c("A", "B"))
+  expect_identical(nrow(predict(x, newdata = mtcars[1:3, 1:7])), 3L)
 })
 
 
 test_that("principal_components, n", {
   data(iris)
-  x <- parameters::principal_components(iris[1:4], n = 2)
+  x <- principal_components(iris[1:4], n = 2)
   expect_named(x, c("Variable", "PC1", "PC2", "Complexity"))
 
-  x <- parameters::principal_components(iris[1:4], n = 1)
+  x <- principal_components(iris[1:4], n = 1)
   expect_named(x, c("Variable", "PC1", "Complexity"))
 })
 
 
 test_that("principal_components", {
-  x <- parameters::principal_components(mtcars[, 1:7])
+  x <- principal_components(mtcars[, 1:7])
 
   expect_equal(
     x$PC1,
@@ -51,17 +55,17 @@ test_that("principal_components", {
   )
 
   expect_named(x, c("Variable", "PC1", "PC2", "Complexity"))
+  expect_identical(dim(predict(x)), c(32L, 2L))
 })
 
 
 # predict ----------------------
 # N.B tests will fail if `GPArotation` package is not installed
 
-d <- na.omit(psych::bfi[, 1:25])
-model <- psych::fa(d, nfactors = 5)
-mp <- model_parameters(model, sort = TRUE, threshold = "max")
-
 test_that("predict model_parameters fa", {
+  d <- na.omit(psych::bfi[, 1:25])
+  model <- psych::fa(d, nfactors = 5)
+  mp <- model_parameters(model, sort = TRUE, threshold = "max")
   pr <- suppressMessages(
     predict(mp, names = c("Neuroticism", "Conscientiousness", "Extraversion", "Agreeableness", "Opennness"))
   )
@@ -76,6 +80,14 @@ test_that("predict model_parameters fa", {
     c(-1.6092, -0.17222, 0.23341, -1.06152, -0.66086),
     tolerance = 0.01
   )
+  expect_identical(nrow(predict(mp, keep_na = FALSE)), 2436L)
+  expect_identical(nrow(predict(mp, newdata = d[1:10, ], keep_na = FALSE)), 10L)
+  expect_named(
+    predict(mp, names = c("A", "B", "C", "D", "E"), keep_na = FALSE),
+    c("A", "B", "C", "D", "E")
+  )
+  model <- factor_analysis(d, n = 5)
+  expect_identical(nrow(predict(model, keep_na = FALSE)), 2436L)
 })
 
 unloadNamespace("GPArotation")

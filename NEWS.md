@@ -1,3 +1,32 @@
+# parameters 0.21.4
+
+## Breaking changes
+
+* The `exponentiate` argument of `model_parameters()` for
+  `marginaleffects::predictions()` now defaults to `FALSE`, in line with all
+  the other `model_parameters()` methods.
+
+## Changes
+
+* `model_parameters()` for models of package *survey* now gives informative
+  messages when `bootstrap = TRUE` (which is currently not supported).
+
+* `n_factors()` now also returns the explained variance for the number of
+  factors as attributes.
+
+* `model_parameters()` for objects of package *metafor* now warns when unsupported
+  arguments (like `vcov`) are used.
+
+* Improved documentation for `pool_parameters()`.
+
+## Bug fixes
+
+* `print(include_reference = TRUE)` for `model_parameters()` did not work when
+  run inside a pipe-chain.
+
+* Fixed issues with `format()` for objects returned by `compare_parameters()`
+  that included mixed models.
+
 # parameters 0.21.3
 
 ## Changes

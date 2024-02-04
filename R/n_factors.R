@@ -121,16 +121,14 @@ n_factors <- function(x,
 
   # Get number of observations
   if (is.data.frame(x)) {
-    nobs <- nrow(x)
-  } else {
-    if (is.numeric(x) && !is.null(cor)) {
-      nobs <- x
-      package <- package[!package %in% c("pcdimension", "PCDimension")]
-    } else if (is.matrix(x) || inherits(x, "easycormatrix")) {
-      insight::format_error(
-        "Please input the correlation matrix via the `cor` argument and the number of rows / observations via the first argument." # nolint
-      )
-    }
+    n_obs <- nrow(x)
+  } else if (is.numeric(x) && !is.null(cor)) {
+    n_obs <- x
+    package <- package[!package %in% c("pcdimension", "PCDimension")]
+  } else if (is.matrix(x) || inherits(x, "easycormatrix")) {
+    insight::format_error(
+      "Please input the correlation matrix via the `cor` argument and the number of rows / observations via the first argument." # nolint
+    )
   }
 
   # Get only numeric
@@ -175,14 +173,14 @@ n_factors <- function(x,
     if (safe) {
       out <- rbind(
         out,
-        tryCatch(.n_factors_bartlett(eigen_values, model, nobs),
+        tryCatch(.n_factors_bartlett(eigen_values, model, n_obs),
           warning = function(w) data.frame(),
           error = function(e) data.frame()
         )
       )
       out <- rbind(
         out,
-        tryCatch(.n_factors_bentler(eigen_values, model, nobs),
+        tryCatch(.n_factors_bentler(eigen_values, model, n_obs),
           warning = function(w) data.frame(),
           error = function(e) data.frame()
         )
@@ -218,11 +216,11 @@ n_factors <- function(x,
     } else {
       out <- rbind(
         out,
-        .n_factors_bartlett(eigen_values, model, nobs)
+        .n_factors_bartlett(eigen_values, model, n_obs)
       )
       out <- rbind(
         out,
-        .n_factors_bentler(eigen_values, model, nobs)
+        .n_factors_bentler(eigen_values, model, n_obs)
       )
       out <- rbind(
         out,
@@ -250,7 +248,7 @@ n_factors <- function(x,
     if (safe) {
       out <- rbind(
         out,
-        tryCatch(.n_factors_ega(x, cor, nobs, eigen_values, type),
+        tryCatch(.n_factors_ega(x, cor, n_obs, eigen_values, type),
           # warning = function(w) data.frame(),
           error = function(e) data.frame()
         )
@@ -258,7 +256,7 @@ n_factors <- function(x,
     } else {
       out <- rbind(
         out,
-        .n_factors_ega(x, cor, nobs, eigen_values, type)
+        .n_factors_ega(x, cor, n_obs, eigen_values, type)
       )
     }
   }
@@ -271,7 +269,7 @@ n_factors <- function(x,
     if (safe) {
       out <- rbind(
         out,
-        tryCatch(.n_factors_vss(x, cor, nobs, type, rotation, algorithm),
+        tryCatch(.n_factors_vss(x, cor, n_obs, type, rotation, algorithm),
           # warning = function(w) data.frame(),
           error = function(e) data.frame()
         )
@@ -279,7 +277,7 @@ n_factors <- function(x,
     } else {
       out <- rbind(
         out,
-        .n_factors_vss(x, cor, nobs, type, rotation, algorithm)
+        .n_factors_vss(x, cor, n_obs, type, rotation, algorithm)
       )
     }
   }
@@ -291,7 +289,7 @@ n_factors <- function(x,
     if (safe) {
       out <- rbind(
         out,
-        tryCatch(.n_factors_fit(x, cor, nobs, type, rotation, algorithm),
+        tryCatch(.n_factors_fit(x, cor, n_obs, type, rotation, algorithm),
           warning = function(w) data.frame(),
           error = function(e) data.frame()
         )
@@ -299,7 +297,7 @@ n_factors <- function(x,
     } else {
       out <- rbind(
         out,
-        .n_factors_fit(x, cor, nobs, type, rotation, algorithm)
+        .n_factors_fit(x, cor, n_obs, type, rotation, algorithm)
       )
     }
   }
@@ -340,6 +338,15 @@ n_factors <- function(x,
     n_Methods = as.numeric(by(out, as.factor(out$n_Factors), function(out) n <- nrow(out)))
   )
 
+  # Add cumulative percentage of variance explained
+  fa <- factor_analysis(x, cor = cor, n = max(by_factors$n_Factors)) # Get it from our fa:: wrapper (TODO: that's probably not the most efficient)
+  varex <- attributes(fa)$summary
+  # Extract number of factors from EFA output (usually MR1, ML1, etc.)
+  varex$n_Factors <- as.numeric(gsub("[^\\d]+", "", varex$Component, perl = TRUE))
+  # Merge (and like that filter out empty methods)
+  by_factors <- merge(by_factors, varex[, c("n_Factors", "Variance_Cumulative")], by = "n_Factors")
+
+  attr(out, "Variance_Explained") <- varex # We add all the variance explained (for plotting)
   attr(out, "summary") <- by_factors
   attr(out, "n") <- min(as.numeric(as.character(
     by_factors[by_factors$n_Methods == max(by_factors$n_Methods), "n_Factors"]
@@ -394,7 +401,7 @@ print.n_factors <- function(x, ...) {
 
 
   # Text
-  text <- paste0(
+  msg_text <- paste0(
     "The choice of ",
     as.character(best_n),
     ifelse(type == "factor", " dimensions ", " clusters "),
@@ -410,7 +417,7 @@ print.n_factors <- function(x, ...) {
   )
 
   insight::print_color("# Method Agreement Procedure:\n\n", "blue")
-  cat(text)
+  cat(msg_text)
   invisible(x)
 }
 
@@ -751,10 +758,10 @@ print.n_clusters <- print.n_factors
     CRMS <- rez[!is.na(rez$CRMS) & rez$CRMS <= target, "n"][1]
   }
   # BIC (this is a penalized method so we can just take the one that minimizes it)
-  BIC <- ifelse(all(is.na(rez$BIC)), NA, rez[!is.na(rez$BIC) & rez$BIC == min(rez$BIC, na.rm = TRUE), "n"])
+  BayIC <- ifelse(all(is.na(rez$BIC)), NA, rez[!is.na(rez$BIC) & rez$BIC == min(rez$BIC, na.rm = TRUE), "n"])
 
   .data_frame(
-    n_Factors = c(fit_off, TLI, RMSEA, RMSR, CRMS, BIC),
+    n_Factors = c(fit_off, TLI, RMSEA, RMSR, CRMS, BayIC),
     Method = c("Fit_off", "TLI", "RMSEA", "RMSR", "CRMS", "BIC"),
     Family = c("Fit", "Fit", "Fit", "Fit", "Fit", "Fit")
   )

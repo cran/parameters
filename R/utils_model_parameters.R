@@ -27,7 +27,7 @@
 
   # for simplicity, we just use the model information from the first formula
   # when we have multivariate response models...
-  if (insight::is_multivariate(model) && !"is_zero_inflated" %in% names(info)) {
+  if (insight::is_multivariate(model) && !"is_zero_inflated" %in% names(info) && !inherits(model, c("vgam", "vglm"))) {
     info <- info[[1]]
   }
 
@@ -60,6 +60,9 @@
 
   # add parameters with value and variable
   attr(params, "pretty_labels") <- .format_value_labels(params, model)
+
+  # save model call
+  attr(params, "model_call") <- .safe(insight::get_call(model))
 
   # use tryCatch, these might fail...
   attr(params, "test_statistic") <- .safe(insight::find_statistic(model))
@@ -245,7 +248,7 @@
         "Coefficient"
       )
     }
-  } else if (!is.null(info) && !info$family == "unknown") {
+  } else if (!is.null(info) && info$family != "unknown") {
     if (isTRUE(exponentiate)) {
       if (info$is_exponential && identical(info$link_function, "log")) {
         coef_col <- "Prevalence Ratio"
@@ -260,20 +263,18 @@
       } else if (info$is_count) {
         coef_col <- "IRR"
       }
-    } else {
-      if (info$is_exponential && identical(info$link_function, "log")) {
-        coef_col <- "Log-Prevalence"
-      } else if ((info$is_binomial && info$is_logit) || info$is_ordinal || info$is_multinomial || info$is_categorical) {
-        coef_col <- "Log-Odds"
-      } else if (info$is_binomial && !info$is_logit) {
-        if (info$link_function == "identity") {
-          coef_col <- "Risk"
-        } else {
-          coef_col <- "Log-Risk"
-        }
-      } else if (info$is_count) {
-        coef_col <- "Log-Mean"
+    } else if (info$is_exponential && identical(info$link_function, "log")) {
+      coef_col <- "Log-Prevalence"
+    } else if ((info$is_binomial && info$is_logit) || info$is_ordinal || info$is_multinomial || info$is_categorical) {
+      coef_col <- "Log-Odds"
+    } else if (info$is_binomial && !info$is_logit) {
+      if (info$link_function == "identity") {
+        coef_col <- "Risk"
+      } else {
+        coef_col <- "Log-Risk"
       }
+    } else if (info$is_count) {
+      coef_col <- "Log-Mean"
     }
   }
 
@@ -318,13 +319,11 @@
     } else if (inherits(model, c("clm", "clm2", "clmm"))) {
       ## TODO: make sure we catch all ordinal models properly here
       rows <- !tolower(params$Component) %in% c("location", "scale")
-    } else {
+    } else if (is.null(params$Component)) {
       # don't exponentiate dispersion
-      if (is.null(params$Component)) {
-        rows <- seq_len(nrow(params))
-      } else {
-        rows <- !tolower(params$Component) %in% c("dispersion", "residual")
-      }
+      rows <- seq_len(nrow(params))
+    } else {
+      rows <- !tolower(params$Component) %in% c("dispersion", "residual")
     }
     params[rows, columns] <- exp(params[rows, columns])
     if (all(c("Coefficient", "SE") %in% names(params))) {
@@ -348,7 +347,7 @@
   )
 
   # add Group variable
-  if (!is.null(clean_params$Group) && any(nchar(clean_params$Group) > 0)) {
+  if (!is.null(clean_params$Group) && any(nzchar(clean_params$Group, keepNA = TRUE))) {
     params$Group <- .safe(gsub("(.*): (.*)", "\\2", clean_params$Group))
   }
 
@@ -414,10 +413,10 @@
 
 
 .additional_arguments <- function(x, value, default) {
-  args <- attributes(x)$additional_arguments
+  add_args <- attributes(x)$additional_arguments
 
-  if (length(args) > 0 && value %in% names(args)) {
-    out <- args[[value]]
+  if (length(add_args) > 0 && value %in% names(add_args)) {
+    out <- add_args[[value]]
   } else {
     out <- attributes(x)[[value]]
   }

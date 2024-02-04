@@ -91,6 +91,10 @@
     if (is.null(model) || inherits(model, "parameters_model")) {
       model <- .safe(get(obj_name, envir = globalenv()))
     }
+    # prevent self reference
+    if (is.null(model) || inherits(model, "parameters_model")) {
+      model <- .safe(.dynGet(obj_name))
+    }
   }
   model
 }
@@ -149,7 +153,7 @@
 # Almost identical to dynGet(). The difference is that we deparse the expression
 # because get0() allows symbol only since R 4.1.0
 .dynGet <- function(x,
-                    ifnotfound = stop(gettextf("%s not found", sQuote(x)), domain = NA),
+                    ifnotfound = stop(gettextf("%s not found", sQuote(x)), domain = NA, call. = FALSE),
                     minframe = 1L,
                     inherits = FALSE) {
   x <- insight::safe_deparse(x)

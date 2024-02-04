@@ -82,29 +82,24 @@
 #' use `effects = "fixed"`. There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html)
 #' implemented in the [**see**-package](https://easystats.github.io/see/).
 #'
-#' @examples
+#' @examplesIf require("lme4") && require("glmmTMB")
 #' library(parameters)
-#' if (require("lme4")) {
-#'   data(mtcars)
-#'   model <- lmer(mpg ~ wt + (1 | gear), data = mtcars)
-#'   model_parameters(model)
-#' }
-#' \donttest{
-#' if (require("glmmTMB")) {
-#'   data(Salamanders)
-#'   model <- glmmTMB(
-#'     count ~ spp + mined + (1 | site),
-#'     ziformula = ~mined,
-#'     family = poisson(),
-#'     data = Salamanders
-#'   )
-#'   model_parameters(model, effects = "all")
-#' }
+#' data(mtcars)
+#' model <- lme4::lmer(mpg ~ wt + (1 | gear), data = mtcars)
+#' model_parameters(model)
 #'
-#' if (require("lme4")) {
-#'   model <- lmer(mpg ~ wt + (1 | gear), data = mtcars)
-#'   model_parameters(model, bootstrap = TRUE, iterations = 50, verbose = FALSE)
-#' }
+#' \donttest{
+#' data(Salamanders, package = "glmmTMB")
+#' model <- glmmTMB::glmmTMB(
+#'   count ~ spp + mined + (1 | site),
+#'   ziformula = ~mined,
+#'   family = poisson(),
+#'   data = Salamanders
+#' )
+#' model_parameters(model, effects = "all")
+#'
+#' model <- lme4::lmer(mpg ~ wt + (1 | gear), data = mtcars)
+#' model_parameters(model, bootstrap = TRUE, iterations = 50, verbose = FALSE)
 #' }
 #' @return A data frame of indices related to the model's parameters.
 #' @export
@@ -197,7 +192,7 @@ model_parameters.merMod <- function(model,
         }
       }
     } else {
-      args <- list(
+      fun_args <- list(
         model,
         ci = ci,
         ci_method = ci_method,
@@ -212,8 +207,8 @@ model_parameters.merMod <- function(model,
         vcov = vcov,
         vcov_args = vcov_args
       )
-      args <- c(args, dots)
-      params <- do.call(".extract_parameters_mixed", args)
+      fun_args <- c(fun_args, dots)
+      params <- do.call(".extract_parameters_mixed", fun_args)
     }
 
     params$Effects <- "fixed"
@@ -244,10 +239,10 @@ model_parameters.merMod <- function(model,
     params$Level <- NA
     params$Group <- ""
 
-    if (!is.null(params_random)) {
-      params <- params[match(colnames(params_random), colnames(params))]
-    } else {
+    if (is.null(params_random)) {
       params <- params[match(colnames(params_variance), colnames(params))]
+    } else {
+      params <- params[match(colnames(params_random), colnames(params))]
     }
   }
 
@@ -348,12 +343,12 @@ standard_error.merMod <- function(model,
   }
 
   if (!is.null(vcov) || isTRUE(dots[["robust"]])) {
-    args <- list(model,
+    fun_args <- list(model,
       vcov = vcov,
       vcov_args = vcov_args
     )
-    args <- c(args, dots)
-    out <- do.call("standard_error.default", args)
+    fun_args <- c(fun_args, dots)
+    out <- do.call("standard_error.default", fun_args)
     return(out)
   }
 
