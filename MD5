@@ -1,6 +1,6 @@
-3122c94dccb67303c5c66c01832eb05c *DESCRIPTION
+eee77d2dbbf3800c9e7c566edb6b41d3 *DESCRIPTION
 0d7e2def0dac917a90b89cfa695ffab7 *NAMESPACE
-fd4ecd4c9378a95e1453747e3a453832 *NEWS.md
+a5aff4f3a5ee609943fe2ff198bb2675 *NEWS.md
 6ac724bfc1684ee9575f9753773c43b6 *R/1_model_parameters.R
 1e9589dff6cf9c9736a18404d1263af4 *R/2_ci.R
 44566a142b4f72a37240ba695d413ac1 *R/3_p_value.R
@@ -366,7 +366,7 @@ ccfadf4697a7fd588004a6259408afab *tests/testthat/test-ivreg.R
 378d92a77c563e829df688c8f933f10a *tests/testthat/test-lavaan.R
 affc0de64eb9e599cf55d8a6c96e3c93 *tests/testthat/test-lme.R
 94dde5f73d12dc23905879b3174575c2 *tests/testthat/test-lmerTest.R
-17597f7e33a78425fac504b88d2cb7c9 *tests/testthat/test-marginaleffects.R
+bd81f2eb1d6a60a21fb7ea7ac250791e *tests/testthat/test-marginaleffects.R
 b58b45bc8cdc1af80340d5c6f1cff1f1 *tests/testthat/test-mipo.R
 6f6d859c2d6c26cce9514f323d853b30 *tests/testthat/test-mira.R
 2314dfc155f4dd2946e6895b5e0a8946 *tests/testthat/test-mlm.R

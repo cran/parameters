@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.21.4
+Version: 0.21.5
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -107,7 +107,7 @@ Config/Needs/website: rstudio/bslib, r-lib/pkgdown,
         easystats/easystatstemplate
 Config/rcmdcheck/ignore-inconsequential-notes: true
 NeedsCompilation: no
-Packaged: 2024-02-03 21:38:13 UTC; Daniel
+Packaged: 2024-02-05 20:27:05 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @strengejacke),
   Dominique Makowski [aut] (<https://orcid.org/0000-0001-5375-9967>,
@@ -129,4 +129,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
     @demstats1),
   Joseph Luchman [ctb] (<https://orcid.org/0000-0002-8886-9717>)
 Repository: CRAN
-Date/Publication: 2024-02-04 00:10:02 UTC
+Date/Publication: 2024-02-07 12:50:05 UTC
