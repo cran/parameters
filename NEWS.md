@@ -1,3 +1,33 @@
+# parameters 0.21.6
+
+## New supported models
+
+* Support for models of class `serp` (*serp*).
+
+## Changes
+
+* `include_reference` can now directly be set to `TRUE` in `model_parameters()`
+  and doesn't require a call to `print()` anymore.
+
+* `compare_parameters()` gains a `include_reference` argument, to add the
+  reference category of categorical predictors to the parameters table.
+
+* `print_md()` for `compare_parameters()` now by default uses the *tinytable*
+  package to create markdown tables. This allows better control for column
+  heading spanning over multiple columns.
+
+## Bug fixes
+
+* Fixed issue with parameter names for `model_parameters()` and objects from
+  package *epiR*.
+
+* Fixed issue with `exponentiate = TRUE` for `model_parameters()` with models
+  of class `clmm` (package *ordinal*), when model had no `component` column
+  (e.g., no scale or location parameters were returned).
+
+* `include_reference` now also works when factor were created "on-the-fly" inside
+  the model formula (i.e. `y ~ as.factor(x)`).
+
 # parameters 0.21.5
 
 ## Bug fixes

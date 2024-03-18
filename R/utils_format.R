@@ -53,7 +53,10 @@
     # here we either have "<br>" or " " as line breaks, followed by empty "()"
     i <- gsub("<br>()", "", i, fixed = TRUE)
     i <- gsub(" ()", "", i, fixed = TRUE)
+    i <- gsub("<br>(, )", "", i, fixed = TRUE)
+    i <- gsub(" (, )", "", i, fixed = TRUE)
     i[i == "()"] <- ""
+    i[i == "(, )"] <- ""
     # remove other non-matched patterns
     i <- gsub("{stars}", "", i, fixed = TRUE)
     i <- gsub("{rhat}", "", i, fixed = TRUE)
@@ -372,7 +375,7 @@
   }
 
   # find factors and factor levels and check if we have any factors in the data
-  factors <- .find_factor_levels(model_data)
+  factors <- .find_factor_levels(model_data, model, model_call = attributes(params)$model_call)
   if (!length(factors)) {
     params
   }
@@ -391,6 +394,17 @@
   # copy object, so we save original data
   out <- params
 
+  # sanity check - is pretty_names NULL? If so, use Parameters as pretty_names
+  if (is.null(pretty_names)) {
+    pretty_names <- stats::setNames(params$Parameter, params$Parameter)
+  }
+
+  # if we use "include_reference" and set "pretty_names = FALSE", pretty_names
+  # is no named vector. So we need to make sure we have a named vector
+  if (is.null(names(pretty_names))) {
+    pretty_names <- stats::setNames(pretty_names, params$Parameter)
+  }
+
   # if we use "keep" or "drop", we have less parameters in our data frame,
   # so we need to make sure we only have those pretty_names, which names match
   # the parameters in the data frame
@@ -406,8 +420,16 @@
     if (length(found)) {
       # the reference level is *not* in the pretty names yet
       reference_level <- f[!f %in% names(pretty_names)]
+
+      # for on-the-fly conversion of factors, the names of the factors can
+      # can also contain "factor()" or "as.factor()" - we need to remove these
+      if (any(grepl("(as\\.factor|factor|as\\.character)", fn))) {
+        fn_clean <- gsub("(as\\.factor|factor|as\\.character)\\((.*)\\)", "\\2", fn)
+      } else {
+        fn_clean <- fn
+      }
       # create a pretty level for the reference category
-      pretty_level <- paste0(fn, " [", sub(fn, "", reference_level, fixed = TRUE), "]")
+      pretty_level <- paste0(fn_clean, " [", sub(fn, "", reference_level, fixed = TRUE), "]")
       # insert new pretty level at the correct position in "pretty_names"
       pretty_names <- .insert_element_at(
         pretty_names,
@@ -507,7 +529,7 @@
                                            is_zero_inflated,
                                            is_ordinal_model,
                                            is_multivariate = FALSE,
-                                           ran_pars,
+                                           ran_pars, # nolint
                                            formatted_table = NULL) {
   # prepare component names
   .conditional_fixed_text <- if (is_zero_inflated) {
@@ -931,7 +953,7 @@
 
   # fix column output
   if (inherits(attributes(x)$model, c("lavaan", "blavaan")) && "Label" %in% colnames(x)) {
-    x$From <- ifelse(!nzchar(as.character(x$Label), keepNA = TRUE) | x$Label == x$To, x$From, paste0(x$From, " (", x$Label, ")"))
+    x$From <- ifelse(!nzchar(as.character(x$Label), keepNA = TRUE) | x$Label == x$To, x$From, paste0(x$From, " (", x$Label, ")")) # nolint
     x$Label <- NULL
   }
 
@@ -1049,7 +1071,7 @@
     # rename columns for zero-inflation part
     if (startsWith(type, "zero") && !is.null(zi_coef_name) && !is.null(coef_column)) {
       colnames(tables[[type]])[which(colnames(tables[[type]]) == coef_column)] <- zi_coef_name
-      colnames(tables[[type]])[which(colnames(tables[[type]]) == paste0("Std_", coef_column))] <- paste0("Std_", zi_coef_name)
+      colnames(tables[[type]])[which(colnames(tables[[type]]) == paste0("Std_", coef_column))] <- paste0("Std_", zi_coef_name) # nolint
     }
 
     # rename columns for correlation, location or scale part
@@ -1129,8 +1151,8 @@
       }
       # replace brackets by parenthesis
       if (!is.null(parameter_column) && parameter_column %in% colnames(formatted_table)) {
-        formatted_table[[parameter_column]] <- gsub("[", ci_brackets[1], formatted_table[[parameter_column]], fixed = TRUE)
-        formatted_table[[parameter_column]] <- gsub("]", ci_brackets[2], formatted_table[[parameter_column]], fixed = TRUE)
+        formatted_table[[parameter_column]] <- gsub("[", ci_brackets[1], formatted_table[[parameter_column]], fixed = TRUE) # nolint
+        formatted_table[[parameter_column]] <- gsub("]", ci_brackets[2], formatted_table[[parameter_column]], fixed = TRUE) # nolint
       }
     }
 

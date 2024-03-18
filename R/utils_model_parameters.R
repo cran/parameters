@@ -201,6 +201,13 @@
     }
   }
 
+  # include reference level?
+  if (isTRUE(dot.arguments[["include_reference"]])) {
+    a <- attributes(params)
+    params <- .safe(.add_reference_level(params, model), params)
+    attributes(params) <- utils::modifyList(a, attributes(params))
+  }
+
   row.names(params) <- NULL
   params
 }
@@ -316,12 +323,12 @@
   if (any(columns)) {
     if (inherits(model, "mvord")) {
       rows <- params$Component != "correlation"
-    } else if (inherits(model, c("clm", "clm2", "clmm"))) {
-      ## TODO: make sure we catch all ordinal models properly here
-      rows <- !tolower(params$Component) %in% c("location", "scale")
     } else if (is.null(params$Component)) {
       # don't exponentiate dispersion
       rows <- seq_len(nrow(params))
+    } else if (inherits(model, c("clm", "clm2", "clmm"))) {
+      ## TODO: make sure we catch all ordinal models properly here
+      rows <- !tolower(params$Component) %in% c("location", "scale")
     } else {
       rows <- !tolower(params$Component) %in% c("dispersion", "residual")
     }

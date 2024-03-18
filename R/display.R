@@ -53,7 +53,8 @@
 #' experimental, thus, only a fixed layout-style is available at the moment
 #' (columns for estimates, confidence intervals and p-values). However, it
 #' is possible to include other model components, like zero-inflation, or random
-#' effects in the table. See 'Examples'.
+#' effects in the table. See 'Examples'. An alternative is to set `engine = "tt"`
+#' in `print_html()` to use the _tinytable_ package for creating HTML tables.
 #'
 #' @seealso [print.parameters_model()]
 #'
@@ -114,7 +115,8 @@ display.parameters_model <- function(object,
       footer_digits = footer_digits, align = align, ci_brackets = ci_brackets,
       show_sigma = show_sigma, show_formula = show_formula, zap_small = zap_small,
       font_size = font_size, line_padding = line_padding,
-      column_labels = column_labels, verbose = verbose, ...
+      column_labels = column_labels, include_reference = include_reference,
+      verbose = verbose, ...
     )
   } else {
     print_md(
@@ -123,7 +125,7 @@ display.parameters_model <- function(object,
       footer = footer, ci_digits = ci_digits, p_digits = p_digits,
       footer_digits = footer_digits, ci_brackets = ci_brackets,
       show_sigma = show_sigma, show_formula = show_formula, zap_small = zap_small,
-      verbose = verbose, ...
+      include_reference = include_reference, verbose = verbose, ...
     )
   }
 }
