@@ -13,7 +13,6 @@
 #' @inheritParams bayestestR::describe_posterior
 #' @inheritParams p_value
 #' @inheritParams model_parameters.htest
-#' @param cohens_d,cramers_v Deprecated. Please use `effectsize_type`.
 #'
 #' @details
 #' The meaning of the extracted parameters:
@@ -29,24 +28,26 @@
 #'   the *g* parameters; See the *Bayes Factors for ANOVAs* paper
 #'   (\doi{10.1016/j.jmp.2012.08.001}).
 #'
-#' @examples
+#' @examplesIf require("BayesFactor")
 #' \donttest{
-#' if (require("BayesFactor")) {
-#'   # Bayesian t-test
-#'   model <- ttestBF(x = rnorm(100, 1, 1))
-#'   model_parameters(model)
-#'   model_parameters(model, cohens_d = TRUE, ci = .9)
+#' # Bayesian t-test
+#' model <- BayesFactor::ttestBF(x = rnorm(100, 1, 1))
+#' model_parameters(model)
+#' model_parameters(model, es_type = "cohens_d", ci = 0.9)
 #'
-#'   # Bayesian contingency table analysis
-#'   data(raceDolls)
-#'   bf <- contingencyTableBF(raceDolls, sampleType = "indepMulti", fixedMargin = "cols")
-#'   model_parameters(bf,
-#'     centrality = "mean",
-#'     dispersion = TRUE,
-#'     verbose = FALSE,
-#'     effectsize_type = "cramers_v"
-#'   )
-#' }
+#' # Bayesian contingency table analysis
+#' data(raceDolls)
+#' bf <- BayesFactor::contingencyTableBF(
+#'   raceDolls,
+#'   sampleType = "indepMulti",
+#'   fixedMargin = "cols"
+#' )
+#' model_parameters(bf,
+#'   centrality = "mean",
+#'   dispersion = TRUE,
+#'   verbose = FALSE,
+#'   es_type = "cramers_v"
+#' )
 #' }
 #' @return A data frame of indices related to the model's parameters.
 #' @export
@@ -59,18 +60,12 @@ model_parameters.BFBayesFactor <- function(model,
                                            rope_range = "default",
                                            rope_ci = 0.95,
                                            priors = TRUE,
-                                           effectsize_type = NULL,
+                                           es_type = NULL,
                                            include_proportions = FALSE,
                                            verbose = TRUE,
-                                           cohens_d = NULL,
-                                           cramers_v = NULL,
+                                           effectsize_type = NULL,
                                            ...) {
   insight::check_if_installed("BayesFactor")
-
-  ## TODO: remove in a later update
-  # handle deprected arguments ------
-  if (!is.null(cramers_v)) effectsize_type <- "cramers_v"
-  if (!is.null(cohens_d)) effectsize_type <- "cohens_d"
 
   if (any(startsWith(names(model@numerator), "Null"))) {
     if (isTRUE(verbose)) {
@@ -87,6 +82,12 @@ model_parameters.BFBayesFactor <- function(model,
       insight::format_warning("Can't extract model parameters.")
     }
     return(NULL)
+  }
+
+  ## TODO: remove deprecation warning later
+  if (!is.null(effectsize_type)) {
+    insight::format_warning("Argument `effectsize_type` is deprecated. Use `es_type` instead.")
+    es_type <- effectsize_type
   }
 
   out <- bayestestR::describe_posterior(
@@ -121,10 +122,10 @@ model_parameters.BFBayesFactor <- function(model,
   tryCatch(
     {
       bfm <- as.data.frame(bayestestR::bayesfactor_models(model)[-1, ])
-      if (!is.null(bfm$log_BF)) {
-        out$BF <- exp(bfm$log_BF)
-      } else {
+      if (is.null(bfm$log_BF)) {
         out$BF <- bfm$BF
+      } else {
+        out$BF <- exp(bfm$log_BF)
       }
     },
     error = function(e) {
@@ -138,7 +139,7 @@ model_parameters.BFBayesFactor <- function(model,
   }
 
   # Effect size?
-  if (!is.null(effectsize_type)) {
+  if (!is.null(es_type)) {
     # needs {effectsize} to be installed
     insight::check_if_installed("effectsize")
 
@@ -150,7 +151,7 @@ model_parameters.BFBayesFactor <- function(model,
           dispersion = dispersion,
           ci_method = ci_method,
           rope_ci = rope_ci,
-          type = effectsize_type,
+          type = es_type,
           ...
         )
 
