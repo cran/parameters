@@ -62,14 +62,17 @@ bayestestR::equivalence_test
 #' - "classic" - The TOST rule (Lakens 2017)
 #'
 #'   This rule follows the "TOST rule", i.e. a two one-sided test procedure
-#'   (_Lakens 2017_). Following this rule, practical equivalence of an effect
-#'   (i.e. H0) is *rejected*, when the coefficient is statistically significant
-#'   *and* the narrow confidence intervals (i.e. `1-2*alpha`) *include* or
-#'   *exceed* the ROPE boundaries. Practical equivalence is assumed
-#'   (i.e. H0 "accepted") when the narrow confidence intervals are completely
-#'   inside the ROPE, no matter if the effect is statistically significant
-#'   or not. Else, the decision whether to accept or reject practical
-#'   equivalence is undecided.
+#'   (_Lakens 2017_). Following this rule...
+#'   - practical equivalence is assumed (i.e. H0 *"accepted"*) when the narrow
+#'     confidence intervals are completely inside the ROPE, no matter if the
+#'     effect is statistically significant or not;
+#'   - practical equivalence (i.e. H0) is *rejected*, when the coefficient is
+#'     statistically significant, both when the narrow confidence intervals
+#'     (i.e. `1-2*alpha`) include or exclude the the ROPE boundaries, but the
+#'     narrow confidence intervals are *not fully covered* by the ROPE;
+#'   - else the decision whether to accept or reject practical equivalence is
+#'     undecided (i.e. when effects are *not* statistically significant *and*
+#'     the narrow confidence intervals overlaps the ROPE).
 #'
 #' - "cet" - Conditional Equivalence Testing (Campbell/Gustafson 2018)
 #'
@@ -100,7 +103,8 @@ bayestestR::equivalence_test
 #' Second generation p-values (SGPV) were proposed as a statistic that
 #' represents _the proportion of data-supported hypotheses that are also null
 #' hypotheses_ _(Blume et al. 2018, Lakens and Delacre 2020)_. It represents the
-#' proportion of the confidence interval range that is inside the ROPE.
+#' proportion of the confidence interval range (assuming a normally distributed,
+#' equal-tailed interval) that is inside the ROPE.
 #'
 #' ## ROPE range
 #' Some attention is required for finding suitable values for the ROPE limits
@@ -559,20 +563,14 @@ equivalence_test.ggeffects <- function(x,
 
   if (rule == "classic") {
     final_ci <- ci_narrow
-    # significant result?
-    if (min(ci_narrow) > 0 || max(ci_narrow) < 0) {
-      # check if CI are entirely inside ROPE. If CI crosses ROPE, reject H0, else accept
-      if (min(abs(ci_narrow)) < max(abs(range_rope)) && max(abs(ci_narrow)) < max(abs(range_rope))) {
-        decision <- "Accepted"
-      } else {
-        decision <- "Rejected"
-      }
-      # non-significant results
-    } else if (min(abs(ci_narrow)) < max(abs(range_rope)) && max(abs(ci_narrow)) < max(abs(range_rope))) {
-      # check if CI are entirely inside ROPE. If CI crosses ROPE, reject H0, else accept
+    if (all(ci_narrow < max(range_rope)) && all(ci_narrow > min(range_rope))) {
+      # narrow CI is fully inside ROPE - always accept
       decision <- "Accepted"
-    } else {
+    } else if (min(ci_narrow) < 0 && max(ci_narrow) > 0) {
+      # non-significant results - undecided
       decision <- "Undecided"
+    } else {
+      decision <- "Rejected"
     }
   }
 
@@ -585,7 +583,7 @@ equivalence_test.ggeffects <- function(x,
     if (min(ci_wide) > 0 || max(ci_wide) < 0) {
       decision <- "Rejected"
       # non-significant results, all narrow CI inside ROPE
-    } else if (min(abs(ci_narrow)) < max(abs(range_rope)) && max(abs(ci_narrow)) < max(abs(range_rope))) {
+    } else if (all(ci_narrow < max(range_rope)) && all(ci_narrow > min(range_rope))) {
       decision <- "Accepted"
     } else {
       decision <- "Undecided"
@@ -595,10 +593,9 @@ equivalence_test.ggeffects <- function(x,
   data.frame(
     CI_low = final_ci[1],
     CI_high = final_ci[2],
-    SGPV = .sgpv(range_rope, final_ci),
+    SGPV = .rope_coverage(range_rope, final_ci),
     ROPE_low = range_rope[1],
     ROPE_high = range_rope[2],
-    # ROPE_Percentage = .rope_coverage(range_rope, final_ci),
     ROPE_Equivalence = decision,
     stringsAsFactors = FALSE
   )
@@ -609,31 +606,34 @@ equivalence_test.ggeffects <- function(x,
 
 # helper ---------------------
 
-
-.sgpv <- function(rope, ci) {
-  diff_rope <- abs(diff(rope))
+# this function simply takes the length of the range and calculates the proportion
+# of that range that is inside the rope. However, this assumed a "flat", i.e.
+# uniformly distributed interval, which is not accurate for standard confidence
+# intervals. thus, we no longer use this function, but switch to ".rope_coverage()".
+.sgpv <- function(range_rope, ci) {
+  diff_rope <- abs(diff(range_rope))
   diff_ci <- abs(diff(ci))
 
   # inside?
-  if (min(ci) >= min(rope) && max(ci) <= max(rope)) {
+  if (min(ci) >= min(range_rope) && max(ci) <= max(range_rope)) {
     coverage <- 1
 
     # outside?
-  } else if (max(ci) < min(rope) || min(ci) > max(rope)) {
+  } else if (max(ci) < min(range_rope) || min(ci) > max(range_rope)) {
     coverage <- 0
 
     # CI covers completely rope?
-  } else if (max(ci) > max(rope) && min(ci) < min(rope)) {
+  } else if (max(ci) > max(range_rope) && min(ci) < min(range_rope)) {
     coverage <- diff_rope / diff_ci
 
     # CI inside rope and outside max rope?
-  } else if (min(ci) >= min(rope) && max(ci) > max(rope)) {
-    diff_in_rope <- max(rope) - min(ci)
+  } else if (min(ci) >= min(range_rope) && max(ci) > max(range_rope)) {
+    diff_in_rope <- max(range_rope) - min(ci)
     coverage <- diff_in_rope / diff_ci
 
     # CI inside rope and outside min rope?
-  } else if (max(ci) <= max(rope) && min(ci) < min(rope)) {
-    diff_in_rope <- max(ci) - min(rope)
+  } else if (max(ci) <= max(range_rope) && min(ci) < min(range_rope)) {
+    diff_in_rope <- max(ci) - min(range_rope)
     coverage <- diff_in_rope / diff_ci
   }
 
@@ -641,16 +641,19 @@ equivalence_test.ggeffects <- function(x,
 }
 
 
-## FIXME make sure this works for different CI levels
-.rope_coverage <- function(rope, ci_range, ci) {
+# this function simulates a normal distribution, which approximately has the
+# same range / limits as the confidence interval, thus indeed representing a
+# normally distributed confidence interval. We then calculate the probability
+# mass of this interval that is inside the ROPE.
+.rope_coverage <- function(range_rope, ci_range) {
   diff_ci <- abs(diff(ci_range))
   out <- bayestestR::distribution_normal(
     n = 1000,
     mean = ci_range[2] - (diff_ci / 2),
-    sd = diff_ci / 3.28
+    sd = diff_ci / (2 * 3.29)
   )
 
-  rc <- bayestestR::rope(out, range = rope, ci = ci)
+  rc <- bayestestR::rope(out, range = range_rope, ci = 1)
   rc$ROPE_Percentage
 }
 
@@ -741,14 +744,12 @@ print.equivalence_test_lm <- function(x,
   orig_x <- x
 
   rule <- attributes(x)$rule
-  if (!is.null(rule)) {
-    if (rule == "cet") {
-      insight::print_color("# Conditional Equivalence Testing\n\n", "blue")
-    } else if (rule == "classic") {
-      insight::print_color("# TOST-test for Practical Equivalence\n\n", "blue")
-    } else {
-      insight::print_color("# Test for Practical Equivalence\n\n", "blue")
-    }
+  if (is.null(rule)) {
+    insight::print_color("# Test for Practical Equivalence\n\n", "blue")
+  } else if (rule == "cet") {
+    insight::print_color("# Conditional Equivalence Testing\n\n", "blue")
+  } else if (rule == "classic") {
+    insight::print_color("# TOST-test for Practical Equivalence\n\n", "blue")
   } else {
     insight::print_color("# Test for Practical Equivalence\n\n", "blue")
   }

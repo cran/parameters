@@ -1,3 +1,35 @@
+# parameters 0.22.1
+
+## Breaking changes
+
+* Revised calculation of the second generation p-value (SGPV) in `equivalence_test()`,
+  which should now be more accurate related to the proportion of the interval
+  that falls inside the ROPE. Formerly, the confidence interval was simply treated
+  as uniformly distributed when calculating the SGPV, now the interval is assumed
+  to be normally distributed.
+
+## New supported models
+
+* Support for `svy2lme` models from package *svylme*.
+
+## Changes
+
+* `standardize_parameters()` now also prettifies labels of factors.
+
+## Bug fixes
+
+* Fixed issue with `equivalence_test()` when ROPE range was not symmetrically
+  centered around zero (e.g., `range = c(-99, 0.1)`).
+
+* `model_parameters()` for `anova()` from mixed models now also includes the
+  denominator degrees of freedom in the output (`df_error`).
+
+* `print(..., pretty_names = "labels")` for tobit-models from package *AER* now
+  include value labels, if available.
+
+* Patch release, to ensure that performance runs with older version of datawizard
+  on Mac OS X with R (old-release).
+
 # parameters 0.22.0
 
 ## Breaking changes
@@ -193,7 +225,7 @@
 
 * `as.data.frame` methods for extracting posterior draws via `bootstrap_model()`
   have been retired. Instead, directly using `bootstrap_model()` is recommended.
-  
+
 ## Changes to functions
 
 * `equivalence_test()` gets a method for `ggeffects` objects from package
@@ -345,7 +377,7 @@
 * Following functions were moved from package *parameters* to *performance*:
   `check_sphericity_bartlett()`, `check_kmo()`, `check_factorstructure()` and
   `check_clusterstructure()`.
-  
+
 ## Changes to functions
 
 * Added `sparse` option to `principal_components()` for sparse PCA.
