@@ -149,8 +149,40 @@ practical equivalence and accept the alternative hypothesis.
 Second generation p-values (SGPV) were proposed as a statistic that
 represents \emph{the proportion of data-supported hypotheses that are also null
 hypotheses} \emph{(Blume et al. 2018, Lakens and Delacre 2020)}. It represents the
-proportion of the confidence interval range (assuming a normally distributed,
-equal-tailed interval) that is inside the ROPE.
+proportion of the \emph{full} confidence interval range (assuming a normally
+distributed, equal-tailed interval) that is inside the ROPE.
+
+Note that the assumed interval, which is used to calculate the SGPV, is an
+\emph{approximation} of the \emph{full interval} based on the chosen confidence level.
+For example, if the 95\% confidence interval of a coefficient ranges from -1
+to 1, the underlying \emph{full (normally distributed) interval} approximately
+ranges from -1.9 to 1.9, see also following code:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{# simulate full normal distribution
+out <- bayestestR::distribution_normal(10000, 0, 0.5)
+# range of "full" distribution
+range(out)
+# range of 95\% CI
+round(quantile(out, probs = c(0.025, 0.975)), 2)
+}\if{html}{\out{</div>}}
+
+This ensures that the SGPV always refers to the general compatible parameter
+space of coefficients, independent from the confidence interval chosen for
+testing practical equivalence. Therefore, the SGPV of the \emph{full interval} is
+similar to the ROPE coverage of Bayesian equivalence tests, see following
+code:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{library(bayestestR)
+library(brms)
+m <- lm(mpg ~ gear + wt + cyl + hp, data = mtcars)
+m2 <- brm(mpg ~ gear + wt + cyl + hp, data = mtcars)
+# SGPV for frequentist models
+equivalence_test(m)
+# similar to ROPE coverage of Bayesian models
+equivalence_test(m2)
+# similar to ROPE coverage of simulated draws / bootstrap samples
+equivalence_test(simulate_model(m))
+}\if{html}{\out{</div>}}
 }
 
 \subsection{ROPE range}{
@@ -164,6 +196,55 @@ for further information.
 There is also a \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method}
 implemented in the \href{https://easystats.github.io/see/}{\strong{see}-package}.
 }
+\section{Statistical inference - how to quantify evidence}{
+
+There is no standardized approach to drawing conclusions based on the
+available data and statistical models. A frequently chosen but also much
+criticized approach is to evaluate results based on their statistical
+significance (\emph{Amrhein et al. 2017}).
+
+A more sophisticated way would be to test whether estimated effects exceed
+the "smallest effect size of interest", to avoid even the smallest effects
+being considered relevant simply because they are statistically significant,
+but clinically or practically irrelevant (\emph{Lakens et al. 2018, Lakens 2024}).
+
+A rather unconventional approach, which is nevertheless advocated by various
+authors, is to interpret results from classical regression models in terms of
+probabilities, similar to the usual approach in Bayesian statistics
+(\emph{Greenland et al. 2022; Rafi and Greenland 2020; Schweder 2018; Schweder and
+Hjort 2003; Vos 2022}).
+
+The \strong{parameters} package provides several options or functions to aid
+statistical inference. These are, for example:
+\itemize{
+\item \code{\link[=equivalence_test]{equivalence_test()}}, to compute the (conditional) equivalence test for
+frequentist models
+\item \code{\link[=p_significance]{p_significance()}}, to compute the probability of \emph{practical significance},
+which can be conceptualized as a unidirectional equivalence test
+\item \code{\link[=p_function]{p_function()}}, or \emph{consonance function}, to compute p-values and
+compatibility (confidence) intervals for statistical models
+\item the \code{pd} argument (setting \code{pd = TRUE}) in \code{model_parameters()} includes
+a column with the \emph{probability of direction}, i.e. the probability that a
+parameter is strictly positive or negative. See \code{\link[bayestestR:p_direction]{bayestestR::p_direction()}}
+for details.
+\item the \code{s_value} argument (setting \code{s_value = TRUE}) in \code{model_parameters()}
+replaces the p-values with their related \emph{S}-values (\emph{Rafi and Greenland 2020})
+\item finally, it is possible to generate distributions of model coefficients by
+generating bootstrap-samples (setting \code{bootstrap = TRUE}) or simulating
+draws from model coefficients using \code{\link[=simulate_model]{simulate_model()}}. These samples
+can then be treated as "posterior samples" and used in many functions from
+the \strong{bayestestR} package.
+}
+
+Most of the above shown options or functions derive from methods originally
+implemented for Bayesian models (\emph{Makowski et al. 2019}). However, assuming
+that model assumptions are met (which means, the model fits well to the data,
+the correct model is chosen that reflects the data generating process
+(distributional model family) etc.), it seems appropriate to interpret
+results from classical frequentist models in a "Bayesian way" (more details:
+documentation in \code{\link[=p_function]{p_function()}}).
+}
+
 \examples{
 data(qol_cancer)
 model <- lm(QoL ~ time + age + education, data = qol_cancer)
@@ -206,6 +287,7 @@ F1000Research, 4, 621. doi: 10.12688/f1000research.6963.5
 }
 }
 \seealso{
-For more details, see \code{\link[bayestestR:equivalence_test]{bayestestR::equivalence_test()}}.
-Further readings can be found in the references.
+For more details, see \code{\link[bayestestR:equivalence_test]{bayestestR::equivalence_test()}}. Further
+readings can be found in the references. See also \code{\link[=p_significance]{p_significance()}} for
+a unidirectional equivalence test.
 }

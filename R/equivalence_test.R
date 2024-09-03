@@ -24,8 +24,9 @@ bayestestR::equivalence_test
 #' @inheritParams model_parameters.merMod
 #' @inheritParams p_value
 #'
-#' @seealso For more details, see [bayestestR::equivalence_test()].
-#'   Further readings can be found in the references.
+#' @seealso For more details, see [bayestestR::equivalence_test()]. Further
+#' readings can be found in the references. See also [`p_significance()`] for
+#' a unidirectional equivalence test.
 #'
 #' @details
 #' In classical null hypothesis significance testing (NHST) within a frequentist
@@ -103,13 +104,49 @@ bayestestR::equivalence_test
 #' Second generation p-values (SGPV) were proposed as a statistic that
 #' represents _the proportion of data-supported hypotheses that are also null
 #' hypotheses_ _(Blume et al. 2018, Lakens and Delacre 2020)_. It represents the
-#' proportion of the confidence interval range (assuming a normally distributed,
-#' equal-tailed interval) that is inside the ROPE.
+#' proportion of the _full_ confidence interval range (assuming a normally
+#' distributed, equal-tailed interval) that is inside the ROPE.
+#'
+#' Note that the assumed interval, which is used to calculate the SGPV, is an
+#' _approximation_ of the _full interval_ based on the chosen confidence level.
+#' For example, if the 95% confidence interval of a coefficient ranges from -1
+#' to 1, the underlying _full (normally distributed) interval_ approximately
+#' ranges from -1.9 to 1.9, see also following code:
+#'
+#' ```
+#' # simulate full normal distribution
+#' out <- bayestestR::distribution_normal(10000, 0, 0.5)
+#' # range of "full" distribution
+#' range(out)
+#' # range of 95% CI
+#' round(quantile(out, probs = c(0.025, 0.975)), 2)
+#' ```
+#'
+#' This ensures that the SGPV always refers to the general compatible parameter
+#' space of coefficients, independent from the confidence interval chosen for
+#' testing practical equivalence. Therefore, the SGPV of the _full interval_ is
+#' similar to the ROPE coverage of Bayesian equivalence tests, see following
+#' code:
+#'
+#' ```
+#' library(bayestestR)
+#' library(brms)
+#' m <- lm(mpg ~ gear + wt + cyl + hp, data = mtcars)
+#' m2 <- brm(mpg ~ gear + wt + cyl + hp, data = mtcars)
+#' # SGPV for frequentist models
+#' equivalence_test(m)
+#' # similar to ROPE coverage of Bayesian models
+#' equivalence_test(m2)
+#' # similar to ROPE coverage of simulated draws / bootstrap samples
+#' equivalence_test(simulate_model(m))
+#' ```
 #'
 #' ## ROPE range
 #' Some attention is required for finding suitable values for the ROPE limits
 #' (argument `range`). See 'Details' in [bayestestR::rope_range()]
 #' for further information.
+#'
+#' @inheritSection model_parameters Statistical inference - how to quantify evidence
 #'
 #' @note There is also a [`plot()`-method](https://easystats.github.io/see/articles/parameters.html)
 #' implemented in the [**see**-package](https://easystats.github.io/see/).
@@ -339,6 +376,7 @@ equivalence_test.ggeffects <- function(x,
   l <- Map(
     function(ci_wide, ci_narrow) {
       .equivalence_test_numeric(
+        ci = ci,
         ci_wide,
         ci_narrow,
         range_rope = range,
@@ -432,11 +470,11 @@ equivalence_test.ggeffects <- function(x,
   l <- Map(
     function(ci_wide, ci_narrow) {
       .equivalence_test_numeric(
+        ci = ci,
         ci_wide,
         ci_narrow,
         range_rope = range,
         rule = rule,
-        ci = ci,
         verbose = verbose
       )
     }, conf_int, conf_int2
@@ -520,11 +558,11 @@ equivalence_test.ggeffects <- function(x,
     l <- Map(
       function(ci_wide, ci_narrow) {
         .equivalence_test_numeric(
+          ci = ci,
           ci_wide,
           ci_narrow,
           range_rope = range,
           rule = rule,
-          ci = ci,
           verbose = verbose
         )
       }, conf_int, conf_int2
@@ -542,7 +580,12 @@ equivalence_test.ggeffects <- function(x,
 
 
 #' @keywords internal
-.equivalence_test_numeric <- function(ci_wide, ci_narrow, range_rope, rule, ci = 0.95, verbose) {
+.equivalence_test_numeric <- function(ci = 0.95,
+                                      ci_wide,
+                                      ci_narrow,
+                                      range_rope,
+                                      rule,
+                                      verbose) {
   final_ci <- NULL
 
   # ==== HDI+ROPE decision rule, by Kruschke ====
@@ -593,7 +636,7 @@ equivalence_test.ggeffects <- function(x,
   data.frame(
     CI_low = final_ci[1],
     CI_high = final_ci[2],
-    SGPV = .rope_coverage(range_rope, final_ci),
+    SGPV = .rope_coverage(ci = ci, range_rope, ci_range = final_ci),
     ROPE_low = range_rope[1],
     ROPE_high = range_rope[2],
     ROPE_Equivalence = decision,
@@ -645,16 +688,63 @@ equivalence_test.ggeffects <- function(x,
 # same range / limits as the confidence interval, thus indeed representing a
 # normally distributed confidence interval. We then calculate the probability
 # mass of this interval that is inside the ROPE.
-.rope_coverage <- function(range_rope, ci_range) {
-  diff_ci <- abs(diff(ci_range))
-  out <- bayestestR::distribution_normal(
-    n = 1000,
-    mean = ci_range[2] - (diff_ci / 2),
-    sd = diff_ci / (2 * 3.29)
-  )
-
+.rope_coverage <- function(ci = 0.95, range_rope, ci_range) {
+  out <- .generate_posterior_from_ci(ci, ci_range)
+  # compare: ci_range and range(out)
+  # The SGPV refers to the proportion of the confidence interval inside the
+  # full ROPE - thus, we set ci = 1 here
   rc <- bayestestR::rope(out, range = range_rope, ci = 1)
   rc$ROPE_Percentage
+}
+
+
+.generate_posterior_from_ci <- function(ci = 0.95, ci_range, precision = 10000) {
+  # this function creates an approximate normal distribution that covers
+  # the CI-range, i.e. we "simulate" a posterior distribution of a
+  # frequentist CI
+  diff_ci <- abs(diff(ci_range))
+  bayestestR::distribution_normal(
+    n = precision,
+    mean = ci_range[2] - (diff_ci / 2),
+    # we divide the complete range by 2, the one-directional range for the SD.
+    # then, the range from mean value to lower/upper limit, for a normal
+    # distribution is approximately 3.3 SD (3 SD cover 99.7% of the probability
+    # mass of the normal distribution, `1 - ((1 - pnorm(3)) * 2)`). Thus,
+    # assuming that half of the ci_range refers to ~ 3.3 SD, we "normalize" the
+    # value (i.e. divide by 3.3) to get the value for one SD, which we need
+    # to build the normal distribution. The SD itself varies by confidence level,
+    # therefore we have a multiplier based on the confidence level. I agree this
+    # looks *very* hacky, but it is tested against following code, which used
+    # this code to create a normal distribution with "full" coverage, based on
+    # the approximation of the SD related to the CI-level. From this normal-
+    # distribution, the CI-level % interval is drawn and the range of the
+    # simulated normal distribution equals the desired range.
+    # -------------------------------------------------------------------------
+    # m <- lm(mpg ~ gear + hp + wt + cyl + am, data = mtcars)
+    # ci <- 0.75
+    # mp <- model_parameters(m, ci = ci)
+    # ci_range <- c(mp$CI_low[2], mp$CI_high[2])
+    # diff_ci <- abs(diff(ci_range))
+    # out <- bayestestR::distribution_normal(
+    #   n = 10000,
+    #   mean = ci_range[2] - (diff_ci / 2),
+    #   sd = diff_ci / ((stats::qnorm((1+ci)/2) * (stats::qnorm(0.999975) / 2)))
+    # )
+    # # these to ranges are roughly the same
+    # ci(out, ci = ci)
+    # ci_range
+    # -------------------------------------------------------------------------
+    # furthermore, using this approximation, following three approaches yield
+    # similar results:
+    # -------------------------------------------------------------------------
+    # m <- lm(mpg ~ gear + wt + cyl + hp, data = mtcars)
+    # m2 <- brm(mpg ~ gear + wt + cyl + hp, data = mtcars)
+    # p_significance(m, threshold = 0.6) # the default for "mpg" as response
+    # p_significance(m2)
+    # p_significance(simulate_model(m))
+    # -------------------------------------------------------------------------
+    sd = diff_ci / ((stats::qnorm((1 + ci) / 2) * (stats::qnorm(0.999975) / 2)))
+  )
 }
 
 
@@ -664,7 +754,7 @@ equivalence_test.ggeffects <- function(x,
       params <- insight::get_parameters(model)
 
       # degrees of freedom
-      dof <- degrees_of_freedom(model, method = "any")
+      dof <- insight::get_df(x = model, type = "wald")
 
       # mu
       params$mu <- params$Estimate * -1
