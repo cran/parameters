@@ -126,14 +126,15 @@ cases \code{"wald"} is used then.}
 \item{test}{The indices of effect existence to compute. Character (vector) or
 list with one or more of these options: \code{"p_direction"} (or \code{"pd"}),
 \code{"rope"}, \code{"p_map"}, \code{"equivalence_test"} (or \code{"equitest"}),
-\code{"bayesfactor"} (or \code{"bf"}) or \code{"all"} to compute all tests.
-For each "test", the corresponding \pkg{bayestestR} function is called
-(e.g. \code{\link[bayestestR:rope]{rope()}} or \code{\link[bayestestR:p_direction]{p_direction()}}) and its results
-included in the summary output.}
+\code{"bayesfactor"} (or \code{"bf"}) or \code{"all"} to compute all tests. For each
+"test", the corresponding \pkg{bayestestR} function is called (e.g.
+\code{\link[bayestestR:rope]{rope()}} or \code{\link[bayestestR:p_direction]{p_direction()}}) and its results included in the summary
+output.}
 
-\item{rope_range}{ROPE's lower and higher bounds. Should be a list of two
-values (e.g., \code{c(-0.1, 0.1)}) or \code{"default"}. If \code{"default"},
-the bounds are set to \code{x +- 0.1*SD(response)}.}
+\item{rope_range}{ROPE's lower and higher bounds. Should be a vector of two
+values (e.g., \code{c(-0.1, 0.1)}), \code{"default"} or a list of numeric vectors of
+the same length as numbers of parameters. If \code{"default"}, the bounds are
+set to \code{x +- 0.1*SD(response)}.}
 
 \item{rope_ci}{The Credible Interval (CI) probability, corresponding to the
 proportion of HDI, to use for the percentage in ROPE.}

@@ -10,6 +10,14 @@ test_that("equivalence_test", {
   expect_snapshot(print(x))
 })
 
+test_that("equivalence_test, robust", {
+  skip_if_not_installed("sandwich")
+  data(mtcars)
+  m <- lm(mpg ~ gear + wt + cyl + hp, data = mtcars)
+  x <- equivalence_test(m, vcov = "HC3")
+  expect_snapshot(print(x))
+})
+
 test_that("equivalence_test, unequal rope-range", {
   data(iris)
   m <- lm(Sepal.Length ~ Species, data = iris)
@@ -42,11 +50,14 @@ test_that("equivalence_test, unequal rope-range", {
   expect_equal(range(out)[1], rez$CI_low[3], tolerance = 1e-4)
   expect_equal(range(out)[2], rez$CI_high[3], tolerance = 1e-4)
   # need procedure for SGP here...
+  diff_ci <- abs(diff(c(rez$CI_low[3], rez$CI_high[3])))
+  z_value <- stats::qnorm((1 + 0.95) / 2)
+  sd_dist <- diff_ci / diff(c(-1 * z_value, z_value))
   set.seed(123)
   out <- bayestestR::distribution_normal(
     n = 10000,
     mean = rez$CI_high[3] - (diff_ci / 2),
-    sd = diff_ci / ((stats::qnorm((1 + 0.95) / 2) * (stats::qnorm(0.999975) / 2)))
+    sd = sd_dist
   )
   expect_equal(
     rez$SGPV[3],

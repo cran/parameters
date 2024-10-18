@@ -42,3 +42,64 @@ test_that("include_reference, on-the-fly factors", {
 
   expect_equal(attributes(out1)$pretty_names, attributes(out3)$pretty_names, ignore_attr = TRUE)
 })
+
+test_that("include_reference, with pretty formatted cut", {
+  data(mtcars)
+  mtcars$mpg_cut <- cut(mtcars$mpg, breaks = c(0, 20, 30, 100))
+  m <- lm(wt ~ mpg_cut, data = mtcars)
+  out <- parameters(m, include_reference = TRUE)
+  expect_identical(
+    attributes(out)$pretty_names,
+    c(
+      `(Intercept)` = "(Intercept)", `mpg_cut(0,20]` = "mpg cut [>0-20]",
+      `mpg_cut(20,30]` = "mpg cut [>20-30]", `mpg_cut(30,100]` = "mpg cut [>30-100]"
+    )
+  )
+})
+
+test_that("include_reference, different contrasts", {
+  data("mtcars")
+  mtcars$cyl <- factor(mtcars$cyl)
+  mtcars$gear <- factor(mtcars$gear)
+
+  m <- lm(mpg ~ cyl + gear, data = mtcars, contrasts = list(cyl = datawizard::contr.deviation))
+  out <- model_parameters(m, include_reference = TRUE)
+  expect_snapshot(print(out))
+
+  m <- lm(mpg ~ cyl + gear, data = mtcars)
+  out <- model_parameters(m, include_reference = TRUE)
+  expect_snapshot(print(out))
+
+  m <- lm(
+    mpg ~ cyl + gear,
+    data = mtcars,
+    contrasts = list(
+      cyl = datawizard::contr.deviation,
+      gear = contr.sum
+    )
+  )
+  out <- model_parameters(m, include_reference = TRUE)
+  expect_snapshot(print(out))
+
+  m <- lm(
+    mpg ~ cyl + gear,
+    data = mtcars,
+    contrasts = list(
+      cyl = contr.SAS,
+      gear = contr.sum
+    )
+  )
+  out <- model_parameters(m, include_reference = TRUE)
+  expect_snapshot(print(out))
+
+  m <- lm(
+    mpg ~ cyl + gear,
+    data = mtcars,
+    contrasts = list(
+      cyl = contr.SAS,
+      gear = contr.treatment
+    )
+  )
+  out <- model_parameters(m, include_reference = TRUE)
+  expect_snapshot(print(out))
+})

@@ -72,7 +72,7 @@ method for use inside rmarkdown files,
 \code{\link[=print_md.parameters_model]{print_md()}}. \cr \cr \strong{For developers}, if
 speed performance is an issue, you can use the (undocumented) \code{pretty_names}
 argument, e.g. \code{model_parameters(..., pretty_names = FALSE)}. This will
-skip the formatting of the coefficient names and make \code{model_parameters()}
+skip the formatting of the coefficient names and makes \code{model_parameters()}
 faster.
 }
 \section{Standardization of model coefficients}{
@@ -334,24 +334,31 @@ being considered relevant simply because they are statistically significant,
 but clinically or practically irrelevant (\emph{Lakens et al. 2018, Lakens 2024}).
 
 A rather unconventional approach, which is nevertheless advocated by various
-authors, is to interpret results from classical regression models in terms of
-probabilities, similar to the usual approach in Bayesian statistics
-(\emph{Greenland et al. 2022; Rafi and Greenland 2020; Schweder 2018; Schweder and
-Hjort 2003; Vos 2022}).
+authors, is to interpret results from classical regression models either in
+terms of probabilities, similar to the usual approach in Bayesian statistics
+(\emph{Schweder 2018; Schweder and Hjort 2003; Vos 2022}) or in terms of relative
+measure of "evidence" or "compatibility" with the data (\emph{Greenland et al. 2022;
+Rafi and Greenland 2020}), which nevertheless comes close to a probabilistic
+interpretation.
+
+A more detailed discussion of this topic is found in the documentation of
+\code{\link[=p_function]{p_function()}}.
 
 The \strong{parameters} package provides several options or functions to aid
 statistical inference. These are, for example:
 \itemize{
-\item \code{\link[=equivalence_test]{equivalence_test()}}, to compute the (conditional) equivalence test for
-frequentist models
-\item \code{\link[=p_significance]{p_significance()}}, to compute the probability of \emph{practical significance},
-which can be conceptualized as a unidirectional equivalence test
+\item \code{\link[=equivalence_test.lm]{equivalence_test()}}, to compute the (conditional)
+equivalence test for frequentist models
+\item \code{\link[=p_significance.lm]{p_significance()}}, to compute the probability of
+\emph{practical significance}, which can be conceptualized as a unidirectional
+equivalence test
 \item \code{\link[=p_function]{p_function()}}, or \emph{consonance function}, to compute p-values and
 compatibility (confidence) intervals for statistical models
 \item the \code{pd} argument (setting \code{pd = TRUE}) in \code{model_parameters()} includes
 a column with the \emph{probability of direction}, i.e. the probability that a
 parameter is strictly positive or negative. See \code{\link[bayestestR:p_direction]{bayestestR::p_direction()}}
-for details.
+for details. If plotting is desired, the \code{\link[=p_direction.lm]{p_direction()}}
+function can be used, together with \code{plot()}.
 \item the \code{s_value} argument (setting \code{s_value = TRUE}) in \code{model_parameters()}
 replaces the p-values with their related \emph{S}-values (\emph{Rafi and Greenland 2020})
 \item finally, it is possible to generate distributions of model coefficients by
@@ -395,12 +402,12 @@ warnings for the different functions in the \strong{parameters} package. However
 some messages providing additional information can be displayed or suppressed
 using \code{options()}:
 \itemize{
-\item \code{parameters_summary}: \code{options(parameters_summary = TRUE)} will override the
-\code{summary} argument in \code{model_parameters()} and always show the model summary
-for non-mixed models.
-\item \code{parameters_mixed_summary}: \code{options(parameters_mixed_summary = TRUE)} will
-override the \code{summary} argument in \code{model_parameters()} for mixed models, and
-will then always show the model summary.
+\item \code{parameters_info}: \code{options(parameters_info = TRUE)} will override the
+\code{include_info} argument in \code{model_parameters()} and always show the model
+summary for non-mixed models.
+\item \code{parameters_mixed_info}: \code{options(parameters_mixed_info = TRUE)} will
+override the \code{include_info} argument in \code{model_parameters()} for mixed
+models, and will then always show the model summary.
 \item \code{parameters_cimethod}: \code{options(parameters_cimethod = TRUE)} will show the
 additional information about the approximation method used to calculate
 confidence intervals and p-values. Set to \code{FALSE} to hide this message when

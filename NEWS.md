@@ -1,3 +1,51 @@
+# parameters 0.23.0
+
+## Breaking Changes
+
+* Argument `summary` in `model_parameters()` is now deprecated. Please use
+  `include_info` instead.
+
+* Changed output style for the included additional information on model formula,
+  sigma and R2 when printing model parameters. This information now also includes
+  the RMSE.
+
+## Changes
+
+* Used more accurate analytic approach to calculate normal distributions for
+  the SGPV in `equivalence_test()` and used in `p_significance()`.
+
+* Added `p_direction()` methods for frequentist models. This is a convenient
+  way to test the direction of the effect, which formerly was already (and still
+  is) possible with `pd = TRUE` in `model_parameters()`.
+
+* `p_function()`, `p_significance()` and `equivalence_test()` get a `vcov` and
+  `vcov_args` argument, so that results can be based on robust standard errors
+  and confidence intervals.
+
+* `equivalence_test()` and `p_significance()` work with objects returned by
+  `model_parameters()`.
+
+* `pool_parameters()` now better deals with models with multiple components
+  (e.g. zero-inflation or dispersion).
+
+* Revision / enhancement of some documentation.
+
+* Updated *glmmTMB* methods to work with the latest version of the package.
+
+* Improved printing for `simulate_parameters()` for models from packages *mclogit*.
+
+* `print()` for `compare_parameters()` now also puts factor levels into square
+  brackets, like the `print()` method for `model_parameters()`.
+
+* `include_reference` now only adds the reference category of factors to the
+  parameters table when those factors have appropriate contrasts (treatment or
+  SAS contrasts).
+
+## Bug fixes
+
+* Arguments like `digits` etc. were ignored in `model_parameters() for objects
+  from the *marginaleffects* package.
+
 # parameters 0.22.2
 
 ## New supported models

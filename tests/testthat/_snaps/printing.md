@@ -92,7 +92,8 @@
       Species [virginica] * Petal Length  |        0.45 | 0.29 | [-0.12,  1.03] |   1.56 | 0.120 
       
       Model: Sepal.Length ~ Species * Petal.Length (150 Observations)
-      Residual standard deviation: 0.336 (df = 144)
+      Sigma: 0.336 (df = 144)
+      RMSE : 0.330
       R2: 0.840; adjusted R2: 0.835
     Message
       

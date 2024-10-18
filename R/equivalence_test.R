@@ -10,15 +10,14 @@ bayestestR::equivalence_test
 #'
 #' @param x A statistical model.
 #' @param range The range of practical equivalence of an effect. May be
-#'   `"default"`, to automatically define this range based on properties of the
-#'   model's data.
+#' `"default"`, to automatically define this range based on properties of the
+#' model's data.
 #' @param ci Confidence Interval (CI) level. Default to `0.95` (`95%`).
 #' @param rule Character, indicating the rules when testing for practical
-#'   equivalence. Can be `"bayes"`, `"classic"` or `"cet"`. See
-#'   'Details'.
+#' equivalence. Can be `"bayes"`, `"classic"` or `"cet"`. See 'Details'.
 #' @param test Hypothesis test for computing contrasts or pairwise comparisons.
-#'   See [`?ggeffects::test_predictions`](https://strengejacke.github.io/ggeffects/reference/test_predictions.html)
-#'   for details.
+#' See [`?ggeffects::test_predictions`](https://strengejacke.github.io/ggeffects/reference/test_predictions.html)
+#' for details.
 #' @param verbose Toggle warnings and messages.
 #' @param ... Arguments passed to or from other methods.
 #' @inheritParams model_parameters.merMod
@@ -28,18 +27,17 @@ bayestestR::equivalence_test
 #' readings can be found in the references. See also [`p_significance()`] for
 #' a unidirectional equivalence test.
 #'
-#' @details
-#' In classical null hypothesis significance testing (NHST) within a frequentist
-#' framework, it is not possible to accept the null hypothesis, H0 - unlike
-#' in Bayesian statistics, where such probability statements are possible.
-#' "[...] one can only reject the null hypothesis if the test
+#' @details In classical null hypothesis significance testing (NHST) within a
+#' frequentist framework, it is not possible to accept the null hypothesis, H0 -
+#' unlike in Bayesian statistics, where such probability statements are
+#' possible. "[...] one can only reject the null hypothesis if the test
 #' statistics falls into the critical region(s), or fail to reject this
 #' hypothesis. In the latter case, all we can say is that no significant effect
 #' was observed, but one cannot conclude that the null hypothesis is true."
-#' (_Pernet 2017_). One way to address this issues without Bayesian methods
-#' is *Equivalence Testing*, as implemented in `equivalence_test()`.
-#' While you either can reject the null hypothesis or claim an inconclusive result
-#' in NHST, the equivalence test - according to _Pernet_ - adds a third category,
+#' (_Pernet 2017_). One way to address this issues without Bayesian methods is
+#' *Equivalence Testing*, as implemented in `equivalence_test()`. While you
+#' either can reject the null hypothesis or claim an inconclusive result in
+#' NHST, the equivalence test - according to _Pernet_ - adds a third category,
 #' *"accept"*. Roughly speaking, the idea behind equivalence testing in a
 #' frequentist framework is to check whether an estimate and its uncertainty
 #' (i.e. confidence interval) falls within a region of "practical equivalence".
@@ -95,22 +93,24 @@ bayestestR::equivalence_test
 #' ## p-Values
 #' The equivalence p-value is the area of the (cumulative) confidence
 #' distribution that is outside of the region of equivalence. It can be
-#' interpreted as p-value for *rejecting* the alternative hypothesis
-#' and *accepting* the "null hypothesis" (i.e. assuming practical
-#' equivalence). That is, a high p-value means we reject the assumption of
-#' practical equivalence and accept the alternative hypothesis.
+#' interpreted as p-value for *rejecting* the alternative hypothesis and
+#' *accepting* the "null hypothesis" (i.e. assuming practical equivalence). That
+#' is, a high p-value means we reject the assumption of practical equivalence
+#' and accept the alternative hypothesis.
 #'
 #' ## Second Generation p-Value (SGPV)
 #' Second generation p-values (SGPV) were proposed as a statistic that
 #' represents _the proportion of data-supported hypotheses that are also null
 #' hypotheses_ _(Blume et al. 2018, Lakens and Delacre 2020)_. It represents the
-#' proportion of the _full_ confidence interval range (assuming a normally
-#' distributed, equal-tailed interval) that is inside the ROPE.
+#' proportion of the _full_ confidence interval range (assuming a normally or
+#' t-distributed, equal-tailed interval, based on the model) that is inside the
+#' ROPE. The SGPV ranges from zero to one. Higher values indicate that the
+#' effect is more likely to be practically equivalent ("not of interest").
 #'
 #' Note that the assumed interval, which is used to calculate the SGPV, is an
-#' _approximation_ of the _full interval_ based on the chosen confidence level.
-#' For example, if the 95% confidence interval of a coefficient ranges from -1
-#' to 1, the underlying _full (normally distributed) interval_ approximately
+#' estimation of the _full interval_ based on the chosen confidence level. For
+#' example, if the 95% confidence interval of a coefficient ranges from -1 to 1,
+#' the underlying _full (normally or t-distributed) interval_ approximately
 #' ranges from -1.9 to 1.9, see also following code:
 #'
 #' ```
@@ -153,41 +153,80 @@ bayestestR::equivalence_test
 #'
 #' @references
 #'
+#'   - Amrhein, V., Korner-Nievergelt, F., and Roth, T. (2017). The earth is
+#'     flat (p > 0.05): Significance thresholds and the crisis of unreplicable
+#'     research. PeerJ, 5, e3544. \doi{10.7717/peerj.3544}
+#'
 #'   - Blume, J. D., D'Agostino McGowan, L., Dupont, W. D., & Greevy, R. A.
-#'   (2018). Second-generation p-values: Improved rigor, reproducibility, &
-#'   transparency in statistical analyses. PLOS ONE, 13(3), e0188299.
-#'   https://doi.org/10.1371/journal.pone.0188299
+#'     (2018). Second-generation p-values: Improved rigor, reproducibility, &
+#'     transparency in statistical analyses. PLOS ONE, 13(3), e0188299.
+#'     https://doi.org/10.1371/journal.pone.0188299
 #'
 #'   - Campbell, H., & Gustafson, P. (2018). Conditional equivalence
-#'   testing: An alternative remedy for publication bias. PLOS ONE, 13(4),
-#'   e0195145. doi: 10.1371/journal.pone.0195145
+#'     testing: An alternative remedy for publication bias. PLOS ONE, 13(4),
+#'     e0195145. doi: 10.1371/journal.pone.0195145
+#'
+#'   - Greenland S, Rafi Z, Matthews R, Higgs M. To Aid Scientific Inference,
+#'     Emphasize Unconditional Compatibility Descriptions of Statistics. (2022)
+#'     https://arxiv.org/abs/1909.08583v7 (Accessed November 10, 2022)
 #'
 #'   - Kruschke, J. K. (2014). Doing Bayesian data analysis: A tutorial with
-#'   R, JAGS, and Stan. Academic Press
+#'     R, JAGS, and Stan. Academic Press
 #'
 #'   - Kruschke, J. K. (2018). Rejecting or accepting parameter values in
-#'   Bayesian estimation. Advances in Methods and Practices in Psychological
-#'   Science, 1(2), 270-280. doi: 10.1177/2515245918771304
+#'     Bayesian estimation. Advances in Methods and Practices in Psychological
+#'     Science, 1(2), 270-280. doi: 10.1177/2515245918771304
 #'
 #'   - Lakens, D. (2017). Equivalence Tests: A Practical Primer for t Tests,
-#'   Correlations, and Meta-Analyses. Social Psychological and Personality
-#'   Science, 8(4), 355–362. doi: 10.1177/1948550617697177
+#'     Correlations, and Meta-Analyses. Social Psychological and Personality
+#'     Science, 8(4), 355–362. doi: 10.1177/1948550617697177
 #'
-#'   - Lakens, D., & Delacre, M. (2020). Equivalence Testing and the Second
-#'   Generation P-Value. Meta-Psychology, 4.
-#'   https://doi.org/10.15626/MP.2018.933
+#'   - Lakens, D. (2024). Improving Your Statistical Inferences (Version v1.5.1).
+#'     Retrieved from https://lakens.github.io/statistical_inferences/.
+#'     \doi{10.5281/ZENODO.6409077}
+#'
+#'   - Lakens, D., and Delacre, M. (2020). Equivalence Testing and the Second
+#'     Generation P-Value. Meta-Psychology, 4.
+#'     https://doi.org/10.15626/MP.2018.933
+#'
+#'   - Lakens, D., Scheel, A. M., and Isager, P. M. (2018). Equivalence Testing
+#'     for Psychological Research: A Tutorial. Advances in Methods and Practices
+#'     in Psychological Science, 1(2), 259–269. \doi{10.1177/2515245918770963}
+#'
+#'   - Makowski, D., Ben-Shachar, M. S., Chen, S. H. A., and Lüdecke, D. (2019).
+#'     Indices of Effect Existence and Significance in the Bayesian Framework.
+#'     Frontiers in Psychology, 10, 2767. \doi{10.3389/fpsyg.2019.02767}
 #'
 #'   - Pernet, C. (2017). Null hypothesis significance testing: A guide to
-#'   commonly misunderstood concepts and recommendations for good practice.
-#'   F1000Research, 4, 621. doi: 10.12688/f1000research.6963.5
+#'     commonly misunderstood concepts and recommendations for good practice.
+#'     F1000Research, 4, 621. doi: 10.12688/f1000research.6963.5
+#'
+#'   - Rafi Z, Greenland S. Semantic and cognitive tools to aid statistical
+#'     science: replace confidence and significance by compatibility and surprise.
+#'     BMC Medical Research Methodology (2020) 20:244.
+#'
+#'   - Schweder T. Confidence is epistemic probability for empirical science.
+#'     Journal of Statistical Planning and Inference (2018) 195:116–125.
+#'     \doi{10.1016/j.jspi.2017.09.016}
+#'
+#'   - Schweder T, Hjort NL. Frequentist analogues of priors and posteriors.
+#'     In Stigum, B. (ed.), Econometrics and the Philosophy of Economics: Theory
+#'     Data Confrontation in Economics, pp. 285-217. Princeton University Press,
+#'     Princeton, NJ, 2003
+#'
+#'   - Vos P, Holbert D. Frequentist statistical inference without repeated sampling.
+#'     Synthese 200, 89 (2022). \doi{10.1007/s11229-022-03560-x}
 #'
 #' @return A data frame.
-#' @examples
+#' @examplesIf requireNamespace("sandwich")
 #' data(qol_cancer)
 #' model <- lm(QoL ~ time + age + education, data = qol_cancer)
 #'
 #' # default rule
 #' equivalence_test(model)
+#'
+#' # using heteroscedasticity-robust standard errors
+#' equivalence_test(model, vcov = "HC3")
 #'
 #' # conditional equivalence test
 #' equivalence_test(model, rule = "cet")
@@ -202,10 +241,21 @@ equivalence_test.lm <- function(x,
                                 range = "default",
                                 ci = 0.95,
                                 rule = "classic",
+                                vcov = NULL,
+                                vcov_args = NULL,
                                 verbose = TRUE,
                                 ...) {
   rule <- match.arg(tolower(rule), choices = c("bayes", "classic", "cet"))
-  out <- .equivalence_test_frequentist(x, range, ci, rule, verbose, ...)
+  out <- .equivalence_test_frequentist(
+    x,
+    range = range,
+    ci = ci,
+    rule = rule,
+    vcov = vcov,
+    vcov_args = vcov_args,
+    verbose,
+    ...
+  )
 
   if (is.null(attr(out, "pretty_names", exact = TRUE))) {
     attr(out, "pretty_names") <- format_parameters(x)
@@ -266,6 +316,8 @@ equivalence_test.merMod <- function(x,
                                     ci = 0.95,
                                     rule = "classic",
                                     effects = c("fixed", "random"),
+                                    vcov = NULL,
+                                    vcov_args = NULL,
                                     verbose = TRUE,
                                     ...) {
   # ==== argument matching ====
@@ -277,7 +329,16 @@ equivalence_test.merMod <- function(x,
   # ==== equivalent testing for fixed or random effects ====
 
   if (effects == "fixed") {
-    out <- .equivalence_test_frequentist(x, range, ci, rule, verbose, ...)
+    out <- .equivalence_test_frequentist(
+      x,
+      range = range,
+      ci = ci,
+      rule = rule,
+      vcov = vcov,
+      vcov_args = vcov_args,
+      verbose,
+      ...
+    )
   } else {
     out <- .equivalence_test_frequentist_random(x, range, ci, rule, verbose, ...)
   }
@@ -338,6 +399,18 @@ equivalence_test.parameters_simulate_model <- function(x,
 }
 
 
+#' @export
+equivalence_test.parameters_model <- function(x,
+                                              range = "default",
+                                              ci = 0.95,
+                                              rule = "classic",
+                                              verbose = TRUE,
+                                              ...) {
+  model <- .get_object(x)
+  equivalence_test(x = model, range = range, ci = ci, rule = rule, verbose = verbose, ...)
+}
+
+
 #' @rdname equivalence_test.lm
 #' @export
 equivalence_test.ggeffects <- function(x,
@@ -352,6 +425,7 @@ equivalence_test.ggeffects <- function(x,
   focal <- attributes(x)$original.terms
   obj_name <- attributes(x)$model.name
   ci <- attributes(x)$ci.lvl
+  dof <- attributes(x)$df
 
   x <- .get_ggeffects_model(x)
 
@@ -381,6 +455,7 @@ equivalence_test.ggeffects <- function(x,
         ci_narrow,
         range_rope = range,
         rule = rule,
+        dof = dof,
         verbose = verbose
       )
     }, conf_int, conf_int2
@@ -440,6 +515,8 @@ equivalence_test.ggeffects <- function(x,
                                           range = "default",
                                           ci = 0.95,
                                           rule = "classic",
+                                          vcov = NULL,
+                                          vcov_args = NULL,
                                           verbose = TRUE,
                                           ...) {
   # ==== define rope range ====
@@ -452,16 +529,28 @@ equivalence_test.ggeffects <- function(x,
   }
 
 
+  # ==== check degrees of freedom ====
+
+  df_column <- grep("(df|df_error)", colnames(x))
+  if (length(df_column) > 0) {
+    dof <- unique(x[[df_column]])
+    if (length(dof) > 1) {
+      dof <- Inf
+    }
+  } else {
+    dof <- Inf
+  }
+
   # ==== requested confidence intervals ====
 
-  params <- conf_int <- .ci_generic(x, ci = ci)
+  params <- conf_int <- .ci_generic(x, ci = ci, vcov = vcov, vcov_args = vcov_args, ...)
   conf_int <- as.data.frame(t(conf_int[, c("CI_low", "CI_high")]))
 
 
   # ==== the "narrower" intervals (1-2*alpha) for CET-rules. ====
 
   alpha <- 1 - ci
-  conf_int2 <- .ci_generic(x, ci = (ci - alpha))
+  conf_int2 <- .ci_generic(x, ci = (ci - alpha), vcov = vcov, vcov_args = vcov_args, ...)
   conf_int2 <- as.data.frame(t(conf_int2[, c("CI_low", "CI_high")]))
 
 
@@ -475,6 +564,7 @@ equivalence_test.ggeffects <- function(x,
         ci_narrow,
         range_rope = range,
         rule = rule,
+        dof = dof,
         verbose = verbose
       )
     }, conf_int, conf_int2
@@ -493,7 +583,7 @@ equivalence_test.ggeffects <- function(x,
 
   # ==== (adjusted) p-values for tests ====
 
-  out$p <- .add_p_to_equitest(x, ci, range)
+  out$p <- .add_p_to_equitest(x, ci, range, vcov = vcov, vcov_args = vcov_args, ...)
 
   attr(out, "rope") <- range
   out
@@ -585,6 +675,7 @@ equivalence_test.ggeffects <- function(x,
                                       ci_narrow,
                                       range_rope,
                                       rule,
+                                      dof = Inf,
                                       verbose) {
   final_ci <- NULL
 
@@ -636,7 +727,7 @@ equivalence_test.ggeffects <- function(x,
   data.frame(
     CI_low = final_ci[1],
     CI_high = final_ci[2],
-    SGPV = .rope_coverage(ci = ci, range_rope, ci_range = final_ci),
+    SGPV = .rope_coverage(ci = ci, range_rope, ci_range = final_ci, dof = dof),
     ROPE_low = range_rope[1],
     ROPE_high = range_rope[2],
     ROPE_Equivalence = decision,
@@ -688,8 +779,8 @@ equivalence_test.ggeffects <- function(x,
 # same range / limits as the confidence interval, thus indeed representing a
 # normally distributed confidence interval. We then calculate the probability
 # mass of this interval that is inside the ROPE.
-.rope_coverage <- function(ci = 0.95, range_rope, ci_range) {
-  out <- .generate_posterior_from_ci(ci, ci_range)
+.rope_coverage <- function(ci = 0.95, range_rope, ci_range, dof = Inf) {
+  out <- .generate_posterior_from_ci(ci, ci_range, dof = dof)
   # compare: ci_range and range(out)
   # The SGPV refers to the proportion of the confidence interval inside the
   # full ROPE - thus, we set ci = 1 here
@@ -698,57 +789,43 @@ equivalence_test.ggeffects <- function(x,
 }
 
 
-.generate_posterior_from_ci <- function(ci = 0.95, ci_range, precision = 10000) {
-  # this function creates an approximate normal distribution that covers
-  # the CI-range, i.e. we "simulate" a posterior distribution of a
-  # frequentist CI
+.generate_posterior_from_ci <- function(ci = 0.95, ci_range, dof = Inf, precision = 10000) {
+  # this function creates an approximate normal distribution that covers the
+  # CI-range, i.e. we "simulate" a posterior distribution from a frequentist CI
+
+  # sanity check - dof argument
+  if (is.null(dof)) {
+    dof <- Inf
+  }
+  # first we need the range of the CI (in units), also to calculate the mean of
+  # the normal distribution
   diff_ci <- abs(diff(ci_range))
-  bayestestR::distribution_normal(
-    n = precision,
-    mean = ci_range[2] - (diff_ci / 2),
-    # we divide the complete range by 2, the one-directional range for the SD.
-    # then, the range from mean value to lower/upper limit, for a normal
-    # distribution is approximately 3.3 SD (3 SD cover 99.7% of the probability
-    # mass of the normal distribution, `1 - ((1 - pnorm(3)) * 2)`). Thus,
-    # assuming that half of the ci_range refers to ~ 3.3 SD, we "normalize" the
-    # value (i.e. divide by 3.3) to get the value for one SD, which we need
-    # to build the normal distribution. The SD itself varies by confidence level,
-    # therefore we have a multiplier based on the confidence level. I agree this
-    # looks *very* hacky, but it is tested against following code, which used
-    # this code to create a normal distribution with "full" coverage, based on
-    # the approximation of the SD related to the CI-level. From this normal-
-    # distribution, the CI-level % interval is drawn and the range of the
-    # simulated normal distribution equals the desired range.
-    # -------------------------------------------------------------------------
-    # m <- lm(mpg ~ gear + hp + wt + cyl + am, data = mtcars)
-    # ci <- 0.75
-    # mp <- model_parameters(m, ci = ci)
-    # ci_range <- c(mp$CI_low[2], mp$CI_high[2])
-    # diff_ci <- abs(diff(ci_range))
-    # out <- bayestestR::distribution_normal(
-    #   n = 10000,
-    #   mean = ci_range[2] - (diff_ci / 2),
-    #   sd = diff_ci / ((stats::qnorm((1+ci)/2) * (stats::qnorm(0.999975) / 2)))
-    # )
-    # # these to ranges are roughly the same
-    # ci(out, ci = ci)
-    # ci_range
-    # -------------------------------------------------------------------------
-    # furthermore, using this approximation, following three approaches yield
-    # similar results:
-    # -------------------------------------------------------------------------
-    # m <- lm(mpg ~ gear + wt + cyl + hp, data = mtcars)
-    # m2 <- brm(mpg ~ gear + wt + cyl + hp, data = mtcars)
-    # p_significance(m, threshold = 0.6) # the default for "mpg" as response
-    # p_significance(m2)
-    # p_significance(simulate_model(m))
-    # -------------------------------------------------------------------------
-    sd = diff_ci / ((stats::qnorm((1 + ci) / 2) * (stats::qnorm(0.999975) / 2)))
-  )
+  mean_dist <- ci_range[2] - (diff_ci / 2)
+  # then we need the critical values of the quantiles from the CI range
+  z_value <- stats::qt((1 + ci) / 2, df = dof)
+  # the range of Z-scores (from lower to upper quantile) gives us the range of
+  # the provided interval in terms of standard deviations. now we divide the
+  # known range of the provided CI (in units) by the z-score-range, which will
+  # give us the standard deviation of the distribution.
+  sd_dist <- diff_ci / diff(c(-1 * z_value, z_value))
+  # generate normal-distribution if we don't have t-distribution, or if
+  # we don't have necessary packages installed
+  if (is.infinite(dof) || !insight::check_if_installed("distributional", quietly = TRUE)) {
+    # tell user to install "distributional"
+    if (!is.infinite(dof)) {
+      insight::format_alert("For models with only few degrees of freedom, install the {distributional} package to increase accuracy of `p_direction()`, `p_significance()` and `equivalence_test()`.") # nolint
+    }
+    # we now know all parameters (mean and sd) to simulate a normal distribution
+    bayestestR::distribution_normal(n = precision, mean = mean_dist, sd = sd_dist)
+  } else {
+    insight::check_if_installed("distributional")
+    out <- distributional::dist_student_t(df = dof, mu = mean_dist, sigma = sd_dist)
+    sort(unlist(distributional::generate(out, times = precision), use.names = FALSE))
+  }
 }
 
 
-.add_p_to_equitest <- function(model, ci, range) {
+.add_p_to_equitest <- function(model, ci, range, vcov = NULL, vcov_args = NULL, ...) {
   tryCatch(
     {
       params <- insight::get_parameters(model)
@@ -760,7 +837,7 @@ equivalence_test.ggeffects <- function(x,
       params$mu <- params$Estimate * -1
 
       # se
-      se <- standard_error(model)
+      se <- standard_error(model, vcov = vcov, vcov_args = vcov_args, ...)
 
       stats::pt((range[1] - params$mu) / se$SE, df = dof, lower.tail = TRUE) +
         stats::pt((range[2] - params$mu) / se$SE, df = dof, lower.tail = FALSE)

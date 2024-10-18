@@ -1,18 +1,18 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.22.2
+Version: 0.23.0
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
              role = c("aut", "cre"),
              email = "d.luedecke@uke.de",
-             comment = c(ORCID = "0000-0002-8895-3206", Twitter = "@strengejacke")),
+             comment = c(ORCID = "0000-0002-8895-3206")),
       person(given = "Dominique",
              family = "Makowski",
              role = "aut",
              email = "dom.makowski@gmail.com",
-             comment = c(ORCID = "0000-0001-5375-9967", Twitter = "@Dom_Makowski")),
+             comment = c(ORCID = "0000-0001-5375-9967")),
       person(given = "Mattan S.",
              family = "Ben-Shachar",
              role = "aut",
@@ -22,7 +22,7 @@ Authors@R:
              family = "Patil",
              role = "aut",
              email = "patilindrajeet.science@gmail.com",
-             comment = c(ORCID = "0000-0003-1995-6531", Twitter = "@patilindrajeets")),
+             comment = c(ORCID = "0000-0003-1995-6531")),
       person(given = "Søren",
              family = "Højsgaard",
              role = "aut",
@@ -31,7 +31,7 @@ Authors@R:
              family = "Wiernik",
              role = "aut",
              email = "brenton@wiernik.org",
-             comment = c(ORCID = "0000-0001-9560-6336", Twitter = "@bmwiernik")),
+             comment = c(ORCID = "0000-0001-9560-6336")),
       person(given = "Zen J.",
              family = "Lau",
              role = "ctb",
@@ -40,25 +40,24 @@ Authors@R:
              family = "Arel-Bundock",
              role = "ctb",
              email = "vincent.arel-bundock@umontreal.ca",
-             comment = c(ORCID = "0000-0003-2042-7063", Twitter = "@vincentab")),
+             comment = c(ORCID = "0000-0003-2042-7063")),
       person(given = "Jeffrey",
              family = "Girard",
              role = "ctb",
              email = "me@jmgirard.com",
-             comment = c(ORCID = "0000-0002-7359-3746", Twitter = "@jeffreymgirard")),
+             comment = c(ORCID = "0000-0002-7359-3746")),
       person(given = "Christina",
              family = "Maimone",
              role = "rev",
              email = "christina.maimone@northwestern.edu"),
       person(given = "Niels",
              family = "Ohlsen",
-             role = "rev",
-             comment = c(Twitter = "@Niels_Bremen")),
+             role = "rev"),
       person(given = "Douglas Ezra",
              family = "Morrison",
              role = "ctb",
              email = "dmorrison01@ucla.edu",
-             comment = c(ORCID = "0000-0002-7195-830X", Twitter = "@demstats1")),
+             comment = c(ORCID = "0000-0002-7195-830X")),
       person(given = "Joseph",
              family = "Luchman",
              role = "ctb",
@@ -77,28 +76,29 @@ License: GPL-3
 URL: https://easystats.github.io/parameters/
 BugReports: https://github.com/easystats/parameters/issues
 Depends: R (>= 3.6)
-Imports: bayestestR (>= 0.13.2), datawizard (>= 0.10.0), insight (>=
-        0.20.2), graphics, methods, stats, utils
+Imports: bayestestR (>= 0.15.0), datawizard (>= 0.13.0), insight (>=
+        0.20.5), graphics, methods, stats, utils
 Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
-        betareg, BH, biglm, blme, boot, brglm2, brms, broom, cAIC4,
-        car, carData, cgam, ClassDiscovery, clubSandwich, cluster,
-        cobalt, coda, coxme, cplm, dbscan, domir (>= 0.2.0), drc, DRR,
-        effectsize (>= 0.8.6), EGAnet, emmeans (>= 1.7.0), epiR,
-        estimatr, factoextra, FactoMineR, faraway, fastICA, fixest,
-        fpc, gam, gamlss, gee, geepack, ggeffects (>= 1.3.2), ggplot2,
-        GLMMadaptive, glmmTMB, glmtoolbox, GPArotation, gt, haven,
-        httr2, Hmisc, ivreg, knitr, lavaan, lfe, lm.beta, lme4,
-        lmerTest, lmtest, logistf, logspline, lqmm, M3C,
-        marginaleffects (>= 0.20.1), MASS, Matrix, mclogit, mclust,
-        MCMCglmm, mediation, merDeriv, metaBMA, metafor, mfx, mgcv,
-        mice, mmrm, multcomp, MuMIn, NbClust, nFactors, nestedLogit,
-        nlme, nnet, openxlsx, ordinal, panelr, pbkrtest, PCDimension,
-        performance (>= 0.12.0), plm, PMCMRplus, poorman, posterior,
-        PROreg (>= 1.3.0), pscl, psych, pvclust, quantreg,
-        randomForest, RcppEigen, rmarkdown, rms, rstanarm, sandwich,
-        see (>= 0.8.1), serp, sparsepca, survey, survival, svylme,
-        testthat (>= 3.2.1), tidyselect, tinytable (>= 0.1.0), TMB,
-        truncreg, vdiffr, VGAM, WeightIt, withr, WRS2
+        betareg, BH, biglm, blme, boot, brglm2, brms, broom,
+        broom.mixed, cAIC4, car, carData, cgam, ClassDiscovery,
+        clubSandwich, cluster, cobalt, coda, coxme, cplm, dbscan,
+        distributional, domir (>= 0.2.0), drc, DRR, effectsize (>=
+        0.8.6), EGAnet, emmeans (>= 1.7.0), epiR, estimatr, factoextra,
+        FactoMineR, faraway, fastICA, fixest, fpc, gam, gamlss, gee,
+        geepack, ggeffects (>= 1.3.2), ggplot2, GLMMadaptive, glmmTMB
+        (>= 1.1.10), glmtoolbox, GPArotation, gt, haven, httr2, Hmisc,
+        ivreg, knitr, lavaan, lfe, lm.beta, lme4, lmerTest, lmtest,
+        logistf, logspline, lqmm, M3C, marginaleffects (>= 0.20.1),
+        MASS, Matrix, mclogit, mclust, MCMCglmm, mediation, merDeriv,
+        metaBMA, metafor, mfx, mgcv, mice, mmrm, multcomp, MuMIn,
+        NbClust, nFactors, nestedLogit, nlme, nnet, openxlsx, ordinal,
+        panelr, pbkrtest, PCDimension, performance (>= 0.12.0), plm,
+        PMCMRplus, poorman, posterior, PROreg (>= 1.3.0), pscl, psych,
+        pvclust, quantreg, randomForest, RcppEigen, rmarkdown, rms,
+        rstan, rstanarm, sandwich, see (>= 0.8.1), serp, sparsepca,
+        survey, survival, svylme, testthat (>= 3.2.1), tidyselect,
+        tinytable (>= 0.1.0), TMB, truncreg, vdiffr, VGAM, WeightIt (>=
+        1.2.0), withr, WRS2
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
@@ -108,26 +108,19 @@ Config/testthat/parallel: true
 Config/Needs/website: easystats/easystatstemplate
 Config/rcmdcheck/ignore-inconsequential-notes: true
 NeedsCompilation: no
-Packaged: 2024-09-03 21:16:50 UTC; Daniel
-Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>,
-    @strengejacke),
-  Dominique Makowski [aut] (<https://orcid.org/0000-0001-5375-9967>,
-    @Dom_Makowski),
+Packaged: 2024-10-18 10:01:20 UTC; mail
+Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
+  Dominique Makowski [aut] (<https://orcid.org/0000-0001-5375-9967>),
   Mattan S. Ben-Shachar [aut] (<https://orcid.org/0000-0002-4287-4801>),
-  Indrajeet Patil [aut] (<https://orcid.org/0000-0003-1995-6531>,
-    @patilindrajeets),
+  Indrajeet Patil [aut] (<https://orcid.org/0000-0003-1995-6531>),
   Søren Højsgaard [aut],
-  Brenton M. Wiernik [aut] (<https://orcid.org/0000-0001-9560-6336>,
-    @bmwiernik),
+  Brenton M. Wiernik [aut] (<https://orcid.org/0000-0001-9560-6336>),
   Zen J. Lau [ctb],
-  Vincent Arel-Bundock [ctb] (<https://orcid.org/0000-0003-2042-7063>,
-    @vincentab),
-  Jeffrey Girard [ctb] (<https://orcid.org/0000-0002-7359-3746>,
-    @jeffreymgirard),
+  Vincent Arel-Bundock [ctb] (<https://orcid.org/0000-0003-2042-7063>),
+  Jeffrey Girard [ctb] (<https://orcid.org/0000-0002-7359-3746>),
   Christina Maimone [rev],
-  Niels Ohlsen [rev] (@Niels_Bremen),
-  Douglas Ezra Morrison [ctb] (<https://orcid.org/0000-0002-7195-830X>,
-    @demstats1),
+  Niels Ohlsen [rev],
+  Douglas Ezra Morrison [ctb] (<https://orcid.org/0000-0002-7195-830X>),
   Joseph Luchman [ctb] (<https://orcid.org/0000-0002-8886-9717>)
 Repository: CRAN
-Date/Publication: 2024-09-03 22:10:02 UTC
+Date/Publication: 2024-10-18 11:10:06 UTC

@@ -61,7 +61,7 @@
 #'   [`print_md()`][print_md.parameters_model]. \cr \cr **For developers**, if
 #'   speed performance is an issue, you can use the (undocumented) `pretty_names`
 #'   argument, e.g. `model_parameters(..., pretty_names = FALSE)`. This will
-#'   skip the formatting of the coefficient names and make `model_parameters()`
+#'   skip the formatting of the coefficient names and makes `model_parameters()`
 #'   faster.
 #'
 #' @section Standardization of model coefficients:
@@ -289,23 +289,30 @@
 #' but clinically or practically irrelevant (*Lakens et al. 2018, Lakens 2024*).
 #'
 #' A rather unconventional approach, which is nevertheless advocated by various
-#' authors, is to interpret results from classical regression models in terms of
-#' probabilities, similar to the usual approach in Bayesian statistics
-#' (*Greenland et al. 2022; Rafi and Greenland 2020; Schweder 2018; Schweder and
-#' Hjort 2003; Vos 2022*).
+#' authors, is to interpret results from classical regression models either in
+#' terms of probabilities, similar to the usual approach in Bayesian statistics
+#' (*Schweder 2018; Schweder and Hjort 2003; Vos 2022*) or in terms of relative
+#' measure of "evidence" or "compatibility" with the data (*Greenland et al. 2022;
+#' Rafi and Greenland 2020*), which nevertheless comes close to a probabilistic
+#' interpretation.
+#'
+#' A more detailed discussion of this topic is found in the documentation of
+#' [`p_function()`].
 #'
 #' The **parameters** package provides several options or functions to aid
 #' statistical inference. These are, for example:
-#' - [`equivalence_test()`], to compute the (conditional) equivalence test for
-#'   frequentist models
-#' - [`p_significance()`], to compute the probability of *practical significance*,
-#'   which can be conceptualized as a unidirectional equivalence test
+#' - [`equivalence_test()`][equivalence_test.lm], to compute the (conditional)
+#'   equivalence test for frequentist models
+#' - [`p_significance()`][p_significance.lm], to compute the probability of
+#'   *practical significance*, which can be conceptualized as a unidirectional
+#'   equivalence test
 #' - [`p_function()`], or _consonance function_, to compute p-values and
 #'   compatibility (confidence) intervals for statistical models
 #' - the `pd` argument (setting `pd = TRUE`) in `model_parameters()` includes
 #'   a column with the *probability of direction*, i.e. the probability that a
 #'   parameter is strictly positive or negative. See [`bayestestR::p_direction()`]
-#'   for details.
+#'   for details. If plotting is desired, the [`p_direction()`][p_direction.lm]
+#'   function can be used, together with `plot()`.
 #' - the `s_value` argument (setting `s_value = TRUE`) in `model_parameters()`
 #'   replaces the p-values with their related _S_-values (*Rafi and Greenland 2020*)
 #' - finally, it is possible to generate distributions of model coefficients by
@@ -391,8 +398,8 @@ model_parameters <- function(model, ...) {
 
 # Add new options to the docs in "print.parameters_model"
 
-# getOption("parameters_summary"): show model summary
-# getOption("parameters_mixed_summary"): show model summary for mixed models
+# getOption("parameters_info"): show model summary
+# getOption("parameters_mixed_info"): show model summary for mixed models
 # getOption("parameters_cimethod"): show message about CI approximation
 # getOption("parameters_exponentiate"): show warning about exp for log/logit links
 # getOption("parameters_labels"): use value/variable labels instead pretty names
@@ -459,9 +466,10 @@ parameters <- model_parameters
 #'   _Confidence intervals and approximation of degrees of freedom_ in
 #'   [`model_parameters()`] for further details. When `ci_method=NULL`, in most
 #'   cases `"wald"` is used then.
-#' @param summary Logical, if `TRUE`, prints summary information about the
+#' @param include_info Logical, if `TRUE`, prints summary information about the
 #'   model (model formula, number of observations, residual standard deviation
 #'   and more).
+#' @param summary Deprecated, please use `info` instead.
 #' @param keep Character containing a regular expression pattern that
 #'   describes the parameters that should be included (for `keep`) or excluded
 #'   (for `drop`) in the returned data frame. `keep` may also be a
@@ -559,15 +567,22 @@ model_parameters.default <- function(model,
                                      standardize = NULL,
                                      exponentiate = FALSE,
                                      p_adjust = NULL,
+                                     vcov = NULL,
+                                     vcov_args = NULL,
                                      summary = getOption("parameters_summary", FALSE),
+                                     include_info = getOption("parameters_info", FALSE),
                                      keep = NULL,
                                      drop = NULL,
                                      verbose = TRUE,
-                                     vcov = NULL,
-                                     vcov_args = NULL,
                                      ...) {
   # validation check for inputs
   .is_model_valid(model)
+
+  ## TODO remove deprecated later
+  if (!missing(summary)) {
+    .deprecated_warning("summary", "include_info", verbose)
+    include_info <- summary
+  }
 
   # validation check, warn if unsupported argument is used.
   # unsupported arguments will be removed from the argument list.
@@ -590,7 +605,7 @@ model_parameters.default <- function(model,
       standardize = standardize,
       exponentiate = exponentiate,
       p_adjust = p_adjust,
-      summary = summary,
+      include_info = include_info,
       keep_parameters = keep,
       drop_parameters = drop,
       vcov = vcov,
@@ -647,12 +662,12 @@ model_parameters.default <- function(model,
                                       component = "conditional",
                                       ci_method = NULL,
                                       p_adjust = NULL,
-                                      summary = FALSE,
+                                      include_info = FALSE,
                                       keep_parameters = NULL,
                                       drop_parameters = NULL,
-                                      verbose = TRUE,
                                       vcov = NULL,
                                       vcov_args = NULL,
+                                      verbose = TRUE,
                                       ...) {
   dots <- list(...)
 
@@ -719,7 +734,7 @@ model_parameters.default <- function(model,
     iterations,
     ci_method = ci_method,
     p_adjust = p_adjust,
-    summary = summary,
+    include_info = include_info,
     verbose = verbose,
     ...
   )
@@ -744,14 +759,21 @@ model_parameters.glm <- function(model,
                                  standardize = NULL,
                                  exponentiate = FALSE,
                                  p_adjust = NULL,
-                                 summary = getOption("parameters_summary", FALSE),
-                                 keep = NULL,
-                                 drop = NULL,
                                  vcov = NULL,
                                  vcov_args = NULL,
+                                 summary = getOption("parameters_summary", FALSE),
+                                 include_info = getOption("parameters_info", FALSE),
+                                 keep = NULL,
+                                 drop = NULL,
                                  verbose = TRUE,
                                  ...) {
   dots <- list(...)
+
+  ## TODO remove deprecated later
+  if (!missing(summary)) {
+    .deprecated_warning("summary", "include_info", verbose)
+    include_info <- summary
+  }
 
   # set default
   if (is.null(ci_method)) {
@@ -790,7 +812,7 @@ model_parameters.glm <- function(model,
     standardize = standardize,
     exponentiate = exponentiate,
     p_adjust = p_adjust,
-    summary = summary,
+    include_info = include_info,
     keep_parameters = keep,
     drop_parameters = drop,
     vcov = vcov,

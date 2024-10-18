@@ -12,26 +12,33 @@
 #' printed. There are three options for this argument:
 #'
 #' 1. Selecting columns by name or index
-#' \cr
+#'
 #'   `select` can be a character vector (or numeric index) of column names that
-#'   should be printed. There are two pre-defined options for selecting columns:
-#'   `select = "minimal"` prints coefficients, confidence intervals and p-values,
-#'   while `select = "short"` prints coefficients, standard errors and p-values.
+#'   should be printed, where columns are extracted from the data frame returned
+#'   by `model_parameters()` and related functions.
+#'
+#'   There are two pre-defined options for selecting columns:
+#'   `select = "minimal"` prints coefficients, confidence intervals and
+#'   p-values, while `select = "short"` prints coefficients, standard errors and
+#'   p-values.
 #'
 #' 2. A string expression with layout pattern
-#' \cr
-#'   `select` is a string with "tokens" enclosed in braces. These tokens will
-#'   be replaced by their associated columns, where the selected columns will
-#'   be collapsed into one column. However, it is possible to create multiple
-#'   columns as well. Following tokens are replaced by the related coefficients
-#'   or statistics: `{estimate}`, `{se}`, `{ci}` (or `{ci_low}` and `{ci_high}`),
-#'   `{p}` and `{stars}`. The token `{ci}` will be replaced by `{ci_low}, {ci_high}`.
-#'   Furthermore, a `|` separates values into new cells/columns. If
-#'   `format = "html"`, a `<br>` inserts a line break inside a cell. See
+#'
+#'   `select` is a string with "tokens" enclosed in braces. These tokens will be
+#'   replaced by their associated columns, where the selected columns will be
+#'   collapsed into one column. Following tokens are replaced by the related
+#'   coefficients or statistics: `{estimate}`, `{se}`, `{ci}` (or `{ci_low}` and
+#'   `{ci_high}`), `{p}` and `{stars}`. The token `{ci}` will be replaced by
+#'   `{ci_low}, {ci_high}`. Example: `select = "{estimate}{stars} ({ci})"`
+#'
+#'   It is possible to create multiple columns as well. A `|` separates values
+#'   into new cells/columns. Example: `select = "{estimate} ({ci})|{p}"`.
+#'
+#'   If `format = "html"`, a `<br>` inserts a line break inside a cell. See
 #'   'Examples'.
 #'
 #' 3. A string indicating a pre-defined layout
-#' \cr
+#'
 #'   `select` can be one of the following string values, to create one of the
 #'   following pre-defined column layouts:
 #'
@@ -107,13 +114,13 @@
 #' some messages providing additional information can be displayed or suppressed
 #' using `options()`:
 #'
-#' - `parameters_summary`: `options(parameters_summary = TRUE)` will override the
-#' `summary` argument in `model_parameters()` and always show the model summary
-#' for non-mixed models.
+#' - `parameters_info`: `options(parameters_info = TRUE)` will override the
+#' `include_info` argument in `model_parameters()` and always show the model
+#' summary for non-mixed models.
 #'
-#' - `parameters_mixed_summary`: `options(parameters_mixed_summary = TRUE)` will
-#' override the `summary` argument in `model_parameters()` for mixed models, and
-#' will then always show the model summary.
+#' - `parameters_mixed_info`: `options(parameters_mixed_info = TRUE)` will
+#' override the `include_info` argument in `model_parameters()` for mixed
+#' models, and will then always show the model summary.
 #'
 #' - `parameters_cimethod`: `options(parameters_cimethod = TRUE)` will show the
 #' additional information about the approximation method used to calculate
@@ -430,6 +437,7 @@ print.parameters_random <- function(x, digits = 2, ...) {
   show_sigma <- ifelse(show_summary, TRUE, show_sigma)
   show_formula <- ifelse(show_summary, TRUE, show_formula)
   show_r2 <- .additional_arguments(x, "show_summary", FALSE)
+  show_rmse <- .additional_arguments(x, "show_summary", FALSE)
 
   # set defaults, if necessary
   if (is.null(model_sigma)) {
@@ -443,6 +451,7 @@ print.parameters_random <- function(x, digits = 2, ...) {
     show_sigma = show_sigma,
     show_formula = show_formula,
     show_r2 = show_r2,
+    show_rmse = show_rmse,
     format = format
   )
 }
