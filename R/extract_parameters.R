@@ -58,7 +58,7 @@
   statistic <- insight::get_statistic(model, component = component)
 
   # check if all estimates are non-NA
-  parameters <- .check_rank_deficiency(parameters)
+  parameters <- .check_rank_deficiency(model, parameters)
 
 
   # ==== check if we really have a component column
@@ -176,8 +176,7 @@
 
   # ==== test statistic - fix values for robust vcov
 
-  # deprecated argument `robust = TRUE`
-  if (!is.null(vcov) || isTRUE(dots[["robust"]])) {
+  if (!is.null(vcov)) {
     parameters$Statistic <- parameters$Estimate / parameters$SE
   } else if (!is.null(statistic)) {
     parameters <- merge(parameters, statistic, by = merge_by, sort = FALSE)
@@ -438,7 +437,7 @@
   statistic <- insight::get_statistic(model, component = "all")
 
   # check if all estimates are non-NA
-  parameters <- .check_rank_deficiency(parameters)
+  parameters <- .check_rank_deficiency(model, parameters)
 
   # sometimes, due to merge(), row-order messes up, so we save this here
   original_order <- parameters$.id <- seq_len(nrow(parameters))
@@ -1015,7 +1014,12 @@
 # tools -------------------------
 
 
-.check_rank_deficiency <- function(p, verbose = TRUE) {
+.check_rank_deficiency <- function(model, p, verbose = TRUE) {
+  # for cox-panel models, we have non-linear parameters with NA coefficient,
+  # but test statistic and p-value - don't check for NA estimates in this case
+  if (!is.null(model) && inherits(model, "coxph.penal")) {
+    return(p)
+  }
   if (anyNA(p$Estimate)) {
     if (isTRUE(verbose)) {
       insight::format_alert(

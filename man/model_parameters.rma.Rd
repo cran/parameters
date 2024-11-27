@@ -23,9 +23,9 @@
 
 \item{ci}{Confidence Interval (CI) level. Default to \code{0.95} (\verb{95\%}).}
 
-\item{bootstrap}{Should estimates be based on bootstrapped model? If
-\code{TRUE}, then arguments of \link[=model_parameters.stanreg]{Bayesian regressions} apply (see also
-\code{\link[=bootstrap_parameters]{bootstrap_parameters()}}).}
+\item{bootstrap}{Should estimates be based on bootstrapped model? If \code{TRUE},
+then arguments of \link[=model_parameters.brmsfit]{Bayesian regressions} apply
+(see also \code{\link[=bootstrap_parameters]{bootstrap_parameters()}}).}
 
 \item{iterations}{The number of bootstrap replicates. This only apply in the
 case of bootstrapped frequentist models.}
@@ -51,17 +51,19 @@ standardized parameters only works when \code{standardize="refit"}.
 coefficients (and related confidence intervals). This is typical for
 logistic regression, or more generally speaking, for models with log or
 logit links. It is also recommended to use \code{exponentiate = TRUE} for models
-with log-transformed response values. \strong{Note:} Delta-method standard
-errors are also computed (by multiplying the standard errors by the
-transformed coefficients). This is to mimic behaviour of other software
-packages, such as Stata, but these standard errors poorly estimate
-uncertainty for the transformed coefficient. The transformed confidence
-interval more clearly captures this uncertainty. For \code{compare_parameters()},
-\code{exponentiate = "nongaussian"} will only exponentiate coefficients from
-non-Gaussian families.}
+with log-transformed response values. For models with a log-transformed
+response variable, when \code{exponentiate = TRUE}, a one-unit increase in the
+predictor is associated with multiplying the outcome by that predictor's
+coefficient. \strong{Note:} Delta-method standard errors are also computed (by
+multiplying the standard errors by the transformed coefficients). This is
+to mimic behaviour of other software packages, such as Stata, but these
+standard errors poorly estimate uncertainty for the transformed
+coefficient. The transformed confidence interval more clearly captures this
+uncertainty. For \code{compare_parameters()}, \code{exponentiate = "nongaussian"}
+will only exponentiate coefficients from non-Gaussian families.}
 
-\item{include_studies}{Logical, if \code{TRUE} (default), includes parameters
-for all studies. Else, only parameters for overall-effects are shown.}
+\item{include_studies}{Logical, if \code{TRUE} (default), includes parameters for
+all studies. Else, only parameters for overall-effects are shown.}
 
 \item{keep}{Character containing a regular expression pattern that
 describes the parameters that should be included (for \code{keep}) or excluded
@@ -89,18 +91,23 @@ names.}
 
 \item{...}{Arguments passed to or from other methods. For instance, when
 \code{bootstrap = TRUE}, arguments like \code{type} or \code{parallel} are passed down to
-\code{bootstrap_model()}. Further non-documented arguments are \code{digits},
-\code{p_digits}, \code{ci_digits} and \code{footer_digits} to set the number of digits for
-the output. If \code{s_value = TRUE}, the p-value will be replaced by the
-S-value in the output (cf. \emph{Rafi and Greenland 2020}). \code{pd} adds an
-additional column with the \emph{probability of direction} (see
-\code{\link[bayestestR:p_direction]{bayestestR::p_direction()}} for details). \code{groups} can be used to group
-coefficients. It will be passed to the print-method, or can directly be
-used in \code{print()}, see documentation in \code{\link[=print.parameters_model]{print.parameters_model()}}.
-Furthermore, see 'Examples' for this function. For developers, whose
-interest mainly is to get a "tidy" data frame of model summaries, it is
-recommended to set \code{pretty_names = FALSE} to speed up computation of the
-summary table.}
+\code{bootstrap_model()}.
+
+Further non-documented arguments are:
+\itemize{
+\item \code{digits}, \code{p_digits}, \code{ci_digits} and \code{footer_digits} to set the number of
+digits for the output. \code{groups} can be used to group coefficients. These
+arguments will be passed to the print-method, or can directly be used in
+\code{print()}, see documentation in \code{\link[=print.parameters_model]{print.parameters_model()}}.
+\item If \code{s_value = TRUE}, the p-value will be replaced by the S-value in the
+output (cf. \emph{Rafi and Greenland 2020}).
+\item \code{pd} adds an additional column with the \emph{probability of direction} (see
+\code{\link[bayestestR:p_direction]{bayestestR::p_direction()}} for details). Furthermore, see 'Examples' for
+this function.
+\item For developers, whose interest mainly is to get a "tidy" data frame of
+model summaries, it is recommended to set \code{pretty_names = FALSE} to speed
+up computation of the summary table.
+}}
 }
 \value{
 A data frame of indices related to the model's parameters.

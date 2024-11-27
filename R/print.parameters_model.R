@@ -11,7 +11,7 @@
 #' @param select Determines which columns and and which layout columns are
 #' printed. There are three options for this argument:
 #'
-#' 1. Selecting columns by name or index
+#' * **Selecting columns by name or index**
 #'
 #'   `select` can be a character vector (or numeric index) of column names that
 #'   should be printed, where columns are extracted from the data frame returned
@@ -22,7 +22,7 @@
 #'   p-values, while `select = "short"` prints coefficients, standard errors and
 #'   p-values.
 #'
-#' 2. A string expression with layout pattern
+#' * **A string expression with layout pattern**
 #'
 #'   `select` is a string with "tokens" enclosed in braces. These tokens will be
 #'   replaced by their associated columns, where the selected columns will be
@@ -37,23 +37,23 @@
 #'   If `format = "html"`, a `<br>` inserts a line break inside a cell. See
 #'   'Examples'.
 #'
-#' 3. A string indicating a pre-defined layout
+#' *. **A string indicating a pre-defined layout**
 #'
 #'   `select` can be one of the following string values, to create one of the
 #'   following pre-defined column layouts:
 #'
-#'     - `"ci"`: Estimates and confidence intervals, no asterisks for p-values.
-#'       This is equivalent to `select = "{estimate} ({ci})"`.
-#'     - `"se"`: Estimates and standard errors, no asterisks for p-values. This is
-#'       equivalent to `select = "{estimate} ({se})"`.
-#'     - `"ci_p"`: Estimates, confidence intervals and asterisks for p-values. This
-#'       is equivalent to `select = "{estimate}{stars} ({ci})"`.
-#'     - `"se_p"`: Estimates, standard errors and asterisks for p-values. This is
-#'       equivalent to `select = "{estimate}{stars} ({se})"`..
-#'     - `"ci_p2"`: Estimates, confidence intervals and numeric p-values, in two
-#'       columns. This is equivalent to `select = "{estimate} ({ci})|{p}"`.
-#'     - `"se_p2"`: Estimate, standard errors and numeric p-values, in two columns.
-#'       This is equivalent to `select = "{estimate} ({se})|{p}"`.
+#'   - `"ci"`: Estimates and confidence intervals, no asterisks for p-values.
+#'     This is equivalent to `select = "{estimate} ({ci})"`.
+#'   - `"se"`: Estimates and standard errors, no asterisks for p-values. This is
+#'     equivalent to `select = "{estimate} ({se})"`.
+#'   - `"ci_p"`: Estimates, confidence intervals and asterisks for p-values. This
+#'     is equivalent to `select = "{estimate}{stars} ({ci})"`.
+#'   - `"se_p"`: Estimates, standard errors and asterisks for p-values. This is
+#'     equivalent to `select = "{estimate}{stars} ({se})"`..
+#'   - `"ci_p2"`: Estimates, confidence intervals and numeric p-values, in two
+#'     columns. This is equivalent to `select = "{estimate} ({ci})|{p}"`.
+#'   - `"se_p2"`: Estimate, standard errors and numeric p-values, in two columns.
+#'     This is equivalent to `select = "{estimate} ({se})|{p}"`.
 #'
 #' For `model_parameters()`, glue-like syntax is still experimental in the
 #' case of more complex models (like mixed models) and may not return expected
@@ -146,6 +146,13 @@
 #' - `parameters_select`: `options(parameters_select = <value>)` will set the
 #' default for the `select` argument. See argument's documentation for available
 #' options.
+#'
+#' - `easystats_table_width`: `options(easystats_table_width = <value>)` will
+#' set the default width for tables in text-format, i.e. for most of the outputs
+#' printed to console. If not specified, tables will be adjusted to the current
+#' available width, e.g. of the of the console (or any other source for textual
+#' output, like markdown files). The argument `table_width` can also be used in
+#' most `print()` methods to specify the table width as desired.
 #'
 #' - `easystats_html_engine`: `options(easystats_html_engine = "gt")` will set
 #' the default HTML engine for tables to `gt`, i.e. the _gt_ package is used to

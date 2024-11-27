@@ -22,25 +22,35 @@ pool_parameters(
 coefficients (and related confidence intervals). This is typical for
 logistic regression, or more generally speaking, for models with log or
 logit links. It is also recommended to use \code{exponentiate = TRUE} for models
-with log-transformed response values. \strong{Note:} Delta-method standard
-errors are also computed (by multiplying the standard errors by the
-transformed coefficients). This is to mimic behaviour of other software
-packages, such as Stata, but these standard errors poorly estimate
-uncertainty for the transformed coefficient. The transformed confidence
-interval more clearly captures this uncertainty. For \code{compare_parameters()},
-\code{exponentiate = "nongaussian"} will only exponentiate coefficients from
-non-Gaussian families.}
+with log-transformed response values. For models with a log-transformed
+response variable, when \code{exponentiate = TRUE}, a one-unit increase in the
+predictor is associated with multiplying the outcome by that predictor's
+coefficient. \strong{Note:} Delta-method standard errors are also computed (by
+multiplying the standard errors by the transformed coefficients). This is
+to mimic behaviour of other software packages, such as Stata, but these
+standard errors poorly estimate uncertainty for the transformed
+coefficient. The transformed confidence interval more clearly captures this
+uncertainty. For \code{compare_parameters()}, \code{exponentiate = "nongaussian"}
+will only exponentiate coefficients from non-Gaussian families.}
 
 \item{effects}{Should parameters for fixed effects (\code{"fixed"}), random
 effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
 to mixed models. May be abbreviated. If the calculation of random effects
 parameters takes too long, you may use \code{effects = "fixed"}.}
 
-\item{component}{Should all parameters, parameters for the conditional model,
-for the zero-inflation part of the model, or the dispersion model be returned?
-Applies to models with zero-inflation and/or dispersion component. \code{component}
-may be one of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or
-\code{"all"} (default). May be abbreviated.}
+\item{component}{Which type of parameters to return, such as parameters for the
+conditional model, the zero-inflation part of the model, the dispersion
+term, or other auxiliary parameters be returned? Applies to models with
+zero-inflation and/or dispersion formula, or if parameters such as \code{sigma}
+should be included. May be abbreviated. Note that the \emph{conditional}
+component is also called \emph{count} or \emph{mean} component, depending on the
+model. There are three convenient shortcuts: \code{component = "all"} returns
+all possible parameters. If \code{component = "location"}, location parameters
+such as \code{conditional}, \code{zero_inflated}, or \code{smooth_terms}, are returned
+(everything that are fixed or random effects - depending on the \code{effects}
+argument - but no auxiliary parameters). For \code{component = "distributional"}
+(or \code{"auxiliary"}), components like \code{sigma}, \code{dispersion}, or \code{beta}
+(and other auxiliary parameters) are returned.}
 
 \item{verbose}{Toggle warnings and messages.}
 

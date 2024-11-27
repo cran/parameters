@@ -51,7 +51,7 @@
   attr(params, "bootstrap") <- bootstrap
   attr(params, "iterations") <- iterations
   attr(params, "p_adjust") <- p_adjust
-  attr(params, "robust_vcov") <- isTRUE(list(...)$robust) || "vcov" %in% names(list(...))
+  attr(params, "robust_vcov") <- "vcov" %in% names(list(...))
   attr(params, "ignore_group") <- isFALSE(group_level)
   attr(params, "ran_pars") <- isFALSE(group_level)
   attr(params, "show_summary") <- isTRUE(include_info)
@@ -64,7 +64,7 @@
   # use tryCatch, these might fail...
   attr(params, "test_statistic") <- .safe(insight::find_statistic(model))
   attr(params, "log_response") <- .safe(isTRUE(grepl("log", insight::find_transformation(model), fixed = TRUE)))
-  attr(params, "log_predictors") <- .safe(any(grepl("log", unlist(insight::find_terms(model)[c("conditional", "zero_inflated", "instruments")]), fixed = TRUE))) # nolint
+  attr(params, "log_predictors") <- .safe(any(grepl("log", unlist(insight::find_terms(model, verbose = FALSE)[c("conditional", "zero_inflated", "instruments")]), fixed = TRUE))) # nolint
 
   # save if model is multivariate response model
   if (isTRUE(info$is_multivariate)) {
@@ -107,7 +107,7 @@
 
 
   # model formula
-  model_formula <- .safe(insight::safe_deparse(insight::find_formula(model)$conditional))
+  model_formula <- .safe(insight::safe_deparse(insight::find_formula(model, verbose = FALSE)$conditional)) # nolint
   attr(params, "model_formula") <- model_formula
 
 
@@ -458,7 +458,7 @@
       not_allowed_string <- datawizard::text_concatenate(not_allowed, enclose = "\"")
       insight::format_alert(
         sprintf("Following arguments are not supported in `%s()` for models of class `%s` and will be ignored: %s", function_name, model_class, not_allowed_string), # nolint
-        sprintf("Please run `%s()` again without specifying the above mentioned arguments to obtain expected results.", function_name) # nolint
+        sprintf("In case you obtain expected results, please run `%s()` again without specifying the above mentioned arguments.", function_name) # nolint
       )
     }
     dots[not_allowed] <- NULL

@@ -13,7 +13,7 @@
 #'   `ci` or `ci_method` etc.
 #' @inheritParams model_parameters.default
 #' @inheritParams bootstrap_model
-#' @inheritParams model_parameters.merMod
+#' @inheritParams model_parameters.glmmTMB
 #'
 #' @note
 #' Models with multiple components, (for instance, models with zero-inflation,
@@ -362,6 +362,6 @@ pool_parameters <- function(x,
     "Log-Odds"
   }
   # formula
-  attr(pooled_params, "model_formula") <- insight::find_formula(model)
+  attr(pooled_params, "model_formula") <- insight::find_formula(model, verbose = FALSE)
   pooled_params
 }

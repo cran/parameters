@@ -1,3 +1,29 @@
+# parameters 0.24.0
+
+## Breaking Changes
+
+* The `robust` argument, which was deprecated for a long time, is now no longer
+  supported. Please use `vcov` and `vcov_args` instead.
+
+## Changes
+
+* Added support for `coxph.panel` models.
+
+* Added support for `anova()` from models of the *survey* package.
+
+* Documentation was re-organized and clarified, and the index reduced by removing
+  redundant class-documentation.
+
+## Bug fixes
+
+* Fixed bug in `p_value()` for objects of class `averaging`.
+
+* Fixed bug when extracting 'pretty labels' for model parameters, which could
+  fail when predictors were character vectors.
+
+* Fixed bug with inaccurate standard errors for models from package *fixest*
+  that used the `sunab()` function in the formula.
+
 # parameters 0.23.0
 
 ## Breaking Changes

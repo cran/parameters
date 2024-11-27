@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.23.0
+Version: 0.24.0
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -77,18 +77,18 @@ URL: https://easystats.github.io/parameters/
 BugReports: https://github.com/easystats/parameters/issues
 Depends: R (>= 3.6)
 Imports: bayestestR (>= 0.15.0), datawizard (>= 0.13.0), insight (>=
-        0.20.5), graphics, methods, stats, utils
+        1.0.0), graphics, methods, stats, utils
 Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
         betareg, BH, biglm, blme, boot, brglm2, brms, broom,
         broom.mixed, cAIC4, car, carData, cgam, ClassDiscovery,
-        clubSandwich, cluster, cobalt, coda, coxme, cplm, dbscan,
+        clubSandwich, cluster, cobalt, coda, coxme, cplm, dbscan, did,
         distributional, domir (>= 0.2.0), drc, DRR, effectsize (>=
         0.8.6), EGAnet, emmeans (>= 1.7.0), epiR, estimatr, factoextra,
         FactoMineR, faraway, fastICA, fixest, fpc, gam, gamlss, gee,
         geepack, ggeffects (>= 1.3.2), ggplot2, GLMMadaptive, glmmTMB
         (>= 1.1.10), glmtoolbox, GPArotation, gt, haven, httr2, Hmisc,
         ivreg, knitr, lavaan, lfe, lm.beta, lme4, lmerTest, lmtest,
-        logistf, logspline, lqmm, M3C, marginaleffects (>= 0.20.1),
+        logistf, logspline, lqmm, M3C, marginaleffects (>= 0.20.4),
         MASS, Matrix, mclogit, mclust, MCMCglmm, mediation, merDeriv,
         metaBMA, metafor, mfx, mgcv, mice, mmrm, multcomp, MuMIn,
         NbClust, nFactors, nestedLogit, nlme, nnet, openxlsx, ordinal,
@@ -108,7 +108,7 @@ Config/testthat/parallel: true
 Config/Needs/website: easystats/easystatstemplate
 Config/rcmdcheck/ignore-inconsequential-notes: true
 NeedsCompilation: no
-Packaged: 2024-10-18 10:01:20 UTC; mail
+Packaged: 2024-11-27 11:02:18 UTC; mail
 Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
   Dominique Makowski [aut] (<https://orcid.org/0000-0001-5375-9967>),
   Mattan S. Ben-Shachar [aut] (<https://orcid.org/0000-0002-4287-4801>),
@@ -123,4 +123,4 @@ Author: Daniel Lüdecke [aut, cre] (<https://orcid.org/0000-0002-8895-3206>),
   Douglas Ezra Morrison [ctb] (<https://orcid.org/0000-0002-7195-830X>),
   Joseph Luchman [ctb] (<https://orcid.org/0000-0002-8886-9717>)
 Repository: CRAN
-Date/Publication: 2024-10-18 11:10:06 UTC
+Date/Publication: 2024-11-27 12:00:02 UTC

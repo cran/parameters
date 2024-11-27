@@ -83,14 +83,16 @@ standardized parameters only works when \code{standardize="refit"}.
 coefficients (and related confidence intervals). This is typical for
 logistic regression, or more generally speaking, for models with log or
 logit links. It is also recommended to use \code{exponentiate = TRUE} for models
-with log-transformed response values. \strong{Note:} Delta-method standard
-errors are also computed (by multiplying the standard errors by the
-transformed coefficients). This is to mimic behaviour of other software
-packages, such as Stata, but these standard errors poorly estimate
-uncertainty for the transformed coefficient. The transformed confidence
-interval more clearly captures this uncertainty. For \code{compare_parameters()},
-\code{exponentiate = "nongaussian"} will only exponentiate coefficients from
-non-Gaussian families.}
+with log-transformed response values. For models with a log-transformed
+response variable, when \code{exponentiate = TRUE}, a one-unit increase in the
+predictor is associated with multiplying the outcome by that predictor's
+coefficient. \strong{Note:} Delta-method standard errors are also computed (by
+multiplying the standard errors by the transformed coefficients). This is
+to mimic behaviour of other software packages, such as Stata, but these
+standard errors poorly estimate uncertainty for the transformed
+coefficient. The transformed confidence interval more clearly captures this
+uncertainty. For \code{compare_parameters()}, \code{exponentiate = "nongaussian"}
+will only exponentiate coefficients from non-Gaussian families.}
 
 \item{ci_method}{Method for computing degrees of freedom for p-values
 and confidence intervals (CI). See documentation for related model class
@@ -104,9 +106,8 @@ possible adjustment methods are \code{"tukey"}, \code{"scheffe"},
 
 \item{select}{Determines which columns and and which layout columns are
 printed. There are three options for this argument:
-\enumerate{
-\item Selecting columns by name or index
-}
+\itemize{
+\item \strong{Selecting columns by name or index}
 
 \code{select} can be a character vector (or numeric index) of column names that
 should be printed, where columns are extracted from the data frame returned
@@ -116,9 +117,7 @@ There are two pre-defined options for selecting columns:
 \code{select = "minimal"} prints coefficients, confidence intervals and
 p-values, while \code{select = "short"} prints coefficients, standard errors and
 p-values.
-\enumerate{
-\item A string expression with layout pattern
-}
+\item \strong{A string expression with layout pattern}
 
 \code{select} is a string with "tokens" enclosed in braces. These tokens will be
 replaced by their associated columns, where the selected columns will be
@@ -132,26 +131,26 @@ into new cells/columns. Example: \code{select = "{estimate} ({ci})|{p}"}.
 
 If \code{format = "html"}, a \verb{<br>} inserts a line break inside a cell. See
 'Examples'.
-\enumerate{
-\item A string indicating a pre-defined layout
 }
+
+*. \strong{A string indicating a pre-defined layout}
 
 \code{select} can be one of the following string values, to create one of the
 following pre-defined column layouts:
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{- `"ci"`: Estimates and confidence intervals, no asterisks for p-values.
-  This is equivalent to `select = "\{estimate\} (\{ci\})"`.
-- `"se"`: Estimates and standard errors, no asterisks for p-values. This is
-  equivalent to `select = "\{estimate\} (\{se\})"`.
-- `"ci_p"`: Estimates, confidence intervals and asterisks for p-values. This
-  is equivalent to `select = "\{estimate\}\{stars\} (\{ci\})"`.
-- `"se_p"`: Estimates, standard errors and asterisks for p-values. This is
-  equivalent to `select = "\{estimate\}\{stars\} (\{se\})"`..
-- `"ci_p2"`: Estimates, confidence intervals and numeric p-values, in two
-  columns. This is equivalent to `select = "\{estimate\} (\{ci\})|\{p\}"`.
-- `"se_p2"`: Estimate, standard errors and numeric p-values, in two columns.
-  This is equivalent to `select = "\{estimate\} (\{se\})|\{p\}"`.
-}\if{html}{\out{</div>}}
+\itemize{
+\item \code{"ci"}: Estimates and confidence intervals, no asterisks for p-values.
+This is equivalent to \code{select = "{estimate} ({ci})"}.
+\item \code{"se"}: Estimates and standard errors, no asterisks for p-values. This is
+equivalent to \code{select = "{estimate} ({se})"}.
+\item \code{"ci_p"}: Estimates, confidence intervals and asterisks for p-values. This
+is equivalent to \code{select = "{estimate}{stars} ({ci})"}.
+\item \code{"se_p"}: Estimates, standard errors and asterisks for p-values. This is
+equivalent to \code{select = "{estimate}{stars} ({se})"}..
+\item \code{"ci_p2"}: Estimates, confidence intervals and numeric p-values, in two
+columns. This is equivalent to \code{select = "{estimate} ({ci})|{p}"}.
+\item \code{"se_p2"}: Estimate, standard errors and numeric p-values, in two columns.
+This is equivalent to \code{select = "{estimate} ({se})|{p}"}.
+}
 
 For \code{model_parameters()}, glue-like syntax is still experimental in the
 case of more complex models (like mixed models) and may not return expected

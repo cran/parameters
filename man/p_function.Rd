@@ -62,50 +62,64 @@ highlighted values should be named \code{"emph"}, e.g
 coefficients (and related confidence intervals). This is typical for
 logistic regression, or more generally speaking, for models with log or
 logit links. It is also recommended to use \code{exponentiate = TRUE} for models
-with log-transformed response values. \strong{Note:} Delta-method standard
-errors are also computed (by multiplying the standard errors by the
-transformed coefficients). This is to mimic behaviour of other software
-packages, such as Stata, but these standard errors poorly estimate
-uncertainty for the transformed coefficient. The transformed confidence
-interval more clearly captures this uncertainty. For \code{compare_parameters()},
-\code{exponentiate = "nongaussian"} will only exponentiate coefficients from
-non-Gaussian families.}
+with log-transformed response values. For models with a log-transformed
+response variable, when \code{exponentiate = TRUE}, a one-unit increase in the
+predictor is associated with multiplying the outcome by that predictor's
+coefficient. \strong{Note:} Delta-method standard errors are also computed (by
+multiplying the standard errors by the transformed coefficients). This is
+to mimic behaviour of other software packages, such as Stata, but these
+standard errors poorly estimate uncertainty for the transformed
+coefficient. The transformed confidence interval more clearly captures this
+uncertainty. For \code{compare_parameters()}, \code{exponentiate = "nongaussian"}
+will only exponentiate coefficients from non-Gaussian families.}
 
 \item{effects}{Should parameters for fixed effects (\code{"fixed"}), random
 effects (\code{"random"}), or both (\code{"all"}) be returned? Only applies
 to mixed models. May be abbreviated. If the calculation of random effects
 parameters takes too long, you may use \code{effects = "fixed"}.}
 
-\item{component}{Should all parameters, parameters for the conditional model,
-for the zero-inflation part of the model, or the dispersion model be returned?
-Applies to models with zero-inflation and/or dispersion component. \code{component}
-may be one of \code{"conditional"}, \code{"zi"}, \code{"zero-inflated"}, \code{"dispersion"} or
-\code{"all"} (default). May be abbreviated.}
+\item{component}{Which type of parameters to return, such as parameters for the
+conditional model, the zero-inflation part of the model, the dispersion
+term, or other auxiliary parameters be returned? Applies to models with
+zero-inflation and/or dispersion formula, or if parameters such as \code{sigma}
+should be included. May be abbreviated. Note that the \emph{conditional}
+component is also called \emph{count} or \emph{mean} component, depending on the
+model. There are three convenient shortcuts: \code{component = "all"} returns
+all possible parameters. If \code{component = "location"}, location parameters
+such as \code{conditional}, \code{zero_inflated}, or \code{smooth_terms}, are returned
+(everything that are fixed or random effects - depending on the \code{effects}
+argument - but no auxiliary parameters). For \code{component = "distributional"}
+(or \code{"auxiliary"}), components like \code{sigma}, \code{dispersion}, or \code{beta}
+(and other auxiliary parameters) are returned.}
 
 \item{vcov}{Variance-covariance matrix used to compute uncertainty estimates
-(e.g., for robust standard errors). This argument accepts a covariance matrix,
-a function which returns a covariance matrix, or a string which identifies
-the function to be used to compute the covariance matrix.
+(e.g., for robust standard errors). This argument accepts a covariance
+matrix, a function which returns a covariance matrix, or a string which
+identifies the function to be used to compute the covariance matrix.
 \itemize{
 \item A covariance matrix
 \item A function which returns a covariance matrix (e.g., \code{stats::vcov()})
 \item A string which indicates the kind of uncertainty estimates to return.
 \itemize{
-\item Heteroskedasticity-consistent: \code{"vcovHC"}, \code{"HC"}, \code{"HC0"}, \code{"HC1"},
-\code{"HC2"}, \code{"HC3"}, \code{"HC4"}, \code{"HC4m"}, \code{"HC5"}. See \code{?sandwich::vcovHC}.
-\item Cluster-robust: \code{"vcovCR"}, \code{"CR0"}, \code{"CR1"}, \code{"CR1p"}, \code{"CR1S"},
-\code{"CR2"}, \code{"CR3"}. See \code{?clubSandwich::vcovCR}.
-\item Bootstrap: \code{"vcovBS"}, \code{"xy"}, \code{"residual"}, \code{"wild"}, \code{"mammen"},
-\code{"webb"}. See \code{?sandwich::vcovBS}.
-\item Other \code{sandwich} package functions: \code{"vcovHAC"}, \code{"vcovPC"}, \code{"vcovCL"},
-\code{"vcovPL"}.
+\item Heteroskedasticity-consistent: \code{"HC"}, \code{"HC0"}, \code{"HC1"}, \code{"HC2"},
+\code{"HC3"}, \code{"HC4"}, \code{"HC4m"}, \code{"HC5"}. See \code{?sandwich::vcovHC}
+\item Cluster-robust: \code{"CR"}, \code{"CR0"}, \code{"CR1"}, \code{"CR1p"}, \code{"CR1S"},
+\code{"CR2"}, \code{"CR3"}. See \code{?clubSandwich::vcovCR}
+\item Bootstrap: \code{"BS"}, \code{"xy"}, \code{"residual"}, \code{"wild"}, \code{"mammen"},
+\code{"fractional"}, \code{"jackknife"}, \code{"norm"}, \code{"webb"}. See
+\code{?sandwich::vcovBS}
+\item Other \code{sandwich} package functions: \code{"HAC"}, \code{"PC"}, \code{"CL"}, \code{"OPG"},
+\code{"PL"}.
 }
 }}
 
 \item{vcov_args}{List of arguments to be passed to the function identified by
-the \code{vcov} argument. This function is typically supplied by the \strong{sandwich}
-or \strong{clubSandwich} packages. Please refer to their documentation (e.g.,
-\code{?sandwich::vcovHAC}) to see the list of available arguments.}
+the \code{vcov} argument. This function is typically supplied by the
+\strong{sandwich} or \strong{clubSandwich} packages. Please refer to their
+documentation (e.g., \code{?sandwich::vcovHAC}) to see the list of available
+arguments. If no estimation type (argument \code{type}) is given, the default
+type for \code{"HC"} equals the default from the \strong{sandwich} package; for type
+\code{"CR"}, the default is set to \code{"CR3"}.}
 
 \item{keep}{Character containing a regular expression pattern that
 describes the parameters that should be included (for \code{keep}) or excluded
@@ -132,17 +146,21 @@ names.}
 \item{verbose}{Toggle warnings and messages.}
 
 \item{...}{Arguments passed to or from other methods. Non-documented
-arguments are \code{digits}, \code{p_digits}, \code{ci_digits} and \code{footer_digits} to set
-the number of digits for the output. If \code{s_value = TRUE}, the p-value will
-be replaced by the S-value in the output (cf. \emph{Rafi and Greenland 2020}).
-\code{pd} adds an additional column with the \emph{probability of direction} (see
-\code{\link[bayestestR:p_direction]{bayestestR::p_direction()}} for details). \code{groups} can be used to group
-coefficients. It will be passed to the print-method, or can directly be used
-in \code{print()}, see documentation in \code{\link[=print.parameters_model]{print.parameters_model()}}. Furthermore,
-see 'Examples' in \code{\link[=model_parameters.default]{model_parameters.default()}}. For developers, whose
-interest mainly is to get a "tidy" data frame of model summaries, it is
-recommended to set \code{pretty_names = FALSE} to speed up computation of the
-summary table.}
+arguments are
+\itemize{
+\item \code{digits}, \code{p_digits}, \code{ci_digits} and \code{footer_digits} to set the number of
+digits for the output. \code{groups} can be used to group coefficients. These
+arguments will be passed to the print-method, or can directly be used in
+\code{print()}, see documentation in \code{\link[=print.parameters_model]{print.parameters_model()}}.
+\item If \code{s_value = TRUE}, the p-value will be replaced by the S-value in the
+output (cf. \emph{Rafi and Greenland 2020}).
+\item \code{pd} adds an additional column with the \emph{probability of direction} (see
+\code{\link[bayestestR:p_direction]{bayestestR::p_direction()}} for details). Furthermore, see 'Examples' in
+\code{\link[=model_parameters.default]{model_parameters.default()}}.
+\item For developers, whose interest mainly is to get a "tidy" data frame of
+model summaries, it is recommended to set \code{pretty_names = FALSE} to speed
+up computation of the summary table.
+}}
 }
 \value{
 A data frame with p-values and compatibility intervals.

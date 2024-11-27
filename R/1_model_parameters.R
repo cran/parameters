@@ -10,16 +10,17 @@
 #' - [Default method][model_parameters.default()]: `lm`, `glm`, **stats**, **censReg**,
 #'   **MASS**, **survey**, ...
 #' - [Additive models][model_parameters.cgam()]: **bamlss**, **gamlss**, **mgcv**,
-#'   **scam**, **VGAM**, `Gam`, `gamm`, ...
-#' - [ANOVA][model_parameters.aov()]: **afex**, `aov`, `anova`, ...
-#' - [Bayesian][model_parameters.stanreg()]: **BayesFactor**, **blavaan**, **brms**,
+#'   **scam**, **VGAM**, `Gam` (although the output of `Gam` is more Anova-alike),
+#'   `gamm`, ...
+#' - [ANOVA][model_parameters.aov()]: **afex**, `aov`, `anova`, `Gam`, ...
+#' - [Bayesian][model_parameters.brmsfit()]: **BayesFactor**, **blavaan**, **brms**,
 #'   **MCMCglmm**, **posterior**, **rstanarm**, `bayesQR`, `bcplm`, `BGGM`, `blmrm`,
 #'   `blrm`, `mcmc.list`, `MCMCglmm`, ...
-#' - [Clustering][model_parameters.kmeans()]: **hclust**, **kmeans**, **mclust**, **pam**, ...
+#' - [Clustering][model_parameters.hclust()]: **hclust**, **kmeans**, **mclust**, **pam**, ...
 #' - [Correlations, t-tests, etc.][model_parameters.htest()]: **lmtest**, `htest`,
 #'   `pairwise.htest`, ...
 #' - [Meta-Analysis][model_parameters.rma()]: **metaBMA**, **metafor**, **metaplus**, ...
-#' - [Mixed models][model_parameters.merMod()]: **cplm**, **glmmTMB**, **lme4**,
+#' - [Mixed models][model_parameters.glmmTMB()]: **cplm**, **glmmTMB**, **lme4**,
 #'   **lmerTest**, **nlme**, **ordinal**, **robustlmm**, **spaMM**, `mixed`, `MixMod`, ...
 #' - [Multinomial, ordinal and cumulative link][model_parameters.mlm()]: **brglm2**,
 #'   **DirichletReg**, **nnet**, **ordinal**, `mlm`, ...
@@ -28,29 +29,34 @@
 #'   **psych**, `sem`, ...
 #' - [Zero-inflated and hurdle][model_parameters.zcpglm()]: **cplm**, **mhurdle**,
 #'   **pscl**, ...
-#' - [Other models][model_parameters.averaging()]: **aod**, **bbmle**, **betareg**,
+#' - [Other models][model_parameters.glimML()]: **aod**, **bbmle**, **betareg**,
 #'   **emmeans**, **epiR**, **ggeffects**, **glmx**, **ivfixed**, **ivprobit**,
 #'   **JRM**, **lmodel2**, **logitsf**, **marginaleffects**, **margins**, **maxLik**,
 #'   **mediation**, **mfx**, **multcomp**, **mvord**, **plm**, **PMCMRplus**,
 #'   **quantreg**, **selection**, **systemfit**, **tidymodels**, **varEST**,
 #'   **WRS2**, `bfsl`, `deltaMethod`, `fitdistr`, `mjoint`, `mle`, `model.avg`, ...
 #'
+#' A full overview can be found here:
+#' https://easystats.github.io/parameters/reference/
+#'
 #' @param model Statistical Model.
 #' @param ... Arguments passed to or from other methods. Non-documented
-#'   arguments are `digits`, `p_digits`, `ci_digits` and `footer_digits` to set
-#'   the number of digits for the output. If `s_value = TRUE`, the p-value will
-#'   be replaced by the S-value in the output (cf. _Rafi and Greenland 2020_).
-#'   `pd` adds an additional column with the _probability of direction_ (see
-#'   [`bayestestR::p_direction()`] for details). `groups` can be used to group
-#'   coefficients. It will be passed to the print-method, or can directly be used
-#'   in `print()`, see documentation in [`print.parameters_model()`]. Furthermore,
-#'   see 'Examples' in [`model_parameters.default()`]. For developers, whose
-#'   interest mainly is to get a "tidy" data frame of model summaries, it is
-#'   recommended to set `pretty_names = FALSE` to speed up computation of the
-#'   summary table.
+#' arguments are
+#' - `digits`, `p_digits`, `ci_digits` and `footer_digits` to set the number of
+#'   digits for the output. `groups` can be used to group coefficients. These
+#'   arguments will be passed to the print-method, or can directly be used in
+#'   `print()`, see documentation in [`print.parameters_model()`].
+#' - If `s_value = TRUE`, the p-value will be replaced by the S-value in the
+#'   output (cf. _Rafi and Greenland 2020_).
+#' - `pd` adds an additional column with the _probability of direction_ (see
+#'   [`bayestestR::p_direction()`] for details). Furthermore, see 'Examples' in
+#'   [`model_parameters.default()`].
+#' - For developers, whose interest mainly is to get a "tidy" data frame of
+#'   model summaries, it is recommended to set `pretty_names = FALSE` to speed
+#'   up computation of the summary table.
 #'
-#' @seealso [insight::standardize_names()] to
-#'   rename columns into a consistent, standardized naming scheme.
+#' @seealso [insight::standardize_names()] to rename columns into a consistent,
+#'   standardized naming scheme.
 #'
 #' @note The [`print()`][print.parameters_model] method has several
 #'   arguments to tweak the output. There is also a
@@ -420,10 +426,9 @@ parameters <- model_parameters
 #'
 #' @param model Model object.
 #' @param ci Confidence Interval (CI) level. Default to `0.95` (`95%`).
-#' @param bootstrap Should estimates be based on bootstrapped model? If
-#'   `TRUE`, then arguments of [Bayesian
-#'   regressions][model_parameters.stanreg] apply (see also
-#'   [`bootstrap_parameters()`]).
+#' @param bootstrap Should estimates be based on bootstrapped model? If `TRUE`,
+#'   then arguments of [Bayesian regressions][model_parameters.brmsfit] apply
+#'   (see also [`bootstrap_parameters()`]).
 #' @param iterations The number of bootstrap replicates. This only apply in the
 #'   case of bootstrapped frequentist models.
 #' @param standardize The method used for standardizing the parameters. Can be
@@ -444,14 +449,16 @@ parameters <- model_parameters
 #'   coefficients (and related confidence intervals). This is typical for
 #'   logistic regression, or more generally speaking, for models with log or
 #'   logit links. It is also recommended to use `exponentiate = TRUE` for models
-#'   with log-transformed response values. **Note:** Delta-method standard
-#'   errors are also computed (by multiplying the standard errors by the
-#'   transformed coefficients). This is to mimic behaviour of other software
-#'   packages, such as Stata, but these standard errors poorly estimate
-#'   uncertainty for the transformed coefficient. The transformed confidence
-#'   interval more clearly captures this uncertainty. For `compare_parameters()`,
-#'   `exponentiate = "nongaussian"` will only exponentiate coefficients from
-#'   non-Gaussian families.
+#'   with log-transformed response values. For models with a log-transformed
+#'   response variable, when `exponentiate = TRUE`, a one-unit increase in the
+#'   predictor is associated with multiplying the outcome by that predictor's
+#'   coefficient. **Note:** Delta-method standard errors are also computed (by
+#'   multiplying the standard errors by the transformed coefficients). This is
+#'   to mimic behaviour of other software packages, such as Stata, but these
+#'   standard errors poorly estimate uncertainty for the transformed
+#'   coefficient. The transformed confidence interval more clearly captures this
+#'   uncertainty. For `compare_parameters()`, `exponentiate = "nongaussian"`
+#'   will only exponentiate coefficients from non-Gaussian families.
 #' @param p_adjust Character vector, if not `NULL`, indicates the method to
 #'   adjust p-values. See [`stats::p.adjust()`] for details. Further
 #'   possible adjustment methods are `"tukey"`, `"scheffe"`,
@@ -491,18 +498,22 @@ parameters <- model_parameters
 #'   names.
 #' @param ... Arguments passed to or from other methods. For instance, when
 #'   `bootstrap = TRUE`, arguments like `type` or `parallel` are passed down to
-#'   `bootstrap_model()`. Further non-documented arguments are `digits`,
-#'   `p_digits`, `ci_digits` and `footer_digits` to set the number of digits for
-#'   the output. If `s_value = TRUE`, the p-value will be replaced by the
-#'   S-value in the output (cf. _Rafi and Greenland 2020_). `pd` adds an
-#'   additional column with the _probability of direction_ (see
-#'   [`bayestestR::p_direction()`] for details). `groups` can be used to group
-#'   coefficients. It will be passed to the print-method, or can directly be
-#'   used in `print()`, see documentation in [`print.parameters_model()`].
-#'   Furthermore, see 'Examples' for this function. For developers, whose
-#'   interest mainly is to get a "tidy" data frame of model summaries, it is
-#'   recommended to set `pretty_names = FALSE` to speed up computation of the
-#'   summary table.
+#'   `bootstrap_model()`.
+#'
+#' Further non-documented arguments are:
+#'
+#' - `digits`, `p_digits`, `ci_digits` and `footer_digits` to set the number of
+#'   digits for the output. `groups` can be used to group coefficients. These
+#'   arguments will be passed to the print-method, or can directly be used in
+#'   `print()`, see documentation in [`print.parameters_model()`].
+#' - If `s_value = TRUE`, the p-value will be replaced by the S-value in the
+#'   output (cf. _Rafi and Greenland 2020_).
+#' - `pd` adds an additional column with the _probability of direction_ (see
+#'   [`bayestestR::p_direction()`] for details). Furthermore, see 'Examples' for
+#'   this function.
+#' - For developers, whose interest mainly is to get a "tidy" data frame of
+#'   model summaries, it is recommended to set `pretty_names = FALSE` to speed
+#'   up computation of the summary table.
 #' @param drop See `keep`.
 #' @param verbose Toggle warnings and messages.
 #' @inheritParams standard_error
@@ -749,7 +760,6 @@ model_parameters.default <- function(model,
 #################### .glm ----------------------
 
 
-#' @rdname model_parameters.default
 #' @export
 model_parameters.glm <- function(model,
                                  ci = 0.95,
