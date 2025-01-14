@@ -1,3 +1,25 @@
+# parameters 0.24.1
+
+## Changes
+
+* `model_parameters()` now supports objects of class `survfit`.
+
+* `model_parameters()` now gives informative error messages for more model
+  classes than before when the function fails to extract model parameters.
+
+* Improved information for credible intervals and sampling method from output
+  of `model_parameters()` for Bayesian models.
+
+## Bug fixes
+
+* Fixed issue when printing `model_parameters()` with models from `mgcv::gam()`.
+
+* Fixed issues due to breaking changes in the latest release of the *datawizard*
+  package.
+
+* Fixed issue with wrong column-header in printed output of `model_parameters()`
+  for `MASS::polr()` models with probit-link.
+
 # parameters 0.24.0
 
 ## Breaking Changes

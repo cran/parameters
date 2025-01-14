@@ -234,9 +234,6 @@ format.parameters_simulate <- format.parameters_model
 format.parameters_brms_meta <- format.parameters_model
 
 
-
-
-
 # Compare parameters ----------------------
 
 
@@ -465,7 +462,6 @@ format.compare_parameters <- function(x,
 
   formatted_table
 }
-
 
 
 # sem-models ---------------------------------
@@ -751,6 +747,7 @@ format.parameters_sem <- function(x,
     ci_method <- .additional_arguments(x, "ci_method", NULL)
     test_statistic <- .additional_arguments(x, "test_statistic", NULL)
     bootstrap <- .additional_arguments(x, "bootstrap", FALSE)
+    is_bayesian <- .additional_arguments(x, "is_bayesian", FALSE)
     simulated <- .additional_arguments(x, "simulated", FALSE)
     residual_df <- .additional_arguments(x, "residual_df", NULL)
     random_variances <- .additional_arguments(x, "ran_pars", FALSE)
@@ -829,6 +826,8 @@ format.parameters_sem <- function(x,
         # bootstrapped intervals
         if (isTRUE(bootstrap)) {
           msg <- paste0("\nUncertainty intervals (", string_tailed, ") are ", string_method, "intervals.")
+        } else if (isTRUE(is_bayesian)) {
+          msg <- paste0("\nUncertainty intervals (", string_tailed, ") computed using a ", string_method, "distribution ", string_approx, "approximation.") # nolint
         } else {
           msg <- paste0("\nUncertainty intervals (", string_tailed, ") and p-values (two-tailed) computed using a ", string_method, "distribution ", string_approx, "approximation.") # nolint
         }
@@ -887,9 +886,14 @@ format.parameters_sem <- function(x,
     logit_model <- isTRUE(.additional_arguments(x, "logit_link", FALSE)) ||
       isTRUE(attributes(x)$coefficient_name %in% c("Log-Odds", "Odds Ratio"))
 
+    # remove NA and infinite values from spurios coefficients
+    if (!is.null(spurious_coefficients)) {
+      spurious_coefficients <- spurious_coefficients[!is.na(spurious_coefficients) & !is.infinite(spurious_coefficients)] # nolint
+    }
+
     # check for complete separation coefficients or possible issues with
     # too few data points
-    if (!is.null(spurious_coefficients) && logit_model) {
+    if (!is.null(spurious_coefficients) && length(spurious_coefficients) && logit_model) {
       if (any(spurious_coefficients > 50)) {
         msg <- c(msg, "Some coefficients are very large, which may indicate issues with complete separation.") # nolint
       } else if (any(spurious_coefficients > 15)) {

@@ -149,7 +149,6 @@
 }
 
 
-
 # workhorse ------------------------
 
 .extract_random_variances_helper <- function(model,
@@ -206,7 +205,7 @@
   # rename columns
   out <- datawizard::data_rename(
     out,
-    pattern = c("grp", "sdcor"),
+    select = c("grp", "sdcor"),
     replacement = c("Group", "Coefficient")
   )
 
@@ -266,7 +265,6 @@
   rownames(out) <- NULL
   out
 }
-
 
 
 #' @export
@@ -332,9 +330,6 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
 
   rbind(out_sd, out_cor)
 }
-
-
-
 
 
 # extract CI for random SD ------------------------
@@ -689,9 +684,6 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
 }
 
 
-
-
-
 # Extract Variance and Correlation Components ----
 
 # store essential information about variance components...
@@ -841,9 +833,6 @@ as.data.frame.VarCorr.lme <- function(x, row.names = NULL, optional = FALSE, ...
 
   varcorr
 }
-
-
-
 
 
 # glmmTMB returns a list of model information, one for conditional

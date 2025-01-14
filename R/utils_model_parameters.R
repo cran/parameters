@@ -257,7 +257,7 @@
         "Coefficient"
       )
     }
-  } else if (!is.null(info) && info$family != "unknown") {
+  } else if (!is.null(info) && info$family != "unknown" && !info$is_probit) {
     if (isTRUE(exponentiate)) {
       if (info$is_exponential && identical(info$link_function, "log")) {
         coef_col <- "Prevalence Ratio"
@@ -343,8 +343,6 @@
 }
 
 
-
-
 .add_pretty_names <- function(params, model) {
   attr(params, "model_class") <- class(model)
   cp <- insight::clean_parameters(model)
@@ -365,8 +363,6 @@
 
   params
 }
-
-
 
 
 #' @keywords internal
@@ -420,7 +416,6 @@
 }
 
 
-
 .additional_arguments <- function(x, value, default) {
   add_args <- attributes(x)$additional_arguments
 
@@ -436,7 +431,6 @@
 
   out
 }
-
 
 
 # checks for valid inputs in model_parameters(). E.g., some models don't support
@@ -468,7 +462,6 @@
   }
   dots
 }
-
 
 
 # functions to check if necessary default argument was provided ------------
