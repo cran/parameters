@@ -1,3 +1,16 @@
+# parameters 0.24.2
+
+## Changes
+
+* The `effects` argument in `model_parameters()` for classes `merMod`, `glmmTMB`,
+  `brmsfit` and `stanreg` gets an additional `"random_total"` option, to return
+  the overall coefficient for random effects (sum of fixed and random effects).
+
+## Bug fixes
+
+* Fixed issue in `model_parameters()` for objects from package *marginaleffects*
+  where columns were renamed when their names equaled to certain reserved words.
+
 # parameters 0.24.1
 
 ## Changes
@@ -11,6 +24,8 @@
   of `model_parameters()` for Bayesian models.
 
 ## Bug fixes
+
+* Fixed issue with `model_parameters(<aovlist>, table_wide = TRUE)` with complex error structures ( #556 )
 
 * Fixed issue when printing `model_parameters()` with models from `mgcv::gam()`.
 

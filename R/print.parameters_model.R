@@ -37,7 +37,7 @@
 #'   If `format = "html"`, a `<br>` inserts a line break inside a cell. See
 #'   'Examples'.
 #'
-#' *. **A string indicating a pre-defined layout**
+#' * **A string indicating a pre-defined layout**
 #'
 #'   `select` can be one of the following string values, to create one of the
 #'   following pre-defined column layouts:
@@ -380,6 +380,11 @@ print.parameters_brms_meta <- print.parameters_model
 
 
 # Random effects ------------------
+
+#' @export
+print.parameters_coef <- function(x, ...) {
+  cat(insight::export_table(format(x, ...), ...))
+}
 
 #' @export
 print.parameters_random <- function(x, digits = 2, ...) {
