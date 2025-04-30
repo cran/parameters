@@ -1,7 +1,9 @@
-# This function add meta-information to the returned parameters data frame,
-# usually used for printing etc.
-
+#' This function adds meta-information to the returned parameters data frame,
+#' usually used for printing etc. Prettifying names can be time consuming, if
+#' it is not necessary to have pretty names, set `pretty_names = FALSE`
+#'
 #' @keywords internal
+#' @noRd
 .add_model_parameters_attributes <- function(params,
                                              model,
                                              ci,
@@ -241,6 +243,12 @@
   )
 }
 
+
+#' This function formats the column name of the printed output, to reflect
+#' the correct type of coefficient.
+#'
+#' @keywords internal
+#' @noRd
 .find_coefficient_type <- function(info, exponentiate, model = NULL) {
   # column name for coefficients
   coef_col <- "Coefficient"
@@ -257,10 +265,12 @@
         "Coefficient"
       )
     }
-  } else if (!is.null(info) && info$family != "unknown" && !info$is_probit) {
+  } else if (!is.null(info) && info$family != "unknown") {
     if (isTRUE(exponentiate)) {
       if (info$is_exponential && identical(info$link_function, "log")) {
         coef_col <- "Prevalence Ratio"
+      } else if (info$is_probit) {
+        coef_col <- "Coefficient"
       } else if ((info$is_binomial && info$is_logit) || info$is_ordinal || info$is_multinomial || info$is_categorical) {
         coef_col <- "Odds Ratio"
       } else if (info$is_binomial && !info$is_logit) {
@@ -274,6 +284,8 @@
       }
     } else if (info$is_exponential && identical(info$link_function, "log")) {
       coef_col <- "Log-Prevalence"
+    } else if (info$is_probit) {
+      coef_col <- "Z-Score"
     } else if ((info$is_binomial && info$is_logit) || info$is_ordinal || info$is_multinomial || info$is_categorical) {
       coef_col <- "Log-Odds"
     } else if (info$is_binomial && !info$is_logit) {
@@ -296,7 +308,11 @@
 }
 
 
+#' This function exponentiates coefficients, e.g. to return odds ratios instead
+#' of log-odds ratios.
+#'
 #' @keywords internal
+#' @noRd
 .exponentiate_parameters <- function(params, model = NULL, exponentiate = TRUE) {
   # "exponentiate" must be
   # - TRUE, will always exponentiate all coefficients
@@ -343,6 +359,12 @@
 }
 
 
+#' this function extract "prettified" parameter names, using
+#' `insight::clean_parameters()`, and matches them with the parameter names.
+#' the result is a named vector, added as attributes to the output
+#'
+#' @keywords internal
+#' @noRd
 .add_pretty_names <- function(params, model) {
   attr(params, "model_class") <- class(model)
   cp <- insight::clean_parameters(model)
@@ -433,10 +455,12 @@
 }
 
 
-# checks for valid inputs in model_parameters(). E.g., some models don't support
-# the "vcov" argument - this should not be silently ignored, but rather the user
-# should be informed that robust SE are not available for that model.
-
+#' checks for valid inputs in model_parameters(). E.g., some models don't support
+#' the "vcov" argument - this should not be silently ignored, but rather the user
+#' should be informed that robust SE are not available for that model.
+#'
+#' @keywords internal
+#' @noRd
 .check_dots <- function(dots, not_allowed, model_class, function_name = "model_parameters", verbose = TRUE) {
   # remove arguments that are NULL
   dots <- insight::compact_list(dots)

@@ -1,3 +1,26 @@
+# parameters 0.25.0
+
+## Changes
+
+* `model_parameters()` for objects from the *marginaleffects* packages now calls
+  `bayestestR::describe_posterior()` to process Bayesian models. This offers
+  more flexibility in summarizing the posterior draws from *marginaleffects*.
+
+* `model_parameters()` now shows a more informative coefficient name for binomial
+  models with probit-link.
+
+* Argument `wb_component` now defaults to `FALSE`.
+
+* Improved support and printing for tests from package *WRS2*.
+
+## Bug fixes
+
+* Fixed printing issue with `model_parameters()` for `htest` objects when
+  printing into markdown or HTML format.
+
+* Fixed printing issue with `model_parameters()` for mixed models when
+  `include_reference = TRUE`.
+
 # parameters 0.24.2
 
 ## Changes

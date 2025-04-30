@@ -107,11 +107,26 @@ model_parameters.brmsfit <- function(model,
     )
   } else if (effects %in% c("total", "random_total")) {
     # group level total effects (coef())
-    params <- .group_level_total(model, centrality, dispersion, ci, ci_method, test, rope_range, rope_ci, ...)
+    params <- .group_level_total(
+      model,
+      centrality,
+      dispersion,
+      ci,
+      ci_method,
+      test,
+      rope_range,
+      rope_ci,
+      ...
+    )
     params$Effects <- "total"
     class(params) <- c("parameters_coef", "see_parameters_coef", class(params))
     return(params)
   } else {
+
+    if (utils::packageVersion("insight") > "1.2.0" && effects == "random" && group_level) {
+      effects <- "grouplevel"
+    }
+
     # Processing
     params <- .extract_parameters_bayesian(
       model,
@@ -134,9 +149,19 @@ model_parameters.brmsfit <- function(model,
       ...
     )
 
-    if (!(effects == "fixed" && component == "conditional")) {
-      random_effect_levels <- which(params$Effects == "random" & grepl("^(?!sd_|cor_)(.*)", params$Parameter, perl = TRUE) & !(params$Parameter %in% c("car", "sdcar")))
-      if (length(random_effect_levels) && isFALSE(group_level)) params <- params[-random_effect_levels, ]
+    ## TODO: remove this once insight > 1.2.0 on CRAN
+
+    # if random effects are included, check if group-level estimates
+    # should be returned or not. If not, remove them.
+    if (effects != "fixed") {
+      random_effect_levels <- which(
+        params$Effects == "random" &
+          grepl("^(?!sd_|cor_)(.*)", params$Parameter, perl = TRUE) &
+          !(params$Parameter %in% c("car", "sdcar"))
+      )
+      if (length(random_effect_levels) && isFALSE(group_level)) {
+        params <- params[-random_effect_levels, ]
+      }
     }
 
     # add prettified names as attribute. Furthermore, group column is added
@@ -145,7 +170,8 @@ model_parameters.brmsfit <- function(model,
     # exponentiate coefficients and SE/CI, if requested
     params <- .exponentiate_parameters(params, model, exponentiate)
 
-    params <- .add_model_parameters_attributes(params,
+    params <- .add_model_parameters_attributes(
+      params,
       model,
       ci,
       exponentiate,
@@ -157,6 +183,7 @@ model_parameters.brmsfit <- function(model,
 
     attr(params, "parameter_info") <- insight::clean_parameters(model)
     attr(params, "object_name") <- insight::safe_deparse_symbol(substitute(model))
+    attr(params, "dpars") <- insight::find_auxiliary(model, verbose = FALSE)
     class(params) <- unique(c("parameters_model", "see_parameters_model", class(params)))
   }
 
@@ -280,6 +307,9 @@ standard_error.brmsfit <- function(model,
                                    effects = "fixed",
                                    component = "all",
                                    ...) {
+
+  ## TODO: remove validation of effects and component once insight > 1.2.0 is on CRAN
+
   effects <- insight::validate_argument(
     effects,
     c("fixed", "random")

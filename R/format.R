@@ -25,6 +25,7 @@ format.parameters_model <- function(x,
   htest_type <- attributes(x)$htest_type
   mixed_model <- attributes(x)$mixed_model
   random_variances <- isTRUE(attributes(x)$ran_pars)
+  dist_params <- isTRUE(attributes(x)$dpars)
   mean_group_values <- attributes(x)$mean_group_values
 
   # process selection of columns
@@ -45,7 +46,7 @@ format.parameters_model <- function(x,
 
   # rename random effect parameters names for stan models
   if (isTRUE(random_variances) && any(c("brmsfit", "stanreg", "stanmvreg") %in% m_class)) {
-    x <- .format_stan_parameters(x)
+    x <- .format_stan_parameters(x, dist_params)
   }
 
   # for the current HTML backend we use (package "gt"), we cannot change
@@ -78,7 +79,7 @@ format.parameters_model <- function(x,
   # remove component for nestedLogit
   if (!is.null(m_class) && any(m_class == "nestedLogit")) {
     x$Component <- NULL
-    if (insight::n_unique(x$Response) == 1) {
+    if (insight::has_single_value(x$Response, remove_na = TRUE)) {
       x$Response <- NULL
     }
   }
@@ -97,11 +98,15 @@ format.parameters_model <- function(x,
     colnames(x)[which(colnames(x) == "Mean_Group2")] <- paste0(x$Group, " = ", mean_group_values[2])
   }
 
-  # Special print for mcp from WRS2
-  if (!is.null(m_class) && any(m_class %in% c("mcp1", "mcp2"))) {
-    x$Group1 <- paste(x$Group1, x$Group2, sep = " vs. ")
-    x$Group2 <- NULL
-    colnames(x)[1] <- "Group"
+  # for htests, remove "$" from variable name, since this can make troubles
+  # when rendering into different output formats
+  if (!is.null(htest_type)) {
+    if ("Parameter" %in% colnames(x) && grepl("$", x$Parameter, fixed = TRUE)) {
+      x$Parameter <- gsub("(.*)\\$(.*)", "\\2", x$Parameter)
+    }
+    if ("Group" %in% colnames(x) && grepl("$", x$Group, fixed = TRUE)) {
+      x$Group <- gsub("(.*)\\$(.*)", "\\2", x$Group)
+    }
   }
 
   # check if we have mixed models with random variance parameters
@@ -175,12 +180,12 @@ format.parameters_model <- function(x,
   }
 
   # remove unique columns
-  if (insight::n_unique(formatted_table$Component) == 1) formatted_table$Component <- NULL
-  if (insight::n_unique(formatted_table$Effects) == 1) formatted_table$Effects <- NULL
-  if (insight::n_unique(formatted_table$Group) == 1 && isTRUE(mixed_model)) formatted_table$Group <- NULL
+  if (insight::has_single_value(formatted_table$Component, remove_na = TRUE)) formatted_table$Component <- NULL
+  if (insight::has_single_value(formatted_table$Effects, remove_na = TRUE)) formatted_table$Effects <- NULL
+  if (insight::has_single_value(formatted_table$Group, remove_na = TRUE) && isTRUE(mixed_model)) formatted_table$Group <- NULL
 
   # no column with CI-level in output
-  if (!is.null(formatted_table$CI) && insight::n_unique(formatted_table$CI) == 1) {
+  if (!is.null(formatted_table$CI) && insight::has_single_value(formatted_table$CI, remove_na = TRUE)) {
     formatted_table$CI <- NULL
   }
 
@@ -428,8 +433,8 @@ format.compare_parameters <- function(x,
         return(NULL)
       }
       # remove unique columns
-      if (insight::n_unique(i$Component) == 1L) i$Component <- NULL
-      if (insight::n_unique(i$Effects) == 1L) i$Effects <- NULL
+      if (insight::has_single_value(i$Component, remove_na = TRUE)) i$Component <- NULL
+      if (insight::has_single_value(i$Effects, remove_na = TRUE)) i$Effects <- NULL
       # format table captions for sub tables
       table_caption <- .format_model_component_header(
         x,
@@ -459,8 +464,8 @@ format.compare_parameters <- function(x,
   } else {
     formatted_table <- out
     # remove unique columns
-    if (insight::n_unique(formatted_table$Component) == 1L) formatted_table$Component <- NULL
-    if (insight::n_unique(formatted_table$Effects) == 1L) formatted_table$Effects <- NULL
+    if (insight::has_single_value(formatted_table$Component, remove_na = TRUE)) formatted_table$Component <- NULL
+    if (insight::has_single_value(formatted_table$Effects, remove_na = TRUE)) formatted_table$Effects <- NULL
     # add line with info about observations
     formatted_table <- .add_obs_row(formatted_table, parameters_attributes, style = select)
   }
@@ -561,7 +566,6 @@ format.parameters_sem <- function(x,
   footer_text <- attributes(x)$footer_text
   text_alternative <- attributes(x)$text_alternative
   n_obs <- attributes(x)$n_obs
-  is_ggeffects <- isTRUE(attributes(x)$is_ggeffects)
 
   # footer: model formula
   if (isTRUE(show_formula)) {
@@ -611,7 +615,7 @@ format.parameters_sem <- function(x,
 
   # footer: generic text
   if (!is.null(footer_text)) {
-    footer <- .add_footer_text(footer, footer_text, type, is_ggeffects)
+    footer <- .add_footer_text(footer, footer_text, type)
   }
 
   # if we have two trailing newlines, remove one
@@ -619,18 +623,12 @@ format.parameters_sem <- function(x,
     footer[1] <- substr(footer[1], 0, nchar(x) - 1)
   }
 
-  # finally, for ggeffects and HTML, remove *
-  if (is_ggeffects && type == "html") {
-    footer <- gsub("*", "", footer, fixed = TRUE)
-    footer <- gsub(":;", ":", footer, fixed = TRUE)
-  }
-
   footer
 }
 
 
 # footer: generic text
-.add_footer_text <- function(footer = NULL, text = NULL, type = "text", is_ggeffects = FALSE) {
+.add_footer_text <- function(footer = NULL, text = NULL, type = "text") {
   if (!is.null(text) && length(text)) {
     if (type == "text" || type == "markdown") {
       if (is.null(footer)) {
@@ -640,8 +638,7 @@ format.parameters_sem <- function(x,
       }
       footer <- paste0(footer, sprintf("%s%s\n", fill, text))
     } else if (type == "html") {
-      replacement <- ifelse(is_ggeffects, ";", "")
-      footer <- c(footer, gsub("\n", replacement, text, fixed = TRUE))
+      footer <- c(footer, gsub("\n", "", text, fixed = TRUE))
     }
   }
   footer

@@ -480,11 +480,24 @@
       out <- .insert_row_at(out, row_data, min(found))
     }
   }
-  # update pretty_names attribute
-  attr(out, "pretty_names") <- pretty_names
-  # update pretty_labels attribute
-  pretty_names[match(names(attr(out, "pretty_labels")), names(pretty_names))] <- attr(out, "pretty_labels")
-  attr(out, "pretty_labels") <- pretty_names
+
+  if (length(pretty_names)) {
+    # update pretty_names attribute
+    attr(out, "pretty_names") <- pretty_names
+    # update pretty_labels attribute - for mixed models, we need to add the random
+    # effects stuff from pretty_labels to pretty_names first, else, matching will
+    # fail
+    pretty_labels <- attributes(out)$pretty_labels
+    if (!is.null(pretty_labels)) {
+      re_labels <- startsWith(names(pretty_labels), "SD (") | startsWith(names(pretty_labels), "Cor (")
+      if (any(re_labels)) {
+        pretty_names <- c(pretty_names, pretty_labels[re_labels])
+      }
+      pretty_names[stats::na.omit(match(names(pretty_labels), names(pretty_names)))] <- pretty_labels
+      pretty_names <- pretty_names[!re_labels]
+    }
+    attr(out, "pretty_labels") <- pretty_names
+  }
 
   out
 }
@@ -499,23 +512,30 @@
 .all_coefficient_types <- c(
   "Odds Ratio", "Risk Ratio", "Prevalence Ratio", "IRR", "Log-Odds",
   "Log-Mean", "Log-Ratio", "Log-Prevalence", "Probability", "Marginal Means",
-  "Estimated Counts", "Ratio"
+  "Estimated Counts", "Ratio", "Z-Score", "exp(Z-Score)"
 )
 
 
 .all_coefficient_names <- c("Coefficient", "Std_Coefficient", "Estimate", "Median", "Mean", "MAP")
 
 
-.format_stan_parameters <- function(out) {
+.format_stan_parameters <- function(out, dist_params = NULL) {
   has_component <- !is.null(out$Component)
   # brms random intercepts or random slope variances
   ran_sd <- startsWith(out$Parameter, "sd_") & out$Effects == "random"
   if (any(ran_sd)) {
     out$Parameter[ran_sd] <- gsub("^sd_(.*?)__(.*)", "SD \\(\\2\\)", out$Parameter[ran_sd])
-    if (has_component) {
-      ran_zi_sd <- ran_sd & out$Component == "zero_inflated"
-      if (any(ran_zi_sd)) {
-        out$Parameter[ran_zi_sd] <- gsub("zi_", "", out$Parameter[ran_zi_sd], fixed = TRUE)
+    if (has_component && !is.null(dist_params)) {
+      for (dp in dist_params) {
+        ran_dpars_sd <- ran_sd & out$Component == dp
+        if (any(ran_dpars_sd)) {
+          out$Parameter[ran_dpars_sd] <- gsub(
+            paste0(dp, "_"),
+            "",
+            out$Parameter[ran_dpars_sd],
+            fixed = TRUE
+          )
+        }
       }
     }
   }
@@ -523,10 +543,17 @@
   ran_cor <- startsWith(out$Parameter, "cor_") & out$Effects == "random"
   if (any(ran_cor)) {
     out$Parameter[ran_cor] <- gsub("^cor_(.*?)__(.*)__(.*)", "Cor \\(\\2~\\3\\)", out$Parameter[ran_cor])
-    if (has_component) {
-      ran_zi_cor <- ran_cor & out$Component == "zero_inflated"
-      if (any(ran_zi_cor)) {
-        out$Parameter[ran_zi_cor] <- gsub("zi_", "", out$Parameter[ran_zi_cor], fixed = TRUE)
+    if (has_component && !is.null(dist_params)) {
+      for (dp in dist_params) {
+        ran_dpars_cor <- ran_cor & out$Component == dp
+        if (any(ran_dpars_cor)) {
+          out$Parameter[ran_dpars_cor] <- gsub(
+            paste0(dp, "_"),
+            "",
+            out$Parameter[ran_dpars_cor],
+            fixed = TRUE
+          )
+        }
       }
     }
   }
@@ -575,68 +602,91 @@
     "Random Effects"
   }
 
-  component_name <- switch(type,
-    mu = ,
-    fixed = ,
-    fixed. = ,
-    conditional = ,
-    conditional. = "Fixed Effects",
-    random. = ,
-    random = "Random Effects",
-    conditional.fixed = ,
-    conditional.fixed. = .conditional_fixed_text,
-    conditional.random = .conditional_random_text,
-    zero_inflated = "Zero-Inflation",
-    zero_inflated.fixed = ,
-    zero_inflated.fixed. = "Fixed Effects (Zero-Inflation Component)",
-    zero_inflated.random = "Random Effects (Zero-Inflation Component)",
-    survival = ,
-    survival.fixed = "Survival",
-    dispersion.fixed = ,
-    dispersion.fixed. = ,
-    dispersion = "Dispersion",
-    marginal = "Marginal Effects",
-    emmeans = "Estimated Marginal Means",
-    contrasts = "Contrasts",
-    simplex.fixed = ,
-    simplex = "Monotonic Effects",
-    smooth_sd = "Smooth Terms (SD)",
-    smooth_terms = "Smooth Terms",
-    sigma.fixed = ,
-    sigma.fixed. = ,
-    sigma = "Sigma",
-    thresholds = "Thresholds",
-    correlation = "Correlation",
-    `SD/Cor` = "SD / Correlation",
-    Loading = "Loading",
-    location = ,
-    location.fixed = ,
-    location.fixed. = "Location Parameters",
-    scale = ,
-    scale.fixed = ,
-    scale.fixed. = "Scale Parameters",
-    extra = ,
-    extra.fixed = ,
-    extra.fixed. = "Extra Parameters",
-    nu = "Nu",
-    tau = "Tau",
-    meta = "Meta-Parameters",
-    studies = "Studies",
-    within = "Within-Effects",
-    between = "Between-Effects",
-    interactions = "(Cross-Level) Interactions",
-    precision = ,
-    precision. = "Precision",
-    infrequent_purchase = "Infrequent Purchase",
-    auxiliary = "Auxiliary",
-    residual = "Residual",
-    intercept = "Intercept",
-    regression = "Regression",
-    latent = "Latent",
-    time_dummies = "Time Dummies",
-    type
-  )
+  # remove trailing dots
+  if (endsWith(type, ".")) {
+    type <- gsub("\\.$", "", type)
+  }
+  component_name <- NULL
 
+  # Do we have any distributional parameters?
+  # this is only relevant for models from brms
+  if (identical(attributes(x)$model_class, "brmsfit")) {
+    # check if we can access the model
+    model <- .get_object(x)
+    # if yes, extract distributional parameters
+    if (!is.null(model)) {
+      dpars <- insight::find_auxiliary(model, verbose = FALSE)
+      # if model has any distributional parameters, check if it's fixed or random
+      # and create component header
+      if (!is.null(dpars)) {
+        type_parts <- unlist(strsplit(type, ".", fixed = TRUE))
+        if (type_parts[1] %in% dpars) {
+          if (identical(type_parts[2], "random")) {
+            component_name <- paste(type_parts[1], "Random Effects")
+          } else if (identical(type_parts[2], "fixed") || length(type_parts) < 2) {
+            component_name <- paste(type_parts[1], "Parameters")
+          }
+        }
+      }
+    }
+  }
+
+  if (is.null(component_name)) {
+    component_name <- switch(type,
+      mu = ,
+      fixed = ,
+      fixed. = ,
+      conditional = "Fixed Effects",
+      random. = ,
+      random = "Random Effects",
+      conditional.fixed = .conditional_fixed_text,
+      conditional.random = .conditional_random_text,
+      zero_inflated = "Zero-Inflation",
+      zero_inflated.fixed = "Fixed Effects (Zero-Inflation Component)",
+      zero_inflated.random = "Random Effects (Zero-Inflation Component)",
+      survival = ,
+      survival.fixed = "Survival",
+      dispersion.fixed = ,
+      dispersion = "Dispersion",
+      marginal = "Marginal Effects",
+      emmeans = "Estimated Marginal Means",
+      contrasts = "Contrasts",
+      simplex.fixed = ,
+      simplex = "Monotonic Effects",
+      smooth_sd = "Smooth Terms (SD)",
+      smooth_terms = "Smooth Terms",
+      sigma.fixed = ,
+      sigma = "Sigma",
+      thresholds = "Thresholds",
+      correlation = "Correlation",
+      `SD/Cor` = "SD / Correlation",
+      Loading = "Loading",
+      location = ,
+      location.fixed = "Location Parameters",
+      scale = ,
+      scale.fixed = "Scale Parameters",
+      extra = ,
+      extra.fixed = "Extra Parameters",
+      nu = "Nu",
+      tau = "Tau",
+      meta = "Meta-Parameters",
+      studies = "Studies",
+      within = "Within-Effects",
+      between = "Between-Effects",
+      interactions = "(Cross-Level) Interactions",
+      precision = "Precision",
+      infrequent_purchase = "Infrequent Purchase",
+      auxiliary = "Auxiliary",
+      residual = "Residual",
+      intercept = "Intercept",
+      regression = "Regression",
+      latent = "Latent",
+      time_dummies = "Time Dummies",
+      type
+    )
+  }
+
+  # handle exceptions
   if (grepl("^conditional\\.(r|R)andom_variances", component_name)) {
     component_name <- insight::trim_ws(gsub("^conditional\\.(r|R)andom_variances(\\.)*", "", component_name))
     if (nzchar(component_name, keepNA = TRUE)) {
@@ -665,6 +715,11 @@
     component_name <- paste0("Random Effects: ", gsub("^random\\.", "", component_name))
   }
 
+  # clean some special parameter names
+  component_name <- gsub("zi", "Zero-Inflation", component_name, fixed = TRUE)
+  component_name <- gsub("zoi", "Zero-One-Inflation", component_name, fixed = TRUE)
+  component_name <- gsub("coi", "Conditional-One-Inflation", component_name, fixed = TRUE)
+
   # if we show ZI component only, make sure this appears in header
   if (!grepl("(Zero-Inflation Component)", component_name, fixed = TRUE) &&
     !is.null(formatted_table$Component) &&
@@ -674,10 +729,7 @@
 
   # tweaking of sub headers
 
-  if (isTRUE(attributes(x)$is_ggeffects)) {
-    s1 <- gsub("(.*)\\.(.*) = (.*)", "\\1 (\\2 = \\3)", component_name)
-    s2 <- ""
-  } else if ("DirichletRegModel" %in% attributes(x)$model_class) {
+  if ("DirichletRegModel" %in% attributes(x)$model_class) {
     if (startsWith(component_name, "conditional.") || split_column == "Response") {
       s1 <- "Response level:"
       s2 <- gsub("^conditional\\.(.*)", "\\1", component_name)
@@ -931,17 +983,10 @@
 
   ignore_group <- isTRUE(attributes(x)$ignore_group)
   ran_pars <- isTRUE(attributes(x)$ran_pars)
-  is_ggeffects <- isTRUE(attributes(x)$is_ggeffects)
   is_fixest_multi <- identical(attributes(x)$model_class, "fixest_multi")
 
-  # name of "Parameter" column - usually the first column, however, for
-  # ggeffects objects, this column has the name of the focal term
-
-  if (is_ggeffects) {
-    parameter_column <- colnames(x)[1]
-  } else {
-    parameter_column <- "Parameter"
-  }
+  # name of "Parameter" column - usually the first column
+  parameter_column <- "Parameter"
 
   # default brackets are parenthesis for HTML / MD
   if ((is.null(ci_brackets) || isTRUE(ci_brackets)) && (identical(format, "html") || identical(format, "markdown"))) {
@@ -1115,16 +1160,6 @@
       tables[[type]]$CI <- NULL
     }
 
-    # for ggeffects objects, only choose selected lines, to have
-    # a more compact output
-    if (is_ggeffects && is.numeric(tables[[type]][[1]])) {
-      n_rows <- nrow(tables[[type]])
-      row_steps <- round(sqrt(n_rows))
-      sample_rows <- round(c(1, stats::quantile(seq_len(n_rows), seq_len(row_steps - 2) / row_steps), n_rows))
-      tables[[type]] <- tables[[type]][sample_rows, ]
-      tables[[type]][[1]] <- insight::format_value(tables[[type]][[1]], digits = digits, protect_integers = TRUE)
-    }
-
     # add the coefficient for the base-(reference)-level of factors?
     if (include_reference) {
       tables[[type]] <- .add_reference_level(tables[[type]])
@@ -1142,18 +1177,18 @@
     )
 
     # exceptions for random effects
-    if (insight::n_unique(formatted_table$Group) == 1) {
+    if (insight::has_single_value(formatted_table$Group, remove_na = TRUE)) {
       component_header$subheader1 <- paste0(component_header$subheader1, " (", formatted_table$Group, ")")
       formatted_table$Group <- NULL
     }
 
     # remove non-necessary columns
-    if (insight::n_unique(formatted_table$Component) == 1) {
+    if (insight::has_single_value(formatted_table$Component, remove_na = TRUE)) {
       formatted_table$Component <- NULL
     }
 
     # no column with CI-level in output
-    if (!is.null(formatted_table$CI) && insight::n_unique(formatted_table$CI) == 1) {
+    if (!is.null(formatted_table$CI) && insight::has_single_value(formatted_table$CI, remove_na = TRUE)) {
       formatted_table$CI <- NULL
     }
 
@@ -1185,8 +1220,8 @@
     }
 
     # remove unique columns
-    if (insight::n_unique(formatted_table$Effects) == 1) formatted_table$Effects <- NULL
-    if (insight::n_unique(formatted_table$Group) == 1) formatted_table$Group <- NULL
+    if (insight::has_single_value(formatted_table$Effects, remove_na = TRUE)) formatted_table$Effects <- NULL
+    if (insight::has_single_value(formatted_table$Group, remove_na = TRUE)) formatted_table$Group <- NULL
 
     final_table <- c(final_table, list(formatted_table))
   }
