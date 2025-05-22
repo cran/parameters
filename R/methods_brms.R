@@ -12,10 +12,11 @@
 #' @param ci Credible Interval (CI) level. Default to `0.95` (`95%`). See
 #' [bayestestR::ci()] for further details.
 #' @param group_level Logical, for multilevel models (i.e. models with random
-#' effects) and when `effects = "all"` or `effects = "random"`,
-#' include the parameters for each group level from random effects. If
-#' `group_level = FALSE` (the default), only information on SD and COR
-#' are shown.
+#' effects) and when `effects = "random"`, return the parameters for each group
+#' level from random effects only. If `group_level = FALSE` (the default), also
+#' information on SD and COR are returned. Note that this argument is superseded
+#' by the new options for the `effects` argument. `effects = "grouplevel"` should
+#' be used instead of `group_level = TRUE`.
 #' @param component Which type of parameters to return, such as parameters for the
 #' conditional model, the zero-inflation part of the model, the dispersion
 #' term, or other auxiliary parameters be returned? Applies to models with
@@ -120,13 +121,11 @@ model_parameters.brmsfit <- function(model,
     )
     params$Effects <- "total"
     class(params) <- c("parameters_coef", "see_parameters_coef", class(params))
-    return(params)
   } else {
-
-    if (utils::packageVersion("insight") > "1.2.0" && effects == "random" && group_level) {
+    # update argument
+    if (effects == "random" && group_level) {
       effects <- "grouplevel"
     }
-
     # Processing
     params <- .extract_parameters_bayesian(
       model,
@@ -148,21 +147,6 @@ model_parameters.brmsfit <- function(model,
       verbose = verbose,
       ...
     )
-
-    ## TODO: remove this once insight > 1.2.0 on CRAN
-
-    # if random effects are included, check if group-level estimates
-    # should be returned or not. If not, remove them.
-    if (effects != "fixed") {
-      random_effect_levels <- which(
-        params$Effects == "random" &
-          grepl("^(?!sd_|cor_)(.*)", params$Parameter, perl = TRUE) &
-          !(params$Parameter %in% c("car", "sdcar"))
-      )
-      if (length(random_effect_levels) && isFALSE(group_level)) {
-        params <- params[-random_effect_levels, ]
-      }
-    }
 
     # add prettified names as attribute. Furthermore, group column is added
     params <- .add_pretty_names(params, model)
@@ -307,18 +291,6 @@ standard_error.brmsfit <- function(model,
                                    effects = "fixed",
                                    component = "all",
                                    ...) {
-
-  ## TODO: remove validation of effects and component once insight > 1.2.0 is on CRAN
-
-  effects <- insight::validate_argument(
-    effects,
-    c("fixed", "random")
-  )
-  component <- insight::validate_argument(
-    component,
-    c("all", "conditional", "zi", "zero_inflated")
-  )
-
   params <- insight::get_parameters(model, effects = effects, component = component, ...)
 
   .data_frame(

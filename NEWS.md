@@ -1,3 +1,28 @@
+# parameters 0.26.0
+
+## Changes
+
+* The `effects` argument in `model_parameters()` for classes `merMod`, `glmmTMB`,
+  `brmsfit` and `stanreg` gets an additional `"grouplevel"` option, to return
+  the group-level estimates for random effects.
+
+* `model_parameters()` for Anova-objects gains a `p_adjust` argument, to apply
+  p-adjustment where possible. Furthermore, for models from package *afex*, where
+  p-adjustment was applied during model-fitting, the correct p-values are now
+  returned (before, unadjusted p-values were returned in some cases).
+
+* Revised code-base to address changes in latest *insight* update. Dealing with
+  larger models (many parameters, many posterior samples) from packages *brms*
+  and *rstanarm* is more efficient now. Furthermore, the options for the
+  `effects` argument have a new behaviour. `"all"` only returns fixed effects
+  and random effects variance components, but no longer the group level
+  estimates. Use `effects = "full"` to return all parameters. This change is
+  mainly to be more flexible and gain more efficiency for models with many
+  parameters and / or many posterior draws.
+
+* `model_parameters()` for Anova objects gains an `include_intercept` argument,
+  to include intercepts in the Anova table, where possible.
+
 # parameters 0.25.0
 
 ## Changes

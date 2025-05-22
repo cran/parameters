@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.25.0
+Version: 0.26.0
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -76,8 +76,8 @@ License: GPL-3
 URL: https://easystats.github.io/parameters/
 BugReports: https://github.com/easystats/parameters/issues
 Depends: R (>= 3.6)
-Imports: bayestestR (>= 0.15.2), datawizard (>= 1.0.2), insight (>=
-        1.2.0), graphics, methods, stats, utils
+Imports: bayestestR (>= 0.16.0), datawizard (>= 1.0.2), insight (>=
+        1.3.0), graphics, methods, stats, utils
 Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
         betareg, BH, biglm, blme, boot, brglm2, brms, broom,
         broom.mixed, cAIC4, car, carData, cgam, ClassDiscovery,
@@ -88,7 +88,7 @@ Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
         geepack, ggplot2, GLMMadaptive, glmmTMB (>= 1.1.10),
         glmtoolbox, GPArotation, gt, haven, httr2, Hmisc, ivreg, knitr,
         lavaan, lfe, lm.beta, lme4, lmerTest, lmtest, logistf, logitr,
-        logspline, lqmm, M3C, marginaleffects (>= 0.25.0), modelbased
+        logspline, lqmm, M3C, marginaleffects (>= 0.26.0), modelbased
         (>= 0.9.0), MASS, Matrix, mclogit, mclust, MCMCglmm, mediation,
         merDeriv, metaBMA, metafor, mfx, mgcv, mice (>= 3.17.0), mmrm,
         multcomp, MuMIn, NbClust, nFactors, nestedLogit, nlme, nnet,
@@ -109,7 +109,7 @@ Config/Needs/website: easystats/easystatstemplate
 Config/Needs/check: stan-dev/cmdstanr
 Config/rcmdcheck/ignore-inconsequential-notes: true
 NeedsCompilation: no
-Packaged: 2025-04-30 12:24:15 UTC; mail
+Packaged: 2025-05-21 15:28:55 UTC; mail
 Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-8895-3206>),
   Dominique Makowski [aut] (ORCID:
@@ -130,4 +130,4 @@ Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-7195-830X>),
   Joseph Luchman [ctb] (ORCID: <https://orcid.org/0000-0002-8886-9717>)
 Repository: CRAN
-Date/Publication: 2025-04-30 13:40:02 UTC
+Date/Publication: 2025-05-22 04:20:05 UTC
