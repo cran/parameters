@@ -142,7 +142,7 @@ As a results, the coefficients for effects of factors are similar to a Glass'
 delta.
 \item \strong{pseudo} (\emph{for 2-level (G)LMMs only}): In this (post-hoc) method, the
 response and the predictor are standardized based on the level of prediction
-(levels are detected with \code{\link[performance:check_heterogeneity_bias]{performance::check_heterogeneity_bias()}}): Predictors
+(levels are detected with \code{\link[performance:check_group_variation]{performance::check_group_variation()}}): Predictors
 are standardized based on their SD at level of prediction (see also
 \code{\link[datawizard:demean]{datawizard::demean()}}); The outcome (in linear LMMs) is standardized based
 on a fitted random-intercept-model, where \code{sqrt(random-intercept-variance)}
@@ -470,10 +470,13 @@ Retrieved from https://lakens.github.io/statistical_inferences/.
 \doi{10.5281/ZENODO.6409077}
 \item Lakens, D., Scheel, A. M., and Isager, P. M. (2018). Equivalence Testing
 for Psychological Research: A Tutorial. Advances in Methods and Practices
-in Psychological Science, 1(2), 259–269. \doi{10.1177/2515245918770963}
+in Psychological Science, 1(2), 259–269.
 \item Makowski, D., Ben-Shachar, M. S., Chen, S. H. A., and Lüdecke, D. (2019).
 Indices of Effect Existence and Significance in the Bayesian Framework.
 Frontiers in Psychology, 10, 2767. \doi{10.3389/fpsyg.2019.02767}
+\item Montiel Olea, J. L., and Plagborg-Møller, M. (2019). Simultaneous
+confidence bands: Theory, implementation, and an application to SVARs.
+Journal of Applied Econometrics, 34(1), 1–17. \doi{10.1002/jae.2656}
 \item Neter, J., Wasserman, W., and Kutner, M. H. (1989). Applied linear
 regression models.
 \item Rafi Z, Greenland S. Semantic and cognitive tools to aid statistical

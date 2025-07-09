@@ -254,6 +254,19 @@ print_md.parameters_efa_summary <- function(x, digits = 3, ...) {
   } else if ("Component" %in% names(x)) {
     names(x) <- c("Component", "Eigenvalues", "Variance Explained", "Variance Explained (Cumulative)", "Variance Explained (Proportion)") # nolint
   }
+
+  # we may have factor correlations
+  fc <- attributes(x)$factor_correlations
+
+  # if we have factor correlations, we need to add them to the table
+  if (!is.null(fc)) {
+    x <- list(x, fc)
+    table_caption <- list(
+      table_caption,
+      "Factor Correlations"
+    )
+  }
+
   insight::export_table(x, digits = digits, format = "markdown", caption = table_caption, align = "firstleft")
 }
 
@@ -261,7 +274,23 @@ print_md.parameters_efa_summary <- function(x, digits = 3, ...) {
 print_md.parameters_pca_summary <- print_md.parameters_efa_summary
 
 #' @export
-print_md.parameters_efa <- function(x, digits = 2, sort = FALSE, threshold = NULL, labels = NULL, ...) {
+print_md.parameters_omega_summary <- function(x, ...) {
+  out <- .print_omega_summary(x, format = "markdown")
+  insight::export_table(out$tables, caption = out$captions, format = "markdown", ...)
+}
+
+
+#' @export
+print_md.parameters_efa <- function(x,
+                                    digits = 2,
+                                    sort = FALSE,
+                                    threshold = NULL,
+                                    labels = NULL,
+                                    ...) {
+  # extract attributes
+  if (is.null(threshold)) {
+    threshold <- attributes(x)$threshold
+  }
   .print_parameters_cfa_efa(
     x,
     threshold = threshold,
@@ -275,6 +304,9 @@ print_md.parameters_efa <- function(x, digits = 2, sort = FALSE, threshold = NUL
 
 #' @export
 print_md.parameters_pca <- print_md.parameters_efa
+
+#' @export
+print_md.parameters_omega <- print_md.parameters_efa
 
 
 # Equivalence test ----------------------------
