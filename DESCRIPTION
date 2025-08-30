@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.28.0
+Version: 0.28.1
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -76,20 +76,20 @@ License: GPL-3
 URL: https://easystats.github.io/parameters/
 BugReports: https://github.com/easystats/parameters/issues
 Depends: R (>= 3.6)
-Imports: bayestestR (>= 0.16.1), datawizard (>= 1.2.0), insight (>=
-        1.3.1), graphics, methods, stats, utils
+Imports: bayestestR (>= 0.17.0), datawizard (>= 1.2.0), insight (>=
+        1.4.1), graphics, methods, stats, utils
 Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
         betareg, BH, biglm, blme, boot, brglm2, brms, broom,
         broom.mixed, cAIC4, car, carData, cgam, ClassDiscovery,
         clubSandwich, cluster, cobalt, coda, correlation (>= 0.8.8),
         coxme, cplm, curl, dbscan, did, discovr, distributional, domir
-        (>= 0.2.0), drc, DRR, effectsize (>= 0.8.6), EGAnet, emmeans
+        (>= 0.2.0), drc, DRR, effectsize (>= 1.0.1), EGAnet, emmeans
         (>= 1.7.0), epiR, estimatr, factoextra, FactoMineR, faraway,
         fastICA, fixest, fpc, gam, gamlss, gee, geepack, ggplot2,
-        GLMMadaptive, glmmTMB (>= 1.1.10), glmtoolbox, GPArotation, gt,
+        GLMMadaptive, glmmTMB (>= 1.1.12), glmtoolbox, GPArotation, gt,
         haven, httr2, Hmisc, ivreg, knitr, lavaan, lfe, lm.beta, lme4,
         lmerTest, lmtest, logistf, logitr, logspline, lqmm, M3C,
-        marginaleffects (>= 0.26.0), modelbased (>= 0.9.0), MASS,
+        marginaleffects (>= 0.29.0), modelbased (>= 0.9.0), MASS,
         Matrix, mclogit, mclust, MCMCglmm, mediation, merDeriv,
         metaBMA, metafor, mfx, mgcv, mice (>= 3.17.0), mmrm, multcomp,
         MuMIn, mvtnorm, NbClust, nFactors, nestedLogit, nlme, nnet,
@@ -98,7 +98,7 @@ Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
         1.3.0), pscl, psych, pvclust, quantreg, randomForest,
         RcppEigen, rmarkdown, rms, rstan, rstanarm, sampleSelection,
         sandwich, see (>= 0.8.1), serp, sparsepca, survey, survival,
-        svylme, testthat (>= 3.2.1), tidyselect, tinytable (>= 0.1.0),
+        svylme, testthat (>= 3.2.1), tidyselect, tinytable (>= 0.13.0),
         TMB, truncreg, vdiffr, VGAM, WeightIt (>= 1.2.0), withr, WRS2
 VignetteBuilder: knitr
 Encoding: UTF-8
@@ -110,7 +110,7 @@ Config/Needs/website: easystats/easystatstemplate
 Config/Needs/check: stan-dev/cmdstanr
 Config/rcmdcheck/ignore-inconsequential-notes: true
 NeedsCompilation: no
-Packaged: 2025-08-20 08:58:30 UTC; DL
+Packaged: 2025-08-30 10:24:57 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-8895-3206>),
   Dominique Makowski [aut] (ORCID:
@@ -131,4 +131,4 @@ Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-7195-830X>),
   Joseph Luchman [ctb] (ORCID: <https://orcid.org/0000-0002-8886-9717>)
 Repository: CRAN
-Date/Publication: 2025-08-20 09:50:02 UTC
+Date/Publication: 2025-08-30 11:20:02 UTC

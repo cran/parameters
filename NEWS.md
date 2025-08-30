@@ -1,3 +1,24 @@
+# parameters 0.28.1
+
+## Changes
+
+* Methods for *glmmTMB* objects (`ci()`, `model_parameters()`, `standard_error()`)
+  now support the `vcov` argument to compute robust standard errors.
+
+* `model_parameters()` for *marginaleffects* objects is now more robust in
+  detecting Bayesian models.
+
+* Modified code base to address changes in the *marginaleffects* package from
+  version 0.29.0 onwards.
+
+## Bug fixes
+
+* Fixed issue with `equivalence_test()` for models of class `glmmTMB` with
+  `beta_family()`.
+
+* `exponentiate = TRUE` in `model_parameters()` did not exponentiate location
+  and scale parameters for models from package *ordinal*.
+
 # parameters 0.28.0
 
 ## Breaking Changes
