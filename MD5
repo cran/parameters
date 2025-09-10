@@ -1,6 +1,6 @@
-4858acd15d38712a2adf35c42b09b74d *DESCRIPTION
+93f0066cce825f12bbe49f43147b4c80 *DESCRIPTION
 9078dbab9592069794d863e234805a21 *NAMESPACE
-c1a36626193e88e7537be06ab43b47a7 *NEWS.md
+8faa9de93de3357c7a94b093701de1b2 *NEWS.md
 e03d47af07c4b43de58c39f1868c114f *R/1_model_parameters.R
 d2fd4b8b006cd6cb3119986e7ca96f81 *R/2_ci.R
 bb2f31f54a6f37c8df02a8cb4a1b1fd1 *R/3_p_value.R
@@ -112,7 +112,7 @@ ffb88aa5f89e838d4269fae424a5e8e2 *R/methods_lmtest.R
 1dbb9bc5abf210082f27fb878b41b756 *R/methods_loo.R
 4acbc5d57348a926901497f13804fba3 *R/methods_lqmm.R
 edebb6696258908f1cee51a4af079481 *R/methods_lrm.R
-b3e4c8f1d0584c0432f120991356c120 *R/methods_marginaleffects.R
+96e0215e26eed232f413239e0e5278af *R/methods_marginaleffects.R
 54e755fd9e520d96a1c5972342fadf6c *R/methods_margins.R
 ddb47fa11799b4430d2231ccd8a1ee91 *R/methods_mass.R
 bb90294c2cfef72e27d30eb0bc8dde99 *R/methods_maxLik.R
@@ -220,8 +220,8 @@ fca1e9b681b9f432165601e6510c483c *data/qol_cancer.RData
 d9a675761b0b4ec7816a274c92857f5e *inst/CITATION
 2430dd891e7a3f46a6bdb47f81bfcce6 *inst/WORDLIST
 7342a6d63f4cc4501afc55be1d148740 *inst/doc/overview_of_vignettes.R
-8f5d9cba18c8d2202bfe119bcf623889 *inst/doc/overview_of_vignettes.Rmd
-e95d1e6d43fd8dace29efa2f9aa04240 *inst/doc/overview_of_vignettes.html
+d9dd956924410f30851a0ed54d8bb41c *inst/doc/overview_of_vignettes.Rmd
+ac4d9be1298fc2bce2d12d10c4ec3c0f *inst/doc/overview_of_vignettes.html
 f3f23263b0cda1f60dc1075e007707c2 *man/bootstrap_model.Rd
 7c6aac09db974f09eecdfd5df69cba81 *man/bootstrap_parameters.Rd
 2f3a7e271a38f563889f9f4ba1744442 *man/ci.default.Rd
@@ -370,9 +370,9 @@ b5db2e4d2536c7df0887c0ed7db7e9cf *tests/testthat/test-model_parameters.aov.R
 aa555b40a7835004afcc0935c31bed9a *tests/testthat/test-model_parameters.cgam.R
 c6016c54f02ab954ff264e6414257c33 *tests/testthat/test-model_parameters.coxme.R
 187a7f403cc39b2494d0eee5227fd7a4 *tests/testthat/test-model_parameters.cpglmm.R
-a2f20461e6593a76540649c95a9aad1e *tests/testthat/test-model_parameters.efa_cfa.R
+4e8e5bf2df790fbddd1b2f2dabf2d3b3 *tests/testthat/test-model_parameters.efa_cfa.R
 7e04bd526faa08f939f70f712773f456 *tests/testthat/test-model_parameters.epi2x2.R
-f94dacede9fc3d854172faf02ae8eba5 *tests/testthat/test-model_parameters.fixest.R
+417cb54183a76d0f67474b154f21b772 *tests/testthat/test-model_parameters.fixest.R
 884cc7ccd1e33f8dc4a6510bc5dc8be3 *tests/testthat/test-model_parameters.fixest_multi.R
 440ab1ca53a5827da01354acd9ac2f9d *tests/testthat/test-model_parameters.gam.R
 36a864387a3438c6a00037eec1d39ed1 *tests/testthat/test-model_parameters.glht.R
@@ -451,4 +451,4 @@ b9f53f0b2eae2bfbf416b7a53a6590d5 *tests/testthat/test-survey.R
 a0c01b1f0965715a0b387d4d458d6f61 *tests/testthat/test-weightit.R
 f62cfb3b00df8800ccb745a762e72c78 *tests/testthat/test-wrs2.R
 53804133b2114966510ba30647a53e83 *tests/testthat/test-zeroinfl.R
-8f5d9cba18c8d2202bfe119bcf623889 *vignettes/overview_of_vignettes.Rmd
+d9dd956924410f30851a0ed54d8bb41c *vignettes/overview_of_vignettes.Rmd
