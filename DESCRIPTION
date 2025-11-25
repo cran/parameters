@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.28.2
+Version: 0.28.3
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -76,8 +76,8 @@ License: GPL-3
 URL: https://easystats.github.io/parameters/
 BugReports: https://github.com/easystats/parameters/issues
 Depends: R (>= 3.6)
-Imports: bayestestR (>= 0.17.0), datawizard (>= 1.2.0), insight (>=
-        1.4.1), graphics, methods, stats, utils
+Imports: bayestestR (>= 0.17.0), datawizard (>= 1.3.0), insight (>=
+        1.4.2), graphics, methods, stats, utils
 Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
         betareg, BH, biglm, blme, boot, brglm2, brms, broom,
         broom.mixed, cAIC4, car, carData, cgam, ClassDiscovery,
@@ -87,8 +87,8 @@ Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
         (>= 1.7.0), epiR, estimatr, factoextra, FactoMineR, faraway,
         fastICA, fixest, fpc, gam, gamlss, gee, geepack, ggplot2,
         GLMMadaptive, glmmTMB (>= 1.1.12), glmtoolbox, GPArotation, gt,
-        haven, httr2, Hmisc, ivreg, knitr, lavaan, lfe, lm.beta, lme4,
-        lmerTest, lmtest, logistf, logitr, logspline, lqmm, M3C,
+        haven, httr2, Hmisc, ivreg, knitr, lavaan, lcmm, lfe, lm.beta,
+        lme4, lmerTest, lmtest, logistf, logitr, logspline, lqmm, M3C,
         marginaleffects (>= 0.29.0), modelbased (>= 0.9.0), MASS,
         Matrix, mclogit, mclust, MCMCglmm, mediation, merDeriv,
         metaBMA, metafor, mfx, mgcv, mice (>= 3.17.0), mmrm, multcomp,
@@ -103,14 +103,14 @@ Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Config/testthat/edition: 3
 Config/testthat/parallel: true
 Config/Needs/website: easystats/easystatstemplate
 Config/Needs/check: stan-dev/cmdstanr
 Config/rcmdcheck/ignore-inconsequential-notes: true
 NeedsCompilation: no
-Packaged: 2025-09-10 12:17:21 UTC; mail
+Packaged: 2025-11-25 10:23:57 UTC; mail
 Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-8895-3206>),
   Dominique Makowski [aut] (ORCID:
@@ -131,4 +131,4 @@ Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-7195-830X>),
   Joseph Luchman [ctb] (ORCID: <https://orcid.org/0000-0002-8886-9717>)
 Repository: CRAN
-Date/Publication: 2025-09-10 15:50:02 UTC
+Date/Publication: 2025-11-25 11:10:02 UTC
