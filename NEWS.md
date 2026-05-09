@@ -1,3 +1,46 @@
+# parameters 0.29.0
+
+## Changes
+
+* `standardize_parameters()` (and by extension `model_parameters()`) with any of
+  the _post-hoc_ standardization methods no longer standardizes the
+  `"(Intercept)"` parameter - instead setting it to `NA`.
+
+* `standardize_parameters()` with any of the _post-hoc_ standardization methods
+  sets all inferential statistics (z, p, etc...) for the `"(Intercept)"` and any
+  other `NA` parameters to `NA`.
+
+* `model_parameters()` now supports objects from the *lavaan.mi* package.
+
+* Improved performance of `model_parameters()` for large `mgcv::gam()` models
+  that include random effects when using the new `re_test` argument (e.g.,
+  setting `re_test = FALSE` to skip expensive random-effect tests). Default
+  behavior (with `re_test = TRUE`) is unchanged.
+
+* `model_parameters()` for proportions-htests objects no longer hard-codes the
+  estimate for the proportion in the underlying data frame. This is now done
+  in the `format()` method.
+
+* `model_parameters()` now supports htests objects from package *BSDA*.
+
+* Output for other random effects covariance structures than "unstructured" for
+  models from package *glmmTMB* has been revised, to provide a more useful output,
+  which is also in line with the relevant information returned by `VarCorr()`.
+
+## Bug fixes
+
+* Fixed issue where wrong (non-robust) standard errors were calculated for
+  `coxph` and `svycoxph` objects.
+
+* Fixed issues with Tukey-p-value adjustment for *emmeans* objects.
+
+* Fixed unintended removal of columns in `model_parameters()` for objects from
+  package *marginaleffects*. This happened, when a variable in a model was named
+  `Type`.
+
+* Fixed issue in `model_parameters()` for `fisher.test()` with tables larger
+  than 2x2.
+
 # parameters 0.28.3
 
 * fixed bug in `standardize_info(<fixest>)` that was preventing
