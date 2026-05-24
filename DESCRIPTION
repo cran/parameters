@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.29.0
+Version: 0.29.1
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -104,14 +104,14 @@ Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
 VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
-RoxygenNote: 7.3.3
 Config/testthat/edition: 3
-Config/testthat/parallel: true
+Config/testthat/parallel: false
 Config/Needs/website: easystats/easystatstemplate
 Config/Needs/check: stan-dev/cmdstanr
 Config/rcmdcheck/ignore-inconsequential-notes: true
+Config/roxygen2/version: 8.0.0
 NeedsCompilation: no
-Packaged: 2026-05-09 10:53:13 UTC; Daniel
+Packaged: 2026-05-24 11:01:56 UTC; DL
 Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-8895-3206>),
   Dominique Makowski [aut] (ORCID:
@@ -132,4 +132,4 @@ Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-7195-830X>),
   Joseph Luchman [ctb] (ORCID: <https://orcid.org/0000-0002-8886-9717>)
 Repository: CRAN
-Date/Publication: 2026-05-09 14:41:40 UTC
+Date/Publication: 2026-05-24 12:20:02 UTC
