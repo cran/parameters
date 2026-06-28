@@ -1,7 +1,7 @@
 Type: Package
 Package: parameters
 Title: Processing of Model Parameters
-Version: 0.29.1
+Version: 0.29.2
 Authors@R: 
     c(person(given = "Daniel",
              family = "Lüdecke",
@@ -76,8 +76,8 @@ License: GPL-3
 URL: https://easystats.github.io/parameters/
 BugReports: https://github.com/easystats/parameters/issues
 Depends: R (>= 3.6)
-Imports: bayestestR (>= 0.17.0), datawizard (>= 1.3.1), insight (>=
-        1.5.0), graphics, methods, stats, utils
+Imports: bayestestR (>= 0.18.1), datawizard (>= 1.3.1), insight (>=
+        1.5.1), graphics, methods, stats, utils
 Suggests: AER, afex, aod, BayesFactor (>= 0.9.12-4.7), BayesFM, bbmle,
         BSDA, betareg, BH, biglm, blme, boot, brglm2, brms, broom,
         broom.mixed, cAIC4, car, carData, cgam, ClassDiscovery,
@@ -111,7 +111,7 @@ Config/Needs/check: stan-dev/cmdstanr
 Config/rcmdcheck/ignore-inconsequential-notes: true
 Config/roxygen2/version: 8.0.0
 NeedsCompilation: no
-Packaged: 2026-05-24 11:01:56 UTC; DL
+Packaged: 2026-06-28 20:12:36 UTC; Daniel
 Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-8895-3206>),
   Dominique Makowski [aut] (ORCID:
@@ -132,4 +132,4 @@ Author: Daniel Lüdecke [aut, cre] (ORCID:
     <https://orcid.org/0000-0002-7195-830X>),
   Joseph Luchman [ctb] (ORCID: <https://orcid.org/0000-0002-8886-9717>)
 Repository: CRAN
-Date/Publication: 2026-05-24 12:20:02 UTC
+Date/Publication: 2026-06-28 23:20:02 UTC

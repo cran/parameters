@@ -1,3 +1,34 @@
+# parameters 0.29.2
+
+## Changes
+
+* `simulate_model()`, `simulate_parameters()` and `equivalence_test()` now work
+  for `lavaan` objects.
+
+* Added `format()` method for objects returned by `factor_analysis()` and
+  `principal_components()`.
+
+## Bug fixes
+
+* Fixed issues with extracting wrong standard errors for model with frailty
+  terms in `survival::coxph()`.
+
+* Fixed issue where including a character variable in a model caused all other
+  variable labels to be silently dropped from `model_parameters()` output
+  (#1142).
+
+* Fixed issue where on-the-fly factor conversions in the model formula (e.g.,
+  `factor(cyl)`) produced `NA` in interaction labels when variable labels were
+  set (#1135).
+
+* Fixed issue where `include_reference = TRUE` had no effect for
+  `pscl::zeroinfl()` and `pscl::hurdle()` models (#1130).
+
+* Fixed issue with calculation of standard errors in `model_parameters()` when
+  `vcov` was a function that errored when unsupported arguments were passed.
+
+* Fixed issue in `print_html()` for `model_parameters()` with *lavaan* objects.
+
 # parameters 0.29.1
 
 ## Changes
