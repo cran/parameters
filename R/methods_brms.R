@@ -45,6 +45,16 @@
 #' `priors` refer to the *original* `model`. If `model` is a data frame,
 #' arguments `diagnostic`, `bf_prior` and `priors` are ignored.
 #'
+#' For **blavaan** models, `standardize` accepts `TRUE`, `"all"` (or
+#' `"std.all"`), `"latent"` (or `"std.lv"`), and `"no_exogenous"` (or
+#' `"std.nox"`). Returned parameters summarize the standardized posterior draws
+#' for the matching `type` (see [`blavaan::standardizedPosterior()`]), omitting
+#' `ESS` and `Rhat`. This requires package **insight** (>= 1.6.0). When
+#' `verbose = TRUE`, a warning is issued if `"no_exogenous"` / `"std.nox"`
+#' produces estimates identical to `"std.all"`. Any other unrecognized value
+#' (aside from `FALSE` or `NULL`) returns unstandardized parameters and triggers
+#' a warning when `verbose = TRUE`.
+#'
 #' There is also a
 #' [`plot()`-method](https://easystats.github.io/see/articles/parameters.html)
 #' implemented in the [**see**-package](https://easystats.github.io/see/).

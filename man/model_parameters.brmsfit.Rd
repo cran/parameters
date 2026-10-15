@@ -231,6 +231,16 @@ When \code{standardize = "refit"}, columns \code{diagnostic}, \code{bf_prior} an
 \code{priors} refer to the \emph{original} \code{model}. If \code{model} is a data frame,
 arguments \code{diagnostic}, \code{bf_prior} and \code{priors} are ignored.
 
+For \strong{blavaan} models, \code{standardize} accepts \code{TRUE}, \code{"all"} (or
+\code{"std.all"}), \code{"latent"} (or \code{"std.lv"}), and \code{"no_exogenous"} (or
+\code{"std.nox"}). Returned parameters summarize the standardized posterior draws
+for the matching \code{type} (see \code{\link[blavaan:standardizedPosterior]{blavaan::standardizedPosterior()}}), omitting
+\code{ESS} and \code{Rhat}. This requires package \strong{insight} (>= 1.6.0). When
+\code{verbose = TRUE}, a warning is issued if \code{"no_exogenous"} / \code{"std.nox"}
+produces estimates identical to \code{"std.all"}. Any other unrecognized value
+(aside from \code{FALSE} or \code{NULL}) returns unstandardized parameters and triggers
+a warning when \code{verbose = TRUE}.
+
 There is also a
 \href{https://easystats.github.io/see/articles/parameters.html}{\code{plot()}-method}
 implemented in the \href{https://easystats.github.io/see/}{\strong{see}-package}.

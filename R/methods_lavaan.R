@@ -56,9 +56,36 @@ model_parameters.blavaan <- function(
   verbose = TRUE,
   ...
 ) {
+  # standardized parameters are summarized from the standardized draws. The
+  # methods of `standardize_parameters()`, including "refit", do not work for
+  # SEM.
+  posterior <- model
+  if (isFALSE(standardize)) {
+    standardize <- NULL
+  }
+  if (!is.null(standardize)) {
+    std_type <- .blavaan_std_type(standardize)
+    if (!is.null(std_type)) {
+      if (isTRUE(test == "all")) {
+        insight::format_error(
+          "`test = \"all\"` is not supported when standardizing;",
+          "Please specify the tests you want to perform using the `test` argument."
+        )
+      }
+      posterior <- .blavaan_standardized_draws(model, type = std_type, verbose = verbose)
+      test <- .remove_scale_dependent_tests(test, verbose)
+    } else if (verbose) {
+      insight::format_warning(
+        "`standardize` should be one of `TRUE`, \"all\", \"std.all\", \"latent\", \"std.lv\", \"no_exogenous\" or \"std.nox\" for models from package `blavaan`.",
+        "Returning unstandardized parameters."
+      )
+    }
+    standardize <- NULL
+  }
+
   # Processing
   params <- .extract_parameters_bayesian(
-    model,
+    posterior,
     centrality = centrality,
     dispersion = dispersion,
     ci = ci,
@@ -74,6 +101,13 @@ model_parameters.blavaan <- function(
     verbose = verbose,
     ...
   )
+
+  # draws have no component information, so we take it from the model
+  if (is.null(params$Component)) {
+    cp <- insight::clean_parameters(model)
+    params$Component <- cp$Component[match(params$Parameter, cp$Parameter)]
+    params <- datawizard::data_relocate(params, "Component", after = "Parameter")
+  }
 
   # Filter
   if (!all(component == "all")) {
@@ -94,6 +128,87 @@ model_parameters.blavaan <- function(
   class(params) <- c("parameters_sem", "see_parameters_sem", class(params))
 
   params
+}
+
+
+# the type of `blavaan::standardizedPosterior()` for a value of `standardize`,
+# mapped as in `model_parameters.lavaan()`, or `NULL` for unsupported values
+.blavaan_std_type <- function(standardize) {
+  if (isTRUE(standardize)) {
+    return("std.all")
+  }
+  if (!is.character(standardize) || length(standardize) != 1L) {
+    return(NULL)
+  }
+  switch(
+    standardize,
+    all = ,
+    std.all = "std.all",
+    latent = ,
+    std.lv = "std.lv",
+    no_exogenous = ,
+    std.nox = "std.nox",
+    NULL
+  )
+}
+
+
+.blavaan_standardized_draws <- function(model, type = "std.all", verbose = TRUE) {
+  # older versions of insight do not pass `type` on to blavaan
+  if (type != "std.all" && .insight_version() < "1.6.0") {
+    insight::format_error(
+      paste0(
+        "Standardized parameters of type \"",
+        type,
+        "\" for models from package `blavaan` require package `insight` version 1.6.0 or higher."
+      ),
+      "Please update `insight`, for example with `install.packages(\"insight\", repos = \"https://easystats.r-universe.dev\")`."
+    )
+  }
+  # older versions of insight give the standardized draws shifted names
+  if (.insight_version() < "1.6.0") {
+    insight::format_error(
+      "Standardized parameters for models from package `blavaan` require package `insight` version 1.6.0 or higher.",
+      "Please update `insight`, for example with `install.packages(\"insight\", repos = \"https://easystats.r-universe.dev\")`."
+    )
+  }
+  if (type == "std.all") {
+    return(insight::get_parameters(model, standardize = TRUE))
+  }
+
+  # lavaan warns for each draw when std.nox equals std.all, that is, when the
+  # model has no exogenous covariates or was fit with `fixed.x = FALSE`. We
+  # warn once instead, with lavaan's reason. The match uses only the names
+  # of the types and of `fixed.x`, which a translated message keeps. lavaan
+  # 0.7-3 and later write `fixed_x` in this message.
+  reason <- NULL
+  draws <- withCallingHandlers(
+    insight::get_parameters(model, standardize = TRUE, type = type),
+    warning = function(w) {
+      msg <- conditionMessage(w)
+      if (grepl("std.nox", msg, fixed = TRUE) && grepl("std.all", msg, fixed = TRUE)) {
+        reason <<- if (grepl("fixed[._]x", msg)) {
+          "the model was fit with `fixed.x = FALSE`"
+        } else {
+          "the model has no exogenous covariates"
+        }
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
+  if (!is.null(reason) && verbose) {
+    insight::format_warning(paste0(
+      "Standardized parameters of type \"std.nox\" are identical to those of type \"std.all\", because ",
+      reason,
+      "."
+    ))
+  }
+  draws
+}
+
+
+.insight_version <- function() {
+  utils::packageVersion("insight")
 }
 
 
